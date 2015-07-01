@@ -3,7 +3,7 @@ import logging
 
 class BaseProtocol(object):
 
-    # Must be implemented by subclasses
+    # Should be implemented by subclasses
     protocol_ns = None
     user_agent = None
 
@@ -13,14 +13,21 @@ class BaseProtocol(object):
         """Build a payload."""
         raise NotImplementedError("Implement in subclass")
 
-    def _send(self, *args, **kwargs):
+    def send(self, *args, **kwargs):
         """Send a payload."""
         raise NotImplementedError("Implement in subclass")
 
-    def _receive(self, *args, **kwargs):
-        """Receive a payload."""
-        raise NotImplementedError("Implement in subclass")
+    def receive(self, payload, user=None, *args, **kwargs):
+        """Receive a payload.
 
-    def _get_contact(self, handle, *args, **kwargs):
-        """Some protocols require retrieving locally stored remote contact."""
+        Args:
+            payload (str) - Payload blob
+            user (object) - Optional target user entry
+                            If given, MUST contain `key` attribute which corresponds to user
+                            decrypted private key
+
+        Returns tuple of:
+            str - Sender handle ie user@domain.tld
+            str - Extracted message body
+        """
         raise NotImplementedError("Implement in subclass")

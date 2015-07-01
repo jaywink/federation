@@ -6,6 +6,4 @@ Aims to first support Diaspora and then the W3C SocialWG ActivityStreams 2 based
 
 ## License
 
-MIT, except:
-
-* Parts of `federation.protocols.diaspora` AGPLv3 (https://github.com/lukeross/pyaspora)
+MIT, except for Diaspora protocol implementation `federation.protocols.diaspora` which is licensed under AGPLv3.
