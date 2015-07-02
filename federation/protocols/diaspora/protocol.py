@@ -32,11 +32,6 @@ class DiasporaProtocol(BaseProtocol):
         xml = xml.lstrip().encode("utf-8")
         self.doc = etree.fromstring(xml)
         self.find_header()
-        if self.encrypted:
-            if not self.user:
-                raise EncryptedMessageError("Cannot decrypt private message without user object")
-            if not hasattr(self.user, "key"):
-                raise EncryptedMessageError("Cannot decrypt private message without user key")
         sender = self.get_sender()
         self.sender_key = self.get_contact_key(sender)
         if not self.sender_key:
@@ -49,6 +44,10 @@ class DiasporaProtocol(BaseProtocol):
         if self.header:
             self.encrypted = False
         else:
+            if not self.user:
+                raise EncryptedMessageError("Cannot decrypt private message without user object")
+            if not hasattr(self.user, "key") or not self.user.key:
+                raise EncryptedMessageError("Cannot decrypt private message without user key")
             self.encrypted = True
             self.header = self.parse_header(
                 self.doc.find(".//{"+self.protocol_ns+"}encrypted_header").text,
