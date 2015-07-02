@@ -6,4 +6,4 @@ Aims to first support Diaspora and then the W3C SocialWG ActivityStreams 2 based
 
 ## License
 
-MIT, except for Diaspora protocol implementation `federation.protocols.diaspora` which is licensed under AGPLv3.
+BSD 3-clause license (https://www.tldrlegal.com/l/bsd3).
