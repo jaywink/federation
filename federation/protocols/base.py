@@ -1,6 +1,11 @@
 import logging
 
 
+# Should be implemented by submodules
+PROTOCOL_NS = None
+user_agent = None
+
+
 def identify_payload(payload):
     """Each protocol module should define an `identify_payload` method.
 
@@ -14,10 +19,6 @@ def identify_payload(payload):
 
 
 class BaseProtocol(object):
-
-    # Should be implemented by subclasses
-    protocol_ns = None
-    user_agent = None
 
     logger = logging.getLogger(__name__)
 

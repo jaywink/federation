@@ -12,10 +12,14 @@ from federation.exceptions import EncryptedMessageError, NoHeaderInMessageError,
 from federation.protocols.base import BaseProtocol
 
 
+PROTOCOL_NS = "https://joindiaspora.com/protocol"
+USER_AGENT = 'social-federation/diaspora/0.1'
+
+
 def identify_payload(payload):
     try:
         xml = unquote_plus(payload)
-        return xml.find(identify_str = '<diaspora xmlns="%s"' % Protocol.protocol_ns) > -1
+        return xml.find('<diaspora xmlns="%s"' % PROTOCOL_NS) > -1
     except Exception:
         return False
 
@@ -25,10 +29,6 @@ class Protocol(BaseProtocol):
 
     Mostly taken from Pyaspora (https://github.com/lukeross/pyaspora).
     """
-
-    protocol_ns = "https://joindiaspora.com/protocol"
-    user_agent = 'social-federation/diaspora/0.1'
-
     def receive(self, payload, user=None, sender_key_fetcher=None, *args, **kwargs):
         """Receive a payload."""
         self.user = user
@@ -45,7 +45,7 @@ class Protocol(BaseProtocol):
         return sender, content
 
     def find_header(self):
-        self.header = self.doc.find(".//{"+self.protocol_ns+"}header")
+        self.header = self.doc.find(".//{"+PROTOCOL_NS+"}header")
         if self.header:
             self.encrypted = False
         else:
@@ -55,14 +55,14 @@ class Protocol(BaseProtocol):
                 raise EncryptedMessageError("Cannot decrypt private message without user key")
             self.encrypted = True
             self.header = self.parse_header(
-                self.doc.find(".//{"+self.protocol_ns+"}encrypted_header").text,
+                self.doc.find(".//{"+PROTOCOL_NS+"}encrypted_header").text,
                 self.user.key
             )
         if not self.header:
             raise NoHeaderInMessageError("Could not find header in message")
 
     def get_sender(self):
-        return self.header.find(".//{"+self.protocol_ns+"}author_id").text
+        return self.header.find(".//{"+PROTOCOL_NS+"}author_id").text
 
     def get_message_content(self):
         """
