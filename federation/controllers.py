@@ -25,6 +25,11 @@ def handle_receive(payload, user=None, sender_key_fetcher=None):
 
     if found_protocol:
         protocol = found_protocol.Protocol()
-        return protocol.receive(payload, user, sender_key_fetcher)
+        sender, message = protocol.receive(payload, user, sender_key_fetcher)
     else:
         raise NoSuitableProtocolFoundError()
+
+    mappers = importlib.import_module("federation.entities.%s.mappers" % found_protocol.PROTOCOL_NAME)
+    entities = mappers.message_to_objects(message)
+
+    return sender, found_protocol.PROTOCOL_NAME, entities

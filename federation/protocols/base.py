@@ -2,8 +2,9 @@ import logging
 
 
 # Should be implemented by submodules
+PROTOCOL_NAME = None
 PROTOCOL_NS = None
-user_agent = None
+USER_AGENT = None
 
 
 def identify_payload(payload):

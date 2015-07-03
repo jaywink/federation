@@ -4,6 +4,8 @@ ENCRYPTED_DIASPORA_PAYLOAD = """<?xml version='1.0'?>
                 <content />
             </diaspora>
         """
+
+
 UNENCRYPTED_DIASPORA_PAYLOAD = """<?xml version='1.0'?>
             <diaspora xmlns="https://joindiaspora.com/protocol" xmlns:me="http://salmon-protocol.org/ns/magic-env">
                 <header>
@@ -17,3 +19,17 @@ UNENCRYPTED_DIASPORA_PAYLOAD = """<?xml version='1.0'?>
                 </me:env>
             </diaspora>
         """
+
+
+DIASPORA_POST_SIMPLE = """<XML>
+      <post>
+        <status_message>
+          <raw_message>((status message))</raw_message>
+          <guid>((guid))</guid>
+          <diaspora_handle>alice@alice.diaspora.example.org</diaspora_handle>
+          <public>false</public>
+          <created_at>2011-07-20 01:36:07 UTC</created_at>
+        </status_message>
+      </post>
+    </XML>
+"""

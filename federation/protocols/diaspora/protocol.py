@@ -12,6 +12,7 @@ from federation.exceptions import EncryptedMessageError, NoHeaderInMessageError,
 from federation.protocols.base import BaseProtocol
 
 
+PROTOCOL_NAME = "diaspora"
 PROTOCOL_NS = "https://joindiaspora.com/protocol"
 USER_AGENT = 'social-federation/diaspora/0.1'
 
