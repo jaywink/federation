@@ -12,7 +12,15 @@ from federation.exceptions import EncryptedMessageError, NoHeaderInMessageError,
 from federation.protocols.base import BaseProtocol
 
 
-class DiasporaProtocol(BaseProtocol):
+def identify_payload(payload):
+    try:
+        xml = unquote_plus(payload)
+        return xml.find(identify_str = '<diaspora xmlns="%s"' % Protocol.protocol_ns) > -1
+    except Exception:
+        return False
+
+
+class Protocol(BaseProtocol):
     """Diaspora protocol parts
 
     Mostly taken from Pyaspora (https://github.com/lukeross/pyaspora).
@@ -22,7 +30,7 @@ class DiasporaProtocol(BaseProtocol):
     user_agent = 'social-federation/diaspora/0.1'
 
     def __init__(self, contact_key_fetcher=None, *args, **kwargs):
-        super(DiasporaProtocol, self).__init__()
+        super(Protocol, self).__init__()
         self.get_contact_key = contact_key_fetcher
 
     def receive(self, payload, user=None, *args, **kwargs):

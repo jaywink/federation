@@ -1,5 +1,3 @@
-
-
 class EncryptedMessageError(Exception):
     pass
 
@@ -9,4 +7,8 @@ class NoHeaderInMessageError(Exception):
 
 
 class NoSenderKeyFoundError(Exception):
+    pass
+
+
+class NoSuitableProtocolFoundError(Exception):
     pass

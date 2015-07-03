@@ -1,9 +1,9 @@
 from base64 import urlsafe_b64decode
 from lxml import etree
 import pytest
-from federation.exceptions import EncryptedMessageError, NoSenderKeyFoundError
 
-from federation.protocols.diaspora.protocol import DiasporaProtocol
+from federation.exceptions import EncryptedMessageError, NoSenderKeyFoundError
+from federation.protocols.diaspora.protocol import Protocol
 
 
 UNENCRYPTED_DOCUMENT = """<?xml version='1.0'?>
@@ -97,7 +97,7 @@ class TestDiasporaProtocol():
         assert body == urlsafe_b64decode("{data}".encode("ascii"))
 
     def init_protocol(self, contact_key_fetcher=None):
-        return DiasporaProtocol(contact_key_fetcher=contact_key_fetcher)
+        return Protocol(contact_key_fetcher=contact_key_fetcher)
 
     def get_unencrypted_doc(self):
         return etree.fromstring(UNENCRYPTED_DOCUMENT)

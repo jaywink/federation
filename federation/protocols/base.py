@@ -1,6 +1,18 @@
 import logging
 
 
+def identify_payload(payload):
+    """Each protocol module should define an 'identify_payload' method.
+
+    Args:
+        payload (str) - Payload blob
+
+    Returns:
+        True or False - A boolean whether the payload matches this protocol.
+    """
+    raise NotImplementedError("Implement in protocol module")
+
+
 class BaseProtocol(object):
 
     # Should be implemented by subclasses
