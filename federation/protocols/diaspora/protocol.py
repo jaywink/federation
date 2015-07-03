@@ -29,13 +29,10 @@ class Protocol(BaseProtocol):
     protocol_ns = "https://joindiaspora.com/protocol"
     user_agent = 'social-federation/diaspora/0.1'
 
-    def __init__(self, contact_key_fetcher=None, *args, **kwargs):
-        super(Protocol, self).__init__()
-        self.get_contact_key = contact_key_fetcher
-
-    def receive(self, payload, user=None, *args, **kwargs):
+    def receive(self, payload, user=None, sender_key_fetcher=None, *args, **kwargs):
         """Receive a payload."""
         self.user = user
+        self.get_contact_key = sender_key_fetcher
         xml = unquote_plus(payload)
         xml = xml.lstrip().encode("utf-8")
         self.doc = etree.fromstring(xml)

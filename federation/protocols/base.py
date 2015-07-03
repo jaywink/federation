@@ -2,13 +2,13 @@ import logging
 
 
 def identify_payload(payload):
-    """Each protocol module should define an 'identify_payload' method.
+    """Each protocol module should define an `identify_payload` method.
 
     Args:
-        payload (str) - Payload blob
+        payload (str)   - Payload blob
 
     Returns:
-        True or False - A boolean whether the payload matches this protocol.
+        True or False   - A boolean whether the payload matches this protocol.
     """
     raise NotImplementedError("Implement in protocol module")
 
@@ -29,14 +29,15 @@ class BaseProtocol(object):
         """Send a payload."""
         raise NotImplementedError("Implement in subclass")
 
-    def receive(self, payload, user=None, *args, **kwargs):
+    def receive(self, payload, user=None, sender_key_fetcher=None, *args, **kwargs):
         """Receive a payload.
 
         Args:
-            payload (str) - Payload blob
-            user (object) - Optional target user entry
-                            If given, MUST contain `key` attribute which corresponds to user
-                            decrypted private key
+            payload (str)                           - Payload blob
+            user (optional, obj)                    - Target user object
+                                                      If given, MUST contain `key` attribute which corresponds to user
+                                                      decrypted private key
+            sender_key_fetcher (optional, func)     - Function that accepts sender handle and returns public key
 
         Returns tuple of:
             str - Sender handle ie user@domain.tld

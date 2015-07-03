@@ -63,10 +63,10 @@ class TestDiasporaProtocol():
         assert protocol.encrypted is True
 
     def test_receive_unencrypted_returns_sender_and_content(self):
-        protocol = self.init_protocol(contact_key_fetcher=mock_get_contact_key)
+        protocol = self.init_protocol()
         user = self.get_mock_user()
         protocol.get_message_content = self.mock_get_message_content
-        sender, content = protocol.receive(UNENCRYPTED_DOCUMENT, user)
+        sender, content = protocol.receive(UNENCRYPTED_DOCUMENT, user, mock_get_contact_key)
         assert sender == "bob@example.com"
         assert content == "<content />"
 
@@ -82,10 +82,10 @@ class TestDiasporaProtocol():
             protocol.receive(ENCRYPTED_DOCUMENT, user)
 
     def test_receive_raises_if_sender_key_cannot_be_found(self):
-        protocol = self.init_protocol(contact_key_fetcher=mock_not_found_get_contact_key)
+        protocol = self.init_protocol()
         user = self.get_mock_user()
         with pytest.raises(NoSenderKeyFoundError):
-            protocol.receive(UNENCRYPTED_DOCUMENT, user)
+            protocol.receive(UNENCRYPTED_DOCUMENT, user, mock_not_found_get_contact_key)
 
     def test_get_message_content(self):
         protocol = self.init_protocol()
@@ -96,8 +96,8 @@ class TestDiasporaProtocol():
         body = protocol.get_message_content()
         assert body == urlsafe_b64decode("{data}".encode("ascii"))
 
-    def init_protocol(self, contact_key_fetcher=None):
-        return Protocol(contact_key_fetcher=contact_key_fetcher)
+    def init_protocol(self):
+        return Protocol()
 
     def get_unencrypted_doc(self):
         return etree.fromstring(UNENCRYPTED_DOCUMENT)
