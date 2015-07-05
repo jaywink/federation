@@ -1,6 +1,15 @@
 #!/usr/bin/env python
-
+from pip.req import parse_requirements
 from setuptools import setup, find_packages
+
+
+# parse_requirements() returns generator of pip.req.InstallRequirement objects
+install_reqs = parse_requirements("requirements.txt")
+
+# reqs is a list of requirement
+# e.g. ['django==1.5.1', 'mezzanine==1.4.6']
+reqs = [str(ir.req) for ir in install_reqs]
+
 
 setup(
     name='Social-Federation',
@@ -15,5 +24,5 @@ setup(
         "Flask==0.10.1",
         "hiredis==0.2.0",
         "redis==2.10.3",
-    ],
+    ] + reqs,
 )
