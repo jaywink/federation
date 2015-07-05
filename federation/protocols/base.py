@@ -23,12 +23,18 @@ class BaseProtocol(object):
 
     logger = logging.getLogger(__name__)
 
-    def _build(self, *args, **kwargs):
-        """Build a payload."""
-        raise NotImplementedError("Implement in subclass")
+    def build_send(self, *args, **kwargs):
+        """Build a payload for sending.
 
-    def send(self, *args, **kwargs):
-        """Send a payload."""
+        Args:
+            from_user (obj)         - The user object who is sending
+                                      Must contain attributes `handle` and `private_key`
+            to_user (obj)           - The user object we are sending to
+                                      Must contain attribute `key` (public key)
+            generator (function)    - Generator function to generate object for sending
+
+
+        """
         raise NotImplementedError("Implement in subclass")
 
     def receive(self, payload, user=None, sender_key_fetcher=None, *args, **kwargs):

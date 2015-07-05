@@ -33,3 +33,8 @@ def handle_receive(payload, user=None, sender_key_fetcher=None):
     entities = mappers.message_to_objects(message)
 
     return sender, found_protocol.PROTOCOL_NAME, entities
+
+
+def handle_send():
+    """Send."""
+    pass
