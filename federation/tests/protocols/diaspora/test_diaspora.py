@@ -70,6 +70,7 @@ class TestDiasporaProtocol(object):
         protocol = self.init_protocol()
         protocol.doc = self.get_unencrypted_doc()
         protocol.verify_signature = self.mock_verify_signature
+        protocol.skip_author_verification = False
         protocol.sender_key = "foobar"
         protocol.encrypted = False
         body = protocol.get_message_content()

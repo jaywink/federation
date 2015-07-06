@@ -32,8 +32,10 @@ class Protocol(BaseProtocol):
 
     Mostly taken from Pyaspora (https://github.com/lukeross/pyaspora).
     """
-    def receive(self, payload, user=None, sender_key_fetcher=None, *args, **kwargs):
-        """Receive a payload."""
+    def receive(self, payload, user=None, sender_key_fetcher=None, skip_author_verification=False, *args, **kwargs):
+        """Receive a payload.
+
+        For testing purposes, `skip_author_verification` can be passed. Authorship will not be verified."""
         self.user = user
         self.get_contact_key = sender_key_fetcher
         xml = unquote_plus(payload)
@@ -41,9 +43,11 @@ class Protocol(BaseProtocol):
         self.doc = etree.fromstring(xml)
         self.find_header()
         sender = self.get_sender()
-        self.sender_key = self.get_contact_key(sender)
-        if not self.sender_key:
-            raise NoSenderKeyFoundError("Could not find a sender contact to retrieve key")
+        self.skip_author_verification = skip_author_verification
+        if not self.skip_author_verification:
+            self.sender_key = self.get_contact_key(sender)
+            if not self.sender_key:
+                raise NoSenderKeyFoundError("Could not find a sender contact to retrieve key")
         content = self.get_message_content()
         return sender, content
 
@@ -75,7 +79,9 @@ class Protocol(BaseProtocol):
             ".//{http://salmon-protocol.org/ns/magic-env}data").text
         sig = self.doc.find(
             ".//{http://salmon-protocol.org/ns/magic-env}sig").text
-        self.verify_signature(self.sender_key, body, sig.encode('ascii'))
+
+        if not self.skip_author_verification:
+            self.verify_signature(self.sender_key, body, sig.encode('ascii'))
 
         if self.encrypted:
             inner_iv = b64decode(self.header.find(".//iv").text.encode("ascii"))
