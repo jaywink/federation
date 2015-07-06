@@ -32,7 +32,7 @@ class EntityConverter(object):
     def convert_to_xml(self):
         if hasattr(self, "%s_to_xml" % self.entity_type):
             method_name = "%s_to_xml" % self.entity_type
-            return method_name()
+            return getattr(self, method_name)()
 
     def format_dt(cls, dt):
         """
