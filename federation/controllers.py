@@ -8,13 +8,14 @@ PROTOCOLS = (
 )
 
 
-def handle_receive(payload, user=None, sender_key_fetcher=None):
+def handle_receive(payload, user=None, sender_key_fetcher=None, skip_author_verification=False):
     """Takes a payload and passes it to the correct protocol.
 
     Args:
-        payload (str)                           - Payload blob
-        user (optional, obj)                    - User that will be passed to `protocol.receive`
-        sender_key_fetcher (optional, func)     - Function that accepts sender handle and returns public key
+        payload (str)                               - Payload blob
+        user (optional, obj)                        - User that will be passed to `protocol.receive`
+        sender_key_fetcher (optional, func)         - Function that accepts sender handle and returns public key
+        skip_author_verification (optional, bool)   - Don't verify sender (test purposes, false default)
     """
     found_protocol = None
     for protocol_name in PROTOCOLS:
@@ -25,7 +26,8 @@ def handle_receive(payload, user=None, sender_key_fetcher=None):
 
     if found_protocol:
         protocol = found_protocol.Protocol()
-        sender, message = protocol.receive(payload, user, sender_key_fetcher)
+        sender, message = protocol.receive(
+            payload, user, sender_key_fetcher, skip_author_verification=skip_author_verification)
     else:
         raise NoSuitableProtocolFoundError()
 
