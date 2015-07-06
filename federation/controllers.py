@@ -1,7 +1,7 @@
 import importlib
 
 from federation.exceptions import NoSuitableProtocolFoundError
-
+from federation.protocols.diaspora.protocol import Protocol
 
 PROTOCOLS = (
     "diaspora",
@@ -35,6 +35,20 @@ def handle_receive(payload, user=None, sender_key_fetcher=None):
     return sender, found_protocol.PROTOCOL_NAME, entities
 
 
-def handle_send():
-    """Send."""
-    pass
+def handle_create_payload(from_user, to_user, entity):
+    """Create a payload with the correct protocol.
+
+    Since we don't know the protocol, we need to first query the recipient. However, for a PoC implementation,
+    supporting only Diaspora, we're going to assume that for now.
+
+    Args:
+        from_user (obj)     - User sending the object
+        to_user (obj)       - Contact entry to send to
+        entity (obj)        - Entity object to send
+
+    `from_user` must have `private_key` and `handle` attributes.
+    `to_user` must have `key` attribute.
+    """
+    protocol = Protocol()
+    data = protocol.build_send(from_user=from_user, to_user=to_user, entity=entity)
+    return data
