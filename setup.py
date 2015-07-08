@@ -1,14 +1,5 @@
 #!/usr/bin/env python
-from pip.req import parse_requirements
 from setuptools import setup, find_packages
-
-
-# parse_requirements() returns generator of pip.req.InstallRequirement objects
-install_reqs = parse_requirements("requirements.txt")
-
-# reqs is a list of requirement
-# e.g. ['django==1.5.1', 'mezzanine==1.4.6']
-reqs = [str(ir.req) for ir in install_reqs]
 
 
 setup(
@@ -21,8 +12,12 @@ setup(
     packages=find_packages(exclude=["*.tests.*", "*.tests"]),
     license="BSD 3-clause",
     install_requires=[
-        "Flask==0.10.1",
-        "hiredis==0.2.0",
-        "redis==2.10.3",
-    ] + reqs,
+        "dirty-validators==0.3.2",
+        "lxml==3.4.4",
+        "pycrypto==2.6.1",
+        "python-dateutil==2.4.2",
+    ],
+    test_require=[
+        "pytest==2.7.2",
+    ],
 )
