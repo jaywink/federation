@@ -23,15 +23,11 @@ class BaseHostMeta(object):
         self.xrd = XRD()
 
     def render(self):
-        return self.xrd.to_xml()
+        return self.xrd.to_xml().toprettyxml(indent="  ", encoding="UTF-8")
 
 
 class DiasporaHostMeta(BaseHostMeta):
     """Diaspora host-meta.
-
-    NOTE! Diaspora .well-known/host-meta seems to define 'encoding="UTF-8"' from server implementation.
-    The xrd.XRD module does not define this or allow defining it when rendering the XML. This will need to be
-    fixed if that is a problem to Diaspora or other servers.
 
     Requires keyword args:
         webfinger_host (str)
