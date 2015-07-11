@@ -16,6 +16,7 @@ setup(
         "lxml==3.4.4",
         "pycrypto==2.6.1",
         "python-dateutil==2.4.2",
+        "python-xrd==0.1",
     ],
     test_require=[
         "pytest==2.7.2",
