@@ -13,7 +13,7 @@ DIASPORA_WEBFINGER = """<?xml version="1.0" encoding="UTF-8"?>
 <XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0">
   <Subject>acct:user@server.example</Subject>
   <Alias>https://server.example/people/0123456789abcdef</Alias>
-  <Link href="https://server.example/hcard/users/user" rel="http://microformats.org/profile/hcard" type="text/html"/>
+  <Link href="https://server.example/hcard/users/0123456789abcdef" rel="http://microformats.org/profile/hcard" type="text/html"/>
   <Link href="https://server.example" rel="http://joindiaspora.com/seed_location" type="text/html"/>
   <Link href="0123456789abcdef" rel="http://joindiaspora.com/guid" type="text/html"/>
   <Link href="https://server.example/u/user" rel="http://webfinger.net/rel/profile-page" type="text/html"/>

@@ -90,7 +90,7 @@ class DiasporaWebFinger(BaseLegacyWebFinger):
             rel="http://microformats.org/profile/hcard",
             type_="text/html",
             href="%s/hcard/users/%s" %(
-                host, username
+                host, guid
             )
         ))
         self.xrd.links.append(Link(
