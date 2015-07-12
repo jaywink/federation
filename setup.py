@@ -21,4 +21,5 @@ setup(
     test_require=[
         "pytest==2.7.2",
     ],
+    include_package_data=True,
 )
