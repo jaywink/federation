@@ -1,6 +1,6 @@
 import pytest
 
-from federation.hostmeta.generators import generate_host_meta, generate_legacy_webfinger
+from federation.hostmeta.generators import generate_host_meta, generate_legacy_webfinger, generate_hcard
 
 
 DIASPORA_HOSTMETA = """<?xml version="1.0" encoding="UTF-8"?>
@@ -49,3 +49,41 @@ class TestDiasporaWebFingerGenerator(object):
     def test_diaspora_webfinger_raises_on_missing_arguments(self):
         with pytest.raises(TypeError):
             generate_legacy_webfinger("diaspora")
+
+
+class TestDiasporaHCardGenerator(object):
+
+    def test_generate_valid_hcard(self):
+        with open("federation/hostmeta/templates/hcard_diaspora.html") as f:
+            template = f.read().replace("$", "")
+        hcard = generate_hcard(
+            "diaspora",
+            hostname="hostname",
+            fullname="fullname",
+            firstname="firstname",
+            lastname="lastname",
+            photo300="photo300",
+            photo100="photo100",
+            photo50="photo50",
+            searchable="searchable"
+        )
+        assert hcard == template
+
+    def test_generate_hcard_raises_on_missing_attribute(self):
+        with pytest.raises(AssertionError):
+            generate_hcard(
+                "diaspora",
+                hostname="hostname",
+                fullname="fullname",
+                firstname="firstname"
+            )
+
+    def test_generate_hcard_raises_on_unknown_attribute(self):
+        with pytest.raises(ValueError):
+            generate_hcard(
+                "diaspora",
+                hostname="hostname",
+                fullname="fullname",
+                firstname="firstname",
+                username="username"
+            )

@@ -1,4 +1,5 @@
 from base64 import b64encode
+from string import Template
 from xrd import XRD, Link, Element
 
 
@@ -30,10 +31,27 @@ def generate_legacy_webfinger(template=None, *args, **kwargs):
         str                         - XRD document
     """
     if template == "diaspora":
-        hostmeta = DiasporaWebFinger(*args, **kwargs)
+        webfinger = DiasporaWebFinger(*args, **kwargs)
     else:
-        hostmeta = BaseLegacyWebFinger(*args, **kwargs)
-    return hostmeta.render()
+        webfinger = BaseLegacyWebFinger(*args, **kwargs)
+    return webfinger.render()
+
+
+def generate_hcard(template=None, **kwargs):
+    """Generate a hCard document.
+
+    Args:
+        template (str, optional)    - Ready template to fill with args, for example "diaspora".
+        **kwargs                    - Template specific key-value pairs to fill in, see classes.
+
+    Returns:
+        str                         - HTML document
+    """
+    if template == "diaspora":
+        hcard = DiasporaHCard(**kwargs)
+    else:
+        raise NotImplementedError()
+    return hcard.render()
 
 
 class BaseHostMeta(object):
@@ -125,3 +143,28 @@ class DiasporaWebFinger(BaseLegacyWebFinger):
             type_="RSA",
             href=base64_key
         ))
+
+
+class DiasporaHCard(object):
+    """Diaspora hCard document.
+
+    Must receive the `required` attributes as keyword arguments to init.
+    """
+
+    required = [
+        "hostname", "fullname", "firstname", "lastname", "photo300", "photo100", "photo50", "searchable",
+    ]
+
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+        with open("federation/hostmeta/templates/hcard_diaspora.html") as f:
+            self.template = Template(f.read())
+
+    def render(self):
+        required = self.required[:]
+        for key, value in self.kwargs.items():
+            required.remove(key)
+            assert value is not None
+            assert isinstance(value, str)
+        assert len(required) == 0
+        return self.template.substitute(self.kwargs)
