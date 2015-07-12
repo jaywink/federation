@@ -1,4 +1,5 @@
 from base64 import b64encode
+import os
 from string import Template
 from xrd import XRD, Link, Element
 
@@ -157,7 +158,8 @@ class DiasporaHCard(object):
 
     def __init__(self, **kwargs):
         self.kwargs = kwargs
-        with open("federation/hostmeta/templates/hcard_diaspora.html") as f:
+        template_path = os.path.join(os.path.dirname(__file__), "templates", "hcard_diaspora.html")
+        with open(template_path) as f:
             self.template = Template(f.read())
 
     def render(self):
