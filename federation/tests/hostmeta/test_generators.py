@@ -1,7 +1,9 @@
+import json
+from jsonschema import validate, ValidationError
 import pytest
 
-from federation.hostmeta.generators import generate_host_meta, generate_legacy_webfinger, generate_hcard
-
+from federation.hostmeta.generators import generate_host_meta, generate_legacy_webfinger, generate_hcard, \
+    SocialRelayWellKnown
 
 DIASPORA_HOSTMETA = """<?xml version="1.0" encoding="UTF-8"?>
 <XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0">
@@ -87,3 +89,33 @@ class TestDiasporaHCardGenerator(object):
                 firstname="firstname",
                 username="username"
             )
+
+
+class TestSocialRelayWellKnownGenerator(object):
+
+    def test_valid_social_relay_well_known(self):
+        with open("federation/tests/schemas/social-relay-well-known") as f:
+            schema = json.load(f)
+        well_known = SocialRelayWellKnown(subscribe=True, tags=("foo", "bar"))
+        assert well_known.doc["subscribe"] == True
+        assert well_known.doc["tags"] == ["foo", "bar"]
+        validate(well_known.doc, schema)
+
+    def test_valid_social_relay_well_known_empty_tags(self):
+        with open("federation/tests/schemas/social-relay-well-known") as f:
+            schema = json.load(f)
+        well_known = SocialRelayWellKnown(subscribe=False)
+        assert well_known.doc["subscribe"] == False
+        assert well_known.doc["tags"] == []
+        validate(well_known.doc, schema)
+
+    def test_invalid_social_relay_well_known(self):
+        with open("federation/tests/schemas/social-relay-well-known") as f:
+            schema = json.load(f)
+        well_known_doc = {
+            "subscribe": "true",
+            "tags": "foo,bar",
+            "someotherstuff": True,
+        }
+        with pytest.raises(ValidationError):
+            validate(well_known_doc, schema)

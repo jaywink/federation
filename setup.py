@@ -19,6 +19,7 @@ setup(
         "python-xrd==0.1",
     ],
     test_require=[
+        "jsonschema==2.5.1",
         "pytest==2.7.2",
     ],
     include_package_data=True,

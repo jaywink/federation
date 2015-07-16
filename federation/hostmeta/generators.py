@@ -1,4 +1,5 @@
 from base64 import b64encode
+import json
 import os
 from string import Template
 from xrd import XRD, Link, Element
@@ -170,3 +171,48 @@ class DiasporaHCard(object):
             assert isinstance(value, str)
         assert len(required) == 0
         return self.template.substitute(self.kwargs)
+
+
+class SocialRelayWellKnown(object):
+    """A `.well-known/social-relay` document in JSON.
+
+    For apps wanting to announce their preferences towards relay applications.
+
+    See WIP spec: https://wiki.diasporafoundation.org/Relay_servers_for_public_posts
+
+    Schema:
+
+        {
+          "$schema": "http://json-schema.org/draft-04/schema#",
+          "id": "http://the-federation.info/social-relay/well-known-schema-v1.json",
+          "type": "object",
+          "properties": {
+            "subscribe": {
+              "type": "boolean"
+            },
+            "tags": {
+              "type": "array",
+              "items": {"type": "string"}
+            }
+          },
+          "required": [
+            "subscribe",
+            "tags"
+          ]
+        }
+
+    Args:
+        subscribe (bool)
+        tags (tuple, optional)
+
+    Returns:
+        JSON document (str)
+    """
+    def __init__(self, subscribe, tags=(), *args, **kwargs):
+        self.doc = {
+            "subscribe": subscribe,
+            "tags": list(tags),
+        }
+
+    def render(self):
+        return json.dumps(self.doc)
