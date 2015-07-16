@@ -94,7 +94,7 @@ class TestDiasporaHCardGenerator(object):
 class TestSocialRelayWellKnownGenerator(object):
 
     def test_valid_social_relay_well_known(self):
-        with open("federation/tests/schemas/social-relay-well-known") as f:
+        with open("federation/hostmeta/schemas/social-relay-well-known.json") as f:
             schema = json.load(f)
         well_known = SocialRelayWellKnown(subscribe=True, tags=("foo", "bar"), scope="tags")
         assert well_known.doc["subscribe"] == True
@@ -103,7 +103,7 @@ class TestSocialRelayWellKnownGenerator(object):
         validate(well_known.doc, schema)
 
     def test_valid_social_relay_well_known_empty_tags(self):
-        with open("federation/tests/schemas/social-relay-well-known") as f:
+        with open("federation/hostmeta/schemas/social-relay-well-known.json") as f:
             schema = json.load(f)
         well_known = SocialRelayWellKnown(subscribe=False)
         assert well_known.doc["subscribe"] == False
@@ -112,7 +112,7 @@ class TestSocialRelayWellKnownGenerator(object):
         validate(well_known.doc, schema)
 
     def test_invalid_social_relay_well_known(self):
-        with open("federation/tests/schemas/social-relay-well-known") as f:
+        with open("federation/hostmeta/schemas/social-relay-well-known.json") as f:
             schema = json.load(f)
         well_known_doc = {
             "subscribe": "true",
@@ -123,8 +123,17 @@ class TestSocialRelayWellKnownGenerator(object):
             validate(well_known_doc, schema)
 
     def test_invalid_social_relay_well_known_scope(self):
-        with open("federation/tests/schemas/social-relay-well-known") as f:
+        with open("federation/hostmeta/schemas/social-relay-well-known.json") as f:
             schema = json.load(f)
         well_known = SocialRelayWellKnown(subscribe=True, tags=("foo", "bar"), scope="cities")
         with pytest.raises(ValidationError):
             validate(well_known.doc, schema)
+
+    def test_render_validates_valid_document(self):
+        well_known = SocialRelayWellKnown(subscribe=True, tags=("foo", "bar"), scope="tags")
+        well_known.render()
+
+    def test_render_validates_invalid_document(self):
+        well_known = SocialRelayWellKnown(subscribe=True, tags=("foo", "bar"), scope="cities")
+        with pytest.raises(ValidationError):
+            well_known.render()

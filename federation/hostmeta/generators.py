@@ -2,6 +2,7 @@ from base64 import b64encode
 import json
 import os
 from string import Template
+from jsonschema import validate
 from xrd import XRD, Link, Element
 
 
@@ -180,7 +181,7 @@ class SocialRelayWellKnown(object):
 
     See WIP spec: https://wiki.diasporafoundation.org/Relay_servers_for_public_posts
 
-    Schema see `federation/tests/schemas/social-relay-well-known`
+    Schema see `schemas/social-relay-well-known.json`
 
     Args:
         subscribe (bool)
@@ -189,6 +190,9 @@ class SocialRelayWellKnown(object):
 
     Returns:
         JSON document (str)
+
+    Raises:
+        ValidationError on `render` if values don't conform to schema
     """
     def __init__(self, subscribe, tags=(), scope="all", *args, **kwargs):
         self.doc = {
@@ -198,4 +202,11 @@ class SocialRelayWellKnown(object):
         }
 
     def render(self):
+        self.validate_doc()
         return json.dumps(self.doc)
+
+    def validate_doc(self):
+        schema_path = os.path.join(os.path.dirname(__file__), "schemas", "social-relay-well-known.json")
+        with open(schema_path) as f:
+            schema = json.load(f)
+        validate(self.doc, schema)
