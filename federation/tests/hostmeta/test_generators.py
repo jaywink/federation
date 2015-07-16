@@ -96,9 +96,10 @@ class TestSocialRelayWellKnownGenerator(object):
     def test_valid_social_relay_well_known(self):
         with open("federation/tests/schemas/social-relay-well-known") as f:
             schema = json.load(f)
-        well_known = SocialRelayWellKnown(subscribe=True, tags=("foo", "bar"))
+        well_known = SocialRelayWellKnown(subscribe=True, tags=("foo", "bar"), scope="tags")
         assert well_known.doc["subscribe"] == True
         assert well_known.doc["tags"] == ["foo", "bar"]
+        assert well_known.doc["scope"] == "tags"
         validate(well_known.doc, schema)
 
     def test_valid_social_relay_well_known_empty_tags(self):
@@ -107,6 +108,7 @@ class TestSocialRelayWellKnownGenerator(object):
         well_known = SocialRelayWellKnown(subscribe=False)
         assert well_known.doc["subscribe"] == False
         assert well_known.doc["tags"] == []
+        assert well_known.doc["scope"] == "all"
         validate(well_known.doc, schema)
 
     def test_invalid_social_relay_well_known(self):
@@ -119,3 +121,10 @@ class TestSocialRelayWellKnownGenerator(object):
         }
         with pytest.raises(ValidationError):
             validate(well_known_doc, schema)
+
+    def test_invalid_social_relay_well_known_scope(self):
+        with open("federation/tests/schemas/social-relay-well-known") as f:
+            schema = json.load(f)
+        well_known = SocialRelayWellKnown(subscribe=True, tags=("foo", "bar"), scope="cities")
+        with pytest.raises(ValidationError):
+            validate(well_known.doc, schema)

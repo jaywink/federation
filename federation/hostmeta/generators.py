@@ -180,37 +180,20 @@ class SocialRelayWellKnown(object):
 
     See WIP spec: https://wiki.diasporafoundation.org/Relay_servers_for_public_posts
 
-    Schema:
-
-        {
-          "$schema": "http://json-schema.org/draft-04/schema#",
-          "id": "http://the-federation.info/social-relay/well-known-schema-v1.json",
-          "type": "object",
-          "properties": {
-            "subscribe": {
-              "type": "boolean"
-            },
-            "tags": {
-              "type": "array",
-              "items": {"type": "string"}
-            }
-          },
-          "required": [
-            "subscribe",
-            "tags"
-          ]
-        }
+    Schema see `federation/tests/schemas/social-relay-well-known`
 
     Args:
         subscribe (bool)
         tags (tuple, optional)
+        scope (str, optional)       - Should be either "all" or "tags", default is "all" if not given
 
     Returns:
         JSON document (str)
     """
-    def __init__(self, subscribe, tags=(), *args, **kwargs):
+    def __init__(self, subscribe, tags=(), scope="all", *args, **kwargs):
         self.doc = {
             "subscribe": subscribe,
+            "scope": scope,
             "tags": list(tags),
         }
 
