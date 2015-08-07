@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='Social-Federation',
-    version='0.1.0',
+    version='0.1.1',
     description='Python library for abstracting social federation protocols',
     author='Jason Robinson',
     author_email='mail@jasonrobinson.me',

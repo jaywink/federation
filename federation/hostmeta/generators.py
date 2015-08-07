@@ -140,7 +140,11 @@ class DiasporaWebFinger(BaseLegacyWebFinger):
         ))
         # Base64 the key
         # See https://wiki.diasporafoundation.org/Federation_Protocol_Overview#Diaspora_Public_Key
-        base64_key = b64encode(bytes(public_key, encoding="UTF-8")).decode("ascii")
+        try:
+            base64_key = b64encode(bytes(public_key, encoding="UTF-8")).decode("ascii")
+        except TypeError:
+            # Python 2
+            base64_key = b64encode(public_key).decode("ascii")
         self.xrd.links.append(Link(
             rel="diaspora-public-key",
             type_="RSA",
