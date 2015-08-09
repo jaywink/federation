@@ -19,8 +19,9 @@ setup(
         "python-dateutil==2.4.2",
         "python-xrd==0.1",
     ],
-    test_require=[
+    tests_require=[
         "pytest==2.7.2",
+        "factory_boy==2.5.2",
     ],
     include_package_data=True,
 )

@@ -68,6 +68,11 @@ class Post(GUIDMixin, HandleMixin, PublicMixin, CreatedAtMixin, BaseEntity):
         super(Post, self).__init__(*args, **kwargs)
         self._required += ["raw_content"]
 
+    @property
+    def tags(self):
+        """Returns a `set` of unique tags contained in `raw_content`."""
+        return set({word.strip("#") for word in self.raw_content.split() if word.startswith("#")})
+
 
 class Image(GUIDMixin, HandleMixin, PublicMixin, CreatedAtMixin, BaseEntity):
     """Reflects a single image, possibly linked to another object."""
