@@ -1,3 +1,4 @@
+[![Stories in Ready](https://badge.waffle.io/jaywink/social-federation.png?label=ready&title=Ready)](https://waffle.io/jaywink/social-federation)
 ## Social-Federation
 
 [![Code Health](https://landscape.io/github/jaywink/social-federation/master/landscape.svg?style=flat)](https://landscape.io/github/jaywink/social-federation/master)
