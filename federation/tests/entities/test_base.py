@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from federation.tests.factories.entities import TaggedPostFactory
 
 

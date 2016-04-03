@@ -1,0 +1,15 @@
+sudo: false
+language: python
+python:
+  - "3.4"
+  - "3.5"
+cache:
+  directories:
+    - $HOME/.cache/pip
+install:
+  - pip install -r test-requirements.txt
+  - python setup.py develop
+  - pip freeze
+script: py.test --cov=./
+after_success:
+  - codecov

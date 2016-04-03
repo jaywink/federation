@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from random import shuffle
 import factory
 from factory import fuzzy
