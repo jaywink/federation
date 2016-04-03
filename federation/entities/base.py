@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from datetime import datetime
 from dirty_validators.basic import Email
 
@@ -50,7 +51,7 @@ class PublicMixin(BaseEntity):
 
 
 class CreatedAtMixin(BaseEntity):
-    created_at = datetime.today()
+    created_at = datetime.now()
 
     def __init__(self, *args, **kwargs):
         super(CreatedAtMixin, self).__init__(*args, **kwargs)
