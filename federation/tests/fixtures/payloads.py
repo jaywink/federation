@@ -35,3 +35,16 @@ DIASPORA_POST_SIMPLE = """<XML>
       </post>
     </XML>
 """
+
+DIASPORA_POST_COMMENT = """<XML>
+      <post>
+        <comment>
+          <guid>((guid))</guid>
+          <parent_guid>((parent_guid))</parent_guid>
+          <author_signature>((base64-encoded data))</author_signature>
+          <text>((text))</text>
+          <diaspora_handle>alice@alice.diaspora.example.org</diaspora_handle>
+        </comment>
+      </post>
+    </XML>
+"""

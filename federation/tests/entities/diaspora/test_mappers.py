@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
 
-from federation.entities.base import Post
+from federation.entities.base import Post, Comment
 from federation.entities.diaspora.mappers import message_to_objects
-from federation.tests.fixtures.payloads import DIASPORA_POST_SIMPLE
+from federation.tests.fixtures.payloads import DIASPORA_POST_SIMPLE, DIASPORA_POST_COMMENT
 
 
 class TestDiasporaEntityMappersReceive(object):
@@ -18,3 +18,14 @@ class TestDiasporaEntityMappersReceive(object):
         assert post.handle == "alice@alice.diaspora.example.org"
         assert post.public == False
         assert post.created_at == datetime(2011, 7, 20, 1, 36, 7)
+
+    def test_message_to_objects_comment(self):
+        entities = message_to_objects(DIASPORA_POST_COMMENT)
+        assert len(entities) == 1
+        comment = entities[0]
+        assert isinstance(comment, Comment)
+        assert comment.target_guid == "((parent_guid))"
+        assert comment.guid == "((guid))"
+        assert comment.handle == "alice@alice.diaspora.example.org"
+        assert comment.participation == "comment"
+        assert comment.raw_content == "((text))"

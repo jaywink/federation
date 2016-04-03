@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from dateutil.tz import tzlocal, tzutc
 from lxml import etree
 
@@ -30,6 +31,7 @@ class EntityConverter(object):
                 etree.SubElement(node, k).text = v
 
     def convert_to_xml(self):
+        #TODO: move these to entities themselves as `to_xml` methods
         if hasattr(self, "%s_to_xml" % self.entity_type):
             method_name = "%s_to_xml" % self.entity_type
             return getattr(self, method_name)()
@@ -50,5 +52,16 @@ class EntityConverter(object):
             {'diaspora_handle': self.entity.handle},
             {'public': 'true' if self.entity.public else 'false'},
             {'created_at': self.format_dt(self.entity.created_at)}
+        ])
+        return req
+
+    def diasporacomment_to_xml(self):
+        req = etree.Element("comment")
+        self.struct_to_xml(req, [
+            {'guid': self.entity.guid},
+            {'parent_guid': self.entity.target_guid},
+            {'author_signature': self.entity.author_signature},
+            {'text': self.entity.raw_content},
+            {'diaspora_handle': self.entity.handle},
         ])
         return req

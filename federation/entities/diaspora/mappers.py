@@ -1,12 +1,15 @@
+# -*- coding: utf-8 -*-
 from datetime import datetime
+
 from lxml import etree
 
-from federation.entities.base import Post, Image
+from federation.entities.base import Post, Image, Comment
 
 
 MAPPINGS = {
     "status_message": Post,
     "photo": Image,
+    "comment": Comment,
 }
 
 BOOLEAN_KEYS = [
@@ -35,7 +38,8 @@ def message_to_objects(message):
         if cls:
             attrs = xml_children_as_dict(element)
             transformed = transform_attributes(cls, attrs)
-            entities.append(cls(**transformed))
+            entity = cls(**transformed)
+            entities.append(entity)
     return entities
 
 
@@ -43,10 +47,12 @@ def transform_attributes(cls, attrs):
     """Transform some attribute keys."""
     transformed = {}
     for key, value in attrs.items():
-        if key == "raw_message":
+        if key in ["raw_message", "text"]:
             transformed["raw_content"] = value
         elif key == "diaspora_handle":
             transformed["handle"] = value
+        elif key == "parent_guid":
+            transformed["target_guid"] = value
         elif key in BOOLEAN_KEYS:
             transformed[key] = True if value == "true" else False
         elif key in DATETIME_KEYS:

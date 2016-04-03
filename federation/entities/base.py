@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
-from datetime import datetime
+import datetime
+
 from dirty_validators.basic import Email
+
+
+__all__ = ("Post", "Image", "Comment")
 
 
 class BaseEntity(object):
@@ -62,28 +66,31 @@ class PublicMixin(BaseEntity):
 
 
 class CreatedAtMixin(BaseEntity):
-    created_at = datetime.now()
+    created_at = datetime.datetime.now()
 
     def __init__(self, *args, **kwargs):
         super(CreatedAtMixin, self).__init__(*args, **kwargs)
         self._required += ["created_at"]
 
 
-class Post(GUIDMixin, HandleMixin, PublicMixin, CreatedAtMixin, BaseEntity):
-    """Reflects a post, status message, etc, which will be composed from the message or to the message."""
+class RawContentMixin(BaseEntity):
     raw_content = ""
-    provider_display_name = ""
-    location = ""
-    photos = []
 
     def __init__(self, *args, **kwargs):
-        super(Post, self).__init__(*args, **kwargs)
+        super(RawContentMixin, self).__init__(*args, **kwargs)
         self._required += ["raw_content"]
 
     @property
     def tags(self):
         """Returns a `set` of unique tags contained in `raw_content`."""
         return set({word.strip("#") for word in self.raw_content.split() if word.startswith("#")})
+
+
+class Post(RawContentMixin, GUIDMixin, HandleMixin, PublicMixin, CreatedAtMixin, BaseEntity):
+    """Reflects a post, status message, etc, which will be composed from the message or to the message."""
+    provider_display_name = ""
+    location = ""
+    photos = []
 
 
 class Image(GUIDMixin, HandleMixin, PublicMixin, CreatedAtMixin, BaseEntity):
@@ -99,3 +106,23 @@ class Image(GUIDMixin, HandleMixin, PublicMixin, CreatedAtMixin, BaseEntity):
     def __init__(self, *args, **kwargs):
         super(Image, self).__init__(*args, **kwargs)
         self._required += ["remote_path", "remote_name"]
+
+
+class ParticipationMixin(BaseEntity):
+    """Reflects a participation to something."""
+    target_guid = ""
+    participation = ""
+
+    def __init__(self, *args, **kwargs):
+        super(ParticipationMixin, self).__init__(*args, **kwargs)
+        self._required += ["target_guid", "participation"]
+
+    def validate_participation(self):
+        """Ensure participation is of a certain type."""
+        if self.participation not in ["like", "subscription", "comment"]:
+            raise ValueError("participation should be one of: like, subscription, comment")
+
+
+class Comment(RawContentMixin, GUIDMixin, ParticipationMixin, CreatedAtMixin, HandleMixin):
+    """Represents a comment, linked to another object."""
+    participation = "comment"
