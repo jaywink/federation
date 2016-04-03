@@ -4,7 +4,7 @@ from Crypto.PublicKey import RSA
 import pytest
 
 from federation.controllers import handle_receive, handle_create_payload
-from federation.entities.base import Post
+from federation.entities.diaspora.entities import DiasporaPost
 from federation.exceptions import NoSuitableProtocolFoundError
 from federation.protocols.diaspora.protocol import Protocol
 from federation.tests.fixtures.payloads import UNENCRYPTED_DIASPORA_PAYLOAD
@@ -35,7 +35,7 @@ class TestHandleCreatePayloadBuildsAPayload(object):
     def test_handle_create_payload_builds_an_xml(self):
         from_user = Mock(private_key=RSA.generate(2048), handle="foobar@domain.tld")
         to_user = Mock(key=RSA.generate(2048).publickey())
-        entity = Post()
+        entity = DiasporaPost()
         data = handle_create_payload(from_user, to_user, entity)
         assert len(data) > 0
         parts = data.split("=")

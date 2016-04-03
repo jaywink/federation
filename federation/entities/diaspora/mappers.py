@@ -3,13 +3,14 @@ from datetime import datetime
 
 from lxml import etree
 
-from federation.entities.base import Post, Image, Comment
+from federation.entities.base import Image
+from federation.entities.diaspora.entities import DiasporaPost, DiasporaComment
 
 
 MAPPINGS = {
-    "status_message": Post,
+    "status_message": DiasporaPost,
     "photo": Image,
-    "comment": Comment,
+    "comment": DiasporaComment,
 }
 
 BOOLEAN_KEYS = [
