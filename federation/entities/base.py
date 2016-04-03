@@ -17,8 +17,19 @@ class BaseEntity(object):
         1) Loop through attributes and call their `validate_<attr>` methods, if any.
         2) Check `_required` contents and make sure all attrs in there have a value.
         """
-        # TBD
-        pass
+        attributes = []
+        for attr in dir(self):
+            if not attr.startswith("_"):
+                attr_type = type(getattr(self, attr))
+                if attr_type != "method":
+                    if getattr(self, "validate_{attr}".format(attr=attr), None):
+                        getattr(self, "validate_{attr}".format(attr=attr))()
+                    attributes.append(attr)
+        required_fulfilled = set(self._required).issubset(set(attributes))
+        if not required_fulfilled:
+            raise ValueError(
+                "Not all required attributes fulfilled. Required: {required}".format(required=self._required)
+            )
 
 
 class GUIDMixin(BaseEntity):
