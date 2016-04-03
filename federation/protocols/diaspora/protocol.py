@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from base64 import b64decode, urlsafe_b64decode, b64encode, urlsafe_b64encode
 from json import loads, dumps
 from urllib.parse import unquote_plus, quote_plus, urlencode

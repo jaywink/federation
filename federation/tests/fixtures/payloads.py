@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 ENCRYPTED_DIASPORA_PAYLOAD = """<?xml version='1.0'?>
             <diaspora xmlns="https://joindiaspora.com/protocol" xmlns:me="http://salmon-protocol.org/ns/magic-env">
                 <encrypted_header>{encrypted_header}</encrypted_header>

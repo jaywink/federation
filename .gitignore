@@ -1,5 +1,6 @@
 *.py[cod]
 __pycache__
+.cache
 
 database.sqlite
 
@@ -8,6 +9,7 @@ database.sqlite
 
 # Packages
 *.egg
+*.eggs
 *.egg-info
 dist
 build

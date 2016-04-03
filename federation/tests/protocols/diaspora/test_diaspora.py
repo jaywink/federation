@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from base64 import urlsafe_b64decode
 from lxml import etree
 import pytest
