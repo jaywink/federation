@@ -38,13 +38,13 @@ def message_to_objects(message):
         cls = MAPPINGS.get(element.tag, None)
         if cls:
             attrs = xml_children_as_dict(element)
-            transformed = transform_attributes(cls, attrs)
+            transformed = transform_attributes(attrs)
             entity = cls(**transformed)
             entities.append(entity)
     return entities
 
 
-def transform_attributes(cls, attrs):
+def transform_attributes(attrs):
     """Transform some attribute keys."""
     transformed = {}
     for key, value in attrs.items():
