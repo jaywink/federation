@@ -40,7 +40,7 @@ class GUIDMixin(BaseEntity):
     guid = ""
 
     def __init__(self, *args, **kwargs):
-        super(GUIDMixin, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._required += ["guid"]
 
     def validate_guid(self):
@@ -52,7 +52,7 @@ class HandleMixin(BaseEntity):
     handle = ""
 
     def __init__(self, *args, **kwargs):
-        super(HandleMixin, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._required += ["handle"]
 
     def validate_handle(self):
@@ -69,7 +69,7 @@ class CreatedAtMixin(BaseEntity):
     created_at = datetime.datetime.now()
 
     def __init__(self, *args, **kwargs):
-        super(CreatedAtMixin, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._required += ["created_at"]
 
 
@@ -77,7 +77,7 @@ class RawContentMixin(BaseEntity):
     raw_content = ""
 
     def __init__(self, *args, **kwargs):
-        super(RawContentMixin, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._required += ["raw_content"]
 
     @property
@@ -104,7 +104,7 @@ class Image(GUIDMixin, HandleMixin, PublicMixin, CreatedAtMixin, BaseEntity):
     width = 0
 
     def __init__(self, *args, **kwargs):
-        super(Image, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._required += ["remote_path", "remote_name"]
 
 
@@ -116,7 +116,7 @@ class ParticipationMixin(BaseEntity):
     _participation_valid_values = ["reaction", "subscription", "comment"]
 
     def __init__(self, *args, **kwargs):
-        super(ParticipationMixin, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._required += ["target_guid", "participation"]
 
     def validate_participation(self):
@@ -140,7 +140,7 @@ class Reaction(GUIDMixin, ParticipationMixin, CreatedAtMixin, HandleMixin):
     _reaction_valid_values = ["like"]
 
     def __init__(self, *args, **kwargs):
-        super(ParticipationMixin, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._required += ["reaction"]
 
     def validate_reaction(self):

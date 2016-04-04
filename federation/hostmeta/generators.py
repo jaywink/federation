@@ -72,7 +72,7 @@ class DiasporaHostMeta(BaseHostMeta):
         webfinger_host (str)
     """
     def __init__(self, *args, **kwargs):
-        super(DiasporaHostMeta, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         link = Link(
             rel='lrdd',
             type_='application/xrd+xml',
@@ -87,7 +87,7 @@ class BaseLegacyWebFinger(BaseHostMeta):
     See: https://code.google.com/p/webfinger/wiki/WebFingerProtocol
     """
     def __init__(self, address, *args, **kwargs):
-        super(BaseLegacyWebFinger, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         subject = Element("Subject", "acct:%s" % address)
         self.xrd.elements.append(subject)
 
@@ -102,7 +102,7 @@ class DiasporaWebFinger(BaseLegacyWebFinger):
         public_key (str)    - public key
     """
     def __init__(self, handle, host, guid, public_key, *args, **kwargs):
-        super(DiasporaWebFinger, self).__init__(handle, *args, **kwargs)
+        super().__init__(handle, *args, **kwargs)
         self.xrd.elements.append(Element("Alias", "%s/people/%s" % (
             host, guid
         )))
