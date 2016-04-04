@@ -113,16 +113,42 @@ class ParticipationMixin(BaseEntity):
     target_guid = ""
     participation = ""
 
+    _participation_valid_values = ["reaction", "subscription", "comment"]
+
     def __init__(self, *args, **kwargs):
         super(ParticipationMixin, self).__init__(*args, **kwargs)
         self._required += ["target_guid", "participation"]
 
     def validate_participation(self):
         """Ensure participation is of a certain type."""
-        if self.participation not in ["like", "subscription", "comment"]:
-            raise ValueError("participation should be one of: like, subscription, comment")
+        if self.participation not in self._participation_valid_values:
+            raise ValueError("participation should be one of: {valid}".format(
+                valid=", ".join(self._participation_valid_values)
+            ))
 
 
 class Comment(RawContentMixin, GUIDMixin, ParticipationMixin, CreatedAtMixin, HandleMixin):
     """Represents a comment, linked to another object."""
     participation = "comment"
+
+
+class Reaction(GUIDMixin, ParticipationMixin, CreatedAtMixin, HandleMixin):
+    """Represents a reaction to another object, for example a like."""
+    participation = "reaction"
+    reaction = ""
+
+    _reaction_valid_values = ["like"]
+
+    def __init__(self, *args, **kwargs):
+        super(ParticipationMixin, self).__init__(*args, **kwargs)
+        self._required += ["reaction"]
+
+    def validate_reaction(self):
+        """Ensure reaction is of a certain type.
+
+        Mainly for future expansion.
+        """
+        if self.reaction not in self._reaction_valid_values:
+            raise ValueError("reaction should be one of: {valid}".format(
+                valid=", ".join(self._reaction_valid_values)
+            ))

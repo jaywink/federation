@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 from lxml import etree
 
-from federation.entities.base import Comment, Post
+from federation.entities.base import Comment, Post, Reaction
 from federation.entities.diaspora.utils import format_dt, struct_to_xml
 
 
 class DiasporaComment(Comment):
-    """Diaspora comments additionally have an author_signature."""
+    """Diaspora comment."""
     author_signature = ""
 
     def to_xml(self):
@@ -32,5 +32,24 @@ class DiasporaPost(Post):
             {'diaspora_handle': self.handle},
             {'public': 'true' if self.public else 'false'},
             {'created_at': format_dt(self.created_at)}
+        ])
+        return element
+
+
+class DiasporaLike(Reaction):
+    """Diaspora like."""
+    author_signature = ""
+    reaction = "like"
+
+    def to_xml(self):
+        """Convert to XML message."""
+        element = etree.Element("like")
+        struct_to_xml(element, [
+            {"target_type": "Post"},
+            {'guid': self.guid},
+            {'parent_guid': self.target_guid},
+            {'author_signature': self.author_signature},
+            {"positive": "true"},
+            {'diaspora_handle': self.handle},
         ])
         return element

@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
 
-from federation.entities.base import Comment, Post
-from federation.entities.diaspora.entities import DiasporaPost, DiasporaComment
+from federation.entities.base import Comment, Post, Reaction
+from federation.entities.diaspora.entities import DiasporaPost, DiasporaComment, DiasporaLike
 from federation.entities.diaspora.mappers import message_to_objects
-from federation.tests.fixtures.payloads import DIASPORA_POST_SIMPLE, DIASPORA_POST_COMMENT
+from federation.tests.fixtures.payloads import DIASPORA_POST_SIMPLE, DIASPORA_POST_COMMENT, DIASPORA_POST_LIKE
 
 
 class TestDiasporaEntityMappersReceive(object):
@@ -32,3 +32,15 @@ class TestDiasporaEntityMappersReceive(object):
         assert comment.handle == "alice@alice.diaspora.example.org"
         assert comment.participation == "comment"
         assert comment.raw_content == "((text))"
+
+    def test_message_to_objects_like(self):
+        entities = message_to_objects(DIASPORA_POST_LIKE)
+        assert len(entities) == 1
+        like = entities[0]
+        assert isinstance(like, DiasporaLike)
+        assert isinstance(like, Reaction)
+        assert like.target_guid == "((parent_guid))"
+        assert like.guid == "((guid))"
+        assert like.handle == "alice@alice.diaspora.example.org"
+        assert like.participation == "reaction"
+        assert like.reaction == "like"
