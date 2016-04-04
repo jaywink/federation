@@ -10,7 +10,6 @@ from Crypto.Random import get_random_bytes
 from Crypto.Signature import PKCS1_v1_5 as PKCSSign
 from lxml import etree
 
-from federation.entities.diaspora.generators import EntityConverter
 from federation.exceptions import EncryptedMessageError, NoHeaderInMessageError, NoSenderKeyFoundError
 from federation.protocols.base import BaseProtocol
 
@@ -164,8 +163,7 @@ class Protocol(BaseProtocol):
 
     def build_send(self, from_user, to_user, entity, *args, **kwargs):
         """Build POST data for sending out to remotes."""
-        converter = EntityConverter(entity)
-        xml = converter.convert_to_xml()
+        xml = entity.to_xml()
         self.init_message(xml, from_user.handle, from_user.private_key)
         xml = quote_plus(
             self.create_salmon_envelope(to_user.key))
