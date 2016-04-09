@@ -1,4 +1,4 @@
-## [Unreleased]
+## [0.2.0] - 2016-04-09
 
 ### Backwards incompatible changes
 - Any implementations using the Diaspora protocol and `Post` entities must now use `DiasporaPost` instead. See "Changed" below.
