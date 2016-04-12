@@ -1,3 +1,8 @@
+## [unreleased]
+
+### Added
+- Support for generating [NodeInfo](http://nodeinfo.diaspora.software) documents using the generator `federation.hostmeta.generators.NodeInfo`. Strict validation is skipped by default, but can be enabled by passing in `raise_on_validate` to the `NodeInfo` class. By default a warning will be generated on documents that don't conform with the strict NodeInfo values. This can be disabled by passing in `skip_validate` to the class.
+
 ## [0.2.0] - 2016-04-09
 
 ### Backwards incompatible changes
