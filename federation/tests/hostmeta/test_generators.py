@@ -4,7 +4,7 @@ from jsonschema import validate, ValidationError
 import pytest
 
 from federation.hostmeta.generators import generate_host_meta, generate_legacy_webfinger, generate_hcard, \
-    SocialRelayWellKnown
+    SocialRelayWellKnown, NodeInfo
 
 DIASPORA_HOSTMETA = """<?xml version="1.0" encoding="UTF-8"?>
 <XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0">
@@ -138,3 +138,54 @@ class TestSocialRelayWellKnownGenerator(object):
         well_known = SocialRelayWellKnown(subscribe=True, tags=("foo", "bar"), scope="cities")
         with pytest.raises(ValidationError):
             well_known.render()
+
+
+class TestNodeInfoGenerator(object):
+    def _valid_nodeinfo(self, raise_on_validate=False):
+        return NodeInfo(
+            software={"name": "diaspora", "version": "0.5.4.3"},
+            protocols={"inbound": ["diaspora"], "outbound": ["diaspora"]},
+            services={"inbound": ["pumpio"], "outbound": ["twitter"]},
+            open_registrations=True,
+            usage={"users": {}},
+            metadata={},
+            raise_on_validate=raise_on_validate
+        )
+
+    def _invalid_nodeinfo(self, raise_on_validate=False):
+        return NodeInfo(
+            software={"name": "diaspora", "version": "0.5.4.3", "what_is_this_evil_key_here": True},
+            protocols={"inbound": ["diaspora"], "outbound": ["diaspora"]},
+            services={"inbound": ["pumpio"], "outbound": ["twitter"]},
+            open_registrations=True,
+            usage={"users": {}},
+            metadata={},
+            raise_on_validate=raise_on_validate
+        )
+
+    def test_nodeinfo_generator(self):
+        nodeinfo = self._valid_nodeinfo()
+        assert nodeinfo.doc["version"] == "1.0"
+        assert nodeinfo.doc["software"] == {"name": "diaspora", "version": "0.5.4.3"}
+        assert nodeinfo.doc["protocols"] == {"inbound": ["diaspora"], "outbound": ["diaspora"]}
+        assert nodeinfo.doc["services"] == {"inbound": ["pumpio"], "outbound": ["twitter"]}
+        assert nodeinfo.doc["openRegistrations"] == True
+        assert nodeinfo.doc["usage"] == {"users": {}}
+        assert nodeinfo.doc["metadata"] == {}
+
+    def test_nodeinfo_generator_raises_on_invalid_nodeinfo_and_raise_on_validate(self):
+        nodeinfo = self._invalid_nodeinfo(raise_on_validate=True)
+        with pytest.raises(ValidationError):
+            nodeinfo.render()
+
+    def test_nodeinfo_generator_does_not_raise_on_invalid_nodeinfo(self):
+        nodeinfo = self._invalid_nodeinfo()
+        nodeinfo.render()
+
+    def test_nodeinfo_generator_does_not_raise_on_valid_nodeinfo_and_raise_on_validate(self):
+        nodeinfo = self._valid_nodeinfo(raise_on_validate=True)
+        nodeinfo.render()
+
+    def test_nodeinfo_generator_render_returns_a_document(self):
+        nodeinfo = self._valid_nodeinfo()
+        assert isinstance(nodeinfo.render(), str)
