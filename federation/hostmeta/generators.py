@@ -262,3 +262,30 @@ class NodeInfo(object):
             if self.raise_on_validate:
                 raise
             warnings.warn("NodeInfo document generated does not validate against NodeInfo 1.0 specification.")
+
+
+# The default NodeInfo document path
+NODEINFO_DOCUMENT_PATH = "/nodeinfo/1.0"
+
+
+def get_nodeinfo_well_known_document(url, document_path=None):
+    """Generate a NodeInfo .well-known document.
+
+    See spec: http://nodeinfo.diaspora.software
+
+    Args:
+        url (str) - The full base url with protocol, ie https://example.com
+        document_path (str) - Custom NodeInfo document path if supplied
+
+    :rtype: dict
+    """
+    return {
+        "links": [
+            {
+                "rel": "http://nodeinfo.diaspora.software/ns/schema/1.0",
+                "href": "{url}{path}".format(
+                    url=url, path=document_path or NODEINFO_DOCUMENT_PATH
+                )
+            }
+        ]
+    }

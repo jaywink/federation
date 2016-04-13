@@ -1,3 +1,8 @@
+## [unreleased]
+
+### Added
+- Support for generating `.well-known/nodeinfo` document, which was forgotten from the 0.3.0 release. Method `federation.hostmeta.generators.get_nodeinfo_well_known_document` does this task. It requires an `url` which should be the full base url of the host. Optionally `document_path` can be specified, but it is optional and defaults to the one in the NodeInfo spec.
+
 ## [0.3.0] - 2016-04-13
 
 ### Added

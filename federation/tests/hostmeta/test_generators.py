@@ -4,7 +4,7 @@ from jsonschema import validate, ValidationError
 import pytest
 
 from federation.hostmeta.generators import generate_host_meta, generate_legacy_webfinger, generate_hcard, \
-    SocialRelayWellKnown, NodeInfo
+    SocialRelayWellKnown, NodeInfo, get_nodeinfo_well_known_document
 
 DIASPORA_HOSTMETA = """<?xml version="1.0" encoding="UTF-8"?>
 <XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0">
@@ -189,3 +189,8 @@ class TestNodeInfoGenerator(object):
     def test_nodeinfo_generator_render_returns_a_document(self):
         nodeinfo = self._valid_nodeinfo()
         assert isinstance(nodeinfo.render(), str)
+
+    def test_nodeinfo_wellknown_document(self):
+        wellknown = get_nodeinfo_well_known_document("https://example.com")
+        assert wellknown["links"][0]["rel"] == "http://nodeinfo.diaspora.software/ns/schema/1.0"
+        assert wellknown["links"][0]["href"] == "https://example.com/nodeinfo/1.0"
