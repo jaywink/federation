@@ -16,7 +16,7 @@ setup(
     maintainer_email='mail@jasonrobinson.me',
     url='https://github.com/jaywink/social-federation',
     download_url='https://github.com/jaywink/social-federation/releases',
-    packages=find_packages(exclude=["*.tests.*", "*.tests"]),
+    packages=find_packages(),
     license="BSD 3-clause",
     install_requires=[
         "dirty-validators==0.3.2",
