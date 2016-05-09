@@ -1,4 +1,4 @@
-## [unreleased]
+## [0.3.2] - 2016-05-09
 
 ### Changed
 - Test factories and other test files are now included in the package installation. Factories can be useful when creating project tests.

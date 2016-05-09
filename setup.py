@@ -7,7 +7,7 @@ description = 'Python library for abstracting social federation protocols'
 
 setup(
     name='Social-Federation',
-    version='0.3.1',
+    version='0.3.2',
     description=description,
     long_description=description,
     author='Jason Robinson',
