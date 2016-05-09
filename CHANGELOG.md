@@ -3,6 +3,9 @@
 ### Changed
 - Test factories and other test files are now included in the package installation. Factories can be useful when creating project tests.
 
+### Fixes
+- Don't raise on Post.tags if Post.raw_content is None
+
 ## [0.3.1] - 2016-04-13
 
 ### Added

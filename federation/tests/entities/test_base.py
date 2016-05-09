@@ -12,6 +12,10 @@ class TestPostEntityTags(object):
         post = TaggedPostFactory()
         assert post.tags == {"tagone", "tagtwo", "tagthree"}
 
+    def test_post_entity_without_raw_content_tags_returns_empty_set(self):
+        post = PostFactory(raw_content=None)
+        assert post.tags == set()
+
 
 class TestBaseEntityCallsValidateMethods(object):
     def test_entity_calls_attribute_validate_method(self):

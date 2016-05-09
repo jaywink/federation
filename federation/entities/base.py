@@ -83,6 +83,8 @@ class RawContentMixin(BaseEntity):
     @property
     def tags(self):
         """Returns a `set` of unique tags contained in `raw_content`."""
+        if not self.raw_content:
+            return set()
         return set({word.strip("#") for word in self.raw_content.split() if word.startswith("#")})
 
 
