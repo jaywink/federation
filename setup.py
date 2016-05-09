@@ -23,7 +23,7 @@ setup(
         "lxml>=3.4.4, <=3.6.0",
         "jsonschema==2.5.1",
         "pycrypto==2.6.1",
-        "python-dateutil==2.4.2",
+        "python-dateutil>=2.4.2, <=2.5.3",
         "python-xrd==0.1",
     ],
     include_package_data=True,
