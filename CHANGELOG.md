@@ -2,6 +2,8 @@
 
 ### Changed
 - Test factories and other test files are now included in the package installation. Factories can be useful when creating project tests.
+- Bump allowed `lxml` to 3.6.0
+- Bump allowed `python-dateutil` to 2.5.3
 
 ### Fixes
 - Don't raise on Post.tags if Post.raw_content is None
