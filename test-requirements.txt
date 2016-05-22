@@ -1,5 +1,5 @@
-pytest==2.9.1
-factory_boy==2.5.2
-codecov==1.6.3
-coverage<4.0a1
-pytest-cov==1.8.1
+pytest
+factory_boy
+codecov
+coverage
+pytest-cov
