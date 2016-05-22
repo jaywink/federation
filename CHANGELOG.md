@@ -1,3 +1,8 @@
+## [unreleased]
+
+## Changed
+- Unlock most of the direct dependencies to a certain version range. Unlock all of test requirements to any version.
+
 ## [0.3.2] - 2016-05-09
 
 ### Changed
