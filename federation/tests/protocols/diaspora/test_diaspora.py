@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 from base64 import urlsafe_b64decode
+from unittest.mock import Mock
+from xml.etree.ElementTree import ElementTree
+
 from lxml import etree
 import pytest
 
-from federation.exceptions import EncryptedMessageError, NoSenderKeyFoundError
+from federation.exceptions import EncryptedMessageError, NoSenderKeyFoundError, NoHeaderInMessageError
 from federation.protocols.diaspora.protocol import Protocol, identify_payload
 from federation.tests.fixtures.payloads import ENCRYPTED_DIASPORA_PAYLOAD, UNENCRYPTED_DIASPORA_PAYLOAD
 
@@ -24,8 +27,27 @@ def mock_not_found_get_contact_key(contact):
     return None
 
 
-class TestDiasporaProtocol(object):
+class DiasporaTestBase(object):
+    def init_protocol(self):
+        return Protocol()
 
+    def get_unencrypted_doc(self):
+        return etree.fromstring(UNENCRYPTED_DIASPORA_PAYLOAD)
+
+    def get_encrypted_doc(self):
+        return etree.fromstring(ENCRYPTED_DIASPORA_PAYLOAD)
+
+    def get_mock_user(self, nokey=False):
+        return MockUser(nokey)
+
+    def mock_parse_encrypted_header(self, text, key):
+        return "{encrypted_header}"
+
+    def mock_get_message_content(self):
+        return "<content />"
+
+
+class TestDiasporaProtocol(DiasporaTestBase):
     def test_find_unencrypted_header(self):
         protocol = self.init_protocol()
         protocol.doc = self.get_unencrypted_doc()
@@ -46,9 +68,22 @@ class TestDiasporaProtocol(object):
         protocol = self.init_protocol()
         user = self.get_mock_user()
         protocol.get_message_content = self.mock_get_message_content
-        sender, content = protocol.receive(UNENCRYPTED_DIASPORA_PAYLOAD, user, mock_get_contact_key)
+        sender, content = protocol.receive(UNENCRYPTED_DIASPORA_PAYLOAD, user, mock_get_contact_key,
+                                           skip_author_verification=True)
         assert sender == "bob@example.com"
         assert content == "<content />"
+
+    def test_receive_encrypted_returns_sender_and_content(self):
+        protocol = self.init_protocol()
+        user = self.get_mock_user()
+        protocol.get_message_content = Mock(
+            return_value="<content><diaspora_handle>bob@example.com</diaspora_handle></content>"
+        )
+        protocol.parse_header = Mock(return_value="foobar")
+        sender, content = protocol.receive(ENCRYPTED_DIASPORA_PAYLOAD, user, mock_get_contact_key,
+                                           skip_author_verification=True)
+        assert sender == "bob@example.com"
+        assert content == "<content><diaspora_handle>bob@example.com</diaspora_handle></content>"
 
     def test_receive_raises_on_encrypted_message_and_no_user(self):
         protocol = self.init_protocol()
@@ -67,12 +102,15 @@ class TestDiasporaProtocol(object):
         with pytest.raises(NoSenderKeyFoundError):
             protocol.receive(UNENCRYPTED_DIASPORA_PAYLOAD, user, mock_not_found_get_contact_key)
 
+    def test_find_header_raises_if_header_cannot_be_found(self):
+        protocol = self.init_protocol()
+        protocol.doc = etree.fromstring("<foo>bar</foo>")
+        with pytest.raises(NoHeaderInMessageError):
+            protocol.find_header()
+
     def test_get_message_content(self):
         protocol = self.init_protocol()
         protocol.doc = self.get_unencrypted_doc()
-        protocol.verify_signature = self.mock_verify_signature
-        protocol.skip_author_verification = False
-        protocol.sender_key = "foobar"
         protocol.encrypted = False
         body = protocol.get_message_content()
         assert body == urlsafe_b64decode("{data}".encode("ascii"))
@@ -83,25 +121,22 @@ class TestDiasporaProtocol(object):
     def test_identify_payload_with_other_payload(self):
         assert identify_payload("foobar not a diaspora protocol") == False
 
-    def init_protocol(self):
-        return Protocol()
+    def test_get_sender_returns_sender_in_header(self):
+        protocol = self.init_protocol()
+        protocol.doc = self.get_unencrypted_doc()
+        protocol.find_header()
+        assert protocol.get_sender() == "bob@example.com"
 
-    def get_unencrypted_doc(self):
-        return etree.fromstring(UNENCRYPTED_DIASPORA_PAYLOAD)
+    def test_get_sender_returns_sender_in_content(self):
+        protocol = self.init_protocol()
+        protocol.header = ElementTree()
+        protocol.content = "<content><diaspora_handle>bob@example.com</diaspora_handle></content>"
+        assert protocol.get_sender() == "bob@example.com"
+        protocol.content = "<content><sender_handle>bob@example.com</sender_handle></content>"
+        assert protocol.get_sender() == "bob@example.com"
 
-    def get_encrypted_doc(self):
-        return etree.fromstring(ENCRYPTED_DIASPORA_PAYLOAD)
-
-    def get_mock_user(self, nokey=False):
-        return MockUser(nokey)
-
-    def mock_parse_encrypted_header(self, text, key):
-        if text and key:
-            return "{encrypted_header}"
-        return None
-
-    def mock_get_message_content(self):
-        return "<content />"
-
-    def mock_verify_signature(self, contact, payload, sig):
-        return True
+    def test_get_sender_returns_none_if_no_sender_found(self):
+        protocol = self.init_protocol()
+        protocol.header = ElementTree()
+        protocol.content = "<content><handle>bob@example.com</handle></content>"
+        assert protocol.get_sender() == None
