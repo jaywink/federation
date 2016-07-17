@@ -3,6 +3,9 @@
 ## Changed
 - Unlock most of the direct dependencies to a certain version range. Unlock all of test requirements to any version.
 
+### Fixes
+- Fix fetching sender handle from Diaspora protocol private messages. As it is not contained in the header, it needs to be read from the message content itself.
+
 ## [0.3.2] - 2016-05-09
 
 ### Changed

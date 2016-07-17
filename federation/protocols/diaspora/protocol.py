@@ -38,78 +38,97 @@ class Protocol(BaseProtocol):
         For testing purposes, `skip_author_verification` can be passed. Authorship will not be verified."""
         self.user = user
         self.get_contact_key = sender_key_fetcher
+        # Prepare payload
         xml = unquote_plus(payload)
         xml = xml.lstrip().encode("utf-8")
         self.doc = etree.fromstring(xml)
         self.find_header()
-        sender = self.get_sender()
-        self.skip_author_verification = skip_author_verification
-        if not self.skip_author_verification:
-            self.sender_key = self.get_contact_key(sender)
-            if not self.sender_key:
-                raise NoSenderKeyFoundError("Could not find a sender contact to retrieve key")
-        content = self.get_message_content()
-        return sender, content
+        # Open payload and get actual message
+        self.content = self.get_message_content()
+        # Get sender handle
+        self.sender_handle = self.get_sender()
+        # Verify the message is from who it claims to be
+        if not skip_author_verification:
+            self.verify_signature()
+        return self.sender_handle, self.content
 
     def find_header(self):
         self.header = self.doc.find(".//{"+PROTOCOL_NS+"}header")
-        if self.header:
+        if self.header != None:
             self.encrypted = False
-        else:
-            if not self.user:
-                raise EncryptedMessageError("Cannot decrypt private message without user object")
-            if not hasattr(self.user, "key") or not self.user.key:
-                raise EncryptedMessageError("Cannot decrypt private message without user key")
-            self.encrypted = True
-            self.header = self.parse_header(
-                self.doc.find(".//{"+PROTOCOL_NS+"}encrypted_header").text,
-                self.user.key
-            )
-        if not self.header:
+            return
+        if self.doc.find(".//{" + PROTOCOL_NS + "}encrypted_header") == None:
             raise NoHeaderInMessageError("Could not find header in message")
+        if not self.user:
+            raise EncryptedMessageError("Cannot decrypt private message without user object")
+        if not hasattr(self.user, "key") or not self.user.key:
+            raise EncryptedMessageError("Cannot decrypt private message without user key")
+        self.encrypted = True
+        self.header = self.parse_header(
+            self.doc.find(".//{"+PROTOCOL_NS+"}encrypted_header").text,
+            self.user.key
+        )
 
     def get_sender(self):
-        return self.header.find(".//{"+PROTOCOL_NS+"}author_id").text
+        try:
+            return self.header.find(".//{"+PROTOCOL_NS+"}author_id").text
+        except AttributeError:
+            # Look at the message, try various elements
+            message = etree.fromstring(self.content)
+            element = message.find(".//sender_handle")
+            if element is None:
+                element = message.find(".//diaspora_handle")
+            if element is None:
+                return None
+            return element.text
 
     def get_message_content(self):
         """
-        Given the Slap XML, extract out the author and payload.
+        Given the Slap XML, extract out the payload.
         """
         body = self.doc.find(
             ".//{http://salmon-protocol.org/ns/magic-env}data").text
-        sig = self.doc.find(
-            ".//{http://salmon-protocol.org/ns/magic-env}sig").text
-
-        if not self.skip_author_verification:
-            self.verify_signature(self.sender_key, body, sig.encode('ascii'))
 
         if self.encrypted:
-            inner_iv = b64decode(self.header.find(".//iv").text.encode("ascii"))
-            inner_key = b64decode(
-                self.header.find(".//aes_key").text.encode("ascii"))
-
-            decrypter = AES.new(inner_key, AES.MODE_CBC, inner_iv)
-            body = b64decode(urlsafe_b64decode(body.encode("ascii")))
-            body = decrypter.decrypt(body)
-            body = self.pkcs7_unpad(body)
+            body = self._get_encrypted_body(body)
         else:
             body = urlsafe_b64decode(body.encode("ascii"))
 
         return body
 
-    def verify_signature(self, contact, payload, sig):
+    def _get_encrypted_body(self, body):
+        """
+        Decrypt the body of the payload.
+        """
+        inner_iv = b64decode(self.header.find(".//iv").text.encode("ascii"))
+        inner_key = b64decode(
+            self.header.find(".//aes_key").text.encode("ascii"))
+        decrypter = AES.new(inner_key, AES.MODE_CBC, inner_iv)
+        body = b64decode(urlsafe_b64decode(body.encode("ascii")))
+        body = decrypter.decrypt(body)
+        body = self.pkcs7_unpad(body)
+        return body
+
+    def verify_signature(self):
         """
         Verify the signed XML elements to have confidence that the claimed
         author did actually generate this message.
         """
+        sender_key = self.get_contact_key(self.sender_handle)
+        if not sender_key:
+            raise NoSenderKeyFoundError("Could not find a sender contact to retrieve key")
+        body = self.doc.find(
+            ".//{http://salmon-protocol.org/ns/magic-env}data").text
+        sig = self.doc.find(
+            ".//{http://salmon-protocol.org/ns/magic-env}sig").text
         sig_contents = '.'.join([
-            payload,
+            body,
             b64encode(b"application/xml").decode("ascii"),
             b64encode(b"base64url").decode("ascii"),
             b64encode(b"RSA-SHA256").decode("ascii")
         ])
         sig_hash = SHA256.new(sig_contents.encode("ascii"))
-        cipher = PKCSSign.new(RSA.importKey(contact.public_key))
+        cipher = PKCSSign.new(RSA.importKey(sender_key))
         assert(cipher.verify(sig_hash, urlsafe_b64decode(sig)))
 
     def parse_header(self, b64data, key):
