@@ -5,6 +5,7 @@
 
 ## Changed
 - Unlock most of the direct dependencies to a certain version range. Unlock all of test requirements to any version.
+- Entities passed to `federation.controllers.handle_create_payload` are now converted from the base entity types (Post, Comment, Reaction, etc) to Diaspora entity types (DiasporaPost, DiasporaComment, DiasporaLike, etc). This ensures actual payload generation has the correct methods available (for example `to_xml`) whatever entity is passed in.
 
 ### Fixes
 - Fix fetching sender handle from Diaspora protocol private messages. As it is not contained in the header, it needs to be read from the message content itself.
