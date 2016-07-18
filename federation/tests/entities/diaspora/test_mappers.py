@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
 
-from federation.entities.base import Comment, Post, Reaction
-from federation.entities.diaspora.entities import DiasporaPost, DiasporaComment, DiasporaLike
+from federation.entities.base import Comment, Post, Reaction, Relationship
+from federation.entities.diaspora.entities import DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest
 from federation.entities.diaspora.mappers import message_to_objects
-from federation.tests.fixtures.payloads import DIASPORA_POST_SIMPLE, DIASPORA_POST_COMMENT, DIASPORA_POST_LIKE
+from federation.tests.fixtures.payloads import DIASPORA_POST_SIMPLE, DIASPORA_POST_COMMENT, DIASPORA_POST_LIKE, \
+    DIASPORA_REQUEST
 
 
 class TestDiasporaEntityMappersReceive(object):
@@ -44,3 +45,19 @@ class TestDiasporaEntityMappersReceive(object):
         assert like.handle == "alice@alice.diaspora.example.org"
         assert like.participation == "reaction"
         assert like.reaction == "like"
+
+    def test_message_to_objects_request(self):
+        entities = message_to_objects(DIASPORA_REQUEST)
+        assert len(entities) == 2
+        sharing = entities[0]
+        assert isinstance(sharing, DiasporaRequest)
+        assert isinstance(sharing, Relationship)
+        following = entities[1]
+        assert not isinstance(following, DiasporaRequest)
+        assert isinstance(following, Relationship)
+        assert sharing.handle == "bob@example.com"
+        assert following.handle == "bob@example.com"
+        assert sharing.target_handle == "alice@alice.diaspora.example.org"
+        assert following.target_handle == "alice@alice.diaspora.example.org"
+        assert sharing.relationship == "sharing"
+        assert following.relationship == "following"

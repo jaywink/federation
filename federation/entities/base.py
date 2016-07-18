@@ -154,3 +154,27 @@ class Reaction(GUIDMixin, ParticipationMixin, CreatedAtMixin, HandleMixin):
             raise ValueError("reaction should be one of: {valid}".format(
                 valid=", ".join(self._reaction_valid_values)
             ))
+
+
+class Relationship(CreatedAtMixin, HandleMixin):
+    """Represents a """
+    target_handle = ""
+    relationship = ""
+
+    _relationship_valid_values = ["sharing", "following", "ignoring", "blocking"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._required += ["relationship", "target_handle"]
+
+    def validate_target_handle(self):
+        validator = Email()
+        if not validator.is_valid(self.target_handle):
+            raise ValueError("Target handle is not valid")
+
+    def validate_relationship(self):
+        """Ensure relationship is of a certain type."""
+        if self.relationship not in self._relationship_valid_values:
+            raise ValueError("relationship should be one of: {valid}".format(
+                valid=", ".join(self._relationship_valid_values)
+            ))
