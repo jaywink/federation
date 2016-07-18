@@ -1,5 +1,8 @@
 ## [unreleased]
 
+## Added
+- Relationship base entity which represents relationships between two handles. Types can be following, sharing, ignoring and blocking. The Diaspora counterpart, DiasporaRequest, which represents a sharing/following request is outwards a single entity, but incoming a double entity, handled by creating both a sharing and following version of  the relationship.
+
 ## Changed
 - Unlock most of the direct dependencies to a certain version range. Unlock all of test requirements to any version.
 

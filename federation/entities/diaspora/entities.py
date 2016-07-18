@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from lxml import etree
 
-from federation.entities.base import Comment, Post, Reaction
+from federation.entities.base import Comment, Post, Reaction, Relationship
 from federation.entities.diaspora.utils import format_dt, struct_to_xml
 
 
@@ -51,5 +51,19 @@ class DiasporaLike(Reaction):
             {'author_signature': self.author_signature},
             {"positive": "true"},
             {'diaspora_handle': self.handle},
+        ])
+        return element
+
+
+class DiasporaRequest(Relationship):
+    """Diaspora relationship request."""
+    relationship = "sharing"
+
+    def to_xml(self):
+        """Convert to XML message."""
+        element = etree.Element("request")
+        struct_to_xml(element, [
+            {"sender_handle": self.handle},
+            {"recipient_handle": self.target_handle},
         ])
         return element
