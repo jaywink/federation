@@ -67,3 +67,13 @@ DIASPORA_POST_LIKE = """<XML>
       </post>
     </XML>
 """
+
+DIASPORA_REQUEST = """<XML>
+      <post>
+        <request>
+          <sender_handle>bob@example.com</sender_handle>
+          <recipient_handle>alice@alice.diaspora.example.org</recipient_handle>
+        </request>
+      </post>
+    </XML>
+"""

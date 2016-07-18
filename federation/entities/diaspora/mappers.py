@@ -3,14 +3,15 @@ from datetime import datetime
 
 from lxml import etree
 
-from federation.entities.base import Image
-from federation.entities.diaspora.entities import DiasporaPost, DiasporaComment, DiasporaLike
+from federation.entities.base import Image, Relationship
+from federation.entities.diaspora.entities import DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest
 
 MAPPINGS = {
     "status_message": DiasporaPost,
     "photo": Image,
     "comment": DiasporaComment,
     "like": DiasporaLike,
+    "request": DiasporaRequest,
 }
 
 BOOLEAN_KEYS = [
@@ -41,6 +42,11 @@ def message_to_objects(message):
             transformed = transform_attributes(attrs)
             entity = cls(**transformed)
             entities.append(entity)
+            if cls == DiasporaRequest:
+                # We support sharing/following separately, so also generate base Relationship for the following part
+                transformed.update({"relationship": "following"})
+                entity = Relationship(**transformed)
+                entities.append(entity)
     return entities
 
 
@@ -50,8 +56,10 @@ def transform_attributes(attrs):
     for key, value in attrs.items():
         if key in ["raw_message", "text"]:
             transformed["raw_content"] = value
-        elif key == "diaspora_handle":
+        elif key in ["diaspora_handle", "sender_handle"]:
             transformed["handle"] = value
+        elif key == "recipient_handle":
+            transformed["target_handle"] = value
         elif key == "parent_guid":
             transformed["target_guid"] = value
         elif key in BOOLEAN_KEYS:
