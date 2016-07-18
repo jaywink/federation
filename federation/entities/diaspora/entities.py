@@ -2,10 +2,16 @@
 from lxml import etree
 
 from federation.entities.base import Comment, Post, Reaction, Relationship
-from federation.entities.diaspora.utils import format_dt, struct_to_xml
+from federation.entities.diaspora.utils import format_dt, struct_to_xml, get_base_attributes
 
 
-class DiasporaComment(Comment):
+class DiasporaEntityMixin(object):
+    @classmethod
+    def from_base(cls, entity):
+        return cls(**get_base_attributes(entity))
+
+
+class DiasporaComment(DiasporaEntityMixin, Comment):
     """Diaspora comment."""
     author_signature = ""
 
@@ -21,7 +27,7 @@ class DiasporaComment(Comment):
         return element
 
 
-class DiasporaPost(Post):
+class DiasporaPost(DiasporaEntityMixin, Post):
     """Diaspora post, ie status message."""
     def to_xml(self):
         """Convert to XML message."""
@@ -36,7 +42,7 @@ class DiasporaPost(Post):
         return element
 
 
-class DiasporaLike(Reaction):
+class DiasporaLike(DiasporaEntityMixin, Reaction):
     """Diaspora like."""
     author_signature = ""
     reaction = "like"
@@ -55,7 +61,7 @@ class DiasporaLike(Reaction):
         return element
 
 
-class DiasporaRequest(Relationship):
+class DiasporaRequest(DiasporaEntityMixin, Relationship):
     """Diaspora relationship request."""
     relationship = "sharing"
 

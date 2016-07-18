@@ -1,5 +1,6 @@
 import importlib
 
+from federation.entities.diaspora.mappers import get_outbound_entity
 from federation.exceptions import NoSuitableProtocolFoundError
 from federation.protocols.diaspora.protocol import Protocol
 
@@ -51,6 +52,8 @@ def handle_create_payload(from_user, to_user, entity):
     `from_user` must have `private_key` and `handle` attributes.
     `to_user` must have `key` attribute.
     """
+    # Just use Diaspora protocol for now
     protocol = Protocol()
-    data = protocol.build_send(from_user=from_user, to_user=to_user, entity=entity)
+    outbound_entity = get_outbound_entity(entity)
+    data = protocol.build_send(from_user=from_user, to_user=to_user, entity=outbound_entity)
     return data

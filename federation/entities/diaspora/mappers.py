@@ -3,7 +3,7 @@ from datetime import datetime
 
 from lxml import etree
 
-from federation.entities.base import Image, Relationship
+from federation.entities.base import Image, Relationship, Post, Reaction, Comment
 from federation.entities.diaspora.entities import DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest
 
 MAPPINGS = {
@@ -69,3 +69,33 @@ def transform_attributes(attrs):
         else:
             transformed[key] = value
     return transformed
+
+
+def get_outbound_entity(entity):
+    """Get the correct outbound entity for this protocol.
+
+    We might have to look at entity values to decide the correct outbound entity.
+    If we cannot find one, we should raise as conversion cannot be guaranteed to the given protocol.
+
+    Args:
+        entity - any of the base entity types from federation.entities.base
+
+    Returns:
+        An instance of the correct protocol specific entity.
+    """
+    cls = entity.__class__
+    if cls in [DiasporaPost, DiasporaRequest, DiasporaComment, DiasporaLike]:
+        # Already fine
+        return entity
+    elif cls == Post:
+        return DiasporaPost.from_base(entity)
+    elif cls == Comment:
+        return DiasporaComment.from_base(entity)
+    elif cls == Reaction:
+        if entity.reaction == "like":
+            return DiasporaLike.from_base(entity)
+    elif cls == Relationship:
+        if entity.relationship in ["sharing", "following"]:
+            # Unfortunately we must send out in both cases since in Diaspora they are the same thing
+            return DiasporaRequest.from_base(entity)
+    raise ValueError("Don't know how to convert this base entity to Diaspora protocol entities.")
