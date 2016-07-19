@@ -77,3 +77,23 @@ DIASPORA_REQUEST = """<XML>
       </post>
     </XML>
 """
+
+DIASPORA_PROFILE = """<XML>
+    <post>
+        <profile>
+            <diaspora_handle>bob@example.com</diaspora_handle>
+            <first_name>Bob Bobertson</first_name>
+            <last_name></last_name>
+            <image_url>https://example.com/uploads/images/thumb_large_c833747578b5.jpg</image_url>
+            <image_url_small>https://example.com/uploads/images/thumb_small_c8b147578b5.jpg</image_url_small>
+            <image_url_medium>https://example.com/uploads/images/thumb_medium_c8b1aab04f3.jpg</image_url_medium>
+            <gender></gender>
+            <bio>A cool bio</bio>
+            <location>Helsinki</location>
+            <searchable>true</searchable>
+            <nsfw>false</nsfw>
+            <tag_string>#socialfederation #federation</tag_string>
+        </profile>
+    </post>
+</XML>
+"""

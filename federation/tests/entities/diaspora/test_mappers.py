@@ -3,11 +3,12 @@ from datetime import datetime
 
 import pytest
 
-from federation.entities.base import Comment, Post, Reaction, Relationship
-from federation.entities.diaspora.entities import DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest
+from federation.entities.base import Comment, Post, Reaction, Relationship, Profile
+from federation.entities.diaspora.entities import DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest, \
+    DiasporaProfile
 from federation.entities.diaspora.mappers import message_to_objects, get_outbound_entity
 from federation.tests.fixtures.payloads import DIASPORA_POST_SIMPLE, DIASPORA_POST_COMMENT, DIASPORA_POST_LIKE, \
-    DIASPORA_REQUEST
+    DIASPORA_REQUEST, DIASPORA_PROFILE
 
 
 class TestDiasporaEntityMappersReceive(object):
@@ -63,6 +64,24 @@ class TestDiasporaEntityMappersReceive(object):
         assert sharing.relationship == "sharing"
         assert following.relationship == "following"
 
+    def test_message_to_objects_profile(self):
+        entities = message_to_objects(DIASPORA_PROFILE)
+        assert len(entities) == 1
+        profile = entities[0]
+        assert profile.handle == "bob@example.com"
+        assert profile.name == "Bob Bobertson"
+        assert profile.image_urls == {
+            "large": "https://example.com/uploads/images/thumb_large_c833747578b5.jpg",
+            "medium": "https://example.com/uploads/images/thumb_medium_c8b1aab04f3.jpg",
+            "small": "https://example.com/uploads/images/thumb_small_c8b147578b5.jpg",
+        }
+        assert profile.gender == ""
+        assert profile.raw_content == "A cool bio"
+        assert profile.location == "Helsinki"
+        assert profile.public == True
+        assert profile.nsfw == False
+        assert profile.tag_list == ["socialfederation", "federation"]
+
 
 class TestGetOutboundEntity(object):
     def test_already_fine_entities_are_returned_as_is(self):
@@ -73,6 +92,8 @@ class TestGetOutboundEntity(object):
         entity = DiasporaComment()
         assert get_outbound_entity(entity) == entity
         entity = DiasporaRequest()
+        assert get_outbound_entity(entity) == entity
+        entity = DiasporaProfile()
         assert get_outbound_entity(entity) == entity
 
     def test_post_is_converted_to_diasporapost(self):
@@ -92,6 +113,10 @@ class TestGetOutboundEntity(object):
         assert isinstance(get_outbound_entity(entity), DiasporaRequest)
         entity = Relationship(relationship="following")
         assert isinstance(get_outbound_entity(entity), DiasporaRequest)
+
+    def test_profile_is_converted_to_diasporaprofile(self):
+        entity = Profile()
+        assert isinstance(get_outbound_entity(entity), DiasporaProfile)
 
     def test_other_reaction_raises(self):
         entity = Reaction(reaction="foo")
