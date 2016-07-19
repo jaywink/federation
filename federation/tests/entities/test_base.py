@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from federation.entities.base import BaseEntity, Relationship
+from federation.entities.base import BaseEntity, Relationship, Profile
 from federation.tests.factories.entities import TaggedPostFactory, PostFactory
 
 
@@ -47,3 +47,18 @@ class TestRelationshipEntity(object):
         with pytest.raises(ValueError):
             entity = Relationship(handle="bob@example.com", target_handle="fefle.com", relationship="following")
             entity.validate()
+
+
+class TestProfileEntity(object):
+    def test_instance_creation(self):
+        entity = Profile(handle="bob@example.com", raw_content="foobar")
+        assert entity
+
+    def test_instance_creation_validates_email_value(self):
+        with pytest.raises(ValueError):
+            entity = Profile(handle="bob@example.com", raw_content="foobar", email="foobar")
+            entity.validate()
+
+    def test_guid_is_not_mandatory(self):
+        entity = Profile(handle="bob@example.com", raw_content="foobar")
+        entity.validate()

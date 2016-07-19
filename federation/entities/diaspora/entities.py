@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from lxml import etree
 
-from federation.entities.base import Comment, Post, Reaction, Relationship
+from federation.entities.base import Comment, Post, Reaction, Relationship, Profile
 from federation.entities.diaspora.utils import format_dt, struct_to_xml, get_base_attributes
 
 
@@ -71,5 +71,28 @@ class DiasporaRequest(DiasporaEntityMixin, Relationship):
         struct_to_xml(element, [
             {"sender_handle": self.handle},
             {"recipient_handle": self.target_handle},
+        ])
+        return element
+
+
+class DiasporaProfile(DiasporaEntityMixin, Profile):
+    """Diaspora profile."""
+
+    def to_xml(self):
+        """Convert to XML message."""
+        element = etree.Element("profile")
+        struct_to_xml(element, [
+            {"diaspora_handle": self.handle},
+            {"first_name": self.name},
+            {"last_name": ""},  # Not used in Diaspora modern profiles
+            {"image_url": self.image_urls["large"]},
+            {"image_url_small": self.image_urls["small"]},
+            {"image_url_medium": self.image_urls["medium"]},
+            {"gender": self.gender},
+            {"bio": self.raw_content},
+            {"location": self.location},
+            {"searchable": "true" if self.public else "false"},
+            {"nsfw": "true" if self.nsfw else "false"},
+            {"tag_string": " ".join(["#%s" % tag for tag in self.tag_list])},
         ])
         return element

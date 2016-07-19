@@ -3,8 +3,9 @@ from datetime import datetime
 
 from lxml import etree
 
-from federation.entities.base import Image, Relationship, Post, Reaction, Comment
-from federation.entities.diaspora.entities import DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest
+from federation.entities.base import Image, Relationship, Post, Reaction, Comment, Profile
+from federation.entities.diaspora.entities import DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest, \
+    DiasporaProfile
 
 MAPPINGS = {
     "status_message": DiasporaPost,
@@ -12,10 +13,12 @@ MAPPINGS = {
     "comment": DiasporaComment,
     "like": DiasporaLike,
     "request": DiasporaRequest,
+    "profile": DiasporaProfile,
 }
 
 BOOLEAN_KEYS = [
     "public",
+    "nsfw",
 ]
 
 DATETIME_KEYS = [
@@ -62,12 +65,32 @@ def transform_attributes(attrs):
             transformed["target_handle"] = value
         elif key == "parent_guid":
             transformed["target_guid"] = value
+        elif key == "first_name":
+            transformed["name"] = value
+        elif key == "image_url":
+            if "image_urls" not in transformed:
+                transformed["image_urls"] = {}
+            transformed["image_urls"]["large"] = value
+        elif key == "image_url_small":
+            if "image_urls" not in transformed:
+                transformed["image_urls"] = {}
+            transformed["image_urls"]["small"] = value
+        elif key == "image_url_medium":
+            if "image_urls" not in transformed:
+                transformed["image_urls"] = {}
+            transformed["image_urls"]["medium"] = value
+        elif key == "tag_string":
+            transformed["tag_list"] = value.replace("#", "").split(" ")
+        elif key == "bio":
+            transformed["raw_content"] = value
+        elif key == "searchable":
+            transformed["public"] = True if value == "true" else False
         elif key in BOOLEAN_KEYS:
             transformed[key] = True if value == "true" else False
         elif key in DATETIME_KEYS:
             transformed[key] = datetime.strptime(value, "%Y-%m-%d %H:%M:%S %Z")
         else:
-            transformed[key] = value
+            transformed[key] = value or ""
     return transformed
 
 
@@ -84,7 +107,7 @@ def get_outbound_entity(entity):
         An instance of the correct protocol specific entity.
     """
     cls = entity.__class__
-    if cls in [DiasporaPost, DiasporaRequest, DiasporaComment, DiasporaLike]:
+    if cls in [DiasporaPost, DiasporaRequest, DiasporaComment, DiasporaLike, DiasporaProfile]:
         # Already fine
         return entity
     elif cls == Post:
@@ -98,4 +121,6 @@ def get_outbound_entity(entity):
         if entity.relationship in ["sharing", "following"]:
             # Unfortunately we must send out in both cases since in Diaspora they are the same thing
             return DiasporaRequest.from_base(entity)
+    elif cls == Profile:
+        return DiasporaProfile.from_base(entity)
     raise ValueError("Don't know how to convert this base entity to Diaspora protocol entities.")

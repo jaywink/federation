@@ -11,6 +11,7 @@ class BaseEntity(object):
     _required = []
 
     def __init__(self, *args, **kwargs):
+        self._required = []
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)
@@ -32,7 +33,7 @@ class BaseEntity(object):
         required_fulfilled = set(self._required).issubset(set(attributes))
         if not required_fulfilled:
             raise ValueError(
-                "Not all required attributes fulfilled. Required: {required}".format(required=self._required)
+                "Not all required attributes fulfilled. Required: {required}".format(required=set(self._required))
             )
 
 
@@ -44,7 +45,7 @@ class GUIDMixin(BaseEntity):
         self._required += ["guid"]
 
     def validate_guid(self):
-        if len(self.guid) < 16:
+        if self.guid and len(self.guid) < 16:
             raise ValueError("GUID must be at least 16 characters")
 
 
@@ -157,7 +158,7 @@ class Reaction(GUIDMixin, ParticipationMixin, CreatedAtMixin, HandleMixin):
 
 
 class Relationship(CreatedAtMixin, HandleMixin):
-    """Represents a """
+    """Represents a relationship between two handles."""
     target_handle = ""
     relationship = ""
 
@@ -178,3 +179,28 @@ class Relationship(CreatedAtMixin, HandleMixin):
             raise ValueError("relationship should be one of: {valid}".format(
                 valid=", ".join(self._relationship_valid_values)
             ))
+
+
+class Profile(CreatedAtMixin, HandleMixin, RawContentMixin, PublicMixin, GUIDMixin):
+    """Represents a profile for a user."""
+    name = ""
+    email = ""
+    image_urls = {
+        "small": "", "medium": "", "large": ""
+    }
+    gender = ""
+    location = ""
+    nsfw = False
+    tag_list = []
+    public_key = ""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Don't require a guid for Profile
+        self._required.remove("guid")
+
+    def validate_email(self):
+        if self.email:
+            validator = Email()
+            if not validator.is_valid(self.email):
+                raise ValueError("Email is not valid")
