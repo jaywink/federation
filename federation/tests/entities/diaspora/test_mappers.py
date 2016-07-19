@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
 
+import pytest
+
 from federation.entities.base import Comment, Post, Reaction, Relationship
 from federation.entities.diaspora.entities import DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest
-from federation.entities.diaspora.mappers import message_to_objects
+from federation.entities.diaspora.mappers import message_to_objects, get_outbound_entity
 from federation.tests.fixtures.payloads import DIASPORA_POST_SIMPLE, DIASPORA_POST_COMMENT, DIASPORA_POST_LIKE, \
     DIASPORA_REQUEST
 
 
 class TestDiasporaEntityMappersReceive(object):
-
     def test_message_to_objects_simple_post(self):
         entities = message_to_objects(DIASPORA_POST_SIMPLE)
         assert len(entities) == 1
@@ -61,3 +62,43 @@ class TestDiasporaEntityMappersReceive(object):
         assert following.target_handle == "alice@alice.diaspora.example.org"
         assert sharing.relationship == "sharing"
         assert following.relationship == "following"
+
+
+class TestGetOutboundEntity(object):
+    def test_already_fine_entities_are_returned_as_is(self):
+        entity = DiasporaPost()
+        assert get_outbound_entity(entity) == entity
+        entity = DiasporaLike()
+        assert get_outbound_entity(entity) == entity
+        entity = DiasporaComment()
+        assert get_outbound_entity(entity) == entity
+        entity = DiasporaRequest()
+        assert get_outbound_entity(entity) == entity
+
+    def test_post_is_converted_to_diasporapost(self):
+        entity = Post()
+        assert isinstance(get_outbound_entity(entity), DiasporaPost)
+
+    def test_comment_is_converted_to_diasporacomment(self):
+        entity = Comment()
+        assert isinstance(get_outbound_entity(entity), DiasporaComment)
+
+    def test_reaction_of_like_is_converted_to_diasporaplike(self):
+        entity = Reaction(reaction="like")
+        assert isinstance(get_outbound_entity(entity), DiasporaLike)
+
+    def test_relationship_of_sharing_or_following_is_converted_to_diasporarequest(self):
+        entity = Relationship(relationship="sharing")
+        assert isinstance(get_outbound_entity(entity), DiasporaRequest)
+        entity = Relationship(relationship="following")
+        assert isinstance(get_outbound_entity(entity), DiasporaRequest)
+
+    def test_other_reaction_raises(self):
+        entity = Reaction(reaction="foo")
+        with pytest.raises(ValueError):
+            get_outbound_entity(entity)
+
+    def test_other_relation_raises(self):
+        entity = Relationship(relationship="foo")
+        with pytest.raises(ValueError):
+            get_outbound_entity(entity)
