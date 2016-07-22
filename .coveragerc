@@ -1,0 +1,5 @@
+[run]
+omit =
+    setup.py
+    federation/__init__.py
+    */tests/*

@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 from setuptools import setup, find_packages
 
+from federation import __version__
+
 
 description = 'Python library for abstracting social federation protocols'
 
 
 setup(
     name='Social-Federation',
-    version='0.3.2',
+    version=__version__,
     description=description,
     long_description=description,
     author='Jason Robinson',
@@ -25,6 +27,7 @@ setup(
         "pycrypto>=2.6.0, <3.0.0",
         "python-dateutil>=2.4.0, <3.0.0",
         "python-xrd==0.1",
+        "requests>=2.8.0",
     ],
     include_package_data=True,
     classifiers=[
