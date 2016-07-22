@@ -3,6 +3,8 @@
 ## Added
 - `Relationship` base entity which represents relationships between two handles. Types can be following, sharing, ignoring and blocking. The Diaspora counterpart, `DiasporaRequest`, which represents a sharing/following request is outwards a single entity, but incoming a double entity, handled by creating both a sharing and following version of  the relationship.
 - `Profile` base entity and Diaspora counterpart `DiasporaProfile`. Represents a user profile.
+- `federation.utils.network.fetch_document` utility function to fetch a remote document. Returns document, status code and possible exception. Takes either `url` or a `host` + `path` combination. With `host`, https is first tried and optionally fall back to http.
+- Utility methods to retrieve Diaspora user discovery related documents. These include the host-meta, webfinger and hCard documents. The utility methods are in `federation.utils.diaspora`.
 
 ## Changed
 - Unlock most of the direct dependencies to a certain version range. Unlock all of test requirements to any version.
