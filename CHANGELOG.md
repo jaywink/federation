@@ -1,5 +1,10 @@
 ## [unreleased]
 
+## Breaking changes
+- While in early stages, doing some renaming of modules to suit the longer term. `federation.controllers` has been split into two, `federation.outbound` and `federation.inbound`. The following methods have new import locations:
+   * `federation.controllers.handle_receive` -> `federation.inbound.handle_receive`
+   * `federation.controllers.handle_create_payload` -> `federation.outbound.handle_create_payload`
+
 ## Added
 - `Relationship` base entity which represents relationships between two handles. Types can be following, sharing, ignoring and blocking. The Diaspora counterpart, `DiasporaRequest`, which represents a sharing/following request is outwards a single entity, but incoming a double entity, handled by creating both a sharing and following version of  the relationship.
 - `Profile` base entity and Diaspora counterpart `DiasporaProfile`. Represents a user profile.
