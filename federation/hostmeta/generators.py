@@ -163,7 +163,7 @@ class DiasporaHCard(object):
     """
 
     required = [
-        "hostname", "fullname", "firstname", "lastname", "photo300", "photo100", "photo50", "searchable",
+        "hostname", "fullname", "firstname", "lastname", "photo300", "photo100", "photo50", "searchable", "guid", "public_key", "username",
     ]
 
     def __init__(self, **kwargs):
