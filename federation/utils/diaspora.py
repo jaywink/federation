@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
+from lxml import html
 from xrd import XRD
 
+from federation.entities.base import Profile
 from federation.utils.network import fetch_document
 
 
 def retrieve_diaspora_hcard(handle):
-    """Retrieve a remote Diaspora hCard document.
+    """
+    Retrieve a remote Diaspora hCard document.
 
     Args:
         handle (str) - Remote handle to retrieve
@@ -26,7 +29,8 @@ def retrieve_diaspora_hcard(handle):
 
 
 def retrieve_diaspora_webfinger(handle):
-    """Retrieve a remote Diaspora webfinger document.
+    """
+    Retrieve a remote Diaspora webfinger document.
 
     Args:
         handle (str) - Remote handle to retrieve
@@ -46,7 +50,8 @@ def retrieve_diaspora_webfinger(handle):
 
 
 def retrieve_diaspora_host_meta(host):
-    """Retrieve a remote Diaspora host-meta document.
+    """
+    Retrieve a remote Diaspora host-meta document.
 
     Args:
         host (str) - Host to retrieve from
@@ -59,3 +64,72 @@ def retrieve_diaspora_host_meta(host):
         return None
     xrd = XRD.parse_xrd(document)
     return xrd
+
+
+def _get_element_text_or_none(document, selector):
+    """
+    Using a CSS selector, get the element and return the text, or None if no element.
+
+    Args:
+        document (HTMLElement) - HTMLElement document
+        selector (str) - CSS selector
+    """
+    element = document.cssselect(selector)
+    if element:
+        return element[0].text
+    return None
+
+
+def _get_element_attr_or_none(document, selector, attribute):
+    """
+    Using a CSS selector, get the element and return the given attribute value, or None if no element.
+
+    Args:
+        document (HTMLElement) - HTMLElement document
+        selector (str) - CSS selector
+        attribute (str) - The attribute to get from the element
+    """
+    element = document.cssselect(selector)
+    if element:
+        return element[0].get(attribute)
+    return None
+
+
+def parse_profile_from_hcard(hcard):
+    """
+    Parse all the fields we can from a hCard document to get a Profile.
+
+    Args:
+         hcard (str) - HTML hcard document
+    """
+    doc = html.fromstring(hcard)
+    domain = urlparse(_get_element_attr_or_none(doc, "a#pod_location", "href")).netloc
+    profile = Profile(
+        name=_get_element_text_or_none(doc, "dl.entity_full_name span.fn"),
+        image_urls={
+            "small": _get_element_attr_or_none(doc, "dl.entity_photo_small img.photo", "src"),
+            "medium": _get_element_attr_or_none(doc, "dl.entity_photo_medium img.photo", "src"),
+            "large": _get_element_attr_or_none(doc, "dl.entity_photo img.photo", "src"),
+        },
+        public=True if _get_element_text_or_none(doc, "dl.entity_searchable span.searchable") == "true" else False,
+        handle="%s@%s" % (_get_element_text_or_none(doc, "dl.entity_nickname span.nickname"), domain),
+        guid=_get_element_text_or_none(doc, "dl.entity_uid span.uid"),
+        public_key=_get_element_text_or_none(doc, "dl.entity_key pre.key"),
+    )
+    return profile
+
+
+def retrieve_and_parse_profile(handle):
+    """
+    Retrieve the remote user and return a Profile object.
+
+    Args:
+        handle (str) - User handle in username@domain.tld format
+
+    Returns:
+        Profile
+    """
+    hcard = retrieve_diaspora_hcard(handle)
+    if not hcard:
+        return None
+    return parse_profile_from_hcard(hcard)
