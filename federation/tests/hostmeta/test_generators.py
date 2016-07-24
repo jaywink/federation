@@ -68,7 +68,10 @@ class TestDiasporaHCardGenerator(object):
             photo300="photo300",
             photo100="photo100",
             photo50="photo50",
-            searchable="searchable"
+            searchable="searchable",
+            guid="guid",
+            public_key="public_key",
+            username="username",
         )
         assert hcard == template
 
@@ -88,7 +91,7 @@ class TestDiasporaHCardGenerator(object):
                 hostname="hostname",
                 fullname="fullname",
                 firstname="firstname",
-                username="username"
+                unknown="unknown"
             )
 
 
