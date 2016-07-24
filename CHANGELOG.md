@@ -11,6 +11,7 @@
 - `Profile` base entity and Diaspora counterpart `DiasporaProfile`. Represents a user profile.
 - `federation.utils.network.fetch_document` utility function to fetch a remote document. Returns document, status code and possible exception. Takes either `url` or a `host` + `path` combination. With `host`, https is first tried and optionally fall back to http.
 - Utility methods to retrieve Diaspora user discovery related documents. These include the host-meta, webfinger and hCard documents. The utility methods are in `federation.utils.diaspora`.
+- Utility to fetch remote profile, `federation.fetchers.retrieve_remote_profile`. Currently always uses Diaspora protocol. Returns a `Profile` entity.
 
 ## Changed
 - Unlock most of the direct dependencies to a certain version range. Unlock all of test requirements to any version.
