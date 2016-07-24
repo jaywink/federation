@@ -1,4 +1,4 @@
-## [unreleased]
+## [0.4.0] - 2016-07-24
 
 ## Breaking changes
 - While in early stages, doing some renaming of modules to suit the longer term. `federation.controllers` has been split into two, `federation.outbound` and `federation.inbound`. The following methods have new import locations:
