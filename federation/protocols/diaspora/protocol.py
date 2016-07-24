@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 from base64 import b64decode, urlsafe_b64decode, b64encode, urlsafe_b64encode
 from json import loads, dumps
 from urllib.parse import unquote_plus, quote_plus, urlencode
@@ -13,10 +14,10 @@ from lxml import etree
 from federation.exceptions import EncryptedMessageError, NoHeaderInMessageError, NoSenderKeyFoundError
 from federation.protocols.base import BaseProtocol
 
+logger = logging.getLogger("social-federation")
 
 PROTOCOL_NAME = "diaspora"
 PROTOCOL_NS = "https://joindiaspora.com/protocol"
-USER_AGENT = 'social-federation/diaspora/0.1'
 
 
 def identify_payload(payload):
@@ -41,6 +42,7 @@ class Protocol(BaseProtocol):
         # Prepare payload
         xml = unquote_plus(payload)
         xml = xml.lstrip().encode("utf-8")
+        logger.debug("diaspora.protocol.receive: xml content: %s", xml)
         self.doc = etree.fromstring(xml)
         self.find_header()
         # Open payload and get actual message
