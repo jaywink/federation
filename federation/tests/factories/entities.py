@@ -3,7 +3,7 @@ from random import shuffle
 import factory
 from factory import fuzzy
 
-from federation.entities.base import Post
+from federation.entities.base import Post, Profile
 from federation.entities.diaspora.entities import DiasporaPost
 
 
@@ -15,11 +15,13 @@ class HandleMixinFactory(factory.Factory):
     handle = fuzzy.FuzzyText(length=8, suffix="@example.com")
 
 
-class PostFactory(GUIDMixinFactory, HandleMixinFactory, factory.Factory):
+class RawContentMixinFactory(factory.Factory):
+    raw_content = fuzzy.FuzzyText(length=300)
+
+
+class PostFactory(GUIDMixinFactory, HandleMixinFactory, RawContentMixinFactory):
     class Meta:
         model = Post
-
-    raw_content = fuzzy.FuzzyText(length=300)
 
 
 class TaggedPostFactory(PostFactory):
@@ -37,3 +39,11 @@ class TaggedPostFactory(PostFactory):
 class DiasporaPostFactory(PostFactory):
     class Meta:
         model = DiasporaPost
+
+
+class ProfileFactory(GUIDMixinFactory, HandleMixinFactory, RawContentMixinFactory):
+    class Meta:
+        model = Profile
+
+    name = fuzzy.FuzzyText(length=30)
+    public_key = fuzzy.FuzzyText(length=300)
