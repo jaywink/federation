@@ -2,7 +2,7 @@
 import logging
 from base64 import b64decode, urlsafe_b64decode, b64encode, urlsafe_b64encode
 from json import loads, dumps
-from urllib.parse import unquote_plus, quote_plus, urlencode
+from urllib.parse import unquote_plus
 
 from Crypto.Cipher import AES, PKCS1_v1_5
 from Crypto.Hash import SHA256
@@ -186,12 +186,8 @@ class Protocol(BaseProtocol):
         """Build POST data for sending out to remotes."""
         xml = entity.to_xml()
         self.init_message(xml, from_user.handle, from_user.private_key)
-        xml = quote_plus(
-            self.create_salmon_envelope(to_user.key))
-        data = urlencode({
-            'xml': xml
-        })
-        return data
+        xml = self.create_salmon_envelope(to_user.key)
+        return {'xml': xml}
 
     def init_message(self, message, author_username, private_key):
         """
