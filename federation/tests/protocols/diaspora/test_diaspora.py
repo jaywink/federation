@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from base64 import urlsafe_b64decode
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 from xml.etree.ElementTree import ElementTree
 
 from lxml import etree
@@ -8,6 +8,7 @@ import pytest
 
 from federation.exceptions import EncryptedMessageError, NoSenderKeyFoundError, NoHeaderInMessageError
 from federation.protocols.diaspora.protocol import Protocol, identify_payload
+from federation.tests.factories.entities import DiasporaPostFactory
 from federation.tests.fixtures.payloads import ENCRYPTED_DIASPORA_PAYLOAD, UNENCRYPTED_DIASPORA_PAYLOAD
 
 
@@ -140,3 +141,15 @@ class TestDiasporaProtocol(DiasporaTestBase):
         protocol.header = ElementTree()
         protocol.content = "<content><handle>bob@example.com</handle></content>"
         assert protocol.get_sender() == None
+
+    @patch.object(Protocol, "init_message")
+    @patch.object(Protocol, "create_salmon_envelope")
+    def test_build_send(self, mock_create_salmon, mock_init_message):
+        mock_create_salmon.return_value = "xmldata"
+        protocol = self.init_protocol()
+        mock_entity_xml = Mock()
+        entity = Mock(to_xml=Mock(return_value=mock_entity_xml))
+        from_user = Mock(handle="foobar", private_key="barfoo")
+        data = protocol.build_send(from_user, Mock(), entity)
+        mock_init_message.assert_called_once_with(mock_entity_xml, from_user.handle, from_user.private_key)
+        assert data == {"xml": "xmldata"}

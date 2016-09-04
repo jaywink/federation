@@ -1,3 +1,11 @@
+## [unreleased]
+
+## Fixes
+
+- Don't quote/encode `Protocol.build_send` payload. It was doing it wrongly in the first place and also it's not necessary since Diaspora 0.6 protocol changes. [#41](https://github.com/jaywink/social-federation/pull/41)
+- Fix identification of Diaspora protocol messages. This was not working in the case that the attributes in the tag were in different order. [#41](https://github.com/jaywink/social-federation/pull/41)
+
+
 ## [0.4.0] - 2016-07-24
 
 ## Breaking changes
