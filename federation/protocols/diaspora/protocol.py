@@ -23,7 +23,7 @@ PROTOCOL_NS = "https://joindiaspora.com/protocol"
 def identify_payload(payload):
     try:
         xml = unquote_plus(payload)
-        return xml.find('<diaspora xmlns="%s"' % PROTOCOL_NS) > -1
+        return xml.find('xmlns="%s"' % PROTOCOL_NS) > -1
     except Exception:
         return False
 
