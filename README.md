@@ -2,9 +2,7 @@
 
 # Social-Federation
 
-Python library to abstract social federation protocols.
-
-Aims to first support Diaspora and then the W3C SocialWG ActivityPub protocol.
+Python library to abstract social federation protocols. Currently supports a subset of the Diaspora protocol with full support intended, and additional protocols after that.
 
 ## Requirements
 

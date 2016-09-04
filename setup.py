@@ -43,5 +43,5 @@ setup(
         'Topic :: Communications',
         'Topic :: Internet',
     ],
-    keywords='federation diaspora activitypub social',
+    keywords='federation diaspora federate social',
 )
