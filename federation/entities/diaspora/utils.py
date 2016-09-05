@@ -48,3 +48,16 @@ def get_base_attributes(entity):
         if not attr.startswith("_"):
             attributes[attr] = getattr(entity, attr)
     return attributes
+
+
+def get_full_xml_representation(entity):
+    """Get full XML representation of an entity.
+
+    This contains the <XML><post>..</post></XML> wrapper.
+
+    Accepts either a Base entity or a Diaspora entity.
+    """
+    from federation.entities.diaspora.mappers import get_outbound_entity
+    diaspora_entity = get_outbound_entity(entity)
+    xml = diaspora_entity.to_xml()
+    return "<XML><post>%s</post></XML>" % etree.tostring(xml).decode("utf-8")
