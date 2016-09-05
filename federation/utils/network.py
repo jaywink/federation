@@ -74,3 +74,28 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
     except RequestException as ex:
         logger.debug("fetch_document: exception %s", ex)
         return None, None, ex
+
+
+def send_document(url, data, timeout=10, *args, **kwargs):
+    """Helper method to send a document via POST.
+
+    Args:
+        url (str) - Full url to send to, including protocol
+        data (dict) - POST data to send
+        timeout (int) - Seconds to wait for response (defaults to 10)
+
+    Additional *args and **kwargs will be passed on to `requests.post`.
+
+    Returns:
+        status_code (int) - Status code returned or None
+        error (obj) - Exception raised, if any
+    """
+    logger.debug("send_document: url=%s, data=%s, timeout=%s", url, data, timeout)
+    headers = {'user-agent': USER_AGENT}
+    try:
+        response = requests.post(url, data=data, timeout=timeout, headers=headers, *args, **kwargs)
+        logger.debug("send_document: response status code %s", response.status_code)
+        return response.status_code, None
+    except RequestException as ex:
+        logger.debug("send_document: exception %s", ex)
+        return None, ex

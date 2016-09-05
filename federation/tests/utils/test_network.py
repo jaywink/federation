@@ -5,7 +5,7 @@ import pytest
 from requests import HTTPError
 from requests.exceptions import SSLError, RequestException
 
-from federation.utils.network import fetch_document, USER_AGENT
+from federation.utils.network import fetch_document, USER_AGENT, send_document
 
 
 class TestFetchDocument(object):
@@ -84,5 +84,24 @@ class TestFetchDocument(object):
         doc, code, exc = fetch_document(host="localhost")
         assert mock_get.call_count == 1
         assert doc == None
+        assert code == None
+        assert exc.__class__ == RequestException
+
+
+class TestSendDocument(object):
+    call_args = {"timeout": 10, "headers": {'user-agent': USER_AGENT}}
+
+    @patch("federation.utils.network.requests.post", return_value=Mock(status_code=200))
+    def test_post_is_called(self, mock_post):
+        code, exc = send_document("http://localhost", {"foo": "bar"})
+        mock_post.assert_called_once_with(
+            "http://localhost", data={"foo": "bar"}, **self.call_args
+        )
+        assert code == 200
+        assert exc == None
+
+    @patch("federation.utils.network.requests.post", side_effect=RequestException)
+    def test_post_raises_and_returns_exception(self, mock_post):
+        code, exc = send_document("http://localhost", {"foo": "bar"})
         assert code == None
         assert exc.__class__ == RequestException

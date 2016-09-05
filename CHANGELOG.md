@@ -6,6 +6,7 @@
      
 ## Added
 - `Post.provider_display_name` is now supported in the entity outbound/inbound mappers. [#44](https://github.com/jaywink/social-federation/pull/44)
+- Add utility method `federation.utils.network.send_document` which is just a wrapper around `requests.post`. User agent will be added to the headers and exceptions will be silently captured and returned instead. [#45](https://github.com/jaywink/social-federation/pull/45)
 
 ## [0.4.1] - 2016-09-04
 
