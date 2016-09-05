@@ -150,6 +150,6 @@ class TestDiasporaProtocol(DiasporaTestBase):
         mock_entity_xml = Mock()
         entity = Mock(to_xml=Mock(return_value=mock_entity_xml))
         from_user = Mock(handle="foobar", private_key="barfoo")
-        data = protocol.build_send(from_user, Mock(), entity)
+        data = protocol.build_send(entity, from_user)
         mock_init_message.assert_called_once_with(mock_entity_xml, from_user.handle, from_user.private_key)
         assert data == {"xml": "xmldata"}
