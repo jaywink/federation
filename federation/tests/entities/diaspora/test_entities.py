@@ -7,14 +7,17 @@ from federation.entities.diaspora.entities import DiasporaComment, DiasporaPost,
 
 class TestEntitiesConvertToXML(object):
     def test_post_to_xml(self):
-        entity = DiasporaPost(raw_content="raw_content", guid="guid", handle="handle", public=True)
+        entity = DiasporaPost(
+            raw_content="raw_content", guid="guid", handle="handle", public=True,
+            provider_display_name="Socialhome"
+        )
         result = entity.to_xml()
         assert result.tag == "status_message"
         assert len(result.find("created_at").text) > 0
         result.find("created_at").text = ""  # timestamp makes testing painful
         converted = b"<status_message><raw_message>raw_content</raw_message><guid>guid</guid>" \
                     b"<diaspora_handle>handle</diaspora_handle><public>true</public><created_at>" \
-                    b"</created_at></status_message>"
+                    b"</created_at><provider_display_name>Socialhome</provider_display_name></status_message>"
         assert etree.tostring(result) == converted
 
     def test_comment_to_xml(self):

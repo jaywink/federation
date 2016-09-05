@@ -23,6 +23,7 @@ class TestDiasporaEntityMappersReceive(object):
         assert post.handle == "alice@alice.diaspora.example.org"
         assert post.public == False
         assert post.created_at == datetime(2011, 7, 20, 1, 36, 7)
+        assert post.provider_display_name == "Socialhome"
 
     def test_message_to_objects_comment(self):
         entities = message_to_objects(DIASPORA_POST_COMMENT)
