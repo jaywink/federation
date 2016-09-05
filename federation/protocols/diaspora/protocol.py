@@ -182,11 +182,11 @@ class Protocol(BaseProtocol):
         else:
             return data[0:-data[-1]]
 
-    def build_send(self, from_user, to_user, entity, *args, **kwargs):
+    def build_send(self, entity, from_user, to_user=None, *args, **kwargs):
         """Build POST data for sending out to remotes."""
         xml = entity.to_xml()
         self.init_message(xml, from_user.handle, from_user.private_key)
-        xml = self.create_salmon_envelope(to_user.key)
+        xml = self.create_salmon_envelope(to_user)
         return {'xml': xml}
 
     def init_message(self, message, author_username, private_key):
@@ -319,25 +319,31 @@ class Protocol(BaseProtocol):
         to_encrypt = self.pkcs7_pad(self.create_payload(), AES.block_size)
         return self.inner_encrypter.encrypt(to_encrypt)
 
-    def create_salmon_envelope(self, recipient_public_key):
+    def create_salmon_envelope(self, recipient):
         """
         Build the whole message, pulling together the encrypted payload and the
         encrypted header. Selected elements are signed by the author so that
         tampering can be detected.
+
+        Args:
+            recipient - Recipient object which must have public key as `key`
+
+        Returns:
+            XML document as string
         """
         nsmap = {
             None: PROTOCOL_NS,
             'me': 'http://salmon-protocol.org/ns/magic-env'
         }
         doc = etree.Element("{%s}diaspora" % nsmap[None], nsmap=nsmap)
-        if recipient_public_key:
-            doc.append(self.create_encrypted_header(recipient_public_key))
+        if recipient:
+            doc.append(self.create_encrypted_header(recipient.key))
         else:
             doc.append(self.create_public_header())
         env = etree.SubElement(doc, "{%s}env" % nsmap["me"])
         etree.SubElement(env, "{%s}encoding" % nsmap["me"]).text = 'base64url'
         etree.SubElement(env, "{%s}alg" % nsmap["me"]).text = 'RSA-SHA256'
-        if recipient_public_key:
+        if recipient:
             payload = urlsafe_b64encode(b64encode(
                 self.create_encrypted_payload())).decode("ascii")
         else:
