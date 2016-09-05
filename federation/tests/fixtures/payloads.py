@@ -36,6 +36,7 @@ DIASPORA_POST_SIMPLE = """<XML>
           <diaspora_handle>alice@alice.diaspora.example.org</diaspora_handle>
           <public>false</public>
           <created_at>2011-07-20 01:36:07 UTC</created_at>
+          <provider_display_name>Socialhome</provider_display_name>
         </status_message>
       </post>
     </XML>

@@ -3,6 +3,9 @@
 ## Breaking changes
 - `federation.outbound.handle_create_payload` parameter `to_user` is now optional. Public posts don't need a recipient. This also affects Diaspora protocol `build_send` method where the change is reflected similarly. [#43](https://github.com/jaywink/social-federation/pull/43)
      - In practise this means the signature has changed for `handle_create_payload` and `build_send` from **`from_user, to_user, entity`** to **`entity, from_user, to_user=None`**.
+     
+## Added
+- `Post.provider_display_name` is now supported in the entity outbound/inbound mappers. [#44](https://github.com/jaywink/social-federation/pull/44)
 
 ## [0.4.1] - 2016-09-04
 

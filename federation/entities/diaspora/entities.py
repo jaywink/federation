@@ -37,7 +37,8 @@ class DiasporaPost(DiasporaEntityMixin, Post):
             {'guid': self.guid},
             {'diaspora_handle': self.handle},
             {'public': 'true' if self.public else 'false'},
-            {'created_at': format_dt(self.created_at)}
+            {'created_at': format_dt(self.created_at)},
+            {'provider_display_name': self.provider_display_name},
         ])
         return element
 
