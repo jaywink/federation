@@ -1,4 +1,4 @@
-## [unreleased]
+## [0.5.0] - 2016-09-05
 
 ## Breaking changes
 - `federation.outbound.handle_create_payload` parameter `to_user` is now optional. Public posts don't need a recipient. This also affects Diaspora protocol `build_send` method where the change is reflected similarly. [#43](https://github.com/jaywink/social-federation/pull/43)
