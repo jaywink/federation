@@ -10,6 +10,6 @@ install:
   - pip install -r test-requirements.txt
   - python setup.py develop
   - pip freeze
-script: py.test --cov=./
+script: py.test -r w --cov=./
 after_success:
   - codecov
