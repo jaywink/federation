@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+import warnings
 from base64 import b64decode, urlsafe_b64decode, b64encode, urlsafe_b64encode
 from json import loads, dumps
 from urllib.parse import unquote_plus
@@ -54,6 +55,16 @@ class Protocol(BaseProtocol):
             self.verify_signature()
         return self.sender_handle, self.content
 
+    def _get_user_key(self, user):
+        if not hasattr(self.user, "private_key") or not self.user.private_key:
+            if hasattr(self.user, "key") and self.user.key:
+                warnings.warn("Using `key` in user object for private key has been deprecated. Please "
+                              "have available `private_key` instead. Usage of `key` will be removed after 0.8.0.",
+                              DeprecationWarning)
+                return self.user.key
+            raise EncryptedMessageError("Cannot decrypt private message without user key")
+        return self.user.private_key
+
     def find_header(self):
         self.header = self.doc.find(".//{"+PROTOCOL_NS+"}header")
         if self.header != None:
@@ -63,12 +74,11 @@ class Protocol(BaseProtocol):
             raise NoHeaderInMessageError("Could not find header in message")
         if not self.user:
             raise EncryptedMessageError("Cannot decrypt private message without user object")
-        if not hasattr(self.user, "key") or not self.user.key:
-            raise EncryptedMessageError("Cannot decrypt private message without user key")
+        user_private_key = self._get_user_key(self.user)
         self.encrypted = True
         self.header = self.parse_header(
             self.doc.find(".//{"+PROTOCOL_NS+"}encrypted_header").text,
-            self.user.key
+            user_private_key
         )
 
     def get_sender(self):

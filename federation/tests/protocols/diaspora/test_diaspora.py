@@ -13,11 +13,11 @@ from federation.tests.fixtures.payloads import ENCRYPTED_DIASPORA_PAYLOAD, UNENC
 
 
 class MockUser(object):
-    key = "foobar"
+    private_key = "foobar"
 
     def __init__(self, nokey=False):
         if nokey:
-            self.key = None
+            self.private_key = None
 
 
 def mock_get_contact_key(contact):
