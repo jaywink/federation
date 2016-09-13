@@ -105,16 +105,16 @@ def parse_profile_from_hcard(hcard):
     doc = html.fromstring(hcard)
     domain = urlparse(_get_element_attr_or_none(doc, "a#pod_location", "href")).netloc
     profile = Profile(
-        name=_get_element_text_or_none(doc, "dl.entity_full_name span.fn"),
+        name=_get_element_text_or_none(doc, ".fn"),
         image_urls={
-            "small": _get_element_attr_or_none(doc, "dl.entity_photo_small img.photo", "src"),
-            "medium": _get_element_attr_or_none(doc, "dl.entity_photo_medium img.photo", "src"),
-            "large": _get_element_attr_or_none(doc, "dl.entity_photo img.photo", "src"),
+            "small": _get_element_attr_or_none(doc, ".entity_photo_small .photo", "src"),
+            "medium": _get_element_attr_or_none(doc, ".entity_photo_medium .photo", "src"),
+            "large": _get_element_attr_or_none(doc, ".entity_photo .photo", "src"),
         },
-        public=True if _get_element_text_or_none(doc, "dl.entity_searchable span.searchable") == "true" else False,
-        handle="%s@%s" % (_get_element_text_or_none(doc, "dl.entity_nickname span.nickname"), domain),
-        guid=_get_element_text_or_none(doc, "dl.entity_uid span.uid"),
-        public_key=_get_element_text_or_none(doc, "dl.entity_key pre.key"),
+        public=True if _get_element_text_or_none(doc, ".searchable") == "true" else False,
+        handle="%s@%s" % (_get_element_text_or_none(doc, ".nickname"), domain),
+        guid=_get_element_text_or_none(doc, ".uid"),
+        public_key=_get_element_text_or_none(doc, ".key"),
     )
     return profile
 
