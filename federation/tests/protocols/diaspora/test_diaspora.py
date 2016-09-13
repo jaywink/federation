@@ -8,7 +8,6 @@ import pytest
 
 from federation.exceptions import EncryptedMessageError, NoSenderKeyFoundError, NoHeaderInMessageError
 from federation.protocols.diaspora.protocol import Protocol, identify_payload
-from federation.tests.factories.entities import DiasporaPostFactory
 from federation.tests.fixtures.payloads import ENCRYPTED_DIASPORA_PAYLOAD, UNENCRYPTED_DIASPORA_PAYLOAD
 
 

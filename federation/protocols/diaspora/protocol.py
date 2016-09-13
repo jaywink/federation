@@ -335,8 +335,11 @@ class Protocol(BaseProtocol):
         encrypted header. Selected elements are signed by the author so that
         tampering can be detected.
 
+        Note, this corresponds to the old Diaspora protocol which will slowly be replaced by the
+        new version. See PR https://github.com/diaspora/diaspora_federation/issues/30
+
         Args:
-            recipient - Recipient object which must have public key as `key`
+            recipient - Recipient object which must have public key as `key` (private messages only)
 
         Returns:
             XML document as string
