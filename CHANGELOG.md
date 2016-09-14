@@ -1,3 +1,8 @@
+## [unreleased]
+
+### Fixed
+* New style Diaspora Magic Envelope didn't require or like payload data to be cut to 60 char lines, as the legacy protocol does. Fixed to not cut lines.
+
 ## [0.6.0] - 2016-09-13
 
 ### Added

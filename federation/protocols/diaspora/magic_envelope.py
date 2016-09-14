@@ -28,20 +28,11 @@ class MagicEnvelope(object):
         self.doc = None
         self.payload = None
 
-    def _encode_payload(self):
-        """Encode the payload and wrap it to 60 char lines."""
-        self.payload = urlsafe_b64encode(self.payload).decode("ascii")
-        self.payload = '\n'.join(
-            [self.payload[start:start + 60] for start in range(0, len(self.payload), 60)]
-        )
-        self.payload += "\n"
-        return self.payload
-
     def create_payload(self):
         """Create the payload doc.
 
         Returns:
-            bytes
+            str
         """
         doc = etree.fromstring(self.message)
         if self.wrap_payload:
@@ -50,6 +41,7 @@ class MagicEnvelope(object):
             post.append(doc)
             doc = wrap
         self.payload = etree.tostring(doc, encoding="utf-8")
+        self.payload = urlsafe_b64encode(self.payload).decode("ascii")
         return self.payload
 
     def _build_signature(self):
@@ -70,7 +62,6 @@ class MagicEnvelope(object):
         etree.SubElement(self.doc, "{%s}encoding" % self.nsmap["me"]).text = 'base64url'
         etree.SubElement(self.doc, "{%s}alg" % self.nsmap["me"]).text = 'RSA-SHA256'
         self.create_payload()
-        self._encode_payload()
         etree.SubElement(self.doc, "{%s}data" % self.nsmap["me"],
                          {"type": "application/xml"}).text = self.payload
         signature, key_id = self._build_signature()
