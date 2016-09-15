@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from federation.entities.base import BaseEntity, Relationship, Profile
+from federation.entities.base import BaseEntity, Relationship, Profile, RawContentMixin
 from federation.tests.factories.entities import TaggedPostFactory, PostFactory
 
 
@@ -29,6 +29,14 @@ class TestEntityRequiredAttributes(object):
     def test_entity_checks_for_required_attributes(self):
         entity = BaseEntity()
         entity._required = ["foobar"]
+        with pytest.raises(ValueError):
+            entity.validate()
+
+    def test_validate_checks_required_values_are_not_empty(self):
+        entity = RawContentMixin(raw_content=None)
+        with pytest.raises(ValueError):
+            entity.validate()
+        entity = RawContentMixin(raw_content="")
         with pytest.raises(ValueError):
             entity.validate()
 

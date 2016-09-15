@@ -24,22 +24,46 @@ class BaseEntity(object):
     def validate(self):
         """Do validation.
 
-        1) Loop through attributes and call their `validate_<attr>` methods, if any.
-        2) Check `_required` contents and make sure all attrs in there have a value.
+        1) Check `_required` have been given
+        2) Make sure all attrs in required have a non-empty value
+        3) Loop through attributes and call their `validate_<attr>` methods, if any.
         """
         attributes = []
+        validates = []
+        # Collect attributes and validation methods
         for attr in dir(self):
             if not attr.startswith("_"):
                 attr_type = type(getattr(self, attr))
                 if attr_type != "method":
                     if getattr(self, "validate_{attr}".format(attr=attr), None):
-                        getattr(self, "validate_{attr}".format(attr=attr))()
+                        validates.append(getattr(self, "validate_{attr}".format(attr=attr)))
                     attributes.append(attr)
+        self._validate_empty_attributes(attributes)
+        self._validate_required(attributes)
+        self._validate_attributes(validates)
+
+    def _validate_required(self, attributes):
+        """Ensure required attributes are present."""
         required_fulfilled = set(self._required).issubset(set(attributes))
         if not required_fulfilled:
             raise ValueError(
                 "Not all required attributes fulfilled. Required: {required}".format(required=set(self._required))
             )
+
+    def _validate_attributes(self, validates):
+        """Call individual attribute validators."""
+        for validator in validates:
+            validator()
+
+    def _validate_empty_attributes(self, attributes):
+        """Check that required attributes are not empty."""
+        attrs_to_check = set(self._required) & set(attributes)
+        for attr in attrs_to_check:
+            value = getattr(self, attr)  # We should always have a value here
+            if value is None or value == "":
+                raise ValueError(
+                    "Attribute %s cannot be None or an empty string since it is required." % attr
+                )
 
 
 class GUIDMixin(BaseEntity):
