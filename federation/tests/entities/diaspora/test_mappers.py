@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
+from unittest.mock import patch
 
 import pytest
 
@@ -8,7 +9,12 @@ from federation.entities.diaspora.entities import DiasporaPost, DiasporaComment,
     DiasporaProfile
 from federation.entities.diaspora.mappers import message_to_objects, get_outbound_entity
 from federation.tests.fixtures.payloads import DIASPORA_POST_SIMPLE, DIASPORA_POST_COMMENT, DIASPORA_POST_LIKE, \
-    DIASPORA_REQUEST, DIASPORA_PROFILE
+    DIASPORA_REQUEST, DIASPORA_PROFILE, DIASPORA_POST_INVALID
+
+
+def mock_fill(attributes):
+    attributes["guid"] = "guidguidguidguidguid"
+    return attributes
 
 
 class TestDiasporaEntityMappersReceive(object):
@@ -19,7 +25,7 @@ class TestDiasporaEntityMappersReceive(object):
         assert isinstance(post, DiasporaPost)
         assert isinstance(post, Post)
         assert post.raw_content == "((status message))"
-        assert post.guid == "((guid))"
+        assert post.guid == "((guidguidguidguidguidguidguid))"
         assert post.handle == "alice@alice.diaspora.example.org"
         assert post.public == False
         assert post.created_at == datetime(2011, 7, 20, 1, 36, 7)
@@ -31,8 +37,8 @@ class TestDiasporaEntityMappersReceive(object):
         comment = entities[0]
         assert isinstance(comment, DiasporaComment)
         assert isinstance(comment, Comment)
-        assert comment.target_guid == "((parent_guid))"
-        assert comment.guid == "((guid))"
+        assert comment.target_guid == "((parent_guidparent_guidparent_guidparent_guid))"
+        assert comment.guid == "((guidguidguidguidguidguid))"
         assert comment.handle == "alice@alice.diaspora.example.org"
         assert comment.participation == "comment"
         assert comment.raw_content == "((text))"
@@ -43,8 +49,8 @@ class TestDiasporaEntityMappersReceive(object):
         like = entities[0]
         assert isinstance(like, DiasporaLike)
         assert isinstance(like, Reaction)
-        assert like.target_guid == "((parent_guid))"
-        assert like.guid == "((guid))"
+        assert like.target_guid == "((parent_guidparent_guidparent_guidparent_guid))"
+        assert like.guid == "((guidguidguidguidguidguid))"
         assert like.handle == "alice@alice.diaspora.example.org"
         assert like.participation == "reaction"
         assert like.reaction == "like"
@@ -65,6 +71,7 @@ class TestDiasporaEntityMappersReceive(object):
         assert sharing.relationship == "sharing"
         assert following.relationship == "following"
 
+    @patch("federation.entities.diaspora.entities.DiasporaProfile.fill_extra_attributes", new=mock_fill)
     def test_message_to_objects_profile(self):
         entities = message_to_objects(DIASPORA_PROFILE)
         assert len(entities) == 1
@@ -82,6 +89,12 @@ class TestDiasporaEntityMappersReceive(object):
         assert profile.public == True
         assert profile.nsfw == False
         assert profile.tag_list == ["socialfederation", "federation"]
+
+    @patch("federation.entities.diaspora.mappers.logger.error")
+    def test_invalid_entity_logs_an_error(self, mock_logger):
+        entities = message_to_objects(DIASPORA_POST_INVALID)
+        assert len(entities) == 0
+        assert mock_logger.called
 
 
 class TestGetOutboundEntity(object):

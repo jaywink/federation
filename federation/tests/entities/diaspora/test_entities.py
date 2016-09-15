@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
+from unittest.mock import patch
+
+import pytest
 from lxml import etree
 
+from federation.entities.base import Profile
 from federation.entities.diaspora.entities import DiasporaComment, DiasporaPost, DiasporaLike, DiasporaRequest, \
     DiasporaProfile
 
@@ -61,3 +65,17 @@ class TestEntitiesConvertToXML(object):
                     b"<gender></gender><bio>foobar</bio><location></location><searchable>true</searchable>" \
                     b"<nsfw>false</nsfw><tag_string>#socialfederation #federation</tag_string></profile>"
         assert etree.tostring(result) == converted
+
+
+class TestDiasporaProfileFillExtraAttributes(object):
+    def test_raises_if_no_handle(self):
+        attrs = {"foo": "bar"}
+        with pytest.raises(ValueError):
+            DiasporaProfile.fill_extra_attributes(attrs)
+
+    @patch("federation.entities.diaspora.entities.retrieve_and_parse_profile")
+    def test_calls_retrieve_and_parse_profile(self, mock_retrieve):
+        mock_retrieve.return_value = Profile(guid="guidguidguidguid")
+        attrs = {"handle": "foo"}
+        attrs = DiasporaProfile.fill_extra_attributes(attrs)
+        assert attrs == {"handle": "foo", "guid": "guidguidguidguid"}

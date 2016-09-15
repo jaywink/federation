@@ -1,5 +1,15 @@
 ## [unreleased]
 
+### Backwards incompatible changes
+* Made `guid` mandatory for `Profile` entity. Library users should always be able to get a full validated object as we consider `guid` a core attribute of a profile.
+* Always validate entities created through `federation.entities.diaspora.mappers.message_to_objects`. This is the code that transforms federation messages for the Diaspora protocol to actual entity objects. Previously no validation was done and callers of `federation.inbound.handle_receive` received entities that were not always valid, for example they were missing a `guid`. Now validation is done in the conversion stage and errors are pushed to the `social-federation` logger in the event of invalid messages.
+    * Note Diaspora Profile XML messages do not provide a GUID. This is handled internally by fetching the guid from the remote hCard so that a valid `Profile` entity can be created.
+
+### Added
+* Raise a warning if unknown parameters are passed to entities.
+* Ensure entity required attributes are validated for `None` or empty string values. Required attributes must not only exist but also have a value.
+* Add validation to entities with the attribute `public`. Only `bool` values are accepted.
+
 ### Changed
 * Function `federation.utils.diaspora.parse_profile_from_hcard` now requires a second argument, `handle`. Since in the future Diaspora hCard is not guaranteed to have username and domain, we now pass handle to the parser directly.
 

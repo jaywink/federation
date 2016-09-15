@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 import datetime
+import warnings
 
 from dirty_validators.basic import Email
-
-
-__all__ = ("Post", "Image", "Comment")
 
 
 class BaseEntity(object):
@@ -15,26 +13,54 @@ class BaseEntity(object):
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)
+            else:
+                warnings.warn("%s.__init__ got parameter %s which this class does not support - ignoring." % (
+                    self.__class__.__name__, key
+                ))
 
     def validate(self):
         """Do validation.
 
-        1) Loop through attributes and call their `validate_<attr>` methods, if any.
-        2) Check `_required` contents and make sure all attrs in there have a value.
+        1) Check `_required` have been given
+        2) Make sure all attrs in required have a non-empty value
+        3) Loop through attributes and call their `validate_<attr>` methods, if any.
         """
         attributes = []
+        validates = []
+        # Collect attributes and validation methods
         for attr in dir(self):
             if not attr.startswith("_"):
                 attr_type = type(getattr(self, attr))
                 if attr_type != "method":
                     if getattr(self, "validate_{attr}".format(attr=attr), None):
-                        getattr(self, "validate_{attr}".format(attr=attr))()
+                        validates.append(getattr(self, "validate_{attr}".format(attr=attr)))
                     attributes.append(attr)
+        self._validate_empty_attributes(attributes)
+        self._validate_required(attributes)
+        self._validate_attributes(validates)
+
+    def _validate_required(self, attributes):
+        """Ensure required attributes are present."""
         required_fulfilled = set(self._required).issubset(set(attributes))
         if not required_fulfilled:
             raise ValueError(
                 "Not all required attributes fulfilled. Required: {required}".format(required=set(self._required))
             )
+
+    def _validate_attributes(self, validates):
+        """Call individual attribute validators."""
+        for validator in validates:
+            validator()
+
+    def _validate_empty_attributes(self, attributes):
+        """Check that required attributes are not empty."""
+        attrs_to_check = set(self._required) & set(attributes)
+        for attr in attrs_to_check:
+            value = getattr(self, attr)  # We should always have a value here
+            if value is None or value == "":
+                raise ValueError(
+                    "Attribute %s cannot be None or an empty string since it is required." % attr
+                )
 
 
 class GUIDMixin(BaseEntity):
@@ -45,7 +71,7 @@ class GUIDMixin(BaseEntity):
         self._required += ["guid"]
 
     def validate_guid(self):
-        if self.guid and len(self.guid) < 16:
+        if len(self.guid) < 16:
             raise ValueError("GUID must be at least 16 characters")
 
 
@@ -65,13 +91,19 @@ class HandleMixin(BaseEntity):
 class PublicMixin(BaseEntity):
     public = False
 
+    def validate_public(self):
+        if not isinstance(self.public, bool):
+            raise ValueError("Public is not valid - it should be True or False")
+
 
 class CreatedAtMixin(BaseEntity):
-    created_at = datetime.datetime.now()
+    created_at = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._required += ["created_at"]
+        if not "created_at" in kwargs:
+            self.created_at = datetime.datetime.now()
 
 
 class RawContentMixin(BaseEntity):
@@ -193,11 +225,6 @@ class Profile(CreatedAtMixin, HandleMixin, RawContentMixin, PublicMixin, GUIDMix
     nsfw = False
     tag_list = []
     public_key = ""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Don't require a guid for Profile
-        self._required.remove("guid")
 
     def validate_email(self):
         if self.email:

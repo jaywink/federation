@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
+import logging
 from datetime import datetime
 
 from lxml import etree
 
 from federation.entities.base import Image, Relationship, Post, Reaction, Comment, Profile
-from federation.entities.diaspora.entities import DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest, \
-    DiasporaProfile
+from federation.entities.diaspora.entities import (
+    DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest, DiasporaProfile)
+
+
+logger = logging.getLogger("social-federation")
 
 MAPPINGS = {
     "status_message": DiasporaPost,
@@ -43,8 +47,18 @@ def message_to_objects(message):
         if cls:
             attrs = xml_children_as_dict(element)
             transformed = transform_attributes(attrs)
+            if hasattr(cls, "fill_extra_attributes"):
+                transformed = cls.fill_extra_attributes(transformed)
             entity = cls(**transformed)
-            entities.append(entity)
+            try:
+                entity.validate()
+                entities.append(entity)
+            except ValueError as ex:
+                logger.error("Failed to validate entity %s: %s", entity, ex, extra={
+                    "attrs": attrs,
+                    "transformed": transformed,
+                })
+                continue
             if cls == DiasporaRequest:
                 # We support sharing/following separately, so also generate base Relationship for the following part
                 transformed.update({"relationship": "following"})
