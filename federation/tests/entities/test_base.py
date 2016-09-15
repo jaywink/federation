@@ -3,7 +3,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from federation.entities.base import BaseEntity, Relationship, Profile, RawContentMixin
+from federation.entities.base import BaseEntity, Relationship, Profile, RawContentMixin, GUIDMixin, HandleMixin, \
+    PublicMixin, Image
 from federation.tests.factories.entities import TaggedPostFactory, PostFactory
 
 
@@ -23,6 +24,27 @@ class TestBaseEntityCallsValidateMethods(object):
         post.validate_location = Mock()
         post.validate()
         assert post.validate_location.call_count == 1
+
+
+class TestGUIDMixinValidate(object):
+    def test_validate_guid_raises_on_low_length(self):
+        guid = GUIDMixin(guid="x"*15)
+        with pytest.raises(ValueError):
+            guid.validate()
+
+
+class TestHandleMixinValidate(object):
+    def test_validate_handle_raises_on_invalid_format(self):
+        handle = HandleMixin(handle="foobar")
+        with pytest.raises(ValueError):
+            handle.validate()
+
+
+class TestPublicMixinValidate(object):
+    def test_validate_public_raises_on_low_length(self):
+        public = PublicMixin(public="foobar")
+        with pytest.raises(ValueError):
+            public.validate()
 
 
 class TestEntityRequiredAttributes(object):
@@ -69,5 +91,25 @@ class TestProfileEntity(object):
 
     def test_guid_is_mandatory(self):
         entity = Profile(handle="bob@example.com", raw_content="foobar")
+        with pytest.raises(ValueError):
+            entity.validate()
+
+
+class TestImageEntity(object):
+    def test_instance_creation(self):
+        entity = Image(
+            guid="x"*16, handle="foo@example.com", public=False, remote_path="foobar", remote_name="barfoo"
+        )
+        entity.validate()
+
+    def test_required_fields(self):
+        entity = Image(
+            guid="x" * 16, handle="foo@example.com", public=False, remote_name="barfoo"
+        )
+        with pytest.raises(ValueError):
+            entity.validate()
+        entity = Image(
+            guid="x" * 16, handle="foo@example.com", public=False, remote_path="foobar"
+        )
         with pytest.raises(ValueError):
             entity.validate()
