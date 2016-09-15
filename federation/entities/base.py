@@ -74,7 +74,7 @@ class GUIDMixin(BaseEntity):
         self._required += ["guid"]
 
     def validate_guid(self):
-        if self.guid and len(self.guid) < 16:
+        if len(self.guid) < 16:
             raise ValueError("GUID must be at least 16 characters")
 
 
