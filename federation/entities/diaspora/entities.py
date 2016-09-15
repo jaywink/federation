@@ -3,12 +3,27 @@ from lxml import etree
 
 from federation.entities.base import Comment, Post, Reaction, Relationship, Profile
 from federation.entities.diaspora.utils import format_dt, struct_to_xml, get_base_attributes
+from federation.utils.diaspora import retrieve_and_parse_profile
 
 
 class DiasporaEntityMixin(object):
     @classmethod
     def from_base(cls, entity):
         return cls(**get_base_attributes(entity))
+
+    @staticmethod
+    def fill_extra_attributes(attributes):
+        """Implement in subclasses to fill extra attributes when an XML is transformed to an object.
+
+        This is called just before initializing the entity.
+
+        Args:
+            attributes (dict) - Already transformed attributes that will be passed to entity create.
+
+        Returns:
+            Must return the attributes dictionary, possibly with changed or additional values.
+        """
+        return attributes
 
 
 class DiasporaComment(DiasporaEntityMixin, Comment):
@@ -97,3 +112,12 @@ class DiasporaProfile(DiasporaEntityMixin, Profile):
             {"tag_string": " ".join(["#%s" % tag for tag in self.tag_list])},
         ])
         return element
+
+    @staticmethod
+    def fill_extra_attributes(attributes):
+        """Diaspora Profile XML message contains no GUID. We need the guid. Fetch it."""
+        if not attributes.get("handle"):
+            raise ValueError("Can't fill GUID for profile creation since there is no handle! Attrs: %s" % attributes)
+        profile = retrieve_and_parse_profile(attributes.get("handle"))
+        attributes["guid"] = profile.guid
+        return attributes

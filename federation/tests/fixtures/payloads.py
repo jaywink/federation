@@ -32,7 +32,20 @@ DIASPORA_POST_SIMPLE = """<XML>
       <post>
         <status_message>
           <raw_message>((status message))</raw_message>
-          <guid>((guid))</guid>
+          <guid>((guidguidguidguidguidguidguid))</guid>
+          <diaspora_handle>alice@alice.diaspora.example.org</diaspora_handle>
+          <public>false</public>
+          <created_at>2011-07-20 01:36:07 UTC</created_at>
+          <provider_display_name>Socialhome</provider_display_name>
+        </status_message>
+      </post>
+    </XML>
+"""
+
+DIASPORA_POST_INVALID = """<XML>
+      <post>
+        <status_message>
+          <raw_message>((status message))</raw_message>
           <diaspora_handle>alice@alice.diaspora.example.org</diaspora_handle>
           <public>false</public>
           <created_at>2011-07-20 01:36:07 UTC</created_at>
@@ -45,8 +58,8 @@ DIASPORA_POST_SIMPLE = """<XML>
 DIASPORA_POST_COMMENT = """<XML>
       <post>
         <comment>
-          <guid>((guid))</guid>
-          <parent_guid>((parent_guid))</parent_guid>
+          <guid>((guidguidguidguidguidguid))</guid>
+          <parent_guid>((parent_guidparent_guidparent_guidparent_guid))</parent_guid>
           <author_signature>((base64-encoded data))</author_signature>
           <text>((text))</text>
           <diaspora_handle>alice@alice.diaspora.example.org</diaspora_handle>
@@ -59,8 +72,8 @@ DIASPORA_POST_LIKE = """<XML>
       <post>
         <like>
           <target_type>Post</target_type>
-          <guid>((guid))</guid>
-          <parent_guid>((parent_guid))</parent_guid>
+          <guid>((guidguidguidguidguidguid))</guid>
+          <parent_guid>((parent_guidparent_guidparent_guidparent_guid))</parent_guid>
           <author_signature>((base64-encoded data))</author_signature>
           <positive>true</positive>
           <diaspora_handle>alice@alice.diaspora.example.org</diaspora_handle>
