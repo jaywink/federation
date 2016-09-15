@@ -100,11 +100,13 @@ class PublicMixin(BaseEntity):
 
 
 class CreatedAtMixin(BaseEntity):
-    created_at = datetime.datetime.now()
+    created_at = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._required += ["created_at"]
+        if not "created_at" in kwargs:
+            self.created_at = datetime.datetime.now()
 
 
 class RawContentMixin(BaseEntity):
