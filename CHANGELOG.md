@@ -1,4 +1,4 @@
-## [unreleased]
+## [0.7.0] - 2016-09-15
 
 ### Backwards incompatible changes
 * Made `guid` mandatory for `Profile` entity. Library users should always be able to get a full validated object as we consider `guid` a core attribute of a profile.
