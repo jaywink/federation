@@ -94,6 +94,10 @@ class HandleMixin(BaseEntity):
 class PublicMixin(BaseEntity):
     public = False
 
+    def validate_public(self):
+        if not isinstance(self.public, bool):
+            raise ValueError("Public is not valid - it should be True or False")
+
 
 class CreatedAtMixin(BaseEntity):
     created_at = datetime.datetime.now()
