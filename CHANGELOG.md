@@ -1,3 +1,8 @@
+## [unreleased]
+
+### Changed
+* Function `federation.utils.diaspora.parse_profile_from_hcard` now requires a second argument, `handle`. Since in the future Diaspora hCard is not guaranteed to have username and domain, we now pass handle to the parser directly.
+
 ## [0.6.1] - 2016-09-14
 
 ### Fixed

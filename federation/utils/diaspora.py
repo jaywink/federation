@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from urllib.parse import quote, urlparse
+from urllib.parse import quote
 
 from lxml import html
 from xrd import XRD
@@ -95,15 +95,15 @@ def _get_element_attr_or_none(document, selector, attribute):
     return None
 
 
-def parse_profile_from_hcard(hcard):
+def parse_profile_from_hcard(hcard, handle):
     """
     Parse all the fields we can from a hCard document to get a Profile.
 
     Args:
          hcard (str) - HTML hcard document
+         handle (str) - User handle in username@domain.tld format
     """
     doc = html.fromstring(hcard)
-    domain = urlparse(_get_element_attr_or_none(doc, "a#pod_location", "href")).netloc
     profile = Profile(
         name=_get_element_text_or_none(doc, ".fn"),
         image_urls={
@@ -112,7 +112,7 @@ def parse_profile_from_hcard(hcard):
             "large": _get_element_attr_or_none(doc, ".entity_photo .photo", "src"),
         },
         public=True if _get_element_text_or_none(doc, ".searchable") == "true" else False,
-        handle="%s@%s" % (_get_element_text_or_none(doc, ".nickname"), domain),
+        handle=handle,
         guid=_get_element_text_or_none(doc, ".uid"),
         public_key=_get_element_text_or_none(doc, ".key"),
     )
@@ -132,4 +132,4 @@ def retrieve_and_parse_profile(handle):
     hcard = retrieve_diaspora_hcard(handle)
     if not hcard:
         return None
-    return parse_profile_from_hcard(hcard)
+    return parse_profile_from_hcard(hcard, handle)

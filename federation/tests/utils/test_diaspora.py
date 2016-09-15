@@ -126,7 +126,7 @@ class TestParseProfileFromHCard(object):
             public_key="public_key",
             username="username",
         )
-        profile = parse_profile_from_hcard(hcard)
+        profile = parse_profile_from_hcard(hcard, "username@hostname")
         assert profile.name == "fullname"
         assert profile.image_urls == {
             "small": "photo50", "medium": "photo100", "large": "photo300"
@@ -162,4 +162,4 @@ class TestRetrieveAndParseProfile(object):
         )
         mock_retrieve.return_value = hcard
         retrieve_and_parse_profile("foo@bar")
-        mock_parse.assert_called_with(hcard)
+        mock_parse.assert_called_with(hcard, "foo@bar")
