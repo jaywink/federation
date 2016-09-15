@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import datetime
+import warnings
 
 from dirty_validators.basic import Email
 
@@ -15,6 +16,10 @@ class BaseEntity(object):
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)
+            else:
+                warnings.warn("%s.__init__ got parameter %s which this class does not support - ignoring." % (
+                    self.__class__.__name__, key
+                ))
 
     def validate(self):
         """Do validation.
