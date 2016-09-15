@@ -67,6 +67,7 @@ class TestProfileEntity(object):
             entity = Profile(handle="bob@example.com", raw_content="foobar", email="foobar")
             entity.validate()
 
-    def test_guid_is_not_mandatory(self):
+    def test_guid_is_mandatory(self):
         entity = Profile(handle="bob@example.com", raw_content="foobar")
-        entity.validate()
+        with pytest.raises(ValueError):
+            entity.validate()

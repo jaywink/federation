@@ -229,11 +229,6 @@ class Profile(CreatedAtMixin, HandleMixin, RawContentMixin, PublicMixin, GUIDMix
     tag_list = []
     public_key = ""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Don't require a guid for Profile
-        self._required.remove("guid")
-
     def validate_email(self):
         if self.email:
             validator = Email()
