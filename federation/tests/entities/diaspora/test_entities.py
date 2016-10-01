@@ -6,7 +6,7 @@ from lxml import etree
 
 from federation.entities.base import Profile
 from federation.entities.diaspora.entities import DiasporaComment, DiasporaPost, DiasporaLike, DiasporaRequest, \
-    DiasporaProfile
+    DiasporaProfile, DiasporaRetraction
 
 
 class TestEntitiesConvertToXML(object):
@@ -66,6 +66,14 @@ class TestEntitiesConvertToXML(object):
                     b"<nsfw>false</nsfw><tag_string>#socialfederation #federation</tag_string></profile>"
         assert etree.tostring(result) == converted
 
+    def test_retraction_to_xml(self):
+        entity = DiasporaRetraction(handle="bob@example.com", target_guid="x" * 16, entity_type="Post")
+        result = entity.to_xml()
+        assert result.tag == "retraction"
+        converted = b"<retraction><author>bob@example.com</author>" \
+                    b"<target_guid>xxxxxxxxxxxxxxxx</target_guid><target_type>Post</target_type></retraction>"
+        assert etree.tostring(result) == converted
+
 
 class TestDiasporaProfileFillExtraAttributes(object):
     def test_raises_if_no_handle(self):
@@ -79,3 +87,17 @@ class TestDiasporaProfileFillExtraAttributes(object):
         attrs = {"handle": "foo"}
         attrs = DiasporaProfile.fill_extra_attributes(attrs)
         assert attrs == {"handle": "foo", "guid": "guidguidguidguid"}
+
+
+class TestDiasporaRetractionEntityConverters(object):
+    def test_entity_type_from_remote(self):
+        assert DiasporaRetraction.entity_type_from_remote("Post") == "Post"
+        assert DiasporaRetraction.entity_type_from_remote("Like") == "Reaction"
+        assert DiasporaRetraction.entity_type_from_remote("Photo") == "Image"
+        assert DiasporaRetraction.entity_type_from_remote("Comment") == "Comment"
+
+    def test_entity_type_to_remote(self):
+        assert DiasporaRetraction.entity_type_to_remote("Post") == "Post"
+        assert DiasporaRetraction.entity_type_to_remote("Reaction") == "Like"
+        assert DiasporaRetraction.entity_type_to_remote("Image") == "Photo"
+        assert DiasporaRetraction.entity_type_to_remote("Comment") == "Comment"

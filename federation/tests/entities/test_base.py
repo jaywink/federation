@@ -4,7 +4,7 @@ from unittest.mock import Mock
 import pytest
 
 from federation.entities.base import BaseEntity, Relationship, Profile, RawContentMixin, GUIDMixin, HandleMixin, \
-    PublicMixin, Image
+    PublicMixin, Image, Retraction
 from federation.tests.factories.entities import TaggedPostFactory, PostFactory
 
 
@@ -110,6 +110,31 @@ class TestImageEntity(object):
             entity.validate()
         entity = Image(
             guid="x" * 16, handle="foo@example.com", public=False, remote_path="foobar"
+        )
+        with pytest.raises(ValueError):
+            entity.validate()
+
+
+class TestRetractionEntity(object):
+    def test_instance_creation(self):
+        entity = Retraction(
+            handle="foo@example.com", target_guid="x"*16, entity_type="Post"
+        )
+        entity.validate()
+
+    def test_required_validates(self):
+        entity = Retraction(
+            handle="fooexample.com", target_guid="x" * 16, entity_type="Post"
+        )
+        with pytest.raises(ValueError):
+            entity.validate()
+        entity = Retraction(
+            handle="foo@example.com", target_guid="x" * 15, entity_type="Post"
+        )
+        with pytest.raises(ValueError):
+            entity.validate()
+        entity = Retraction(
+            handle="foo@example.com", target_guid="x" * 16, entity_type="Foo"
         )
         with pytest.raises(ValueError):
             entity.validate()

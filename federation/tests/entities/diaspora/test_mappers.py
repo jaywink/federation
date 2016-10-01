@@ -4,12 +4,16 @@ from unittest.mock import patch
 
 import pytest
 
-from federation.entities.base import Comment, Post, Reaction, Relationship, Profile
-from federation.entities.diaspora.entities import DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest, \
-    DiasporaProfile
+from federation.entities.base import Comment, Post, Reaction, Relationship, Profile, Retraction
+from federation.entities.diaspora.entities import (
+    DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest,
+    DiasporaProfile, DiasporaRetraction
+)
 from federation.entities.diaspora.mappers import message_to_objects, get_outbound_entity
-from federation.tests.fixtures.payloads import DIASPORA_POST_SIMPLE, DIASPORA_POST_COMMENT, DIASPORA_POST_LIKE, \
-    DIASPORA_REQUEST, DIASPORA_PROFILE, DIASPORA_POST_INVALID
+from federation.tests.fixtures.payloads import (
+    DIASPORA_POST_SIMPLE, DIASPORA_POST_COMMENT, DIASPORA_POST_LIKE,
+    DIASPORA_REQUEST, DIASPORA_PROFILE, DIASPORA_POST_INVALID, DIASPORA_RETRACTION
+)
 
 
 def mock_fill(attributes):
@@ -90,6 +94,15 @@ class TestDiasporaEntityMappersReceive(object):
         assert profile.nsfw == False
         assert profile.tag_list == ["socialfederation", "federation"]
 
+    def test_message_to_objects_retraction(self):
+        entities = message_to_objects(DIASPORA_RETRACTION)
+        assert len(entities) == 1
+        entity = entities[0]
+        assert isinstance(entity, Retraction)
+        assert entity.handle == "bob@example.com"
+        assert entity.target_guid == "x" * 16
+        assert entity.entity_type == "Post"
+
     @patch("federation.entities.diaspora.mappers.logger.error")
     def test_invalid_entity_logs_an_error(self, mock_logger):
         entities = message_to_objects(DIASPORA_POST_INVALID)
@@ -118,7 +131,7 @@ class TestGetOutboundEntity(object):
         entity = Comment()
         assert isinstance(get_outbound_entity(entity), DiasporaComment)
 
-    def test_reaction_of_like_is_converted_to_diasporaplike(self):
+    def test_reaction_of_like_is_converted_to_diasporalike(self):
         entity = Reaction(reaction="like")
         assert isinstance(get_outbound_entity(entity), DiasporaLike)
 
@@ -141,3 +154,7 @@ class TestGetOutboundEntity(object):
         entity = Relationship(relationship="foo")
         with pytest.raises(ValueError):
             get_outbound_entity(entity)
+
+    def test_retraction_is_converted_to_diasporaretraction(self):
+        entity = Retraction()
+        assert isinstance(get_outbound_entity(entity), DiasporaRetraction)
