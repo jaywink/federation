@@ -111,3 +111,14 @@ DIASPORA_PROFILE = """<XML>
     </post>
 </XML>
 """
+
+DIASPORA_RETRACTION = """<XML>
+    <post>
+        <retraction>
+            <author>bob@example.com</author>
+            <target_guid>xxxxxxxxxxxxxxxx</target_guid>
+            <target_type>Post</target_type>
+        </retraction>
+    </post>
+</XML>
+"""

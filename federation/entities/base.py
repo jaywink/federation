@@ -5,6 +5,11 @@ import warnings
 from dirty_validators.basic import Email
 
 
+__all__ = (
+    "Post", "Image", "Comment", "Reaction", "Relationship", "Profile", "Retraction"
+)
+
+
 class BaseEntity(object):
     _required = []
 
@@ -75,6 +80,18 @@ class GUIDMixin(BaseEntity):
             raise ValueError("GUID must be at least 16 characters")
 
 
+class TargetGUIDMixin(BaseEntity):
+    target_guid = ""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._required += ["target_guid"]
+
+    def validate_target_guid(self):
+        if len(self.target_guid) < 16:
+            raise ValueError("Target GUID must be at least 16 characters")
+
+
 class HandleMixin(BaseEntity):
     handle = ""
 
@@ -143,7 +160,7 @@ class Image(GUIDMixin, HandleMixin, PublicMixin, CreatedAtMixin, BaseEntity):
         self._required += ["remote_path", "remote_name"]
 
 
-class ParticipationMixin(BaseEntity):
+class ParticipationMixin(TargetGUIDMixin):
     """Reflects a participation to something."""
     target_guid = ""
     participation = ""
@@ -152,7 +169,7 @@ class ParticipationMixin(BaseEntity):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._required += ["target_guid", "participation"]
+        self._required += ["participation"]
 
     def validate_participation(self):
         """Ensure participation is of a certain type."""
@@ -231,3 +248,17 @@ class Profile(CreatedAtMixin, HandleMixin, RawContentMixin, PublicMixin, GUIDMix
             validator = Email()
             if not validator.is_valid(self.email):
                 raise ValueError("Email is not valid")
+
+
+class Retraction(CreatedAtMixin, HandleMixin, TargetGUIDMixin):
+    """Represents a retraction of content by author."""
+    entity_type = ""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._required += ["entity_type"]
+
+    def validate_entity_type(self):
+        """Ensure type is some entity we know of."""
+        if self.entity_type not in __all__:
+            raise ValueError("Entity type %s not recognized." % self.entity_type)

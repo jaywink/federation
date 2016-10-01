@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from lxml import etree
 
-from federation.entities.base import Comment, Post, Reaction, Relationship, Profile
+from federation.entities.base import Comment, Post, Reaction, Relationship, Profile, Retraction
 from federation.entities.diaspora.utils import format_dt, struct_to_xml, get_base_attributes
 from federation.utils.diaspora import retrieve_and_parse_profile
 
@@ -121,3 +121,37 @@ class DiasporaProfile(DiasporaEntityMixin, Profile):
         profile = retrieve_and_parse_profile(attributes.get("handle"))
         attributes["guid"] = profile.guid
         return attributes
+
+
+class DiasporaRetraction(DiasporaEntityMixin, Retraction):
+    """Diaspora Retraction."""
+    mapped = {
+        "Like": "Reaction",
+        "Photo": "Image",
+    }
+
+    def to_xml(self):
+        """Convert to XML message."""
+        element = etree.Element("retraction")
+        struct_to_xml(element, [
+            {"author": self.handle},
+            {"target_guid": self.target_guid},
+            {"target_type": DiasporaRetraction.entity_type_to_remote(self.entity_type)},
+        ])
+        return element
+
+    @staticmethod
+    def entity_type_from_remote(value):
+        """Convert entity type between Diaspora names and our Entity names."""
+        if value in DiasporaRetraction.mapped:
+            return DiasporaRetraction.mapped[value]
+        return value
+
+    @staticmethod
+    def entity_type_to_remote(value):
+        """Convert entity type between our Entity names and Diaspora names."""
+        if value in DiasporaRetraction.mapped.values():
+            values = list(DiasporaRetraction.mapped.values())
+            index = values.index(value)
+            return list(DiasporaRetraction.mapped.keys())[index]
+        return value

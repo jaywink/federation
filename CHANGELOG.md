@@ -1,3 +1,8 @@
+## [unreleased]
+
+### Added
+* Added `Retraction` entity with `DiasporaRetraction` counterpart.
+
 ## [0.7.0] - 2016-09-15
 
 ### Backwards incompatible changes

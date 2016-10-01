@@ -4,9 +4,9 @@ from datetime import datetime
 
 from lxml import etree
 
-from federation.entities.base import Image, Relationship, Post, Reaction, Comment, Profile
+from federation.entities.base import Image, Relationship, Post, Reaction, Comment, Profile, Retraction
 from federation.entities.diaspora.entities import (
-    DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest, DiasporaProfile)
+    DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest, DiasporaProfile, DiasporaRetraction)
 
 
 logger = logging.getLogger("social-federation")
@@ -18,6 +18,7 @@ MAPPINGS = {
     "like": DiasporaLike,
     "request": DiasporaRequest,
     "profile": DiasporaProfile,
+    "retraction": DiasporaRetraction,
 }
 
 BOOLEAN_KEYS = [
@@ -73,7 +74,7 @@ def transform_attributes(attrs):
     for key, value in attrs.items():
         if key in ["raw_message", "text"]:
             transformed["raw_content"] = value
-        elif key in ["diaspora_handle", "sender_handle"]:
+        elif key in ["diaspora_handle", "sender_handle", "author"]:
             transformed["handle"] = value
         elif key == "recipient_handle":
             transformed["target_handle"] = value
@@ -99,6 +100,8 @@ def transform_attributes(attrs):
             transformed["raw_content"] = value
         elif key == "searchable":
             transformed["public"] = True if value == "true" else False
+        elif key == "target_type":
+            transformed["entity_type"] = DiasporaRetraction.entity_type_from_remote(value)
         elif key in BOOLEAN_KEYS:
             transformed[key] = True if value == "true" else False
         elif key in DATETIME_KEYS:
@@ -137,4 +140,6 @@ def get_outbound_entity(entity):
             return DiasporaRequest.from_base(entity)
     elif cls == Profile:
         return DiasporaProfile.from_base(entity)
+    elif cls == Retraction:
+        return DiasporaRetraction.from_base(entity)
     raise ValueError("Don't know how to convert this base entity to Diaspora protocol entities.")
