@@ -2,6 +2,7 @@
 
 ### Backwards incompatible changes
 * `federation.utils.diaspora.retrieve_and_parse_profile` will now return `None` if the `Profile` retrieved doesn't validate. This will affect also the output of `federation.fetchers.retrieve_remote_profile` which is the high level function to retrieve profiles.
+* Remove unnecessary `protocol` parameter from `federation.fetchers.retrieve_remote_profile`. We're miles away from including other protocols and ideally the caller shouldn't have to pass in the protocol anyway.
 
 ### Added
 * Added `Retraction` entity with `DiasporaRetraction` counterpart.
