@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from urllib.parse import quote
 
 from lxml import html
 
+from federation.entities.base import Profile
 from federation.hostmeta.generators import DiasporaWebFinger, DiasporaHostMeta, DiasporaHCard, generate_hcard
 from federation.utils.diaspora import retrieve_diaspora_hcard, retrieve_diaspora_webfinger, retrieve_diaspora_host_meta, \
     _get_element_text_or_none, _get_element_attr_or_none, parse_profile_from_hcard, retrieve_and_parse_profile
@@ -163,3 +164,48 @@ class TestRetrieveAndParseProfile(object):
         mock_retrieve.return_value = hcard
         retrieve_and_parse_profile("foo@bar")
         mock_parse.assert_called_with(hcard, "foo@bar")
+
+    @patch("federation.utils.diaspora.parse_profile_from_hcard")
+    @patch("federation.utils.diaspora.retrieve_diaspora_hcard")
+    def test_profile_that_doesnt_validate_returns_none(self, mock_retrieve, mock_parse):
+        hcard = generate_hcard(
+            "diaspora",
+            hostname="https://hostname",
+            fullname="fullname",
+            firstname="firstname",
+            lastname="lastname",
+            photo300="photo300",
+            photo100="photo100",
+            photo50="photo50",
+            searchable="true",
+            guid="guid",
+            public_key="public_key",
+            username="username",
+        )
+        mock_retrieve.return_value = hcard
+        mock_parse.return_value = Profile(guid="123")
+        profile = retrieve_and_parse_profile("foo@bar")
+        assert profile == None
+
+    @patch("federation.utils.diaspora.parse_profile_from_hcard")
+    @patch("federation.utils.diaspora.retrieve_diaspora_hcard")
+    def test_profile_validate_is_called(self, mock_retrieve, mock_parse):
+        hcard = generate_hcard(
+            "diaspora",
+            hostname="https://hostname",
+            fullname="fullname",
+            firstname="firstname",
+            lastname="lastname",
+            photo300="photo300",
+            photo100="photo100",
+            photo50="photo50",
+            searchable="true",
+            guid="guid",
+            public_key="public_key",
+            username="username",
+        )
+        mock_retrieve.return_value = hcard
+        mock_profile = Mock()
+        mock_parse.return_value = mock_profile
+        retrieve_and_parse_profile("foo@bar")
+        assert mock_profile.validate.called

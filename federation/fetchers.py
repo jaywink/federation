@@ -13,6 +13,9 @@ def retrieve_remote_profile(handle, protocol=None):
 
     Args:
         handle (str) - The profile handle in format username@domain.tld
+
+    Returns:
+        Profile or None
     """
     if protocol:
         warnings.warn("Currently retrieve_remote_profile doesn't use the protocol argument. Diaspora protocol"

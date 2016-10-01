@@ -1,5 +1,8 @@
 ## [unreleased]
 
+### Backwards incompatible changes
+* `federation.utils.diaspora.retrieve_and_parse_profile` will now return `None` if the `Profile` retrieved doesn't validate. This will affect also the output of `federation.fetchers.retrieve_remote_profile` which is the high level function to retrieve profiles.
+
 ### Added
 * Added `Retraction` entity with `DiasporaRetraction` counterpart.
 
