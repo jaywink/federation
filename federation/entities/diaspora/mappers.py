@@ -124,7 +124,7 @@ def get_outbound_entity(entity):
         An instance of the correct protocol specific entity.
     """
     cls = entity.__class__
-    if cls in [DiasporaPost, DiasporaRequest, DiasporaComment, DiasporaLike, DiasporaProfile]:
+    if cls in [DiasporaPost, DiasporaRequest, DiasporaComment, DiasporaLike, DiasporaProfile, DiasporaRetraction]:
         # Already fine
         return entity
     elif cls == Post:
