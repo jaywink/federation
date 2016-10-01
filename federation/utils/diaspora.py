@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 from urllib.parse import quote
 
 from lxml import html
@@ -6,6 +7,8 @@ from xrd import XRD
 
 from federation.entities.base import Profile
 from federation.utils.network import fetch_document
+
+logger = logging.getLogger("social-federation")
 
 
 def retrieve_diaspora_hcard(handle):
@@ -127,9 +130,16 @@ def retrieve_and_parse_profile(handle):
         handle (str) - User handle in username@domain.tld format
 
     Returns:
-        Profile
+        Profile or None
     """
     hcard = retrieve_diaspora_hcard(handle)
     if not hcard:
         return None
-    return parse_profile_from_hcard(hcard, handle)
+    profile = parse_profile_from_hcard(hcard, handle)
+    try:
+        profile.validate()
+    except ValueError as ex:
+        logger.warning("retrieve_and_parse_profile - found profile %s but it didn't validate: %s",
+                       profile, ex)
+        return None
+    return profile
