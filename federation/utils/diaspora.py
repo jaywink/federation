@@ -15,11 +15,8 @@ def retrieve_diaspora_hcard(handle):
     """
     Retrieve a remote Diaspora hCard document.
 
-    Args:
-        handle (str) - Remote handle to retrieve
-
-    Returns:
-        str (HTML document)
+    :arg handle: Remote handle to retrieve
+    :return: str (HTML document)
     """
     webfinger = retrieve_diaspora_webfinger(handle)
     if not webfinger:
@@ -35,11 +32,8 @@ def retrieve_diaspora_webfinger(handle):
     """
     Retrieve a remote Diaspora webfinger document.
 
-    Args:
-        handle (str) - Remote handle to retrieve
-
-    Returns:
-        XRD
+    :arg handle: Remote handle to retrieve
+    :returns: ``XRD`` instance
     """
     hostmeta = retrieve_diaspora_host_meta(handle.split("@")[1])
     if not hostmeta:
@@ -56,11 +50,8 @@ def retrieve_diaspora_host_meta(host):
     """
     Retrieve a remote Diaspora host-meta document.
 
-    Args:
-        host (str) - Host to retrieve from
-
-    Returns:
-        XRD
+    :arg host: Host to retrieve from
+    :returns: ``XRD`` instance
     """
     document, code, exception = fetch_document(host=host, path="/.well-known/host-meta")
     if exception:
@@ -73,9 +64,9 @@ def _get_element_text_or_none(document, selector):
     """
     Using a CSS selector, get the element and return the text, or None if no element.
 
-    Args:
-        document (HTMLElement) - HTMLElement document
-        selector (str) - CSS selector
+    :arg document: ``HTMLElement`` document
+    :arg selector: CSS selector
+    :returns: str or None
     """
     element = document.cssselect(selector)
     if element:
@@ -102,9 +93,9 @@ def parse_profile_from_hcard(hcard, handle):
     """
     Parse all the fields we can from a hCard document to get a Profile.
 
-    Args:
-         hcard (str) - HTML hcard document
-         handle (str) - User handle in username@domain.tld format
+    :arg hcard: HTML hcard document (str)
+    :arg handle: User handle in username@domain.tld format
+    :returns: ``federation.entities.Profile`` instance
     """
     doc = html.fromstring(hcard)
     profile = Profile(
@@ -126,11 +117,8 @@ def retrieve_and_parse_profile(handle):
     """
     Retrieve the remote user and return a Profile object.
 
-    Args:
-        handle (str) - User handle in username@domain.tld format
-
-    Returns:
-        Profile or None
+    :arg handle: User handle in username@domain.tld format
+    :returns: ``federation.entities.Profile`` instance or None
     """
     hcard = retrieve_diaspora_hcard(handle)
     if not hcard:

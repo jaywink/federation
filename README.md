@@ -8,15 +8,20 @@ Python library to abstract social federation protocols. Currently supports a sub
 
 * Python 3.x
 
-## Testing
+## Development
 
-Install requirements:
+Install requirements first:
 
-    pip install -r test-requirements.txt
-
-Run tests:
+    pip install -r dev-requirements.txt
+    
+### Running tests
 
     py.test
+
+### Building local docs
+
+    cd docs
+    make html
 
 ## License
 
