@@ -14,21 +14,17 @@ USER_AGENT = "python/social-federation/%s" % __version__
 def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=True):
     """Helper method to fetch remote document.
 
-    Must be given either the `url` or `host`.
-    If `url` is given, only that will be tried without falling back to http from https.
-    If `host` given, `path` will be added to it. Will fall back to http on non-success status code.
+    Must be given either the ``url`` or ``host``.
+    If ``url`` is given, only that will be tried without falling back to http from https.
+    If ``host`` given, `path` will be added to it. Will fall back to http on non-success status code.
 
-    Args:
-        url (str) - Full url to fetch, including protocol
-        host (str) - Domain part only without path or protocol
-        path (str) - Path without domain (defaults to "/")
-        timeout (int) - Seconds to wait for response (defaults to 10)
-        raise_ssl_errors (bool) - Pass False if you want to try HTTP even for sites with SSL errors (default True)
-
-    Returns:
-        document (str) - The full document or None
-        status_code (int) - Status code returned or None
-        error (obj) - Exception raised, if any
+    :arg url: Full url to fetch, including protocol
+    :arg host: Domain part only without path or protocol
+    :arg path: Path without domain (defaults to "/")
+    :arg timeout: Seconds to wait for response (defaults to 10)
+    :arg raise_ssl_errors: Pass False if you want to try HTTP even for sites with SSL errors (default True)
+    :returns: Tuple of document (str or None), status code (int or None) and error (an exception class instance or None)
+    :raises ValueError: If neither url nor host are given as parameters
     """
     if not url and not host:
         raise ValueError("Need url or host.")
@@ -79,16 +75,12 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
 def send_document(url, data, timeout=10, *args, **kwargs):
     """Helper method to send a document via POST.
 
-    Args:
-        url (str) - Full url to send to, including protocol
-        data (dict) - POST data to send
-        timeout (int) - Seconds to wait for response (defaults to 10)
+    Additional ``*args`` and ``**kwargs`` will be passed on to ``requests.post``.
 
-    Additional *args and **kwargs will be passed on to `requests.post`.
-
-    Returns:
-        status_code (int) - Status code returned or None
-        error (obj) - Exception raised, if any
+    :arg url: Full url to send to, including protocol
+    :arg data: POST data to send (dict)
+    :arg timeout: Seconds to wait for response (defaults to 10)
+    :returns: Tuple of status code (int or None) and error (exception class instance or None)
     """
     logger.debug("send_document: url=%s, data=%s, timeout=%s", url, data, timeout)
     headers = {'user-agent': USER_AGENT}

@@ -13,11 +13,12 @@ PROTOCOLS = (
 def handle_receive(payload, user=None, sender_key_fetcher=None, skip_author_verification=False):
     """Takes a payload and passes it to the correct protocol.
 
-    Args:
-        payload (str)                               - Payload blob
-        user (optional, obj)                        - User that will be passed to `protocol.receive`
-        sender_key_fetcher (optional, func)         - Function that accepts sender handle and returns public key
-        skip_author_verification (optional, bool)   - Don't verify sender (test purposes, false default)
+    :arg payload: Payload blob (str)
+    :arg user: User that will be passed to `protocol.receive` (required on private encrypted content)
+    :arg sender_key_fetcher: Function that accepts sender handle and returns public key (optional)
+    :arg skip_author_verification: Don't verify sender (test purposes, false default)
+    :returns: Tuple of sender handle, protocol name and list of entity objects
+    :raises NoSuitableProtocolFound: When no protocol was identified to pass message to
     """
     logger.debug("handle_receive: processing payload: %s", payload)
     found_protocol = None

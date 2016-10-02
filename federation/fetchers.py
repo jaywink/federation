@@ -10,11 +10,8 @@ def retrieve_remote_profile(handle):
 
     Currently, due to no other protocols supported, always use the Diaspora protocol.
 
-    Args:
-        handle (str) - The profile handle in format username@domain.tld
-
-    Returns:
-        Profile or None
+    :arg handle: The profile handle in format username@domain.tld
+    :returns: ``federation.entities.base.Profile`` or ``None``
     """
     protocol_name = "diaspora"
     utils = importlib.import_module("federation.utils.%s" % protocol_name)

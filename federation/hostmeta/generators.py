@@ -13,12 +13,10 @@ from xrd import XRD, Link, Element
 def generate_host_meta(template=None, *args, **kwargs):
     """Generate a host-meta XRD document.
 
-    Args:
-        template (str, optional)    - Ready template to fill with args, for example "diaspora".
-        **kwargs                    - Template specific key-value pairs to fill in, see classes.
+    Template specific key-value pairs need to be passed as ``kwargs``, see classes.
 
-    Returns:
-        str                         - XRD document
+    :arg template: Ready template to fill with args, for example "diaspora" (optional)
+    :returns: Rendered XRD document (str)
     """
     if template == "diaspora":
         hostmeta = DiasporaHostMeta(*args, **kwargs)
@@ -30,12 +28,10 @@ def generate_host_meta(template=None, *args, **kwargs):
 def generate_legacy_webfinger(template=None, *args, **kwargs):
     """Generate a legacy webfinger XRD document.
 
-    Args:
-        template (str, optional)    - Ready template to fill with args, for example "diaspora".
-        **kwargs                    - Template specific key-value pairs to fill in, see classes.
+    Template specific key-value pairs need to be passed as ``kwargs``, see classes.
 
-    Returns:
-        str                         - XRD document
+    :arg template: Ready template to fill with args, for example "diaspora" (optional)
+    :returns: Rendered XRD document (str)
     """
     if template == "diaspora":
         webfinger = DiasporaWebFinger(*args, **kwargs)
@@ -47,12 +43,10 @@ def generate_legacy_webfinger(template=None, *args, **kwargs):
 def generate_hcard(template=None, **kwargs):
     """Generate a hCard document.
 
-    Args:
-        template (str, optional)    - Ready template to fill with args, for example "diaspora".
-        **kwargs                    - Template specific key-value pairs to fill in, see classes.
+    Template specific key-value pairs need to be passed as ``kwargs``, see classes.
 
-    Returns:
-        str                         - HTML document
+    :arg template: Ready template to fill with args, for example "diaspora" (optional)
+    :returns: HTML document (str)
     """
     if template == "diaspora":
         hcard = DiasporaHCard(**kwargs)
@@ -72,8 +66,9 @@ class BaseHostMeta(object):
 class DiasporaHostMeta(BaseHostMeta):
     """Diaspora host-meta.
 
-    Requires keyword args:
-        webfinger_host (str)
+    Required keyword args:
+
+    * webfinger_host (str)
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -99,11 +94,12 @@ class BaseLegacyWebFinger(BaseHostMeta):
 class DiasporaWebFinger(BaseLegacyWebFinger):
     """Diaspora version of legacy WebFinger.
 
-    Requires keyword args:
-        handle (str)        - eg user@domain.tld
-        host (str)          - eg https://domain.tld
-        guid (str)          - guid of user
-        public_key (str)    - public key
+    Required keyword args:
+
+    * handle (str)        - eg user@domain.tld
+    * host (str)          - eg https://domain.tld
+    * guid (str)          - guid of user
+    * public_key (str)    - public key
     """
     def __init__(self, handle, host, guid, public_key, *args, **kwargs):
         super().__init__(handle, *args, **kwargs)
@@ -191,16 +187,9 @@ class SocialRelayWellKnown(object):
 
     Schema see `schemas/social-relay-well-known.json`
 
-    Args:
-        subscribe (bool)
-        tags (tuple, optional)
-        scope (str, optional)       - Should be either "all" or "tags", default is "all" if not given
-
-    Returns:
-        JSON document (str)
-
-    Raises:
-        ValidationError on `render` if values don't conform to schema
+    :arg subscribe: bool
+    :arg tags: tuple, optional
+    :arg scope: Should be either "all" or "tags", default is "all" if not given
     """
     def __init__(self, subscribe, tags=(), scope="all", *args, **kwargs):
         self.doc = {
@@ -273,11 +262,9 @@ def get_nodeinfo_well_known_document(url, document_path=None):
 
     See spec: http://nodeinfo.diaspora.software
 
-    Args:
-        url (str) - The full base url with protocol, ie https://example.com
-        document_path (str) - Custom NodeInfo document path if supplied
-
-    :rtype: dict
+    :arg url: The full base url with protocol, ie https://example.com
+    :arg document_path: Custom NodeInfo document path if supplied (optional)
+    :returns: dict
     """
     return {
         "links": [

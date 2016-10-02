@@ -9,13 +9,13 @@ def handle_create_payload(entity, from_user, to_user=None):
     Since we don't know the protocol, we need to first query the recipient. However, for a PoC implementation,
     supporting only Diaspora, we're going to assume that for now.
 
-    Args:
-        entity (obj)        - Entity object to send
-        from_user (obj)     - User sending the object
-        to_user (obj)       - Contact entry to send to (required for non-public content)
+    ``from_user`` must have ``private_key`` and ``handle`` attributes.
+    ``to_user`` must have ``key`` attribute.
 
-    `from_user` must have `private_key` and `handle` attributes.
-    `to_user` must have `key` attribute.
+    :arg entity: Entity object to send
+    :arg from_user: Profile sending the object
+    :arg to_user: Profile entry to send to (required for non-public content)
+    :returns: Built payload message (str)
     """
     # Just use Diaspora protocol for now
     protocol = Protocol()

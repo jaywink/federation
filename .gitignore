@@ -41,3 +41,6 @@ nosetests.xml
 
 # PyCharm
 .idea/
+
+# Docs
+docs/_build

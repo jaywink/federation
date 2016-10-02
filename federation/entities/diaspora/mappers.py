@@ -117,11 +117,9 @@ def get_outbound_entity(entity):
     We might have to look at entity values to decide the correct outbound entity.
     If we cannot find one, we should raise as conversion cannot be guaranteed to the given protocol.
 
-    Args:
-        entity - any of the base entity types from federation.entities.base
-
-    Returns:
-        An instance of the correct protocol specific entity.
+    :arg entity: An entity instance which can be of a base or protocol entity class.
+    :returns: Protocol specific entity class instance.
+    :raises ValueError: If conversion cannot be done.
     """
     cls = entity.__class__
     if cls in [DiasporaPost, DiasporaRequest, DiasporaComment, DiasporaLike, DiasporaProfile, DiasporaRetraction]:
