@@ -1,1 +1,2 @@
 include federation/hostmeta/templates/*.html
+include docs/introduction.rst
