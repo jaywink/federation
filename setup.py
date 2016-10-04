@@ -1,17 +1,23 @@
 #!/usr/bin/env python
+import os
+
 from setuptools import setup, find_packages
 
 from federation import __version__
 
 
-description = 'Python library for abstracting social federation protocols'
+description = 'Python library to abstract social web federation protocols like Diaspora.'
+
+
+def get_long_description():
+    return open(os.path.join(os.path.dirname(__file__), "docs", "introduction.rst")).read()
 
 
 setup(
     name='Social-Federation',
     version=__version__,
     description=description,
-    long_description=description,
+    long_description=get_long_description(),
     author='Jason Robinson',
     author_email='mail@jasonrobinson.me',
     maintainer='Jason Robinson',

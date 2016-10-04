@@ -44,3 +44,6 @@ nosetests.xml
 
 # Docs
 docs/_build
+
+# LO lock file
+.~lock.*

@@ -4,20 +4,40 @@
 
 # Social-Federation
 
-Python library to abstract social federation protocols. Currently supports a subset of the Diaspora protocol with full support intended, and additional protocols after that.
+Python library to abstract social web federation protocols like Diaspora.
 
 ## Introduction
 
 The aim of Social-Federation is to provide and abstract multiple social web protocols like Diaspora in one package. This way applications can be built to (almost) transparently support many protocols without the app builder having to know everything about those protocols.
 
-## Usage and development
+While the library does aim to provide an easy way to implement protocols like Diaspora into your application, it will not be a one to one mirror image of said protocols. The idea is to present one unified collection of entities and high level methods to the application to use. Since protocols can support different feature sets or have different ideas on even simple entities like status messages, it would be impossible to model the core entities according to a single protocol.
 
-Please check [documentation](http://social-federation.readthedocs.io/en/latest/).
+![](http://social-federation.readthedocs.io/en/latest/_images/generic_diagram.png)
 
-## License
+## Status
 
-BSD 3-clause license (https://www.tldrlegal.com/l/bsd3).
+Currently the library supports a part of the Diaspora protocol with remaining parts being constantly added. See the [Diaspora](http://social-federation.readthedocs.io/en/latest/protocols.html#diaspora) protocol page for support status.
 
-## Author
+The code base is well tested and in use in several projects. Backward incompatible changes will however be made at this stage still, however those will be clearly documented in changelog entries.
+
+## Additional information
+
+### Installation and requirements
+
+See [installation documentation](http://social-federation.readthedocs.io/en/latest/install.html).
+
+### Usage and API documentation
+
+See [usage documentation](http://social-federation.readthedocs.io/en/latest/usage.html).
+
+### Support and help
+
+See [development and support documentation](http://social-federation.readthedocs.io/en/latest/development.html).
+
+### License
+
+[BSD 3-clause license](https://www.tldrlegal.com/l/bsd3)
+
+### Author
 
 Jason Robinson / https://jasonrobinson.me / https://github.com/jaywink

@@ -3,10 +3,10 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Social-Federation's documentation!
-=============================================
+Social-Federation
+=================
 
-Python library to abstract social federation protocols. Currently supports a subset of the Diaspora protocol with full support intended, and additional protocols after that.
+Python library to abstract social web federation protocols like Diaspora.
 
 Contents:
 
@@ -18,6 +18,7 @@ Contents:
    protocols
    usage
    development
+   example_projects
    changelog
 
 
