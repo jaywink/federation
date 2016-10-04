@@ -5,7 +5,7 @@ from recommonmark.parser import CommonMarkParser
 from federation import __version__
 
 #
-# Social-Federation documentation build configuration file, created by
+# Federation documentation build configuration file, created by
 # sphinx-quickstart on Sun Oct  2 12:42:19 2016.
 #
 # This file is execfile()d with the current directory set to its
@@ -147,7 +147,7 @@ html_theme = 'alabaster'
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.
 #
-# html_title = 'Social-Federation v0.8.0'
+# html_title = 'federation v0.8.0'
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #
@@ -247,7 +247,7 @@ html_static_path = ['_static']
 # html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'Social-Federationdoc'
+htmlhelp_basename = 'federationdoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -315,7 +315,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'social-federation', 'Social-Federation Documentation',
+    (master_doc, 'federation', 'federation Documentation',
      [author], 1)
 ]
 
@@ -330,8 +330,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'Social-Federation', 'Social-Federation Documentation',
-     author, 'Social-Federation', 'One line description of project.',
+    (master_doc, 'federation', 'federation Documentation',
+     author, 'federation', 'One line description of project.',
      'Miscellaneous'),
 ]
 

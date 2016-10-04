@@ -9,7 +9,7 @@ from federation.entities.diaspora.entities import (
     DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest, DiasporaProfile, DiasporaRetraction)
 
 
-logger = logging.getLogger("social-federation")
+logger = logging.getLogger("federation")
 
 MAPPINGS = {
     "status_message": DiasporaPost,

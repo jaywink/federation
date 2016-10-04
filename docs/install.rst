@@ -16,4 +16,4 @@ Installation
 
 Install with pip or include in your requirements file.::
 
-   pip install Social-Federation
+   pip install federation

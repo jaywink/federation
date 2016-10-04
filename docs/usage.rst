@@ -5,7 +5,7 @@ Usage
 Entities
 --------
 
-Social-Federation has it's own base entity classes. When incoming messages are processed, the protocol specific entity mappers transform the messages into our base entities. In reverse, when creating outgoing payloads, outgoing protocol specific messages are constructed from the base entities.
+Federation has it's own base entity classes. When incoming messages are processed, the protocol specific entity mappers transform the messages into our base entities. In reverse, when creating outgoing payloads, outgoing protocol specific messages are constructed from the base entities.
 
 Entity types are as follows below.
 
@@ -34,7 +34,7 @@ If you need the correct protocol speficic entity class from the base entity, eac
 Discovery
 ---------
 
-Social-Federation provides many generators to allow providing the discovery documents that are necessary for the Diaspora protocol for example. The have been made as Pythonic as possible so that library users don't have to meddle with the various documents and their internals. Since each web framework will have it's own way of constructing views, one will still have to provide the view code to call the generators.
+Federation provides many generators to allow providing the discovery documents that are necessary for the Diaspora protocol for example. The have been made as Pythonic as possible so that library users don't have to meddle with the various documents and their internals. Since each web framework will have it's own way of constructing views, one will still have to provide the view code to call the generators.
 
 The protocols themselves are too complex to document within this library, please consult protocol documentation on what kind of discovery documents are expected to be served by the application.
 

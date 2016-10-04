@@ -14,7 +14,7 @@ def get_long_description():
 
 
 setup(
-    name='Social-Federation',
+    name='federation',
     version=__version__,
     description=description,
     long_description=get_long_description(),
@@ -22,8 +22,8 @@ setup(
     author_email='mail@jasonrobinson.me',
     maintainer='Jason Robinson',
     maintainer_email='mail@jasonrobinson.me',
-    url='https://github.com/jaywink/social-federation',
-    download_url='https://github.com/jaywink/social-federation/releases',
+    url='https://github.com/jaywink/federation',
+    download_url='https://github.com/jaywink/federation/releases',
     packages=find_packages(),
     license="BSD 3-clause",
     install_requires=[

@@ -3,7 +3,7 @@ import logging
 
 from federation.exceptions import NoSuitableProtocolFoundError
 
-logger = logging.getLogger("social-federation")
+logger = logging.getLogger("federation")
 
 PROTOCOLS = (
     "diaspora",

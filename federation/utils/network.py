@@ -6,9 +6,9 @@ from requests.exceptions import RequestException, HTTPError, SSLError
 
 from federation import __version__
 
-logger = logging.getLogger("social-federation")
+logger = logging.getLogger("federation")
 
-USER_AGENT = "python/social-federation/%s" % __version__
+USER_AGENT = "python/federation/%s" % __version__
 
 
 def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=True):

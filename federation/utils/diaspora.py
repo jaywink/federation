@@ -8,7 +8,7 @@ from xrd import XRD
 from federation.entities.base import Profile
 from federation.utils.network import fetch_document
 
-logger = logging.getLogger("social-federation")
+logger = logging.getLogger("federation")
 
 
 def retrieve_diaspora_hcard(handle):

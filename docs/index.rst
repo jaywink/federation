@@ -1,10 +1,10 @@
-.. Social-Federation documentation master file, created by
+.. federation documentation master file, created by
    sphinx-quickstart on Sun Oct  2 12:42:19 2016.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Social-Federation
-=================
+federation
+==========
 
 Python library to abstract social web federation protocols like Diaspora.
 

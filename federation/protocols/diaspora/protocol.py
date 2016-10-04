@@ -15,7 +15,7 @@ from lxml import etree
 from federation.exceptions import EncryptedMessageError, NoHeaderInMessageError, NoSenderKeyFoundError
 from federation.protocols.base import BaseProtocol
 
-logger = logging.getLogger("social-federation")
+logger = logging.getLogger("federation")
 
 PROTOCOL_NAME = "diaspora"
 PROTOCOL_NS = "https://joindiaspora.com/protocol"

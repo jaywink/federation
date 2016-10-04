@@ -1,7 +1,7 @@
 .. _example-projects:
 
-Projects using Social-Federation
---------------------------------
+Projects using federation
+-------------------------
 
 For examples on how to integrate this library into your project, check these examples:
 
