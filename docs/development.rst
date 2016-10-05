@@ -3,9 +3,9 @@ Development
 
 Help is more than welcome to extend this library. Please see the following resources.
 
-* `Source code repo <https://github.com/jaywink/social-federation>`_
-* `Issue tracker <https://github.com/jaywink/social-federation/issues>`_
-* `Kanban board <https://waffle.io/jaywink/social-federation>`_
+* `Source code repo <https://github.com/jaywink/federation>`_
+* `Issue tracker <https://github.com/jaywink/federation/issues>`_
+* `Kanban board <https://waffle.io/jaywink/federation>`_
 
 Environment setup
 -----------------
@@ -32,6 +32,6 @@ Building local documentation
 Contact for help
 ----------------
 
-Easiest via FreeNode IRC, channel #socialfederation (`webchat here <http://webchat.freenode.net?channels=%23socialfederation&uio=d4>`_).
+Easiest via FreeNode IRC, channel #python-federation (`webchat here <http://webchat.freenode.net?channels=%23python-federation&uio=d4>`_).
 
 You can also ask questions or give feedback via issues.
