@@ -1,6 +1,6 @@
 # Changelog
 
-## [unreleased]
+## [0.8.0] - 2016-10-09
 
 ### Library is now called `federation`
 
