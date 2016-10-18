@@ -114,3 +114,15 @@ class TestSendDocument(object):
         mock_post.assert_called_once_with(
             "http://localhost", data={"foo": "bar"}, **self.call_args
         )
+
+    @patch("federation.utils.network.requests.post", return_value=Mock(status_code=200))
+    def test_headers_in_either_case_are_handled_without_exception(self, mock_post):
+        send_document("http://localhost", {"foo": "bar"}, **self.call_args)
+        mock_post.assert_called_once_with(
+            "http://localhost", data={"foo": "bar"}, headers={'user-agent': USER_AGENT}, timeout=10
+        )
+        mock_post.reset_mock()
+        send_document("http://localhost", {"foo": "bar"}, headers={'User-Agent': USER_AGENT})
+        mock_post.assert_called_once_with(
+            "http://localhost", data={"foo": "bar"}, headers={'User-Agent': USER_AGENT}, timeout=10
+        )

@@ -3,6 +3,7 @@ import logging
 
 import requests
 from requests.exceptions import RequestException, HTTPError, SSLError
+from requests.structures import CaseInsensitiveDict
 
 from federation import __version__
 
@@ -83,7 +84,9 @@ def send_document(url, data, timeout=10, *args, **kwargs):
     :returns: Tuple of status code (int or None) and error (exception class instance or None)
     """
     logger.debug("send_document: url=%s, data=%s, timeout=%s", url, data, timeout)
-    headers = {'user-agent': USER_AGENT}
+    headers = CaseInsensitiveDict({
+        'User-Agent': USER_AGENT,
+    })
     if "headers" in kwargs:
         # Update from kwargs
         headers.update(kwargs.get("headers"))

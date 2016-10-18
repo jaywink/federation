@@ -4,6 +4,7 @@
 
 ### Fixed
 * `federation.utils.network.send_document` incorrectly passed in `kwargs` to `requests.post`, causing an error when sending custom headers.
+* Make sure `federation.utils.network.send_document` headers are treated case insensitive before passing then onwards to `requests.post`.
 
 ## [0.8.0] - 2016-10-09
 
