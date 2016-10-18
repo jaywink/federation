@@ -1,6 +1,6 @@
 # Changelog
 
-## [unreleased]
+## [0.8.1] - 2016-10-18
 
 ### Fixed
 * `federation.utils.network.send_document` incorrectly passed in `kwargs` to `requests.post`, causing an error when sending custom headers.
