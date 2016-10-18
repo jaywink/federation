@@ -105,3 +105,12 @@ class TestSendDocument(object):
         code, exc = send_document("http://localhost", {"foo": "bar"})
         assert code == None
         assert exc.__class__ == RequestException
+
+    @patch("federation.utils.network.requests.post", return_value=Mock(status_code=200))
+    def test_post_called_with_only_one_headers_kwarg(self, mock_post):
+        # A failure might raise:
+        # TypeError: MagicMock object got multiple values for keyword argument 'headers'
+        send_document("http://localhost", {"foo": "bar"}, **self.call_args)
+        mock_post.assert_called_once_with(
+            "http://localhost", data={"foo": "bar"}, **self.call_args
+        )

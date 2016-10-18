@@ -84,8 +84,14 @@ def send_document(url, data, timeout=10, *args, **kwargs):
     """
     logger.debug("send_document: url=%s, data=%s, timeout=%s", url, data, timeout)
     headers = {'user-agent': USER_AGENT}
+    if "headers" in kwargs:
+        # Update from kwargs
+        headers.update(kwargs.get("headers"))
+    kwargs.update({
+        "data": data, "timeout": timeout, "headers": headers
+    })
     try:
-        response = requests.post(url, data=data, timeout=timeout, headers=headers, *args, **kwargs)
+        response = requests.post(url, *args, **kwargs)
         logger.debug("send_document: response status code %s", response.status_code)
         return response.status_code, None
     except RequestException as ex:

@@ -1,5 +1,10 @@
 # Changelog
 
+## [unreleased]
+
+### Fixed
+* `federation.utils.network.send_document` incorrectly passed in `kwargs` to `requests.post`, causing an error when sending custom headers.
+
 ## [0.8.0] - 2016-10-09
 
 ### Library is now called `federation`
