@@ -1,6 +1,6 @@
 # Changelog
 
-## [unreleased]
+## [0.8.2] - 2016-10-23
 
 ### Fixed
 * Remove legacy splitting of payload to 60 chars when creating Diaspora payloads. Diaspora 0.6 doesn't understand these any more.
