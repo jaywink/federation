@@ -361,10 +361,6 @@ class Protocol(BaseProtocol):
                 self.create_encrypted_payload())).decode("ascii")
         else:
             payload = urlsafe_b64encode(self.create_payload()).decode("ascii")
-        # Split every 60 chars
-        payload = '\n'.join([payload[start:start+60]
-                             for start in range(0, len(payload), 60)])
-        payload = payload + "\n"
         etree.SubElement(env, "{%s}data" % nsmap["me"],
                          {"type": "application/xml"}).text = payload
         sig_contents = payload + "." + \
