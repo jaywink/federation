@@ -4,7 +4,9 @@ from unittest.mock import patch
 
 import pytest
 
-from federation.entities.base import Comment, Post, Reaction, Relationship, Profile, Retraction
+from federation.entities.base import (
+    Comment, Post, Reaction, Relationship, Profile, Retraction, Image
+)
 from federation.entities.diaspora.entities import (
     DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest,
     DiasporaProfile, DiasporaRetraction
@@ -12,8 +14,8 @@ from federation.entities.diaspora.entities import (
 from federation.entities.diaspora.mappers import message_to_objects, get_outbound_entity
 from federation.tests.fixtures.payloads import (
     DIASPORA_POST_SIMPLE, DIASPORA_POST_COMMENT, DIASPORA_POST_LIKE,
-    DIASPORA_REQUEST, DIASPORA_PROFILE, DIASPORA_POST_INVALID, DIASPORA_RETRACTION
-)
+    DIASPORA_REQUEST, DIASPORA_PROFILE, DIASPORA_POST_INVALID, DIASPORA_RETRACTION,
+    DIASPORA_POST_WITH_PHOTOS)
 
 
 def mock_fill(attributes):
@@ -34,6 +36,38 @@ class TestDiasporaEntityMappersReceive(object):
         assert post.public == False
         assert post.created_at == datetime(2011, 7, 20, 1, 36, 7)
         assert post.provider_display_name == "Socialhome"
+
+    def test_message_to_objects_post_with_photos(self):
+        entities = message_to_objects(DIASPORA_POST_WITH_PHOTOS)
+        assert len(entities) == 1
+        post = entities[0]
+        assert isinstance(post, DiasporaPost)
+        photo = post._children[0]
+        assert isinstance(photo, Image)
+        assert photo.remote_path == "https://alice.diaspora.example.org/uploads/images/"
+        assert photo.remote_name == "1234.jpg"
+        assert photo.raw_content == None
+        assert photo.linked_type == "Post"
+        assert photo.linked_guid == "((guidguidguidguidguidguidguid))"
+        assert photo.height == 120
+        assert photo.width == 120
+        assert photo.guid == "((guidguidguidguidguidguidguif))"
+        assert photo.handle == "alice@alice.diaspora.example.org"
+        assert photo.public == False
+        assert photo.created_at == datetime(2011, 7, 20, 1, 36, 7)
+        photo = post._children[1]
+        assert isinstance(photo, Image)
+        assert photo.remote_path == "https://alice.diaspora.example.org/uploads/images/"
+        assert photo.remote_name == "12345.jpg"
+        assert photo.raw_content == "foobar"
+        assert photo.linked_type == "Post"
+        assert photo.linked_guid == "((guidguidguidguidguidguidguid))"
+        assert photo.height == 120
+        assert photo.width == 120
+        assert photo.guid == "((guidguidguidguidguidguidguig))"
+        assert photo.handle == "alice@alice.diaspora.example.org"
+        assert photo.public == False
+        assert photo.created_at == datetime(2011, 7, 20, 1, 36, 7)
 
     def test_message_to_objects_comment(self):
         entities = message_to_objects(DIASPORA_POST_COMMENT)

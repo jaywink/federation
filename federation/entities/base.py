@@ -12,6 +12,8 @@ __all__ = (
 
 class BaseEntity(object):
     _required = []
+    _children = []
+    _allowed_children = ()
 
     def __init__(self, *args, **kwargs):
         self._required = []
@@ -29,6 +31,7 @@ class BaseEntity(object):
         1) Check `_required` have been given
         2) Make sure all attrs in required have a non-empty value
         3) Loop through attributes and call their `validate_<attr>` methods, if any.
+        4) Validate allowed children
         """
         attributes = []
         validates = []
@@ -43,6 +46,7 @@ class BaseEntity(object):
         self._validate_empty_attributes(attributes)
         self._validate_required(attributes)
         self._validate_attributes(validates)
+        self._validate_children()
 
     def _validate_required(self, attributes):
         """Ensure required attributes are present."""
@@ -67,6 +71,15 @@ class BaseEntity(object):
                     "Attribute %s cannot be None or an empty string since it is required." % attr
                 )
 
+    def _validate_children(self):
+        """Check that the children we have are allowed here."""
+        for child in self._children:
+            if child.__class__ not in self._allowed_children:
+                raise ValueError(
+                    "Child %s is not allowed as a children for this %s type entity." % (
+                        child, self.__class__
+                    )
+                )
 
 class GUIDMixin(BaseEntity):
     guid = ""
@@ -138,18 +151,17 @@ class RawContentMixin(BaseEntity):
         return set({word.strip("#") for word in self.raw_content.split() if word.startswith("#")})
 
 
-class Post(RawContentMixin, GUIDMixin, HandleMixin, PublicMixin, CreatedAtMixin, BaseEntity):
-    """Reflects a post, status message, etc, which will be composed from the message or to the message."""
-    provider_display_name = ""
-    location = ""
-    photos = []
+class OptionalRawContentMixin(RawContentMixin):
+    """A version of the RawContentMixin where `raw_content` is not required."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._required.remove("raw_content")
 
 
-class Image(GUIDMixin, HandleMixin, PublicMixin, CreatedAtMixin, BaseEntity):
+class Image(GUIDMixin, HandleMixin, PublicMixin, OptionalRawContentMixin, CreatedAtMixin, BaseEntity):
     """Reflects a single image, possibly linked to another object."""
     remote_path = ""
     remote_name = ""
-    text = ""
     linked_type = ""
     linked_guid = ""
     height = 0
@@ -158,6 +170,15 @@ class Image(GUIDMixin, HandleMixin, PublicMixin, CreatedAtMixin, BaseEntity):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._required += ["remote_path", "remote_name"]
+
+
+class Post(RawContentMixin, GUIDMixin, HandleMixin, PublicMixin, CreatedAtMixin, BaseEntity):
+    """Reflects a post, status message, etc, which will be composed from the message or to the message."""
+    provider_display_name = ""
+    location = ""
+    photos = []
+
+    _allowed_children = (Image,)
 
 
 class ParticipationMixin(TargetGUIDMixin):
@@ -182,6 +203,8 @@ class ParticipationMixin(TargetGUIDMixin):
 class Comment(RawContentMixin, GUIDMixin, ParticipationMixin, CreatedAtMixin, HandleMixin):
     """Represents a comment, linked to another object."""
     participation = "comment"
+
+    _allowed_children = (Image,)
 
 
 class Reaction(GUIDMixin, ParticipationMixin, CreatedAtMixin, HandleMixin):
@@ -242,6 +265,8 @@ class Profile(CreatedAtMixin, HandleMixin, RawContentMixin, PublicMixin, GUIDMix
     nsfw = False
     tag_list = []
     public_key = ""
+
+    _allowed_children = (Image,)
 
     def validate_email(self):
         if self.email:

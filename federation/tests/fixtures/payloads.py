@@ -42,6 +42,46 @@ DIASPORA_POST_SIMPLE = """<XML>
     </XML>
 """
 
+
+DIASPORA_POST_WITH_PHOTOS = """<XML>
+      <post>
+        <status_message>
+          <raw_message>((status message))</raw_message>
+          <guid>((guidguidguidguidguidguidguid))</guid>
+          <diaspora_handle>alice@alice.diaspora.example.org</diaspora_handle>
+          <public>false</public>
+          <created_at>2011-07-20 01:36:07 UTC</created_at>
+          <provider_display_name>Socialhome</provider_display_name>
+          <photo>
+            <guid>((guidguidguidguidguidguidguif))</guid>
+            <diaspora_handle>alice@alice.diaspora.example.org</diaspora_handle>
+            <public>false</public>
+            <created_at>2011-07-20 01:36:07 UTC</created_at>
+            <remote_photo_path>https://alice.diaspora.example.org/uploads/images/</remote_photo_path>
+            <remote_photo_name>1234.jpg</remote_photo_name>
+            <text/>
+            <status_message_guid>((guidguidguidguidguidguidguid))</status_message_guid>
+            <height>120</height>
+            <width>120</width>
+          </photo>
+          <photo>
+            <guid>((guidguidguidguidguidguidguig))</guid>
+            <diaspora_handle>alice@alice.diaspora.example.org</diaspora_handle>
+            <public>false</public>
+            <created_at>2011-07-20 01:36:07 UTC</created_at>
+            <remote_photo_path>https://alice.diaspora.example.org/uploads/images/</remote_photo_path>
+            <remote_photo_name>12345.jpg</remote_photo_name>
+            <text>foobar</text>
+            <status_message_guid>((guidguidguidguidguidguidguid))</status_message_guid>
+            <height>120</height>
+            <width>120</width>
+          </photo>
+        </status_message>
+      </post>
+    </XML>
+"""
+
+
 DIASPORA_POST_INVALID = """<XML>
       <post>
         <status_message>
