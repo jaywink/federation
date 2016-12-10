@@ -1,6 +1,6 @@
 # Changelog
 
-## [unreleased]
+## [0.9.0] - 2016-12-10
 
 ### Backwards incompatible changes
 * `Image` no longer has a `text` attribute. It is replaced by `raw_content`, the same attribute as `Post` and `Comment` have. Unlike the latter two, `Image.raw_content` is not mandatory.
