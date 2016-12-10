@@ -30,6 +30,10 @@ DATETIME_KEYS = [
     "created_at",
 ]
 
+INTEGER_KEYS = [
+    "height",
+    "width",
+]
 
 def xml_children_as_dict(node):
     """Turn the children of node <xml> into a dict, keyed by tag name.
@@ -39,32 +43,57 @@ def xml_children_as_dict(node):
     return dict((e.tag, e.text) for e in node)
 
 
-def message_to_objects(message):
-    """Takes in a message extracted by a protocol and maps it to entities."""
-    doc = etree.fromstring(message)
+def element_to_objects(tree):
+    """Transform an Element tree to a list of entities recursively.
+
+    Possible child entities are added to each entity `_children` list.
+
+    :param tree: Element
+    :returns: list of entities
+    """
     entities = []
-    for element in doc.iter():
+    for element in tree:
         cls = MAPPINGS.get(element.tag, None)
-        if cls:
-            attrs = xml_children_as_dict(element)
-            transformed = transform_attributes(attrs)
-            if hasattr(cls, "fill_extra_attributes"):
-                transformed = cls.fill_extra_attributes(transformed)
-            entity = cls(**transformed)
-            try:
-                entity.validate()
-                entities.append(entity)
-            except ValueError as ex:
-                logger.error("Failed to validate entity %s: %s", entity, ex, extra={
-                    "attrs": attrs,
-                    "transformed": transformed,
-                })
-                continue
-            if cls == DiasporaRequest:
-                # We support sharing/following separately, so also generate base Relationship for the following part
-                transformed.update({"relationship": "following"})
-                entity = Relationship(**transformed)
-                entities.append(entity)
+        if not cls:
+            continue
+
+        attrs = xml_children_as_dict(element)
+        transformed = transform_attributes(attrs)
+        if hasattr(cls, "fill_extra_attributes"):
+            transformed = cls.fill_extra_attributes(transformed)
+        entity = cls(**transformed)
+        try:
+            entity.validate()
+        except ValueError as ex:
+            logger.error("Failed to validate entity %s: %s", entity, ex, extra={
+                "attrs": attrs,
+                "transformed": transformed,
+            })
+            continue
+        # Do child elements
+        entity._children = element_to_objects(element)
+        # Add to entities list
+        entities.append(entity)
+        if cls == DiasporaRequest:
+            # We support sharing/following separately, so also generate base Relationship for the following part
+            transformed.update({"relationship": "following"})
+            relationship = Relationship(**transformed)
+            entities.append(relationship)
+    return entities
+
+
+def message_to_objects(message):
+    """Takes in a message extracted by a protocol and maps it to entities.
+
+    :param message: XML payload
+    :type message: str
+    :returns: list of entities
+    """
+    doc = etree.fromstring(message)
+    if doc[0].tag == "post":
+        # Skip the top <post> element if it exists
+        doc = doc[0]
+    entities = element_to_objects(doc)
     return entities
 
 
@@ -102,10 +131,19 @@ def transform_attributes(attrs):
             transformed["public"] = True if value == "true" else False
         elif key == "target_type":
             transformed["entity_type"] = DiasporaRetraction.entity_type_from_remote(value)
+        elif key == "remote_photo_path":
+            transformed["remote_path"] = value
+        elif key == "remote_photo_name":
+            transformed["remote_name"] = value
+        elif key == "status_message_guid":
+            transformed["linked_guid"] = value
+            transformed["linked_type"] = "Post"
         elif key in BOOLEAN_KEYS:
             transformed[key] = True if value == "true" else False
         elif key in DATETIME_KEYS:
             transformed[key] = datetime.strptime(value, "%Y-%m-%d %H:%M:%S %Z")
+        elif key in INTEGER_KEYS:
+            transformed[key] = int(value)
         else:
             transformed[key] = value or ""
     return transformed

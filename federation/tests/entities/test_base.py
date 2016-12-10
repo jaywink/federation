@@ -25,6 +25,28 @@ class TestBaseEntityCallsValidateMethods(object):
         post.validate()
         assert post.validate_location.call_count == 1
 
+    def test_entity_calls_main_validate_methods(self):
+        post = PostFactory()
+        post._validate_required = Mock()
+        post._validate_attributes = Mock()
+        post._validate_empty_attributes = Mock()
+        post._validate_children = Mock()
+        post.validate()
+        assert post._validate_required.call_count == 1
+        assert post._validate_attributes.call_count == 1
+        assert post._validate_empty_attributes.call_count == 1
+        assert post._validate_children.call_count == 1
+
+    def test_validate_children(self):
+        post = PostFactory()
+        image = Image()
+        profile = Profile()
+        post._children = [image]
+        post._validate_children()
+        post._children = [profile]
+        with pytest.raises(ValueError):
+            post._validate_children()
+
 
 class TestGUIDMixinValidate(object):
     def test_validate_guid_raises_on_low_length(self):

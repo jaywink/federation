@@ -1,5 +1,16 @@
 # Changelog
 
+## [unreleased]
+
+### Backwards incompatible changes
+* `Image` no longer has a `text` attribute. It is replaced by `raw_content`, the same attribute as `Post` and `Comment` have. Unlike the latter two, `Image.raw_content` is not mandatory.
+
+### Added
+* Entities can now have a children. These can be accessed using the `_children` list. Acceptable children depends on the entity. Currently, `Post`, `Comment` and `Profile` can have children of entity type `Image`. Child types are validated in the `.validate()` entity method call.
+
+### Fixed
+* Diaspora protocol `message_to_objects` method (called through inbound high level methods) now correctly parses Diaspora `<photo>` elements and creates `Image` entities from them. If they are children of status messages, they will be available through the `Post._children` list.
+
 ## [0.8.2] - 2016-10-23
 
 ### Fixed
