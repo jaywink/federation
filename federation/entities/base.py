@@ -253,7 +253,7 @@ class Relationship(CreatedAtMixin, HandleMixin):
             ))
 
 
-class Profile(CreatedAtMixin, HandleMixin, RawContentMixin, PublicMixin, GUIDMixin):
+class Profile(CreatedAtMixin, HandleMixin, OptionalRawContentMixin, PublicMixin, GUIDMixin):
     """Represents a profile for a user."""
     name = ""
     email = ""

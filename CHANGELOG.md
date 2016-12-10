@@ -1,5 +1,10 @@
 # Changelog
 
+## [unreleased]
+
+### Fixes
+* Made `Profile.raw_content` optional. This fixes validating profiles parsed from Diaspora hCard's.
+
 ## [0.9.0] - 2016-12-10
 
 ### Backwards incompatible changes
