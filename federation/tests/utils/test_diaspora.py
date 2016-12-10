@@ -115,7 +115,7 @@ class TestParseProfileFromHCard(object):
     def test_profile_is_parsed(self):
         hcard = generate_hcard(
             "diaspora",
-            hostname="https://hostname",
+            hostname="https://example.com",
             fullname="fullname",
             firstname="firstname",
             lastname="lastname",
@@ -123,19 +123,20 @@ class TestParseProfileFromHCard(object):
             photo100="photo100",
             photo50="photo50",
             searchable="true",
-            guid="guid",
+            guid="guidguidguidguid",
             public_key="public_key",
             username="username",
         )
-        profile = parse_profile_from_hcard(hcard, "username@hostname")
+        profile = parse_profile_from_hcard(hcard, "username@example.com")
         assert profile.name == "fullname"
         assert profile.image_urls == {
             "small": "photo50", "medium": "photo100", "large": "photo300"
         }
         assert profile.public == True
-        assert profile.handle == "username@hostname"
-        assert profile.guid == "guid"
+        assert profile.handle == "username@example.com"
+        assert profile.guid == "guidguidguidguid"
         assert profile.public_key == "public_key\n"
+        profile.validate()
 
 
 class TestRetrieveAndParseProfile(object):
