@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import xml
 from unittest.mock import patch, Mock
 from urllib.parse import quote
 
@@ -67,6 +68,17 @@ class TestRetrieveDiasporaWebfinger(object):
         mock_fetch.return_value = None, None, ValueError()
         document = retrieve_diaspora_webfinger("bob@localhost")
         mock_fetch.assert_called_with("https://localhost/webfinger?q=%s" % quote("bob@localhost"))
+        assert document == None
+
+    @patch("federation.utils.diaspora.fetch_document", return_value=("document", None, None))
+    @patch("federation.utils.diaspora.retrieve_diaspora_host_meta", return_value=None)
+    @patch("federation.utils.diaspora.XRD.parse_xrd", side_effect=xml.parsers.expat.ExpatError)
+    def test_returns_none_on_xrd_parse_exception(self, mock_parse, mock_retrieve, mock_fetch):
+        mock_retrieve.return_value = DiasporaHostMeta(
+            webfinger_host="https://localhost"
+        ).xrd
+        document = retrieve_diaspora_webfinger("bob@localhost")
+        mock_parse.assert_called_once_with("document")
         assert document == None
 
 

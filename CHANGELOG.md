@@ -1,5 +1,10 @@
 # Changelog
 
+## [unreleased]
+
+### Fixes
+* Don't crash `federation.utils.diaspora.retrieve_diaspora_webfinger` if XRD parse raises an `xml.parsers.expat.ExpatError`.
+
 ## [0.9.1] - 2016-12-10
 
 ### Fixes

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+import xml
 from urllib.parse import quote
 
 from lxml import html
@@ -42,7 +43,10 @@ def retrieve_diaspora_webfinger(handle):
     document, code, exception = fetch_document(url)
     if exception:
         return None
-    xrd = XRD.parse_xrd(document)
+    try:
+        xrd = XRD.parse_xrd(document)
+    except xml.parsers.expat.ExpatError:
+        return None
     return xrd
 
 
