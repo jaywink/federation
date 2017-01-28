@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import inspect
 
 from dateutil.tz import tzlocal, tzutc
@@ -21,7 +20,7 @@ def format_dt(dt):
     Format a datetime in the way that D* nodes expect.
     """
     return ensure_timezone(dt).astimezone(tzutc()).strftime(
-        '%Y-%m-%d %H:%M:%S %Z'
+        '%Y-%m-%dT%H:%M:%SZ'
     )
 
 

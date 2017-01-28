@@ -35,6 +35,21 @@ DIASPORA_POST_SIMPLE = """<XML>
           <guid>((guidguidguidguidguidguidguid))</guid>
           <diaspora_handle>alice@alice.diaspora.example.org</diaspora_handle>
           <public>false</public>
+          <created_at>2011-07-20T01:36:07Z</created_at>
+          <provider_display_name>Socialhome</provider_display_name>
+        </status_message>
+      </post>
+    </XML>
+"""
+
+
+DIASPORA_POST_LEGACY_TIMESTAMP = """<XML>
+      <post>
+        <status_message>
+          <raw_message>((status message))</raw_message>
+          <guid>((guidguidguidguidguidguidguid))</guid>
+          <diaspora_handle>alice@alice.diaspora.example.org</diaspora_handle>
+          <public>false</public>
           <created_at>2011-07-20 01:36:07 UTC</created_at>
           <provider_display_name>Socialhome</provider_display_name>
         </status_message>
@@ -50,13 +65,13 @@ DIASPORA_POST_WITH_PHOTOS = """<XML>
           <guid>((guidguidguidguidguidguidguid))</guid>
           <diaspora_handle>alice@alice.diaspora.example.org</diaspora_handle>
           <public>false</public>
-          <created_at>2011-07-20 01:36:07 UTC</created_at>
+          <created_at>2011-07-20T01:36:07Z</created_at>
           <provider_display_name>Socialhome</provider_display_name>
           <photo>
             <guid>((guidguidguidguidguidguidguif))</guid>
             <diaspora_handle>alice@alice.diaspora.example.org</diaspora_handle>
             <public>false</public>
-            <created_at>2011-07-20 01:36:07 UTC</created_at>
+            <created_at>2011-07-20T01:36:07Z</created_at>
             <remote_photo_path>https://alice.diaspora.example.org/uploads/images/</remote_photo_path>
             <remote_photo_name>1234.jpg</remote_photo_name>
             <text/>
@@ -68,7 +83,7 @@ DIASPORA_POST_WITH_PHOTOS = """<XML>
             <guid>((guidguidguidguidguidguidguig))</guid>
             <diaspora_handle>alice@alice.diaspora.example.org</diaspora_handle>
             <public>false</public>
-            <created_at>2011-07-20 01:36:07 UTC</created_at>
+            <created_at>2011-07-20T01:36:07Z</created_at>
             <remote_photo_path>https://alice.diaspora.example.org/uploads/images/</remote_photo_path>
             <remote_photo_name>12345.jpg</remote_photo_name>
             <text>foobar</text>
@@ -88,7 +103,7 @@ DIASPORA_POST_INVALID = """<XML>
           <raw_message>((status message))</raw_message>
           <diaspora_handle>alice@alice.diaspora.example.org</diaspora_handle>
           <public>false</public>
-          <created_at>2011-07-20 01:36:07 UTC</created_at>
+          <created_at>2011-07-20T01:36:07Z</created_at>
           <provider_display_name>Socialhome</provider_display_name>
         </status_message>
       </post>

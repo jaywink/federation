@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from datetime import datetime
 from unittest.mock import patch
 
@@ -15,7 +14,7 @@ from federation.entities.diaspora.mappers import message_to_objects, get_outboun
 from federation.tests.fixtures.payloads import (
     DIASPORA_POST_SIMPLE, DIASPORA_POST_COMMENT, DIASPORA_POST_LIKE,
     DIASPORA_REQUEST, DIASPORA_PROFILE, DIASPORA_POST_INVALID, DIASPORA_RETRACTION,
-    DIASPORA_POST_WITH_PHOTOS)
+    DIASPORA_POST_WITH_PHOTOS, DIASPORA_POST_LEGACY_TIMESTAMP)
 
 
 def mock_fill(attributes):
@@ -36,6 +35,11 @@ class TestDiasporaEntityMappersReceive(object):
         assert post.public == False
         assert post.created_at == datetime(2011, 7, 20, 1, 36, 7)
         assert post.provider_display_name == "Socialhome"
+
+    def test_message_to_objects_legact_timestamp(self):
+        entities = message_to_objects(DIASPORA_POST_LEGACY_TIMESTAMP)
+        post = entities[0]
+        assert post.created_at == datetime(2011, 7, 20, 1, 36, 7)
 
     def test_message_to_objects_post_with_photos(self):
         entities = message_to_objects(DIASPORA_POST_WITH_PHOTOS)

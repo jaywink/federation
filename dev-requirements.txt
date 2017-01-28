@@ -15,3 +15,6 @@ pytest-warnings
 sphinx
 sphinx-autobuild
 recommonmark
+
+# Some datetime magic
+arrow
