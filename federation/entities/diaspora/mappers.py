@@ -141,7 +141,12 @@ def transform_attributes(attrs):
         elif key in BOOLEAN_KEYS:
             transformed[key] = True if value == "true" else False
         elif key in DATETIME_KEYS:
-            transformed[key] = datetime.strptime(value, "%Y-%m-%d %H:%M:%S %Z")
+            try:
+                # New style timestamps since in protocol 0.1.6
+                transformed[key] = datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
+            except ValueError:
+                # Legacy style timestamps
+                transformed[key] = datetime.strptime(value, "%Y-%m-%d %H:%M:%S %Z")
         elif key in INTEGER_KEYS:
             transformed[key] = int(value)
         else:

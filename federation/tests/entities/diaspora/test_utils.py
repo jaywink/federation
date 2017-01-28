@@ -1,8 +1,10 @@
-# -*- coding: utf-8 -*-
+import datetime
 import re
 
+import arrow
+
 from federation.entities.base import Post
-from federation.entities.diaspora.utils import get_base_attributes, get_full_xml_representation
+from federation.entities.diaspora.utils import get_base_attributes, get_full_xml_representation, format_dt
 
 
 class TestGetBaseAttributes(object):
@@ -22,3 +24,9 @@ class TestGetFullXMLRepresentation(object):
         assert document == "<XML><post><status_message><raw_message></raw_message><guid></guid>" \
                            "<diaspora_handle></diaspora_handle><public>false</public>" \
                            "<provider_display_name></provider_display_name></status_message></post></XML>"
+
+
+class TestFormatDt(object):
+    def test_formatted_string_returned_from_tz_aware_datetime(self):
+        dt = arrow.get(datetime.datetime(2017, 1, 28, 3, 2, 3), "Europe/Helsinki").datetime
+        assert format_dt(dt) == "2017-01-28T01:02:03Z"

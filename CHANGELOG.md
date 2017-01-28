@@ -2,6 +2,9 @@
 
 ## [unreleased]
 
+### Added
+* Add support for new Diaspora protocol ISO 8601 timestamp format introduced in protocol version 0.1.6.
+
 ### Fixes
 * Don't crash `federation.utils.diaspora.retrieve_diaspora_webfinger` if XRD parse raises an `xml.parsers.expat.ExpatError`.
 
