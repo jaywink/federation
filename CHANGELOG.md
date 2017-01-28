@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.10.0]
+## [0.10.0] - 2017-01-28
 
 ### Added
 * Add support for new Diaspora protocol ISO 8601 timestamp format introduced in protocol version 0.1.6.
