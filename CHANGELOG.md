@@ -1,6 +1,6 @@
 # Changelog
 
-## [unreleased]
+## [0.10.1] - 2017-03-09
 
 ### Fixes
 * Ensure tags are lower cased after collecting them from entity `raw_content`. 
