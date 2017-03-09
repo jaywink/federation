@@ -29,7 +29,7 @@ class TaggedPostFactory(PostFactory):
     @factory.lazy_attribute
     def raw_content(self):
         parts = []
-        for tag in ["tagone", "tagtwo", "tagthree", "tagthree"]:  # Yes, three is twice for fun
+        for tag in ["tagone", "tagtwo", "tagthree", "tagthree", "SnakeCase", "UPPER", ""]:
             parts.append(fuzzy.FuzzyText(length=50).fuzz())
             parts.append("#%s" % tag)
         shuffle(parts)
