@@ -11,7 +11,7 @@ from federation.tests.factories.entities import TaggedPostFactory, PostFactory
 class TestPostEntityTags(object):
     def test_post_entity_returns_list_of_tags(self):
         post = TaggedPostFactory()
-        assert post.tags == {"tagone", "tagtwo", "tagthree"}
+        assert post.tags == {"tagone", "tagtwo", "tagthree", "upper", "snakecase"}
 
     def test_post_entity_without_raw_content_tags_returns_empty_set(self):
         post = PostFactory(raw_content=None)
