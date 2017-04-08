@@ -4,6 +4,8 @@
 
 # federation
 
+[![Join the chat at https://gitter.im/python-federation/Lobby](https://badges.gitter.im/python-federation/Lobby.svg)](https://gitter.im/python-federation/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Python library to abstract social web federation protocols like Diaspora.
 
 ## Introduction
