@@ -62,8 +62,8 @@ source_suffix = ['.rst', '.md']
 master_doc = 'index'
 
 # General information about the project.
-project = 'Social-Federation'
-copyright = '2016, Jason Robinson'
+project = 'Federation'
+copyright = '2016-2017, Jason Robinson'
 author = 'Jason Robinson'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -273,7 +273,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'Social-Federation.tex', 'Social-Federation Documentation',
+    (master_doc, 'Federation.tex', 'Federation Documentation',
      'Jason Robinson', 'manual'),
 ]
 
