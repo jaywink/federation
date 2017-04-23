@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from unittest.mock import Mock
 
 import pytest
@@ -10,7 +9,7 @@ from federation.entities.base import (
 from federation.tests.factories.entities import TaggedPostFactory, PostFactory
 
 
-class TestPostEntityTags(object):
+class TestPostEntityTags():
     def test_post_entity_returns_list_of_tags(self):
         post = TaggedPostFactory()
         assert post.tags == {"tagone", "tagtwo", "tagthree", "upper", "snakecase"}
@@ -20,7 +19,7 @@ class TestPostEntityTags(object):
         assert post.tags == set()
 
 
-class TestBaseEntityCallsValidateMethods(object):
+class TestBaseEntityCallsValidateMethods():
     def test_entity_calls_attribute_validate_method(self):
         post = PostFactory()
         post.validate_location = Mock()
@@ -50,21 +49,21 @@ class TestBaseEntityCallsValidateMethods(object):
             post._validate_children()
 
 
-class TestGUIDMixinValidate(object):
+class TestGUIDMixinValidate():
     def test_validate_guid_raises_on_low_length(self):
         guid = GUIDMixin(guid="x"*15)
         with pytest.raises(ValueError):
             guid.validate()
 
 
-class TestHandleMixinValidate(object):
+class TestHandleMixinValidate():
     def test_validate_handle_raises_on_invalid_format(self):
         handle = HandleMixin(handle="foobar")
         with pytest.raises(ValueError):
             handle.validate()
 
 
-class TestPublicMixinValidate(object):
+class TestPublicMixinValidate():
     def test_validate_public_raises_on_low_length(self):
         public = PublicMixin(public="foobar")
         with pytest.raises(ValueError):
@@ -80,7 +79,7 @@ class TestSignedMixinValidate():
         signed.validate()
 
 
-class TestEntityRequiredAttributes(object):
+class TestEntityRequiredAttributes():
     def test_entity_checks_for_required_attributes(self):
         entity = BaseEntity()
         entity._required = ["foobar"]
@@ -96,7 +95,7 @@ class TestEntityRequiredAttributes(object):
             entity.validate()
 
 
-class TestRelationshipEntity(object):
+class TestRelationshipEntity():
     def test_instance_creation(self):
         entity = Relationship(handle="bob@example.com", target_handle="alice@example.com", relationship="following")
         assert entity
@@ -112,7 +111,7 @@ class TestRelationshipEntity(object):
             entity.validate()
 
 
-class TestProfileEntity(object):
+class TestProfileEntity():
     def test_instance_creation(self):
         entity = Profile(handle="bob@example.com", raw_content="foobar")
         assert entity
@@ -128,7 +127,7 @@ class TestProfileEntity(object):
             entity.validate()
 
 
-class TestImageEntity(object):
+class TestImageEntity():
     def test_instance_creation(self):
         entity = Image(
             guid="x"*16, handle="foo@example.com", public=False, remote_path="foobar", remote_name="barfoo"
@@ -148,7 +147,7 @@ class TestImageEntity(object):
             entity.validate()
 
 
-class TestRetractionEntity(object):
+class TestRetractionEntity():
     def test_instance_creation(self):
         entity = Retraction(
             handle="foo@example.com", target_guid="x"*16, entity_type="Post"
