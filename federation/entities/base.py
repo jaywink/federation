@@ -183,7 +183,6 @@ class Post(RawContentMixin, GUIDMixin, HandleMixin, PublicMixin, CreatedAtMixin,
 
 class ParticipationMixin(TargetGUIDMixin):
     """Reflects a participation to something."""
-    target_guid = ""
     participation = ""
 
     _participation_valid_values = ["reaction", "subscription", "comment"]
