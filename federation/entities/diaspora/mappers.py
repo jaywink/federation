@@ -72,6 +72,8 @@ def element_to_objects(tree):
             continue
         # Do child elements
         entity._children = element_to_objects(element)
+        # Add protocol name
+        entity._source_protocol = "diaspora"
         # Add to entities list
         entities.append(entity)
         if cls == DiasporaRequest:

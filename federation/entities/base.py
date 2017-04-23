@@ -14,6 +14,7 @@ class BaseEntity(object):
     _required = []
     _children = []
     _allowed_children = ()
+    _source_protocol = ""
 
     def __init__(self, *args, **kwargs):
         self._required = []

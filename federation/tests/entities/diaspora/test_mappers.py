@@ -149,6 +149,10 @@ class TestDiasporaEntityMappersReceive(object):
         assert len(entities) == 0
         assert mock_logger.called
 
+    def test_adds_source_protocol_to_entity(self):
+        entities = message_to_objects(DIASPORA_POST_SIMPLE)
+        assert entities[0]._source_protocol == "diaspora"
+
 
 class TestGetOutboundEntity(object):
     def test_already_fine_entities_are_returned_as_is(self):
