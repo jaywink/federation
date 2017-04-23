@@ -118,6 +118,7 @@ DIASPORA_POST_COMMENT = """<XML>
           <author_signature>((base64-encoded data))</author_signature>
           <text>((text))</text>
           <diaspora_handle>alice@alice.diaspora.example.org</diaspora_handle>
+          <author_signature>((signature))</author_signature>
         </comment>
       </post>
     </XML>
@@ -132,6 +133,7 @@ DIASPORA_POST_LIKE = """<XML>
           <author_signature>((base64-encoded data))</author_signature>
           <positive>true</positive>
           <diaspora_handle>alice@alice.diaspora.example.org</diaspora_handle>
+          <author_signature>((signature))</author_signature>
         </like>
       </post>
     </XML>

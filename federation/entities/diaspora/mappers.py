@@ -138,6 +138,8 @@ def transform_attributes(attrs):
         elif key == "status_message_guid":
             transformed["linked_guid"] = value
             transformed["linked_type"] = "Post"
+        elif key == "author_signature":
+            transformed["signature"] = value
         elif key in BOOLEAN_KEYS:
             transformed[key] = True if value == "true" else False
         elif key in DATETIME_KEYS:

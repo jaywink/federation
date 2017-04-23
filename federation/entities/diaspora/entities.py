@@ -28,14 +28,12 @@ class DiasporaEntityMixin(object):
 
 class DiasporaComment(DiasporaEntityMixin, Comment):
     """Diaspora comment."""
-    author_signature = ""
-
     def to_xml(self):
         element = etree.Element("comment")
         struct_to_xml(element, [
             {'guid': self.guid},
             {'parent_guid': self.target_guid},
-            {'author_signature': self.author_signature},
+            {'author_signature': self.signature},
             {'text': self.raw_content},
             {'diaspora_handle': self.handle},
         ])
@@ -60,7 +58,6 @@ class DiasporaPost(DiasporaEntityMixin, Post):
 
 class DiasporaLike(DiasporaEntityMixin, Reaction):
     """Diaspora like."""
-    author_signature = ""
     reaction = "like"
 
     def to_xml(self):
@@ -70,7 +67,7 @@ class DiasporaLike(DiasporaEntityMixin, Reaction):
             {"target_type": "Post"},
             {'guid': self.guid},
             {'parent_guid': self.target_guid},
-            {'author_signature': self.author_signature},
+            {'author_signature': self.signature},
             {"positive": "true"},
             {'diaspora_handle': self.handle},
         ])

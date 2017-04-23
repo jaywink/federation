@@ -1,15 +1,15 @@
-# -*- coding: utf-8 -*-
 from unittest.mock import patch
 
 import pytest
 from lxml import etree
 
 from federation.entities.base import Profile
-from federation.entities.diaspora.entities import DiasporaComment, DiasporaPost, DiasporaLike, DiasporaRequest, \
-    DiasporaProfile, DiasporaRetraction
+from federation.entities.diaspora.entities import (
+    DiasporaComment, DiasporaPost, DiasporaLike, DiasporaRequest, DiasporaProfile, DiasporaRetraction,
+)
 
 
-class TestEntitiesConvertToXML(object):
+class TestEntitiesConvertToXML():
     def test_post_to_xml(self):
         entity = DiasporaPost(
             raw_content="raw_content", guid="guid", handle="handle", public=True,
@@ -25,20 +25,23 @@ class TestEntitiesConvertToXML(object):
         assert etree.tostring(result) == converted
 
     def test_comment_to_xml(self):
-        entity = DiasporaComment(raw_content="raw_content", guid="guid", target_guid="target_guid", handle="handle")
+        entity = DiasporaComment(
+            raw_content="raw_content", guid="guid", target_guid="target_guid", handle="handle",
+            signature="signature"
+        )
         result = entity.to_xml()
         assert result.tag == "comment"
         converted = b"<comment><guid>guid</guid><parent_guid>target_guid</parent_guid>" \
-                    b"<author_signature></author_signature><text>raw_content</text>" \
+                    b"<author_signature>signature</author_signature><text>raw_content</text>" \
                     b"<diaspora_handle>handle</diaspora_handle></comment>"
         assert etree.tostring(result) == converted
 
     def test_like_to_xml(self):
-        entity = DiasporaLike(guid="guid", target_guid="target_guid", handle="handle")
+        entity = DiasporaLike(guid="guid", target_guid="target_guid", handle="handle", signature="signature")
         result = entity.to_xml()
         assert result.tag == "like"
         converted = b"<like><target_type>Post</target_type><guid>guid</guid><parent_guid>target_guid</parent_guid>" \
-                    b"<author_signature></author_signature><positive>true</positive>" \
+                    b"<author_signature>signature</author_signature><positive>true</positive>" \
                     b"<diaspora_handle>handle</diaspora_handle></like>"
         assert etree.tostring(result) == converted
 

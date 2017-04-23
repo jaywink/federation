@@ -84,6 +84,7 @@ class TestDiasporaEntityMappersReceive(object):
         assert comment.handle == "alice@alice.diaspora.example.org"
         assert comment.participation == "comment"
         assert comment.raw_content == "((text))"
+        assert comment.signature == "((signature))"
 
     def test_message_to_objects_like(self):
         entities = message_to_objects(DIASPORA_POST_LIKE)
@@ -96,6 +97,7 @@ class TestDiasporaEntityMappersReceive(object):
         assert like.handle == "alice@alice.diaspora.example.org"
         assert like.participation == "reaction"
         assert like.reaction == "like"
+        assert like.signature == "((signature))"
 
     def test_message_to_objects_request(self):
         entities = message_to_objects(DIASPORA_REQUEST)
