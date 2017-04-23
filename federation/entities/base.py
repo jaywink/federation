@@ -158,6 +158,18 @@ class OptionalRawContentMixin(RawContentMixin):
         self._required.remove("raw_content")
 
 
+class SignedMixin(BaseEntity):
+    """Adds a signature string or object (depending on protocol).
+    
+    This will be needed to for example when relaying content.
+    """
+    signature = ""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._required += ["signature"]
+
+
 class Image(GUIDMixin, HandleMixin, PublicMixin, OptionalRawContentMixin, CreatedAtMixin, BaseEntity):
     """Reflects a single image, possibly linked to another object."""
     remote_path = ""
@@ -199,14 +211,14 @@ class ParticipationMixin(TargetGUIDMixin):
             ))
 
 
-class Comment(RawContentMixin, GUIDMixin, ParticipationMixin, CreatedAtMixin, HandleMixin):
+class Comment(RawContentMixin, GUIDMixin, ParticipationMixin, CreatedAtMixin, HandleMixin, SignedMixin):
     """Represents a comment, linked to another object."""
     participation = "comment"
 
     _allowed_children = (Image,)
 
 
-class Reaction(GUIDMixin, ParticipationMixin, CreatedAtMixin, HandleMixin):
+class Reaction(GUIDMixin, ParticipationMixin, CreatedAtMixin, HandleMixin, SignedMixin):
     """Represents a reaction to another object, for example a like."""
     participation = "reaction"
     reaction = ""
