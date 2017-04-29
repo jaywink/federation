@@ -2,6 +2,9 @@
 
 ## [unreleased]
 
+### Backwards incompatible changes
+* A failed payload signature verification now raises a `SignatureVerificationError` instead of a less specific `AssertionError`.
+
 ### Added
 * Diaspora `author_signature` is now saved to the entity from `comment` and `like` type objects (to `Comment` and `Reaction` instances respectively).
 * Add protocol name to all entities to attribute `_source_protocol`. This might be useful for applications to know which protocol payload the entity was created from once multiple protocols are implemented.

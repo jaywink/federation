@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import logging
 import warnings
 from base64 import b64decode, urlsafe_b64decode, b64encode, urlsafe_b64encode
@@ -12,7 +11,9 @@ from Crypto.Random import get_random_bytes
 from Crypto.Signature import PKCS1_v1_5 as PKCSSign
 from lxml import etree
 
-from federation.exceptions import EncryptedMessageError, NoHeaderInMessageError, NoSenderKeyFoundError
+from federation.exceptions import (
+    EncryptedMessageError, NoHeaderInMessageError, NoSenderKeyFoundError, SignatureVerificationError,
+)
 from federation.protocols.base import BaseProtocol
 
 logger = logging.getLogger("federation")
@@ -141,7 +142,8 @@ class Protocol(BaseProtocol):
         ])
         sig_hash = SHA256.new(sig_contents.encode("ascii"))
         cipher = PKCSSign.new(RSA.importKey(sender_key))
-        assert(cipher.verify(sig_hash, urlsafe_b64decode(sig)))
+        if not cipher.verify(sig_hash, urlsafe_b64decode(sig)):
+            raise SignatureVerificationError("Signature cannot be verified using the given contact key")
 
     def parse_header(self, b64data, key):
         """
@@ -164,7 +166,8 @@ class Protocol(BaseProtocol):
         Decrypt the AES "outer key" credentials using the private key and
         passphrase.
         """
-        assert(key)
+        if not key:
+            raise EncryptedMessageError("No key to decrypt with")
         cipher = PKCS1_v1_5.new(key)
         decoded_json = cipher.decrypt(
             b64decode(data.encode("ascii")),

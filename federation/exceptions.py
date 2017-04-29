@@ -16,3 +16,8 @@ class NoSenderKeyFoundError(Exception):
 class NoSuitableProtocolFoundError(Exception):
     """No suitable protocol found to pass this payload message to."""
     pass
+
+
+class SignatureVerificationError(Exception):
+    """Authenticity of the signature could not be verified given the key."""
+    pass
