@@ -73,7 +73,8 @@ class TestDiasporaEntityMappersReceive(object):
         assert photo.public == False
         assert photo.created_at == datetime(2011, 7, 20, 1, 36, 7)
 
-    def test_message_to_objects_comment(self):
+    @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
+    def test_message_to_objects_comment(self, mock_validate):
         entities = message_to_objects(DIASPORA_POST_COMMENT)
         assert len(entities) == 1
         comment = entities[0]
@@ -85,6 +86,7 @@ class TestDiasporaEntityMappersReceive(object):
         assert comment.participation == "comment"
         assert comment.raw_content == "((text))"
         assert comment.signature == "((signature))"
+        mock_validate.assert_called_once_with()
 
     def test_message_to_objects_like(self):
         entities = message_to_objects(DIASPORA_POST_LIKE)

@@ -3,6 +3,8 @@ from lxml import etree
 
 from federation.entities.base import Comment, Post, Reaction, Relationship, Profile, Retraction
 from federation.entities.diaspora.utils import format_dt, struct_to_xml, get_base_attributes
+from federation.exceptions import SignatureVerificationError
+from federation.protocols.diaspora.signatures import verify_relayable_signature
 from federation.utils.diaspora import retrieve_and_parse_profile
 
 
@@ -38,6 +40,13 @@ class DiasporaComment(DiasporaEntityMixin, Comment):
             {'diaspora_handle': self.handle},
         ])
         return element
+
+    def _validate_signatures(self):
+        super()._validate_signatures()
+        if not self._sender_key:
+            raise SignatureVerificationError("Cannot verify entity signature - no sender key available")
+        if not verify_relayable_signature(self._sender_key, self._source_object, self.signature):
+            raise SignatureVerificationError("Signature verification failed.")
 
 
 class DiasporaPost(DiasporaEntityMixin, Post):

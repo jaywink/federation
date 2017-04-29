@@ -4,10 +4,10 @@ from datetime import datetime
 
 from lxml import etree
 
-from federation.entities.base import Image, Relationship, Post, Reaction, Comment, Profile, Retraction
+from federation.entities.base import Image, Relationship, Post, Reaction, Comment, Profile, Retraction, SignedMixin
 from federation.entities.diaspora.entities import (
     DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest, DiasporaProfile, DiasporaRetraction)
-
+from federation.utils.diaspora import retrieve_and_parse_profile
 
 logger = logging.getLogger("federation")
 
@@ -43,7 +43,7 @@ def xml_children_as_dict(node):
     return dict((e.tag, e.text) for e in node)
 
 
-def element_to_objects(tree):
+def element_to_objects(tree, sender_key_fetcher=None):
     """Transform an Element tree to a list of entities recursively.
 
     Possible child entities are added to each entity `_children` list.
@@ -62,6 +62,18 @@ def element_to_objects(tree):
         if hasattr(cls, "fill_extra_attributes"):
             transformed = cls.fill_extra_attributes(transformed)
         entity = cls(**transformed)
+        # Add protocol name
+        entity._source_protocol = "diaspora"
+        # Save element object to entity for possible later use
+        entity._source_object = element
+        # If signable, fetch sender key
+        if issubclass(cls, SignedMixin):
+            if sender_key_fetcher:
+                entity._sender_key = sender_key_fetcher(entity.handle)
+            else:
+                profile = retrieve_and_parse_profile(entity.handle)
+                if profile:
+                    entity._sender_key = profile.public_key
         try:
             entity.validate()
         except ValueError as ex:
@@ -72,8 +84,6 @@ def element_to_objects(tree):
             continue
         # Do child elements
         entity._children = element_to_objects(element)
-        # Add protocol name
-        entity._source_protocol = "diaspora"
         # Add to entities list
         entities.append(entity)
         if cls == DiasporaRequest:
@@ -84,18 +94,20 @@ def element_to_objects(tree):
     return entities
 
 
-def message_to_objects(message):
+def message_to_objects(message, sender_key_fetcher=None):
     """Takes in a message extracted by a protocol and maps it to entities.
 
     :param message: XML payload
     :type message: str
+    :param sender_key_fetcher: Function to fetch sender public key. If not given, key will always be fetched
+        over network
     :returns: list of entities
     """
     doc = etree.fromstring(message)
     if doc[0].tag == "post":
         # Skip the top <post> element if it exists
         doc = doc[0]
-    entities = element_to_objects(doc)
+    entities = element_to_objects(doc, sender_key_fetcher)
     return entities
 
 
