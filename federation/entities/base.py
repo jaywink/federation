@@ -179,6 +179,10 @@ class SignedMixin(BaseEntity):
         super().__init__(*args, **kwargs)
         self._required += ["signature"]
 
+    def sign(self, private_key):
+        """Implement in subclasses."""
+        pass
+
 
 class Image(GUIDMixin, HandleMixin, PublicMixin, OptionalRawContentMixin, CreatedAtMixin, BaseEntity):
     """Reflects a single image, possibly linked to another object."""

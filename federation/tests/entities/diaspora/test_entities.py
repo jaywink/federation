@@ -7,6 +7,7 @@ from federation.entities.base import Profile
 from federation.entities.diaspora.entities import (
     DiasporaComment, DiasporaPost, DiasporaLike, DiasporaRequest, DiasporaProfile, DiasporaRetraction,
 )
+from federation.tests.fixtures.keys import get_dummy_private_key
 
 
 class TestEntitiesConvertToXML():
@@ -78,7 +79,7 @@ class TestEntitiesConvertToXML():
         assert etree.tostring(result) == converted
 
 
-class TestDiasporaProfileFillExtraAttributes(object):
+class TestDiasporaProfileFillExtraAttributes():
     def test_raises_if_no_handle(self):
         attrs = {"foo": "bar"}
         with pytest.raises(ValueError):
@@ -92,7 +93,7 @@ class TestDiasporaProfileFillExtraAttributes(object):
         assert attrs == {"handle": "foo", "guid": "guidguidguidguid"}
 
 
-class TestDiasporaRetractionEntityConverters(object):
+class TestDiasporaRetractionEntityConverters():
     def test_entity_type_from_remote(self):
         assert DiasporaRetraction.entity_type_from_remote("Post") == "Post"
         assert DiasporaRetraction.entity_type_from_remote("Like") == "Reaction"
@@ -104,3 +105,16 @@ class TestDiasporaRetractionEntityConverters(object):
         assert DiasporaRetraction.entity_type_to_remote("Reaction") == "Like"
         assert DiasporaRetraction.entity_type_to_remote("Image") == "Photo"
         assert DiasporaRetraction.entity_type_to_remote("Comment") == "Comment"
+
+
+class TestDiasporaRelayableEntitySigning():
+    def test_signing_comment_works(self):
+        entity = DiasporaComment(
+            raw_content="raw_content", guid="guid", target_guid="target_guid", handle="handle",
+        )
+        entity.sign(get_dummy_private_key())
+        assert entity.signature == "f3wkKDEhlT8zThEfaBcuKs4s0MbbWm9XPyx2ivrAg3jBtXQ6lXm5mgi9buwm-QyzxAGnk5Zth6HrYYB-" \
+                                   "NoieyoR4j54ryyPMB0gHwUO05tzjAMpvLyDlOyxLYFIl302ib2In9LJ5wa15VaEm9DW2-1WlCK72FonO" \
+                                   "oGx0qXDUc-NRn4s_UXBPNgM_Xsz3466AM1y98rUowHnpa0bxDjKcf7HMy4zuJ7XcsJAlofUHXCMX9TOm" \
+                                   "SBIwF5MlCkFL28R2cRAzJgNOBLw-a8arfi613bqo1Xq26-2PuFF0ng_OVOQOVFsO60H5wi_49FREWYdG" \
+                                   "ZdmHltxf76yWG6R1Zqpvag=="

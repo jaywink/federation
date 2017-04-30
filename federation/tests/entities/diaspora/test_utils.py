@@ -1,5 +1,6 @@
 import datetime
 import re
+from unittest.mock import Mock
 
 import arrow
 
@@ -7,7 +8,7 @@ from federation.entities.base import Post
 from federation.entities.diaspora.utils import get_base_attributes, get_full_xml_representation, format_dt
 
 
-class TestGetBaseAttributes(object):
+class TestGetBaseAttributes():
     def test_get_base_attributes_returns_only_intended_attributes(self):
         entity = Post()
         attrs = get_base_attributes(entity).keys()
@@ -16,17 +17,17 @@ class TestGetBaseAttributes(object):
         }
 
 
-class TestGetFullXMLRepresentation(object):
+class TestGetFullXMLRepresentation():
     def test_returns_xml_document(self):
         entity = Post()
-        document = get_full_xml_representation(entity)
+        document = get_full_xml_representation(entity, Mock(private_key=""))
         document = re.sub(r"<created_at>.*</created_at>", "", document)  # Dates are annoying to compare
         assert document == "<XML><post><status_message><raw_message></raw_message><guid></guid>" \
                            "<diaspora_handle></diaspora_handle><public>false</public>" \
                            "<provider_display_name></provider_display_name></status_message></post></XML>"
 
 
-class TestFormatDt(object):
+class TestFormatDt():
     def test_formatted_string_returned_from_tz_aware_datetime(self):
         dt = arrow.get(datetime.datetime(2017, 1, 28, 3, 2, 3), "Europe/Helsinki").datetime
         assert format_dt(dt) == "2017-01-28T01:02:03Z"
