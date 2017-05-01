@@ -49,6 +49,8 @@ def element_to_objects(tree, sender_key_fetcher=None):
     Possible child entities are added to each entity `_children` list.
 
     :param tree: Element
+    :param sender_key_fetcher: Function to fetch sender public key. If not given, key will always be fetched
+        over network. The function should take sender handle as the only parameter.
     :returns: list of entities
     """
     entities = []
@@ -100,7 +102,7 @@ def message_to_objects(message, sender_key_fetcher=None):
     :param message: XML payload
     :type message: str
     :param sender_key_fetcher: Function to fetch sender public key. If not given, key will always be fetched
-        over network
+        over network. The function should take sender handle as the only parameter.
     :returns: list of entities
     """
     doc = etree.fromstring(message)
