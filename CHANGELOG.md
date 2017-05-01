@@ -2,12 +2,23 @@
 
 ## [unreleased]
 
-### Backwards incompatible changes
+### Major changes
+
+Diaspora protocol support added for `comment` and `like` relayable types. On inbound payloads the signature included in the payload will be verified against the sender public key. A failed verification will raise `SignatureVerificationError`. For outbound entities, the author private key will be used to add a signature to the payload.
+
+This introduces some backwards incompatible changes to the way entities are processed. Diaspora entity mappers `get_outbound_entity` and entity utilities `get_full_xml_representation` now requires the author `private_key` as a parameter. This is required to sign outgoing `Comment` and `Reaction` (like) entities. 
+
+Additionally, Diaspora entity mappers `message_to_objects` and `element_to_objects` now take an optional `sender_key_fetcher` parameter. This must be a function that when called with the sender handle will return the sender public key. This allows using locally cached public keys instead of fetching them as needed. NOTE! If the function is not given, each processed payload will fetch the public key over the network. 
+
+### Other backwards incompatible changes
 * A failed payload signature verification now raises a `SignatureVerificationError` instead of a less specific `AssertionError`.
 
-### Added
-* Diaspora `author_signature` is now saved to the entity from `comment` and `like` type objects (to `Comment` and `Reaction` instances respectively).
-* Add protocol name to all entities to attribute `_source_protocol`. This might be useful for applications to know which protocol payload the entity was created from once multiple protocols are implemented.
+### Other additions
+
+* Three new attributes added to entities.
+    * Add protocol name to all entities to attribute `_source_protocol`. This might be useful for applications to know which protocol payload the entity was created from once multiple protocols are implemented.
+    * Add source payload object to the entity at `_source_object` when processing it.
+    * Add sender public key to the entity at `_sender_key`, but only if it was used for validating signatures.
 
 ## [0.10.1] - 2017-03-09
 
