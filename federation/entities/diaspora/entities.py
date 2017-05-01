@@ -1,6 +1,6 @@
 from lxml import etree
 
-from federation.entities.base import Comment, Post, Reaction, Relationship, Profile, Retraction, BaseEntity, SignedMixin
+from federation.entities.base import Comment, Post, Reaction, Relationship, Profile, Retraction, BaseEntity
 from federation.entities.diaspora.utils import format_dt, struct_to_xml, get_base_attributes
 from federation.exceptions import SignatureVerificationError
 from federation.protocols.diaspora.signatures import verify_relayable_signature, create_relayable_signature
@@ -31,7 +31,11 @@ class DiasporaEntityMixin(BaseEntity):
         return attributes
 
 
-class DiasporaRelayableMixin(SignedMixin, DiasporaEntityMixin):
+class DiasporaRelayableMixin(DiasporaEntityMixin):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._required += ["signature"]
+
     def _validate_signatures(self):
         super()._validate_signatures()
         if not self._sender_key:

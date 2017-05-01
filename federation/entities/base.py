@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import datetime
 import warnings
 
@@ -16,6 +15,8 @@ class BaseEntity(object):
     _allowed_children = ()
     _source_protocol = ""
     _source_object = None
+    _sender_key = ""
+    signature = ""
 
     def __init__(self, *args, **kwargs):
         self._required = []
@@ -87,6 +88,10 @@ class BaseEntity(object):
 
     def _validate_signatures(self):
         """Override in subclasses where necessary"""
+        pass
+
+    def sign(self, private_key):
+        """Implement in subclasses."""
         pass
 
 
@@ -167,23 +172,6 @@ class OptionalRawContentMixin(RawContentMixin):
         self._required.remove("raw_content")
 
 
-class SignedMixin(BaseEntity):
-    """Adds a signature string or object (depending on protocol).
-    
-    This will be needed to for example when relaying content.
-    """
-    _sender_key = ""
-    signature = ""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._required += ["signature"]
-
-    def sign(self, private_key):
-        """Implement in subclasses."""
-        pass
-
-
 class Image(GUIDMixin, HandleMixin, PublicMixin, OptionalRawContentMixin, CreatedAtMixin, BaseEntity):
     """Reflects a single image, possibly linked to another object."""
     remote_path = ""
@@ -225,14 +213,14 @@ class ParticipationMixin(TargetGUIDMixin):
             ))
 
 
-class Comment(RawContentMixin, GUIDMixin, ParticipationMixin, CreatedAtMixin, HandleMixin, SignedMixin):
+class Comment(RawContentMixin, GUIDMixin, ParticipationMixin, CreatedAtMixin, HandleMixin):
     """Represents a comment, linked to another object."""
     participation = "comment"
 
     _allowed_children = (Image,)
 
 
-class Reaction(GUIDMixin, ParticipationMixin, CreatedAtMixin, HandleMixin, SignedMixin):
+class Reaction(GUIDMixin, ParticipationMixin, CreatedAtMixin, HandleMixin):
     """Represents a reaction to another object, for example a like."""
     participation = "reaction"
     reaction = ""

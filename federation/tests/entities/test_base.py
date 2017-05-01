@@ -4,7 +4,6 @@ import pytest
 
 from federation.entities.base import (
     BaseEntity, Relationship, Profile, RawContentMixin, GUIDMixin, HandleMixin, PublicMixin, Image, Retraction,
-    SignedMixin,
 )
 from federation.tests.factories.entities import TaggedPostFactory, PostFactory
 
@@ -68,15 +67,6 @@ class TestPublicMixinValidate():
         public = PublicMixin(public="foobar")
         with pytest.raises(ValueError):
             public.validate()
-
-
-class TestSignedMixinValidate():
-    def test_required_validates(self):
-        signed = SignedMixin()
-        with pytest.raises(ValueError):
-            signed.validate()
-        signed.signature = "foobar"
-        signed.validate()
 
 
 class TestEntityRequiredAttributes():

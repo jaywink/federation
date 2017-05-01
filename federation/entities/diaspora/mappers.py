@@ -1,12 +1,12 @@
-# -*- coding: utf-8 -*-
 import logging
 from datetime import datetime
 
 from lxml import etree
 
-from federation.entities.base import Image, Relationship, Post, Reaction, Comment, Profile, Retraction, SignedMixin
+from federation.entities.base import Image, Relationship, Post, Reaction, Comment, Profile, Retraction
 from federation.entities.diaspora.entities import (
-    DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest, DiasporaProfile, DiasporaRetraction)
+    DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest, DiasporaProfile, DiasporaRetraction,
+    DiasporaRelayableMixin)
 from federation.utils.diaspora import retrieve_and_parse_profile
 
 logger = logging.getLogger("federation")
@@ -66,8 +66,8 @@ def element_to_objects(tree, sender_key_fetcher=None):
         entity._source_protocol = "diaspora"
         # Save element object to entity for possible later use
         entity._source_object = element
-        # If signable, fetch sender key
-        if issubclass(cls, SignedMixin):
+        # If relayable, fetch sender key for validation
+        if issubclass(cls, DiasporaRelayableMixin):
             if sender_key_fetcher:
                 entity._sender_key = sender_key_fetcher(entity.handle)
             else:
@@ -204,6 +204,6 @@ def get_outbound_entity(entity, private_key):
         outbound = DiasporaRetraction.from_base(entity)
     if not outbound:
         raise ValueError("Don't know how to convert this base entity to Diaspora protocol entities.")
-    if issubclass(cls, SignedMixin):
+    if issubclass(cls, DiasporaRelayableMixin):
         outbound.sign(private_key)
     return outbound
