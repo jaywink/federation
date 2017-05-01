@@ -175,7 +175,7 @@ def get_outbound_entity(entity, private_key):
 
     We might have to look at entity values to decide the correct outbound entity.
     If we cannot find one, we should raise as conversion cannot be guaranteed to the given protocol.
-    
+
     Private key of author is needed to be passed for signing the outbound entity.
 
     :arg entity: An entity instance which can be of a base or protocol entity class.

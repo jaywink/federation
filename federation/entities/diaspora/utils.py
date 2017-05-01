@@ -55,7 +55,7 @@ def get_full_xml_representation(entity, author):
     This contains the <XML><post>..</post></XML> wrapper.
 
     Accepts either a Base entity or a Diaspora entity.
-    
+
     Author must have `private_key` that is used in signing certain entities.
     """
     from federation.entities.diaspora.mappers import get_outbound_entity
