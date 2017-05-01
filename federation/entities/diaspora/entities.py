@@ -77,7 +77,7 @@ class DiasporaPost(DiasporaEntityMixin, Post):
         return element
 
 
-class DiasporaLike(DiasporaEntityMixin, Reaction):
+class DiasporaLike(DiasporaRelayableMixin, Reaction):
     """Diaspora like."""
     reaction = "like"
 

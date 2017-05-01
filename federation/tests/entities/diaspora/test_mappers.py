@@ -89,7 +89,8 @@ class TestDiasporaEntityMappersReceive(object):
         assert comment.signature == "((signature))"
         mock_validate.assert_called_once_with()
 
-    def test_message_to_objects_like(self):
+    @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
+    def test_message_to_objects_like(self, mock_validate):
         entities = message_to_objects(DIASPORA_POST_LIKE)
         assert len(entities) == 1
         like = entities[0]
@@ -101,6 +102,7 @@ class TestDiasporaEntityMappersReceive(object):
         assert like.participation == "reaction"
         assert like.reaction == "like"
         assert like.signature == "((signature))"
+        mock_validate.assert_called_once_with()
 
     def test_message_to_objects_request(self):
         entities = message_to_objects(DIASPORA_REQUEST)
