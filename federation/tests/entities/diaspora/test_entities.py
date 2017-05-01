@@ -7,6 +7,7 @@ from federation.entities.base import Profile
 from federation.entities.diaspora.entities import (
     DiasporaComment, DiasporaPost, DiasporaLike, DiasporaRequest, DiasporaProfile, DiasporaRetraction,
 )
+from federation.exceptions import SignatureVerificationError
 from federation.tests.fixtures.keys import get_dummy_private_key
 
 
@@ -127,3 +128,25 @@ class TestDiasporaRelayableEntitySigning():
                                    "Q0t-vWGl8cgSS0_34mvvqX-HKUdmun2vQ50bPckNLoj3hDI6HcmZ8qFf_xx8y1BbE0zx5rTo7yOlWq8Y" \
                                    "sC28oRHqHpIzOfhkIHyt-hOjO_mpuZLd7qOPfIySnGW6hM1iKewoJVDuVMN5w5VB46ETRum8JpvTQO8i" \
                                    "DPB-ZqbqcEasfm2CQIxVLA=="
+
+
+class TestDiasporaRelayableEntityValidate():
+    def test_raises_if_no_sender_key(self):
+        entity = DiasporaComment()
+        with pytest.raises(SignatureVerificationError):
+            entity._validate_signatures()
+
+    @patch("federation.entities.diaspora.entities.verify_relayable_signature")
+    def test_calls_verify_signature(self, mock_verify):
+        entity = DiasporaComment()
+        entity._sender_key = "key"
+        entity._source_object = "obj"
+        entity.signature = "sig"
+        mock_verify.return_value = False
+        with pytest.raises(SignatureVerificationError):
+            entity._validate_signatures()
+            mock_verify.assert_called_once_with("key", "obj", "sig")
+        mock_verify.reset_mock()
+        mock_verify.return_value = True
+        entity._validate_signatures()
+        mock_verify.assert_called_once_with("key", "obj", "sig")

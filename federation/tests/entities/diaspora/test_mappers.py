@@ -1,5 +1,5 @@
 from datetime import datetime
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 import pytest
 
@@ -89,7 +89,7 @@ class TestDiasporaEntityMappersReceive(object):
         assert comment.signature == "((signature))"
         mock_validate.assert_called_once_with()
 
-    @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
+    @patch("federation.entities.diaspora.mappers.DiasporaLike._validate_signatures")
     def test_message_to_objects_like(self, mock_validate):
         entities = message_to_objects(DIASPORA_POST_LIKE)
         assert len(entities) == 1
@@ -157,6 +157,18 @@ class TestDiasporaEntityMappersReceive(object):
     def test_adds_source_protocol_to_entity(self):
         entities = message_to_objects(DIASPORA_POST_SIMPLE)
         assert entities[0]._source_protocol == "diaspora"
+
+    @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
+    def test_element_to_objects_calls_sender_key_fetcher(self, mock_validate):
+        mock_fetcher = Mock()
+        message_to_objects(DIASPORA_POST_COMMENT, mock_fetcher)
+        mock_fetcher.assert_called_once_with("alice@alice.diaspora.example.org")
+
+    @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
+    @patch("federation.entities.diaspora.mappers.retrieve_and_parse_profile")
+    def test_element_to_objects_calls_retrieve_remote_profile(self, mock_retrieve, mock_validate):
+        message_to_objects(DIASPORA_POST_COMMENT)
+        mock_retrieve.assert_called_once_with("alice@alice.diaspora.example.org")
 
 
 class TestGetOutboundEntity(object):
