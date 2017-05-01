@@ -124,4 +124,5 @@ Various custom exception classes might be returned.
 .. autoexception:: federation.exceptions.NoHeaderInMessageError
 .. autoexception:: federation.exceptions.NoSenderKeyFoundError
 .. autoexception:: federation.exceptions.NoSuitableProtocolFoundError
+.. autoexception:: federation.exceptions.SignatureVerificationError
 
