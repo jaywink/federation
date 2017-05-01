@@ -1,6 +1,5 @@
 import datetime
 import re
-from unittest.mock import Mock
 
 import arrow
 
@@ -21,7 +20,7 @@ class TestGetBaseAttributes():
 class TestGetFullXMLRepresentation():
     def test_returns_xml_document(self):
         entity = Post()
-        document = get_full_xml_representation(entity, Mock(private_key=""))
+        document = get_full_xml_representation(entity, "")
         document = re.sub(r"<created_at>.*</created_at>", "", document)  # Dates are annoying to compare
         assert document == "<XML><post><status_message><raw_message></raw_message><guid></guid>" \
                            "<diaspora_handle></diaspora_handle><public>false</public>" \
