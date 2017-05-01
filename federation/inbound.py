@@ -38,7 +38,7 @@ def handle_receive(payload, user=None, sender_key_fetcher=None, skip_author_veri
         raise NoSuitableProtocolFoundError()
 
     mappers = importlib.import_module("federation.entities.%s.mappers" % found_protocol.PROTOCOL_NAME)
-    entities = mappers.message_to_objects(message)
+    entities = mappers.message_to_objects(message, sender_key_fetcher)
     logger.debug("handle_receive: entities %s", entities)
 
     return sender, found_protocol.PROTOCOL_NAME, entities
