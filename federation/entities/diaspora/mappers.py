@@ -206,7 +206,7 @@ def get_outbound_entity(entity, private_key):
         outbound = DiasporaRetraction.from_base(entity)
     if not outbound:
         raise ValueError("Don't know how to convert this base entity to Diaspora protocol entities.")
-    if issubclass(cls, DiasporaRelayableMixin) and not outbound.signature:
+    if isinstance(outbound, DiasporaRelayableMixin) and not outbound.signature:
         # Sign by author if not signed yet. We don't want to overwrite any existing signature in the case
         # that this is being sent by the parent author
         outbound.sign(private_key)

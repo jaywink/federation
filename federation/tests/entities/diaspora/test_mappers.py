@@ -221,3 +221,9 @@ class TestGetOutboundEntity(object):
     def test_retraction_is_converted_to_diasporaretraction(self):
         entity = Retraction()
         assert isinstance(get_outbound_entity(entity, get_dummy_private_key()), DiasporaRetraction)
+
+    def test_signs_relayable_if_no_signature(self):
+        entity = DiasporaComment()
+        dummy_key = get_dummy_private_key()
+        outbound = get_outbound_entity(entity, dummy_key)
+        assert outbound.signature != ""
