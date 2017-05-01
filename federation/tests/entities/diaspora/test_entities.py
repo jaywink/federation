@@ -34,8 +34,9 @@ class TestEntitiesConvertToXML():
         result = entity.to_xml()
         assert result.tag == "comment"
         converted = b"<comment><guid>guid</guid><parent_guid>target_guid</parent_guid>" \
-                    b"<author_signature>signature</author_signature><text>raw_content</text>" \
-                    b"<diaspora_handle>handle</diaspora_handle></comment>"
+                    b"<author_signature>signature</author_signature><parent_author_signature>" \
+                    b"</parent_author_signature><text>raw_content</text><diaspora_handle>handle</diaspora_handle>" \
+                    b"</comment>"
         assert etree.tostring(result) == converted
 
     def test_like_to_xml(self):
@@ -43,8 +44,9 @@ class TestEntitiesConvertToXML():
         result = entity.to_xml()
         assert result.tag == "like"
         converted = b"<like><target_type>Post</target_type><guid>guid</guid><parent_guid>target_guid</parent_guid>" \
-                    b"<author_signature>signature</author_signature><positive>true</positive>" \
-                    b"<diaspora_handle>handle</diaspora_handle></like>"
+                    b"<author_signature>signature</author_signature><parent_author_signature>" \
+                    b"</parent_author_signature><positive>true</positive><diaspora_handle>handle</diaspora_handle>" \
+                    b"</like>"
         assert etree.tostring(result) == converted
 
     def test_request_to_xml(self):

@@ -32,6 +32,8 @@ class DiasporaEntityMixin(BaseEntity):
 
 
 class DiasporaRelayableMixin(DiasporaEntityMixin):
+    parent_signature = ""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._required += ["signature"]
@@ -46,17 +48,21 @@ class DiasporaRelayableMixin(DiasporaEntityMixin):
     def sign(self, private_key):
         self.signature = create_relayable_signature(private_key, self.to_xml())
 
+    def sign_with_parent(self, private_key):
+        self.parent_signature = create_relayable_signature(private_key, self.to_xml())
+
 
 class DiasporaComment(DiasporaRelayableMixin, Comment):
     """Diaspora comment."""
     def to_xml(self):
         element = etree.Element("comment")
         struct_to_xml(element, [
-            {'guid': self.guid},
-            {'parent_guid': self.target_guid},
-            {'author_signature': self.signature},
-            {'text': self.raw_content},
-            {'diaspora_handle': self.handle},
+            {"guid": self.guid},
+            {"parent_guid": self.target_guid},
+            {"author_signature": self.signature},
+            {"parent_author_signature": self.parent_signature},
+            {"text": self.raw_content},
+            {"diaspora_handle": self.handle},
         ])
         return element
 
@@ -67,12 +73,12 @@ class DiasporaPost(DiasporaEntityMixin, Post):
         """Convert to XML message."""
         element = etree.Element("status_message")
         struct_to_xml(element, [
-            {'raw_message': self.raw_content},
-            {'guid': self.guid},
-            {'diaspora_handle': self.handle},
-            {'public': 'true' if self.public else 'false'},
-            {'created_at': format_dt(self.created_at)},
-            {'provider_display_name': self.provider_display_name},
+            {"raw_message": self.raw_content},
+            {"guid": self.guid},
+            {"diaspora_handle": self.handle},
+            {"public": "true" if self.public else "false"},
+            {"created_at": format_dt(self.created_at)},
+            {"provider_display_name": self.provider_display_name},
         ])
         return element
 
@@ -86,11 +92,12 @@ class DiasporaLike(DiasporaRelayableMixin, Reaction):
         element = etree.Element("like")
         struct_to_xml(element, [
             {"target_type": "Post"},
-            {'guid': self.guid},
-            {'parent_guid': self.target_guid},
-            {'author_signature': self.signature},
+            {"guid": self.guid},
+            {"parent_guid": self.target_guid},
+            {"author_signature": self.signature},
+            {"parent_author_signature": self.parent_signature},
             {"positive": "true"},
-            {'diaspora_handle': self.handle},
+            {"diaspora_handle": self.handle},
         ])
         return element
 
