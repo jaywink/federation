@@ -210,4 +210,8 @@ def get_outbound_entity(entity, private_key):
         # Sign by author if not signed yet. We don't want to overwrite any existing signature in the case
         # that this is being sent by the parent author
         outbound.sign(private_key)
+        # If missing, also add same signature to `parent_author_signature`. This is required at the moment
+        # in all situations but is apparently being removed.
+        # TODO: remove this once Diaspora removes the extra signature
+        outbound.parent_signature = outbound.signature
     return outbound
