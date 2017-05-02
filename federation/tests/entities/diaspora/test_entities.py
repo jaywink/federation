@@ -116,20 +116,20 @@ class TestDiasporaRelayableEntitySigning():
             raw_content="raw_content", guid="guid", target_guid="target_guid", handle="handle",
         )
         entity.sign(get_dummy_private_key())
-        assert entity.signature == "f3wkKDEhlT8zThEfaBcuKs4s0MbbWm9XPyx2ivrAg3jBtXQ6lXm5mgi9buwm-QyzxAGnk5Zth6HrYYB-" \
-                                   "NoieyoR4j54ryyPMB0gHwUO05tzjAMpvLyDlOyxLYFIl302ib2In9LJ5wa15VaEm9DW2-1WlCK72FonO" \
-                                   "oGx0qXDUc-NRn4s_UXBPNgM_Xsz3466AM1y98rUowHnpa0bxDjKcf7HMy4zuJ7XcsJAlofUHXCMX9TOm" \
-                                   "SBIwF5MlCkFL28R2cRAzJgNOBLw-a8arfi613bqo1Xq26-2PuFF0ng_OVOQOVFsO60H5wi_49FREWYdG" \
+        assert entity.signature == "f3wkKDEhlT8zThEfaBcuKs4s0MbbWm9XPyx2ivrAg3jBtXQ6lXm5mgi9buwm+QyzxAGnk5Zth6HrYYB+" \
+                                   "NoieyoR4j54ryyPMB0gHwUO05tzjAMpvLyDlOyxLYFIl302ib2In9LJ5wa15VaEm9DW2+1WlCK72FonO" \
+                                   "oGx0qXDUc+NRn4s/UXBPNgM/Xsz3466AM1y98rUowHnpa0bxDjKcf7HMy4zuJ7XcsJAlofUHXCMX9TOm" \
+                                   "SBIwF5MlCkFL28R2cRAzJgNOBLw+a8arfi613bqo1Xq26+2PuFF0ng/OVOQOVFsO60H5wi/49FREWYdG" \
                                    "ZdmHltxf76yWG6R1Zqpvag=="
 
     def test_signing_like_works(self):
         entity = DiasporaLike(guid="guid", target_guid="target_guid", handle="handle")
         entity.sign(get_dummy_private_key())
-        assert entity.signature == "apkcOn6marHfo0rHiOnQq-qqspxxWOJNklQKQjoJUHmXDNRnBp8aPoLKqVOznsTEpEIhM1p5_8mPilgY" \
-                                   "yVFHepi_m744DFQByx7hVkMhGFiZWtJx1tTWSl1d7H85FTlE0DyPwiRYVTrG3vQD3Dr-b08WiOEzG-ii" \
-                                   "Q0t-vWGl8cgSS0_34mvvqX-HKUdmun2vQ50bPckNLoj3hDI6HcmZ8qFf_xx8y1BbE0zx5rTo7yOlWq8Y" \
-                                   "sC28oRHqHpIzOfhkIHyt-hOjO_mpuZLd7qOPfIySnGW6hM1iKewoJVDuVMN5w5VB46ETRum8JpvTQO8i" \
-                                   "DPB-ZqbqcEasfm2CQIxVLA=="
+        assert entity.signature == "apkcOn6marHfo0rHiOnQq+qqspxxWOJNklQKQjoJUHmXDNRnBp8aPoLKqVOznsTEpEIhM1p5/8mPilgY" \
+                                   "yVFHepi/m744DFQByx7hVkMhGFiZWtJx1tTWSl1d7H85FTlE0DyPwiRYVTrG3vQD3Dr+b08WiOEzG+ii" \
+                                   "Q0t+vWGl8cgSS0/34mvvqX+HKUdmun2vQ50bPckNLoj3hDI6HcmZ8qFf/xx8y1BbE0zx5rTo7yOlWq8Y" \
+                                   "sC28oRHqHpIzOfhkIHyt+hOjO/mpuZLd7qOPfIySnGW6hM1iKewoJVDuVMN5w5VB46ETRum8JpvTQO8i" \
+                                   "DPB+ZqbqcEasfm2CQIxVLA=="
 
 
 class TestDiasporaRelayableEntityValidate():
