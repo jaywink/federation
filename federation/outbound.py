@@ -19,6 +19,6 @@ def handle_create_payload(entity, from_user, to_user=None):
     """
     # Just use Diaspora protocol for now
     protocol = Protocol()
-    outbound_entity = get_outbound_entity(entity)
+    outbound_entity = get_outbound_entity(entity, from_user.private_key)
     data = protocol.build_send(entity=outbound_entity, from_user=from_user, to_user=to_user)
     return data

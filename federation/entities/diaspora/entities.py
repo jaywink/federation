@@ -1,12 +1,17 @@
-# -*- coding: utf-8 -*-
 from lxml import etree
 
-from federation.entities.base import Comment, Post, Reaction, Relationship, Profile, Retraction
+from federation.entities.base import Comment, Post, Reaction, Relationship, Profile, Retraction, BaseEntity
 from federation.entities.diaspora.utils import format_dt, struct_to_xml, get_base_attributes
+from federation.exceptions import SignatureVerificationError
+from federation.protocols.diaspora.signatures import verify_relayable_signature, create_relayable_signature
 from federation.utils.diaspora import retrieve_and_parse_profile
 
 
-class DiasporaEntityMixin(object):
+class DiasporaEntityMixin(BaseEntity):
+    def to_xml(self):
+        """Override in subclasses."""
+        raise NotImplementedError
+
     @classmethod
     def from_base(cls, entity):
         return cls(**get_base_attributes(entity))
@@ -26,18 +31,38 @@ class DiasporaEntityMixin(object):
         return attributes
 
 
-class DiasporaComment(DiasporaEntityMixin, Comment):
-    """Diaspora comment."""
-    author_signature = ""
+class DiasporaRelayableMixin(DiasporaEntityMixin):
+    parent_signature = ""
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._required += ["signature"]
+
+    def _validate_signatures(self):
+        super()._validate_signatures()
+        if not self._sender_key:
+            raise SignatureVerificationError("Cannot verify entity signature - no sender key available")
+        if not verify_relayable_signature(self._sender_key, self._source_object, self.signature):
+            raise SignatureVerificationError("Signature verification failed.")
+
+    def sign(self, private_key):
+        self.signature = create_relayable_signature(private_key, self.to_xml())
+
+    def sign_with_parent(self, private_key):
+        self.parent_signature = create_relayable_signature(private_key, self.to_xml())
+
+
+class DiasporaComment(DiasporaRelayableMixin, Comment):
+    """Diaspora comment."""
     def to_xml(self):
         element = etree.Element("comment")
         struct_to_xml(element, [
-            {'guid': self.guid},
-            {'parent_guid': self.target_guid},
-            {'author_signature': self.author_signature},
-            {'text': self.raw_content},
-            {'diaspora_handle': self.handle},
+            {"guid": self.guid},
+            {"parent_guid": self.target_guid},
+            {"author_signature": self.signature},
+            {"parent_author_signature": self.parent_signature},
+            {"text": self.raw_content},
+            {"diaspora_handle": self.handle},
         ])
         return element
 
@@ -48,19 +73,18 @@ class DiasporaPost(DiasporaEntityMixin, Post):
         """Convert to XML message."""
         element = etree.Element("status_message")
         struct_to_xml(element, [
-            {'raw_message': self.raw_content},
-            {'guid': self.guid},
-            {'diaspora_handle': self.handle},
-            {'public': 'true' if self.public else 'false'},
-            {'created_at': format_dt(self.created_at)},
-            {'provider_display_name': self.provider_display_name},
+            {"raw_message": self.raw_content},
+            {"guid": self.guid},
+            {"diaspora_handle": self.handle},
+            {"public": "true" if self.public else "false"},
+            {"created_at": format_dt(self.created_at)},
+            {"provider_display_name": self.provider_display_name},
         ])
         return element
 
 
-class DiasporaLike(DiasporaEntityMixin, Reaction):
+class DiasporaLike(DiasporaRelayableMixin, Reaction):
     """Diaspora like."""
-    author_signature = ""
     reaction = "like"
 
     def to_xml(self):
@@ -68,11 +92,12 @@ class DiasporaLike(DiasporaEntityMixin, Reaction):
         element = etree.Element("like")
         struct_to_xml(element, [
             {"target_type": "Post"},
-            {'guid': self.guid},
-            {'parent_guid': self.target_guid},
-            {'author_signature': self.author_signature},
+            {"guid": self.guid},
+            {"parent_guid": self.target_guid},
+            {"author_signature": self.signature},
+            {"parent_author_signature": self.parent_signature},
             {"positive": "true"},
-            {'diaspora_handle': self.handle},
+            {"diaspora_handle": self.handle},
         ])
         return element
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import datetime
 import warnings
 
@@ -14,6 +13,10 @@ class BaseEntity(object):
     _required = []
     _children = []
     _allowed_children = ()
+    _source_protocol = ""
+    _source_object = None
+    _sender_key = ""
+    signature = ""
 
     def __init__(self, *args, **kwargs):
         self._required = []
@@ -32,6 +35,7 @@ class BaseEntity(object):
         2) Make sure all attrs in required have a non-empty value
         3) Loop through attributes and call their `validate_<attr>` methods, if any.
         4) Validate allowed children
+        5) Validate signatures
         """
         attributes = []
         validates = []
@@ -47,6 +51,7 @@ class BaseEntity(object):
         self._validate_required(attributes)
         self._validate_attributes(validates)
         self._validate_children()
+        self._validate_signatures()
 
     def _validate_required(self, attributes):
         """Ensure required attributes are present."""
@@ -80,6 +85,15 @@ class BaseEntity(object):
                         child, self.__class__
                     )
                 )
+
+    def _validate_signatures(self):
+        """Override in subclasses where necessary"""
+        pass
+
+    def sign(self, private_key):
+        """Implement in subclasses."""
+        pass
+
 
 class GUIDMixin(BaseEntity):
     guid = ""

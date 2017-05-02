@@ -1,15 +1,17 @@
-# -*- coding: utf-8 -*-
 from unittest.mock import patch
 
 import pytest
 from lxml import etree
 
 from federation.entities.base import Profile
-from federation.entities.diaspora.entities import DiasporaComment, DiasporaPost, DiasporaLike, DiasporaRequest, \
-    DiasporaProfile, DiasporaRetraction
+from federation.entities.diaspora.entities import (
+    DiasporaComment, DiasporaPost, DiasporaLike, DiasporaRequest, DiasporaProfile, DiasporaRetraction,
+)
+from federation.exceptions import SignatureVerificationError
+from federation.tests.fixtures.keys import get_dummy_private_key
 
 
-class TestEntitiesConvertToXML(object):
+class TestEntitiesConvertToXML():
     def test_post_to_xml(self):
         entity = DiasporaPost(
             raw_content="raw_content", guid="guid", handle="handle", public=True,
@@ -25,21 +27,26 @@ class TestEntitiesConvertToXML(object):
         assert etree.tostring(result) == converted
 
     def test_comment_to_xml(self):
-        entity = DiasporaComment(raw_content="raw_content", guid="guid", target_guid="target_guid", handle="handle")
+        entity = DiasporaComment(
+            raw_content="raw_content", guid="guid", target_guid="target_guid", handle="handle",
+            signature="signature"
+        )
         result = entity.to_xml()
         assert result.tag == "comment"
         converted = b"<comment><guid>guid</guid><parent_guid>target_guid</parent_guid>" \
-                    b"<author_signature></author_signature><text>raw_content</text>" \
-                    b"<diaspora_handle>handle</diaspora_handle></comment>"
+                    b"<author_signature>signature</author_signature><parent_author_signature>" \
+                    b"</parent_author_signature><text>raw_content</text><diaspora_handle>handle</diaspora_handle>" \
+                    b"</comment>"
         assert etree.tostring(result) == converted
 
     def test_like_to_xml(self):
-        entity = DiasporaLike(guid="guid", target_guid="target_guid", handle="handle")
+        entity = DiasporaLike(guid="guid", target_guid="target_guid", handle="handle", signature="signature")
         result = entity.to_xml()
         assert result.tag == "like"
         converted = b"<like><target_type>Post</target_type><guid>guid</guid><parent_guid>target_guid</parent_guid>" \
-                    b"<author_signature></author_signature><positive>true</positive>" \
-                    b"<diaspora_handle>handle</diaspora_handle></like>"
+                    b"<author_signature>signature</author_signature><parent_author_signature>" \
+                    b"</parent_author_signature><positive>true</positive><diaspora_handle>handle</diaspora_handle>" \
+                    b"</like>"
         assert etree.tostring(result) == converted
 
     def test_request_to_xml(self):
@@ -75,7 +82,7 @@ class TestEntitiesConvertToXML(object):
         assert etree.tostring(result) == converted
 
 
-class TestDiasporaProfileFillExtraAttributes(object):
+class TestDiasporaProfileFillExtraAttributes():
     def test_raises_if_no_handle(self):
         attrs = {"foo": "bar"}
         with pytest.raises(ValueError):
@@ -89,7 +96,7 @@ class TestDiasporaProfileFillExtraAttributes(object):
         assert attrs == {"handle": "foo", "guid": "guidguidguidguid"}
 
 
-class TestDiasporaRetractionEntityConverters(object):
+class TestDiasporaRetractionEntityConverters():
     def test_entity_type_from_remote(self):
         assert DiasporaRetraction.entity_type_from_remote("Post") == "Post"
         assert DiasporaRetraction.entity_type_from_remote("Like") == "Reaction"
@@ -101,3 +108,47 @@ class TestDiasporaRetractionEntityConverters(object):
         assert DiasporaRetraction.entity_type_to_remote("Reaction") == "Like"
         assert DiasporaRetraction.entity_type_to_remote("Image") == "Photo"
         assert DiasporaRetraction.entity_type_to_remote("Comment") == "Comment"
+
+
+class TestDiasporaRelayableEntitySigning():
+    def test_signing_comment_works(self):
+        entity = DiasporaComment(
+            raw_content="raw_content", guid="guid", target_guid="target_guid", handle="handle",
+        )
+        entity.sign(get_dummy_private_key())
+        assert entity.signature == "f3wkKDEhlT8zThEfaBcuKs4s0MbbWm9XPyx2ivrAg3jBtXQ6lXm5mgi9buwm+QyzxAGnk5Zth6HrYYB+" \
+                                   "NoieyoR4j54ryyPMB0gHwUO05tzjAMpvLyDlOyxLYFIl302ib2In9LJ5wa15VaEm9DW2+1WlCK72FonO" \
+                                   "oGx0qXDUc+NRn4s/UXBPNgM/Xsz3466AM1y98rUowHnpa0bxDjKcf7HMy4zuJ7XcsJAlofUHXCMX9TOm" \
+                                   "SBIwF5MlCkFL28R2cRAzJgNOBLw+a8arfi613bqo1Xq26+2PuFF0ng/OVOQOVFsO60H5wi/49FREWYdG" \
+                                   "ZdmHltxf76yWG6R1Zqpvag=="
+
+    def test_signing_like_works(self):
+        entity = DiasporaLike(guid="guid", target_guid="target_guid", handle="handle")
+        entity.sign(get_dummy_private_key())
+        assert entity.signature == "apkcOn6marHfo0rHiOnQq+qqspxxWOJNklQKQjoJUHmXDNRnBp8aPoLKqVOznsTEpEIhM1p5/8mPilgY" \
+                                   "yVFHepi/m744DFQByx7hVkMhGFiZWtJx1tTWSl1d7H85FTlE0DyPwiRYVTrG3vQD3Dr+b08WiOEzG+ii" \
+                                   "Q0t+vWGl8cgSS0/34mvvqX+HKUdmun2vQ50bPckNLoj3hDI6HcmZ8qFf/xx8y1BbE0zx5rTo7yOlWq8Y" \
+                                   "sC28oRHqHpIzOfhkIHyt+hOjO/mpuZLd7qOPfIySnGW6hM1iKewoJVDuVMN5w5VB46ETRum8JpvTQO8i" \
+                                   "DPB+ZqbqcEasfm2CQIxVLA=="
+
+
+class TestDiasporaRelayableEntityValidate():
+    def test_raises_if_no_sender_key(self):
+        entity = DiasporaComment()
+        with pytest.raises(SignatureVerificationError):
+            entity._validate_signatures()
+
+    @patch("federation.entities.diaspora.entities.verify_relayable_signature")
+    def test_calls_verify_signature(self, mock_verify):
+        entity = DiasporaComment()
+        entity._sender_key = "key"
+        entity._source_object = "obj"
+        entity.signature = "sig"
+        mock_verify.return_value = False
+        with pytest.raises(SignatureVerificationError):
+            entity._validate_signatures()
+            mock_verify.assert_called_once_with("key", "obj", "sig")
+        mock_verify.reset_mock()
+        mock_verify.return_value = True
+        entity._validate_signatures()
+        mock_verify.assert_called_once_with("key", "obj", "sig")
