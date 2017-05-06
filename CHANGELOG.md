@@ -19,6 +19,7 @@ Additionally, Diaspora entity mappers `message_to_objects` and `element_to_objec
     * Add source payload object to the entity at `_source_object` when processing it.
     * Add sender public key to the entity at `_sender_key`, but only if it was used for validating signatures.
 * Add support for the new Diaspora payload properties coming in the next protocol version. Old XML payloads are and will be still supported.
+* `DiasporaComment` and `DiasporaLike` will get the order of elements in the XML payload as a list in `xml_tags`. For implementers who want to recreate payloads for these relayables, this list should be saved for later use.
 
 ### Changed
 * Refactor processing of Diaspora payload XML into entities. Diaspora protocol is dropping the `<XML><post></post></XML>` wrapper for the payloads. Payloads with the wrapper will still be parsed as before.

@@ -47,7 +47,7 @@ class TestDiasporaEntityMappersReceive():
         assert post.raw_content == "((status message))"
         assert post.guid == "((guidguidguidguidguidguidguid))"
         assert post.handle == "alice@alice.diaspora.example.org"
-        assert post.public == False
+        assert post.public is False
         assert post.created_at == datetime(2011, 7, 20, 1, 36, 7)
         assert post.provider_display_name == "Socialhome"
 
@@ -88,6 +88,9 @@ class TestDiasporaEntityMappersReceive():
         assert comment.participation == "comment"
         assert comment.raw_content == "((text))"
         assert comment.signature == "((signature))"
+        assert comment._xml_tags == [
+            "guid", "parent_guid", "text", "author",
+        ]
         mock_validate.assert_called_once_with()
 
     @patch("federation.entities.diaspora.mappers.DiasporaLike._validate_signatures")
@@ -103,6 +106,9 @@ class TestDiasporaEntityMappersReceive():
         assert like.participation == "reaction"
         assert like.reaction == "like"
         assert like.signature == "((signature))"
+        assert like._xml_tags == [
+            "parent_type", "guid", "parent_guid", "positive", "author",
+        ]
         mock_validate.assert_called_once_with()
 
     def test_message_to_objects_request(self):

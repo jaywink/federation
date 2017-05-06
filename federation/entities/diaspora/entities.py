@@ -32,6 +32,7 @@ class DiasporaEntityMixin(BaseEntity):
 
 
 class DiasporaRelayableMixin(DiasporaEntityMixin):
+    _xml_tags = []
     parent_signature = ""
 
     def __init__(self, *args, **kwargs):
