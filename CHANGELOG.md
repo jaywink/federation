@@ -13,12 +13,15 @@ Additionally, Diaspora entity mappers `message_to_objects` and `element_to_objec
 ### Other backwards incompatible changes
 * A failed payload signature verification now raises a `SignatureVerificationError` instead of a less specific `AssertionError`.
 
-### Other additions
-
+### Added
 * Three new attributes added to entities.
     * Add protocol name to all entities to attribute `_source_protocol`. This might be useful for applications to know which protocol payload the entity was created from once multiple protocols are implemented.
     * Add source payload object to the entity at `_source_object` when processing it.
     * Add sender public key to the entity at `_sender_key`, but only if it was used for validating signatures.
+* Add support for the new Diaspora payload properties coming in the next protocol version. Old XML payloads are and will be still supported.
+
+### Changed
+* Refactor processing of Diaspora payload XML into entities. Diaspora protocol is dropping the `<XML><post></post></XML>` wrapper for the payloads. Payloads with the wrapper will still be parsed as before.
 
 ## [0.10.1] - 2017-03-09
 
