@@ -2,7 +2,7 @@
 
 ## [unreleased]
 
-### Major changes
+### Backwards incompatible changes
 
 Diaspora protocol support added for `comment` and `like` relayable types. On inbound payloads the signature included in the payload will be verified against the sender public key. A failed verification will raise `SignatureVerificationError`. For outbound entities, the author private key will be used to add a signature to the payload.
 
@@ -10,8 +10,7 @@ This introduces some backwards incompatible changes to the way entities are proc
 
 Additionally, Diaspora entity mappers `message_to_objects` and `element_to_objects` now take an optional `sender_key_fetcher` parameter. This must be a function that when called with the sender handle will return the sender public key. This allows using locally cached public keys instead of fetching them as needed. NOTE! If the function is not given, each processed payload will fetch the public key over the network. 
 
-### Other backwards incompatible changes
-* A failed payload signature verification now raises a `SignatureVerificationError` instead of a less specific `AssertionError`.
+A failed payload signature verification now raises a `SignatureVerificationError` instead of a less specific `AssertionError`.
 
 ### Added
 * Three new attributes added to entities.
@@ -20,6 +19,9 @@ Additionally, Diaspora entity mappers `message_to_objects` and `element_to_objec
     * Add sender public key to the entity at `_sender_key`, but only if it was used for validating signatures.
 * Add support for the new Diaspora payload properties coming in the next protocol version. Old XML payloads are and will be still supported.
 * `DiasporaComment` and `DiasporaLike` will get the order of elements in the XML payload as a list in `xml_tags`. For implementers who want to recreate payloads for these relayables, this list should be saved for later use.
+* High level `federation.outbound.handle_send` helper function now allows sending entities to a list of recipients without having to deal with payload creation or caring about the protocol (in preparation of being a multi-protocol library).
+    * The function takes three parameters, `entity` that will be sent, `from_user` that is sending (note, not necessarely authoring, this user will be used to sign the payload for Diaspora for example) and a list of recipients as tuples of recipient handle/domain and optionally protocol. In the future, if protocol is not given, it will be guessed from the recipient handle, and if necessary a network lookup will be made to see what protocols the receiving identity supports.
+    * Payloads will be delivered to each receiver only once. Currently only public messages are supported through this helper, so multiple recipients on a single domain will cause only one delivery.
 
 ### Changed
 * Refactor processing of Diaspora payload XML into entities. Diaspora protocol is dropping the `<XML><post></post></XML>` wrapper for the payloads. Payloads with the wrapper will still be parsed as before.
