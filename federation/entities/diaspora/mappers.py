@@ -7,6 +7,7 @@ from federation.entities.base import Image, Relationship, Post, Reaction, Commen
 from federation.entities.diaspora.entities import (
     DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest, DiasporaProfile, DiasporaRetraction,
     DiasporaRelayableMixin)
+from federation.protocols.diaspora.signatures import get_element_child_info
 from federation.utils.diaspora import retrieve_and_parse_profile
 
 logger = logging.getLogger("federation")
@@ -74,6 +75,7 @@ def element_to_objects(element, sender_key_fetcher=None):
     entity._source_object = element
     # If relayable, fetch sender key for validation
     if issubclass(cls, DiasporaRelayableMixin):
+        entity._xml_tags = get_element_child_info(element, "tag")
         if sender_key_fetcher:
             entity._sender_key = sender_key_fetcher(entity.handle)
         else:
@@ -124,7 +126,7 @@ def message_to_objects(message, sender_key_fetcher=None):
 
 def transform_attributes(attrs, cls):
     """Transform some attribute keys.
-    
+
     :param attrs: Properties from the XML
     :type attrs: dict
     :param cls: Class of the entity

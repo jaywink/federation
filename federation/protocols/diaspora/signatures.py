@@ -5,11 +5,23 @@ from Crypto.PublicKey import RSA
 from Crypto.Signature import PKCS1_v1_5
 
 
-def _create_signature_hash(doc):
+def get_element_child_info(doc, attr):
+    """Get information from child elements of this elementas a list since order is important.
+
+    Don't include signature tags.
+
+    :param doc: XML element
+    :param attr: Attribute to get from the elements, for example "tag" or "text".
+    """
     props = []
     for child in doc:
         if child.tag not in ["author_signature", "parent_author_signature"]:
-            props.append(child.text)
+            props.append(getattr(child, attr))
+    return props
+
+
+def _create_signature_hash(doc):
+    props = get_element_child_info(doc, "text")
     content = ";".join(props)
     return SHA256.new(content.encode("ascii"))
 
