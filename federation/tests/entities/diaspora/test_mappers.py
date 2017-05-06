@@ -15,7 +15,7 @@ from federation.tests.fixtures.keys import get_dummy_private_key
 from federation.tests.fixtures.payloads import (
     DIASPORA_POST_SIMPLE, DIASPORA_POST_COMMENT, DIASPORA_POST_LIKE,
     DIASPORA_REQUEST, DIASPORA_PROFILE, DIASPORA_POST_INVALID, DIASPORA_RETRACTION,
-    DIASPORA_POST_WITH_PHOTOS, DIASPORA_POST_LEGACY_TIMESTAMP)
+    DIASPORA_POST_WITH_PHOTOS, DIASPORA_POST_LEGACY_TIMESTAMP, DIASPORA_POST_LEGACY)
 
 
 def mock_fill(attributes):
@@ -23,9 +23,23 @@ def mock_fill(attributes):
     return attributes
 
 
-class TestDiasporaEntityMappersReceive(object):
+class TestDiasporaEntityMappersReceive():
     def test_message_to_objects_simple_post(self):
         entities = message_to_objects(DIASPORA_POST_SIMPLE)
+        assert len(entities) == 1
+        post = entities[0]
+        assert isinstance(post, DiasporaPost)
+        assert isinstance(post, Post)
+        assert post.raw_content == "((status message))"
+        assert post.guid == "((guidguidguidguidguidguidguid))"
+        assert post.handle == "alice@alice.diaspora.example.org"
+        assert post.public == False
+        assert post.created_at == datetime(2011, 7, 20, 1, 36, 7)
+        assert post.provider_display_name == "Socialhome"
+
+    def test_message_to_objects_post_legacy(self):
+        # This is the previous XML schema used before renewal of protocol
+        entities = message_to_objects(DIASPORA_POST_LEGACY)
         assert len(entities) == 1
         post = entities[0]
         assert isinstance(post, DiasporaPost)
@@ -57,19 +71,6 @@ class TestDiasporaEntityMappersReceive(object):
         assert photo.height == 120
         assert photo.width == 120
         assert photo.guid == "((guidguidguidguidguidguidguif))"
-        assert photo.handle == "alice@alice.diaspora.example.org"
-        assert photo.public == False
-        assert photo.created_at == datetime(2011, 7, 20, 1, 36, 7)
-        photo = post._children[1]
-        assert isinstance(photo, Image)
-        assert photo.remote_path == "https://alice.diaspora.example.org/uploads/images/"
-        assert photo.remote_name == "12345.jpg"
-        assert photo.raw_content == "foobar"
-        assert photo.linked_type == "Post"
-        assert photo.linked_guid == "((guidguidguidguidguidguidguid))"
-        assert photo.height == 120
-        assert photo.width == 120
-        assert photo.guid == "((guidguidguidguidguidguidguig))"
         assert photo.handle == "alice@alice.diaspora.example.org"
         assert photo.public == False
         assert photo.created_at == datetime(2011, 7, 20, 1, 36, 7)
@@ -171,7 +172,7 @@ class TestDiasporaEntityMappersReceive(object):
         mock_retrieve.assert_called_once_with("alice@alice.diaspora.example.org")
 
 
-class TestGetOutboundEntity(object):
+class TestGetOutboundEntity():
     def test_already_fine_entities_are_returned_as_is(self):
         dummy_key = get_dummy_private_key()
         entity = DiasporaPost()

@@ -21,19 +21,24 @@ MAPPINGS = {
     "retraction": DiasporaRetraction,
 }
 
-BOOLEAN_KEYS = [
+TAGS = [
+    # Order is important. Any top level tags should be before possibly child tags
+    "status_message", "comment", "like", "request", "profile", "retraction", "photo",
+]
+
+BOOLEAN_KEYS = (
     "public",
     "nsfw",
-]
+)
 
-DATETIME_KEYS = [
+DATETIME_KEYS = (
     "created_at",
-]
+)
 
-INTEGER_KEYS = [
+INTEGER_KEYS = (
     "height",
     "width",
-]
+)
 
 def xml_children_as_dict(node):
     """Turn the children of node <xml> into a dict, keyed by tag name.
@@ -43,8 +48,8 @@ def xml_children_as_dict(node):
     return dict((e.tag, e.text) for e in node)
 
 
-def element_to_objects(tree, sender_key_fetcher=None):
-    """Transform an Element tree to a list of entities recursively.
+def element_to_objects(element, sender_key_fetcher=None):
+    """Transform an Element to a list of entities recursively.
 
     Possible child entities are added to each entity `_children` list.
 
@@ -54,45 +59,45 @@ def element_to_objects(tree, sender_key_fetcher=None):
     :returns: list of entities
     """
     entities = []
-    for element in tree:
-        cls = MAPPINGS.get(element.tag, None)
-        if not cls:
-            continue
+    cls = MAPPINGS.get(element.tag, None)
+    if not cls:
+        return []
 
-        attrs = xml_children_as_dict(element)
-        transformed = transform_attributes(attrs)
-        if hasattr(cls, "fill_extra_attributes"):
-            transformed = cls.fill_extra_attributes(transformed)
-        entity = cls(**transformed)
-        # Add protocol name
-        entity._source_protocol = "diaspora"
-        # Save element object to entity for possible later use
-        entity._source_object = element
-        # If relayable, fetch sender key for validation
-        if issubclass(cls, DiasporaRelayableMixin):
-            if sender_key_fetcher:
-                entity._sender_key = sender_key_fetcher(entity.handle)
-            else:
-                profile = retrieve_and_parse_profile(entity.handle)
-                if profile:
-                    entity._sender_key = profile.public_key
-        try:
-            entity.validate()
-        except ValueError as ex:
-            logger.error("Failed to validate entity %s: %s", entity, ex, extra={
-                "attrs": attrs,
-                "transformed": transformed,
-            })
-            continue
-        # Do child elements
-        entity._children = element_to_objects(element)
-        # Add to entities list
-        entities.append(entity)
-        if cls == DiasporaRequest:
-            # We support sharing/following separately, so also generate base Relationship for the following part
-            transformed.update({"relationship": "following"})
-            relationship = Relationship(**transformed)
-            entities.append(relationship)
+    attrs = xml_children_as_dict(element)
+    transformed = transform_attributes(attrs, cls)
+    if hasattr(cls, "fill_extra_attributes"):
+        transformed = cls.fill_extra_attributes(transformed)
+    entity = cls(**transformed)
+    # Add protocol name
+    entity._source_protocol = "diaspora"
+    # Save element object to entity for possible later use
+    entity._source_object = element
+    # If relayable, fetch sender key for validation
+    if issubclass(cls, DiasporaRelayableMixin):
+        if sender_key_fetcher:
+            entity._sender_key = sender_key_fetcher(entity.handle)
+        else:
+            profile = retrieve_and_parse_profile(entity.handle)
+            if profile:
+                entity._sender_key = profile.public_key
+    try:
+        entity.validate()
+    except ValueError as ex:
+        logger.error("Failed to validate entity %s: %s", entity, ex, extra={
+            "attrs": attrs,
+            "transformed": transformed,
+        })
+        return []
+    # Do child elements
+    for child in element:
+        entity._children = element_to_objects(child)
+    # Add to entities list
+    entities.append(entity)
+    if cls == DiasporaRequest:
+        # We support sharing/following separately, so also generate base Relationship for the following part
+        transformed.update({"relationship": "following"})
+        relationship = Relationship(**transformed)
+        entities.append(relationship)
     return entities
 
 
@@ -106,11 +111,15 @@ def message_to_objects(message, sender_key_fetcher=None):
     :returns: list of entities
     """
     doc = etree.fromstring(message)
-    if doc[0].tag == "post":
-        # Skip the top <post> element if it exists
-        doc = doc[0]
-    entities = element_to_objects(doc, sender_key_fetcher)
-    return entities
+    # Future Diaspora protocol version contains the element at top level
+    if doc.tag in TAGS:
+        return element_to_objects(doc, sender_key_fetcher)
+    # Legacy Diaspora protocol wraps the element in <XML><post></post></XML>, so find the right element
+    for tag in TAGS:
+        element = doc.find(".//%s" % tag)
+        if element is not None:
+            return element_to_objects(element, sender_key_fetcher)
+    return []
 
 
 def transform_attributes(attrs, cls):
