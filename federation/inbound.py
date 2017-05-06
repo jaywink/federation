@@ -13,6 +13,15 @@ PROTOCOLS = (
 def handle_receive(payload, user=None, sender_key_fetcher=None, skip_author_verification=False):
     """Takes a payload and passes it to the correct protocol.
 
+    Returns a tuple of:
+      - sender handle
+      - protocol name
+      - list of entities
+
+    NOTE! The returned sender is NOT necessarily the *author* of the entity. By sender here we're
+    talking about the sender of the *payload*. If this object is being relayed by the sender, the author
+    could actually be a different identity.
+
     :arg payload: Payload blob (str)
     :arg user: User that will be passed to `protocol.receive` (required on private encrypted content)
     :arg sender_key_fetcher: Function that accepts sender handle and returns public key (optional)
