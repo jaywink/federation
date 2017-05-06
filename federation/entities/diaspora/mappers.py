@@ -113,15 +113,21 @@ def message_to_objects(message, sender_key_fetcher=None):
     return entities
 
 
-def transform_attributes(attrs):
-    """Transform some attribute keys."""
+def transform_attributes(attrs, cls):
+    """Transform some attribute keys.
+    
+    :param attrs: Properties from the XML
+    :type attrs: dict
+    :param cls: Class of the entity
+    :type cls: class
+    """
     transformed = {}
     for key, value in attrs.items():
         if key in ["raw_message", "text"]:
             transformed["raw_content"] = value
         elif key in ["diaspora_handle", "sender_handle", "author"]:
             transformed["handle"] = value
-        elif key == "recipient_handle":
+        elif key in ["recipient_handle", "recipient"]:
             transformed["target_handle"] = value
         elif key == "parent_guid":
             transformed["target_guid"] = value
@@ -145,7 +151,7 @@ def transform_attributes(attrs):
             transformed["raw_content"] = value
         elif key == "searchable":
             transformed["public"] = True if value == "true" else False
-        elif key == "target_type":
+        elif key in ["target_type", "type"] and cls == DiasporaRetraction:
             transformed["entity_type"] = DiasporaRetraction.entity_type_from_remote(value)
         elif key == "remote_photo_path":
             transformed["remote_path"] = value
@@ -156,6 +162,8 @@ def transform_attributes(attrs):
             transformed["linked_type"] = "Post"
         elif key == "author_signature":
             transformed["signature"] = value
+        elif key == "post_guid":
+            transformed["target_guid"] = value
         elif key in BOOLEAN_KEYS:
             transformed[key] = True if value == "true" else False
         elif key in DATETIME_KEYS:
