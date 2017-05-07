@@ -23,7 +23,7 @@ def get_element_child_info(doc, attr):
 def _create_signature_hash(doc):
     props = get_element_child_info(doc, "text")
     content = ";".join(props)
-    return SHA256.new(content.encode("ascii"))
+    return SHA256.new(content.encode("utf-8"))
 
 
 def verify_relayable_signature(public_key, doc, signature):
