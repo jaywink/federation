@@ -135,3 +135,7 @@ def retrieve_and_parse_profile(handle):
                        profile, ex)
         return None
     return profile
+
+
+def get_public_endpoint(domain):
+    return "https://%s/receive/public" % domain

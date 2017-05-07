@@ -82,6 +82,7 @@ Outbound
 High level utility functions to pass outbound entities to. These should be favoured instead of protocol specific utility functions.
 
 .. autofunction:: federation.outbound.handle_create_payload
+.. autofunction:: federation.outbound.handle_send
 
 
 Protocols
