@@ -1,4 +1,5 @@
 import logging
+import traceback
 from datetime import datetime
 
 from lxml import etree
@@ -89,6 +90,7 @@ def element_to_objects(element, sender_key_fetcher=None):
             "attrs": attrs,
             "transformed": transformed,
         })
+        logger.error(traceback.format_stack())
         return []
     # Do child elements
     for child in element:
