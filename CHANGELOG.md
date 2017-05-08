@@ -1,6 +1,6 @@
 # Changelog
 
-## [unreleased]
+## [0.11.0] - 2017-05-08
 
 ### Backwards incompatible changes
 
