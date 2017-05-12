@@ -1,7 +1,7 @@
+import json
 import logging
 import warnings
 from base64 import b64decode, urlsafe_b64decode, b64encode, urlsafe_b64encode
-from json import loads, dumps
 from urllib.parse import unquote_plus
 
 from Crypto.Cipher import AES, PKCS1_v1_5
@@ -24,13 +24,25 @@ MAGIC_ENV_TAG = "{http://salmon-protocol.org/ns/magic-env}env"
 
 
 def identify_payload(payload):
+    """Try to identify whether this is a Diaspora payload.
+
+    Try first public message. Then private message. The check if this is a legacy payload.
+    """
+    # Private encrypted JSON payload
+    try:
+        data = json.loads(payload)
+        if "encrypted_magic_envelope" in data:
+            return True
+    except Exception:
+        pass
+    # Public XML payload
     try:
         xml = etree.fromstring(bytes(payload, encoding="utf-8"))
         if xml.tag == MAGIC_ENV_TAG:
             return True
     except Exception:
         pass
-    # Check for legacy
+    # Legacy XML payload
     try:
         xml = unquote_plus(payload)
         return xml.find('xmlns="%s"' % PROTOCOL_NS) > -1
@@ -160,7 +172,7 @@ class Protocol(BaseProtocol):
         key and hence the passphrase for the key.
         """
         decoded_json = b64decode(b64data.encode("ascii"))
-        rep = loads(decoded_json.decode("ascii"))
+        rep = json.loads(decoded_json.decode("ascii"))
         outer_key_details = self.decrypt_outer_aes_key_bundle(
             rep["aes_key"], key)
         header = self.get_decrypted_header(
@@ -182,7 +194,7 @@ class Protocol(BaseProtocol):
             b64decode(data.encode("ascii")),
             sentinel=None
         )
-        return loads(decoded_json.decode("ascii"))
+        return json.loads(decoded_json.decode("ascii"))
 
     def get_decrypted_header(self, ciphertext, key, iv):
         """
@@ -282,7 +294,7 @@ class Protocol(BaseProtocol):
         """
         Record the information on the key used to encrypt the header.
         """
-        d = dumps({
+        d = json.dumps({
             "iv": b64encode(self.outer_iv).decode("ascii"),
             "key": b64encode(self.outer_key).decode("ascii")
         })
@@ -306,7 +318,7 @@ class Protocol(BaseProtocol):
             public_key)).decode("ascii")
         ciphertext = b64encode(self.create_ciphertext()).decode("ascii")
 
-        d = dumps({
+        d = json.dumps({
             "aes_key": aes_key,
             "ciphertext": ciphertext
         })

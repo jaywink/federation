@@ -10,6 +10,7 @@ from federation.protocols.diaspora.protocol import Protocol, identify_payload
 from federation.tests.fixtures.payloads import (
     ENCRYPTED_LEGACY_DIASPORA_PAYLOAD, UNENCRYPTED_LEGACY_DIASPORA_PAYLOAD,
     DIASPORA_PUBLIC_PAYLOAD,
+    DIASPORA_ENCRYPTED_PAYLOAD,
 )
 
 
@@ -122,6 +123,9 @@ class TestDiasporaProtocol(DiasporaTestBase):
 
     def test_identify_payload_with_diaspora_public_payload(self):
         assert identify_payload(DIASPORA_PUBLIC_PAYLOAD) == True
+
+    def test_identify_payload_with_diaspora_encrypted_payload(self):
+        assert identify_payload(DIASPORA_ENCRYPTED_PAYLOAD) == True
 
     def test_identify_payload_with_other_payload(self):
         assert identify_payload("foobar not a diaspora protocol") == False

@@ -39,6 +39,13 @@ DIASPORA_PUBLIC_PAYLOAD = """<?xml version='1.0' encoding='UTF-8'?>
 """
 
 
+DIASPORA_ENCRYPTED_PAYLOAD = """{
+  "aes_key": "...",
+  "encrypted_magic_envelope": "..."
+}
+"""
+
+
 DIASPORA_POST_LEGACY = """<XML>
       <post>
         <status_message>
