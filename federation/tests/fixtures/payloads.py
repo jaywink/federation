@@ -1,4 +1,4 @@
-ENCRYPTED_DIASPORA_PAYLOAD = """<?xml version='1.0'?>
+ENCRYPTED_LEGACY_DIASPORA_PAYLOAD = """<?xml version='1.0'?>
             <diaspora xmlns="https://joindiaspora.com/protocol" xmlns:me="http://salmon-protocol.org/ns/magic-env">
                 <encrypted_header>{encrypted_header}</encrypted_header>
                 <me:env>
@@ -11,7 +11,7 @@ ENCRYPTED_DIASPORA_PAYLOAD = """<?xml version='1.0'?>
         """
 
 
-UNENCRYPTED_DIASPORA_PAYLOAD = """<?xml version='1.0'?>
+UNENCRYPTED_LEGACY_DIASPORA_PAYLOAD = """<?xml version='1.0'?>
             <diaspora xmlns="https://joindiaspora.com/protocol" xmlns:me="http://salmon-protocol.org/ns/magic-env">
                 <header>
                     <author_id>bob@example.com</author_id>
@@ -24,6 +24,26 @@ UNENCRYPTED_DIASPORA_PAYLOAD = """<?xml version='1.0'?>
                 </me:env>
             </diaspora>
         """
+
+
+DIASPORA_PUBLIC_PAYLOAD = """<?xml version='1.0' encoding='UTF-8'?>
+<me:env xmlns:me="http://salmon-protocol.org/ns/magic-env">
+    <me:encoding>base64url</me:encoding>
+    <me:alg>RSA-SHA256</me:alg>
+    <me:data type="application/xml">PHN0YXR1c19tZXNzYWdlPjxmb28-YmFyPC9mb28-PC9zdGF0dXNfbWVzc2FnZT4=</me:data>
+    <me:sig key_id="Zm9vYmFyQGV4YW1wbGUuY29t">Cmk08MR4Tp8r9eVybD1hORcR_8NLRVxAu0biOfJbkI1xLx1c480zJ720cpVyKaF9""" \
+    """CxVjW3lvlvRz5YbswMv0izPzfHpXoWTXH-4UPrXaGYyJnrNvqEB2UWn4iHKJ2Rerto8sJY2b95qbXD6Nq75EoBNub5P7DYc16ENhp3""" \
+    """8YwBRnrBEvNOewddpOpEBVobyNB7no_QR8c_xkXie-hUDFNwI0z7vax9HkaBFbvEmzFPMZAAdWyjxeGiWiqY0t2ZdZRCPTezy66X6Q0""" \
+    """qc4I8kfT-Mt1ctjGmNMoJ4Lgu-PrO5hSRT4QBAVyxaog5w-B0PIPuC-mUW5SZLsnX3_ZuwJww==</me:sig>
+</me:env>
+"""
+
+
+DIASPORA_ENCRYPTED_PAYLOAD = """{
+  "aes_key": "...",
+  "encrypted_magic_envelope": "..."
+}
+"""
 
 
 DIASPORA_POST_LEGACY = """<XML>
