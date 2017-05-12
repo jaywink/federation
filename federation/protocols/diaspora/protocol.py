@@ -20,14 +20,23 @@ logger = logging.getLogger("federation")
 
 PROTOCOL_NAME = "diaspora"
 PROTOCOL_NS = "https://joindiaspora.com/protocol"
+MAGIC_ENV_TAG = "{http://salmon-protocol.org/ns/magic-env}env"
 
 
 def identify_payload(payload):
     try:
+        xml = etree.fromstring(bytes(payload, encoding="utf-8"))
+        if xml.tag == MAGIC_ENV_TAG:
+            return True
+    except Exception:
+        pass
+    # Check for legacy
+    try:
         xml = unquote_plus(payload)
         return xml.find('xmlns="%s"' % PROTOCOL_NS) > -1
     except Exception:
-        return False
+        pass
+    return False
 
 
 class Protocol(BaseProtocol):

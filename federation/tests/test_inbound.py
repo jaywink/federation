@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from unittest.mock import patch
 
 import pytest
@@ -6,12 +5,12 @@ import pytest
 from federation.exceptions import NoSuitableProtocolFoundError
 from federation.inbound import handle_receive
 from federation.protocols.diaspora.protocol import Protocol
-from federation.tests.fixtures.payloads import UNENCRYPTED_DIASPORA_PAYLOAD
+from federation.tests.fixtures.payloads import UNENCRYPTED_LEGACY_DIASPORA_PAYLOAD
 
 
-class TestHandleReceiveProtocolIdentification(object):
+class TestHandleReceiveProtocolIdentification():
     def test_handle_receive_routes_to_identified_protocol(self):
-        payload = UNENCRYPTED_DIASPORA_PAYLOAD
+        payload = UNENCRYPTED_LEGACY_DIASPORA_PAYLOAD
         with patch.object(
                     Protocol,
                     'receive',

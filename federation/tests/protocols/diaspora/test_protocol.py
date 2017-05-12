@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from base64 import urlsafe_b64decode
 from unittest.mock import Mock, patch
 from xml.etree.ElementTree import ElementTree
@@ -8,10 +7,13 @@ import pytest
 
 from federation.exceptions import EncryptedMessageError, NoSenderKeyFoundError, NoHeaderInMessageError
 from federation.protocols.diaspora.protocol import Protocol, identify_payload
-from federation.tests.fixtures.payloads import ENCRYPTED_DIASPORA_PAYLOAD, UNENCRYPTED_DIASPORA_PAYLOAD
+from federation.tests.fixtures.payloads import (
+    ENCRYPTED_LEGACY_DIASPORA_PAYLOAD, UNENCRYPTED_LEGACY_DIASPORA_PAYLOAD,
+    DIASPORA_PUBLIC_PAYLOAD,
+)
 
 
-class MockUser(object):
+class MockUser():
     private_key = "foobar"
 
     def __init__(self, nokey=False):
@@ -27,15 +29,15 @@ def mock_not_found_get_contact_key(contact):
     return None
 
 
-class DiasporaTestBase(object):
+class DiasporaTestBase():
     def init_protocol(self):
         return Protocol()
 
     def get_unencrypted_doc(self):
-        return etree.fromstring(UNENCRYPTED_DIASPORA_PAYLOAD)
+        return etree.fromstring(UNENCRYPTED_LEGACY_DIASPORA_PAYLOAD)
 
     def get_encrypted_doc(self):
-        return etree.fromstring(ENCRYPTED_DIASPORA_PAYLOAD)
+        return etree.fromstring(ENCRYPTED_LEGACY_DIASPORA_PAYLOAD)
 
     def get_mock_user(self, nokey=False):
         return MockUser(nokey)
@@ -68,7 +70,7 @@ class TestDiasporaProtocol(DiasporaTestBase):
         protocol = self.init_protocol()
         user = self.get_mock_user()
         protocol.get_message_content = self.mock_get_message_content
-        sender, content = protocol.receive(UNENCRYPTED_DIASPORA_PAYLOAD, user, mock_get_contact_key,
+        sender, content = protocol.receive(UNENCRYPTED_LEGACY_DIASPORA_PAYLOAD, user, mock_get_contact_key,
                                            skip_author_verification=True)
         assert sender == "bob@example.com"
         assert content == "<content />"
@@ -80,7 +82,7 @@ class TestDiasporaProtocol(DiasporaTestBase):
             return_value="<content><diaspora_handle>bob@example.com</diaspora_handle></content>"
         )
         protocol.parse_header = Mock(return_value="foobar")
-        sender, content = protocol.receive(ENCRYPTED_DIASPORA_PAYLOAD, user, mock_get_contact_key,
+        sender, content = protocol.receive(ENCRYPTED_LEGACY_DIASPORA_PAYLOAD, user, mock_get_contact_key,
                                            skip_author_verification=True)
         assert sender == "bob@example.com"
         assert content == "<content><diaspora_handle>bob@example.com</diaspora_handle></content>"
@@ -88,19 +90,19 @@ class TestDiasporaProtocol(DiasporaTestBase):
     def test_receive_raises_on_encrypted_message_and_no_user(self):
         protocol = self.init_protocol()
         with pytest.raises(EncryptedMessageError):
-            protocol.receive(ENCRYPTED_DIASPORA_PAYLOAD)
+            protocol.receive(ENCRYPTED_LEGACY_DIASPORA_PAYLOAD)
 
     def test_receive_raises_on_encrypted_message_and_no_user_key(self):
         protocol = self.init_protocol()
         user = self.get_mock_user(nokey=True)
         with pytest.raises(EncryptedMessageError):
-            protocol.receive(ENCRYPTED_DIASPORA_PAYLOAD, user)
+            protocol.receive(ENCRYPTED_LEGACY_DIASPORA_PAYLOAD, user)
 
     def test_receive_raises_if_sender_key_cannot_be_found(self):
         protocol = self.init_protocol()
         user = self.get_mock_user()
         with pytest.raises(NoSenderKeyFoundError):
-            protocol.receive(UNENCRYPTED_DIASPORA_PAYLOAD, user, mock_not_found_get_contact_key)
+            protocol.receive(UNENCRYPTED_LEGACY_DIASPORA_PAYLOAD, user, mock_not_found_get_contact_key)
 
     def test_find_header_raises_if_header_cannot_be_found(self):
         protocol = self.init_protocol()
@@ -115,8 +117,11 @@ class TestDiasporaProtocol(DiasporaTestBase):
         body = protocol.get_message_content()
         assert body == urlsafe_b64decode("{data}".encode("ascii"))
 
-    def test_identify_payload_with_diaspora_payload(self):
-        assert identify_payload(UNENCRYPTED_DIASPORA_PAYLOAD) == True
+    def test_identify_payload_with_legacy_diaspora_payload(self):
+        assert identify_payload(UNENCRYPTED_LEGACY_DIASPORA_PAYLOAD) == True
+
+    def test_identify_payload_with_diaspora_public_payload(self):
+        assert identify_payload(DIASPORA_PUBLIC_PAYLOAD) == True
 
     def test_identify_payload_with_other_payload(self):
         assert identify_payload("foobar not a diaspora protocol") == False
