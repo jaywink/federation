@@ -1,5 +1,13 @@
 # Changelog
 
+## [unreleased]
+
+### Backwards incompatible changes
+* Removed exception class `NoHeaderInMessageError`. New style Diaspora protocol does not have a custom header in the Salmon magic envelope and thus there is no need to raise this anywhere.
+
+### Added
+* New style Diaspora public payloads are now supported (see [here](https://github.com/diaspora/diaspora_federation/issues/30)). Old style payloads are still supported. Payloads are also still sent out old style.
+
 ## [0.11.0] - 2017-05-08
 
 ### Backwards incompatible changes

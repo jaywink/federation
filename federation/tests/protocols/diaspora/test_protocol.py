@@ -5,7 +5,7 @@ from xml.etree.ElementTree import ElementTree
 from lxml import etree
 import pytest
 
-from federation.exceptions import EncryptedMessageError, NoSenderKeyFoundError, NoHeaderInMessageError
+from federation.exceptions import EncryptedMessageError, NoSenderKeyFoundError
 from federation.protocols.diaspora.protocol import Protocol, identify_payload
 from federation.tests.fixtures.payloads import (
     ENCRYPTED_LEGACY_DIASPORA_PAYLOAD, UNENCRYPTED_LEGACY_DIASPORA_PAYLOAD,
@@ -105,12 +105,6 @@ class TestDiasporaProtocol(DiasporaTestBase):
         with pytest.raises(NoSenderKeyFoundError):
             protocol.receive(UNENCRYPTED_LEGACY_DIASPORA_PAYLOAD, user, mock_not_found_get_contact_key)
 
-    def test_find_header_raises_if_header_cannot_be_found(self):
-        protocol = self.init_protocol()
-        protocol.doc = etree.fromstring("<foo>bar</foo>")
-        with pytest.raises(NoHeaderInMessageError):
-            protocol.find_header()
-
     def test_get_message_content(self):
         protocol = self.init_protocol()
         protocol.doc = self.get_unencrypted_doc()
@@ -130,25 +124,25 @@ class TestDiasporaProtocol(DiasporaTestBase):
     def test_identify_payload_with_other_payload(self):
         assert identify_payload("foobar not a diaspora protocol") == False
 
-    def test_get_sender_returns_sender_in_header(self):
+    def test_get_sender_legacy_returns_sender_in_header(self):
         protocol = self.init_protocol()
         protocol.doc = self.get_unencrypted_doc()
         protocol.find_header()
-        assert protocol.get_sender() == "bob@example.com"
+        assert protocol.get_sender_legacy() == "bob@example.com"
 
-    def test_get_sender_returns_sender_in_content(self):
+    def test_get_sender_legacy_returns_sender_in_content(self):
         protocol = self.init_protocol()
         protocol.header = ElementTree()
         protocol.content = "<content><diaspora_handle>bob@example.com</diaspora_handle></content>"
-        assert protocol.get_sender() == "bob@example.com"
+        assert protocol.get_sender_legacy() == "bob@example.com"
         protocol.content = "<content><sender_handle>bob@example.com</sender_handle></content>"
-        assert protocol.get_sender() == "bob@example.com"
+        assert protocol.get_sender_legacy() == "bob@example.com"
 
-    def test_get_sender_returns_none_if_no_sender_found(self):
+    def test_get_sender_legacy_returns_none_if_no_sender_found(self):
         protocol = self.init_protocol()
         protocol.header = ElementTree()
         protocol.content = "<content><handle>bob@example.com</handle></content>"
-        assert protocol.get_sender() == None
+        assert protocol.get_sender_legacy() is None
 
     @patch.object(Protocol, "init_message")
     @patch.object(Protocol, "create_salmon_envelope")

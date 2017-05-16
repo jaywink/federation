@@ -3,11 +3,6 @@ class EncryptedMessageError(Exception):
     pass
 
 
-class NoHeaderInMessageError(Exception):
-    """Message payload is missing required header."""
-    pass
-
-
 class NoSenderKeyFoundError(Exception):
     """Sender private key was not available to sign a payload message."""
     pass

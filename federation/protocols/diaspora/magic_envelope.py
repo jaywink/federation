@@ -1,18 +1,21 @@
-from base64 import urlsafe_b64encode, b64encode
+from base64 import urlsafe_b64encode, b64encode, urlsafe_b64decode
 
 from Crypto.Hash import SHA256
 from Crypto.Signature import PKCS1_v1_5 as PKCSSign
 from lxml import etree
 
 
-class MagicEnvelope(object):
+NAMESPACE = "http://salmon-protocol.org/ns/magic-env"
+
+
+class MagicEnvelope():
     """Diaspora protocol magic envelope.
 
     See: http://diaspora.github.io/diaspora_federation/federation/magicsig.html
     """
 
     nsmap = {
-        'me': 'http://salmon-protocol.org/ns/magic-env'
+        "me": NAMESPACE,
     }
 
     def __init__(self, message, private_key, author_handle, wrap_payload=False):
@@ -27,6 +30,16 @@ class MagicEnvelope(object):
         self.wrap_payload = wrap_payload
         self.doc = None
         self.payload = None
+
+    @staticmethod
+    def get_sender(doc):
+        """Get the key_id from the `sig` element which contains urlsafe_b64encoded Diaspora handle.
+
+        :param doc: ElementTree document
+        :returns: Diaspora handle
+        """
+        key_id = doc.find(".//{%s}sig" % NAMESPACE).get("key_id")
+        return urlsafe_b64decode(key_id).decode("utf-8")
 
     def create_payload(self):
         """Create the payload doc.
@@ -58,14 +71,13 @@ class MagicEnvelope(object):
         return sig, key_id
 
     def build(self):
-        self.doc = etree.Element("{%s}env" % self.nsmap["me"], nsmap=self.nsmap)
-        etree.SubElement(self.doc, "{%s}encoding" % self.nsmap["me"]).text = 'base64url'
-        etree.SubElement(self.doc, "{%s}alg" % self.nsmap["me"]).text = 'RSA-SHA256'
+        self.doc = etree.Element("{%s}env" % NAMESPACE, nsmap=self.nsmap)
+        etree.SubElement(self.doc, "{%s}encoding" % NAMESPACE).text = 'base64url'
+        etree.SubElement(self.doc, "{%s}alg" % NAMESPACE).text = 'RSA-SHA256'
         self.create_payload()
-        etree.SubElement(self.doc, "{%s}data" % self.nsmap["me"],
-                         {"type": "application/xml"}).text = self.payload
+        etree.SubElement(self.doc, "{%s}data" % NAMESPACE, {"type": "application/xml"}).text = self.payload
         signature, key_id = self._build_signature()
-        etree.SubElement(self.doc, "{%s}sig" % self.nsmap["me"], key_id=key_id).text = signature
+        etree.SubElement(self.doc, "{%s}sig" % NAMESPACE, key_id=key_id).text = signature
         return self.doc
 
     def render(self):
