@@ -3,10 +3,10 @@ from datetime import datetime
 
 from lxml import etree
 
-from federation.entities.base import Image, Relationship, Post, Reaction, Comment, Profile, Retraction
+from federation.entities.base import Image, Relationship, Post, Reaction, Comment, Profile, Retraction, Follow
 from federation.entities.diaspora.entities import (
     DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest, DiasporaProfile, DiasporaRetraction,
-    DiasporaRelayableMixin)
+    DiasporaRelayableMixin, DiasporaContact)
 from federation.protocols.diaspora.signatures import get_element_child_info
 from federation.utils.diaspora import retrieve_and_parse_profile
 
@@ -20,16 +20,19 @@ MAPPINGS = {
     "request": DiasporaRequest,
     "profile": DiasporaProfile,
     "retraction": DiasporaRetraction,
+    "contact": DiasporaContact,
 }
 
 TAGS = [
     # Order is important. Any top level tags should be before possibly child tags
-    "status_message", "comment", "like", "request", "profile", "retraction", "photo",
+    "status_message", "comment", "like", "request", "profile", "retraction", "photo", "contact",
 ]
 
 BOOLEAN_KEYS = (
     "public",
     "nsfw",
+    "following",
+    "sharing",
 )
 
 DATETIME_KEYS = (
@@ -205,7 +208,8 @@ def get_outbound_entity(entity, private_key):
     """
     outbound = None
     cls = entity.__class__
-    if cls in [DiasporaPost, DiasporaRequest, DiasporaComment, DiasporaLike, DiasporaProfile, DiasporaRetraction]:
+    if cls in [DiasporaPost, DiasporaRequest, DiasporaComment, DiasporaLike, DiasporaProfile, DiasporaRetraction,
+               DiasporaContact]:
         # Already fine
         outbound = entity
     elif cls == Post:
@@ -219,6 +223,8 @@ def get_outbound_entity(entity, private_key):
         if entity.relationship in ["sharing", "following"]:
             # Unfortunately we must send out in both cases since in Diaspora they are the same thing
             outbound = DiasporaRequest.from_base(entity)
+    elif cls == Follow:
+        outbound = DiasporaContact.from_base(entity)
     elif cls == Profile:
         outbound = DiasporaProfile.from_base(entity)
     elif cls == Retraction:

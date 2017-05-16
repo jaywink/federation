@@ -4,7 +4,7 @@ import pytest
 
 from federation.entities.base import (
     BaseEntity, Relationship, Profile, RawContentMixin, GUIDMixin, HandleMixin, PublicMixin, Image, Retraction,
-)
+    Follow)
 from federation.tests.factories.entities import TaggedPostFactory, PostFactory
 
 
@@ -157,6 +157,21 @@ class TestRetractionEntity():
             entity.validate()
         entity = Retraction(
             handle="foo@example.com", target_guid="x" * 16, entity_type="Foo"
+        )
+        with pytest.raises(ValueError):
+            entity.validate()
+
+
+class TestFollowEntity():
+    def test_instance_creation(self):
+        entity = Follow(
+            handle="foo@example.com", target_handle="bar@example.org", following=True
+        )
+        entity.validate()
+
+    def test_required_validates(self):
+        entity = Follow(
+            handle="foo@example.com", following=True
         )
         with pytest.raises(ValueError):
             entity.validate()

@@ -4,18 +4,17 @@ from unittest.mock import patch, Mock
 import pytest
 
 from federation.entities.base import (
-    Comment, Post, Reaction, Relationship, Profile, Retraction, Image
-)
+    Comment, Post, Reaction, Relationship, Profile, Retraction, Image,
+    Follow)
 from federation.entities.diaspora.entities import (
     DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest,
-    DiasporaProfile, DiasporaRetraction
-)
+    DiasporaProfile, DiasporaRetraction, DiasporaContact)
 from federation.entities.diaspora.mappers import message_to_objects, get_outbound_entity
 from federation.tests.fixtures.keys import get_dummy_private_key
 from federation.tests.fixtures.payloads import (
     DIASPORA_POST_SIMPLE, DIASPORA_POST_COMMENT, DIASPORA_POST_LIKE,
     DIASPORA_REQUEST, DIASPORA_PROFILE, DIASPORA_POST_INVALID, DIASPORA_RETRACTION,
-    DIASPORA_POST_WITH_PHOTOS, DIASPORA_POST_LEGACY_TIMESTAMP, DIASPORA_POST_LEGACY)
+    DIASPORA_POST_WITH_PHOTOS, DIASPORA_POST_LEGACY_TIMESTAMP, DIASPORA_POST_LEGACY, DIASPORA_CONTACT)
 
 
 def mock_fill(attributes):
@@ -155,6 +154,15 @@ class TestDiasporaEntityMappersReceive():
         assert entity.target_guid == "x" * 16
         assert entity.entity_type == "Post"
 
+    def test_message_to_objects_contact(self):
+        entities = message_to_objects(DIASPORA_CONTACT)
+        assert len(entities) == 1
+        entity = entities[0]
+        assert isinstance(entity, DiasporaContact)
+        assert entity.handle == "alice@example.com"
+        assert entity.target_handle == "bob@example.org"
+        assert entity.following is True
+
     @patch("federation.entities.diaspora.mappers.logger.error")
     def test_invalid_entity_logs_an_error(self, mock_logger):
         entities = message_to_objects(DIASPORA_POST_INVALID)
@@ -190,6 +198,8 @@ class TestGetOutboundEntity():
         entity = DiasporaRequest()
         assert get_outbound_entity(entity, dummy_key) == entity
         entity = DiasporaProfile()
+        assert get_outbound_entity(entity, dummy_key) == entity
+        entity = DiasporaContact()
         assert get_outbound_entity(entity, dummy_key) == entity
 
     def test_post_is_converted_to_diasporapost(self):
@@ -228,6 +238,10 @@ class TestGetOutboundEntity():
     def test_retraction_is_converted_to_diasporaretraction(self):
         entity = Retraction()
         assert isinstance(get_outbound_entity(entity, get_dummy_private_key()), DiasporaRetraction)
+
+    def test_follow_is_converted_to_diasporacontact(self):
+        entity = Follow()
+        assert isinstance(get_outbound_entity(entity, get_dummy_private_key()), DiasporaContact)
 
     def test_signs_relayable_if_no_signature(self):
         entity = DiasporaComment()

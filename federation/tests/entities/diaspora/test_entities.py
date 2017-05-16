@@ -6,7 +6,7 @@ from lxml import etree
 from federation.entities.base import Profile
 from federation.entities.diaspora.entities import (
     DiasporaComment, DiasporaPost, DiasporaLike, DiasporaRequest, DiasporaProfile, DiasporaRetraction,
-)
+    DiasporaContact)
 from federation.exceptions import SignatureVerificationError
 from federation.tests.fixtures.keys import get_dummy_private_key
 
@@ -79,6 +79,14 @@ class TestEntitiesConvertToXML():
         assert result.tag == "retraction"
         converted = b"<retraction><author>bob@example.com</author>" \
                     b"<target_guid>xxxxxxxxxxxxxxxx</target_guid><target_type>Post</target_type></retraction>"
+        assert etree.tostring(result) == converted
+
+    def test_contact_to_xml(self):
+        entity = DiasporaContact(handle="alice@example.com", target_handle="bob@example.org", following=True)
+        result = entity.to_xml()
+        assert result.tag == "contact"
+        converted = b"<contact><author>alice@example.com</author><recipient>bob@example.org</recipient>" \
+                    b"<following>true</following><sharing>true</sharing></contact>"
         assert etree.tostring(result) == converted
 
 

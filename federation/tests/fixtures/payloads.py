@@ -173,3 +173,12 @@ DIASPORA_RETRACTION = """
         <target_type>Post</target_type>
     </retraction>
 """
+
+DIASPORA_CONTACT = """
+    <contact>
+        <author>alice@example.com</author>
+        <recipient>bob@example.org</recipient>
+        <following>true</following>
+        <sharing>true</sharing>
+    </contact>
+"""
