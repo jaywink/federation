@@ -11,10 +11,9 @@ from Crypto.Random import get_random_bytes
 from Crypto.Signature import PKCS1_v1_5 as PKCSSign
 from lxml import etree
 
-from federation.exceptions import (
-    EncryptedMessageError, NoHeaderInMessageError, NoSenderKeyFoundError, SignatureVerificationError,
-)
+from federation.exceptions import EncryptedMessageError, NoSenderKeyFoundError, SignatureVerificationError
 from federation.protocols.base import BaseProtocol
+from federation.protocols.diaspora.magic_envelope import MagicEnvelope
 
 logger = logging.getLogger("federation")
 
@@ -67,6 +66,7 @@ class Protocol(BaseProtocol):
         xml = xml.lstrip().encode("utf-8")
         logger.debug("diaspora.protocol.receive: xml content: %s", xml)
         self.doc = etree.fromstring(xml)
+        # Check for a legacy header
         self.find_header()
         # Open payload and get actual message
         self.content = self.get_message_content()
@@ -88,12 +88,16 @@ class Protocol(BaseProtocol):
         return self.user.private_key
 
     def find_header(self):
+        self.encrypted = self.legacy = False
         self.header = self.doc.find(".//{"+PROTOCOL_NS+"}header")
         if self.header != None:
-            self.encrypted = False
+            # Legacy public header found
+            self.legacy = True
             return
         if self.doc.find(".//{" + PROTOCOL_NS + "}encrypted_header") == None:
-            raise NoHeaderInMessageError("Could not find header in message")
+            # No legacy encrypted header found
+            return
+        self.legacy = True
         if not self.user:
             raise EncryptedMessageError("Cannot decrypt private message without user object")
         user_private_key = self._get_user_key(self.user)
@@ -104,6 +108,11 @@ class Protocol(BaseProtocol):
         )
 
     def get_sender(self):
+        if self.legacy:
+            return self.get_sender_legacy()
+        return MagicEnvelope.get_sender(self.doc)
+
+    def get_sender_legacy(self):
         try:
             return self.header.find(".//{"+PROTOCOL_NS+"}author_id").text
         except AttributeError:

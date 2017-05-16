@@ -1,12 +1,15 @@
+from lxml import etree
+
 from Crypto import Random
 from Crypto.PublicKey import RSA
 from lxml.etree import _Element
 
 from federation.protocols.diaspora.magic_envelope import MagicEnvelope
 from federation.tests.fixtures.keys import get_dummy_private_key
+from federation.tests.fixtures.payloads import DIASPORA_PUBLIC_PAYLOAD
 
 
-class TestMagicEnvelope(object):
+class TestMagicEnvelope():
     @staticmethod
     def generate_rsa_private_key():
         """Generate a new RSA private key."""
@@ -80,3 +83,7 @@ class TestMagicEnvelope(object):
         )
         output2 = env2.render()
         assert output2 == output
+
+    def test_get_sender(self):
+        doc = etree.fromstring(bytes(DIASPORA_PUBLIC_PAYLOAD, encoding="utf-8"))
+        assert MagicEnvelope.get_sender(doc) == "foobar@example.com"
