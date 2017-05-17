@@ -5,7 +5,7 @@ from dirty_validators.basic import Email
 
 
 __all__ = (
-    "Post", "Image", "Comment", "Reaction", "Relationship", "Profile", "Retraction"
+    "Post", "Image", "Comment", "Reaction", "Relationship", "Profile", "Retraction", "Follow",
 )
 
 
@@ -264,6 +264,21 @@ class Relationship(CreatedAtMixin, HandleMixin):
             raise ValueError("relationship should be one of: {valid}".format(
                 valid=", ".join(self._relationship_valid_values)
             ))
+
+
+class Follow(CreatedAtMixin, HandleMixin):
+    """Represents a handle following or unfollowing another handle."""
+    target_handle = ""
+    following = True
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._required += ["target_handle", "following"]
+
+    def validate_target_handle(self):
+        validator = Email()
+        if not validator.is_valid(self.target_handle):
+            raise ValueError("Target handle is not valid")
 
 
 class Profile(CreatedAtMixin, HandleMixin, OptionalRawContentMixin, PublicMixin, GUIDMixin):

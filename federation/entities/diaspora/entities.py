@@ -1,6 +1,6 @@
 from lxml import etree
 
-from federation.entities.base import Comment, Post, Reaction, Relationship, Profile, Retraction, BaseEntity
+from federation.entities.base import Comment, Post, Reaction, Relationship, Profile, Retraction, BaseEntity, Follow
 from federation.entities.diaspora.utils import format_dt, struct_to_xml, get_base_attributes
 from federation.exceptions import SignatureVerificationError
 from federation.protocols.diaspora.signatures import verify_relayable_signature, create_relayable_signature
@@ -104,7 +104,7 @@ class DiasporaLike(DiasporaRelayableMixin, Reaction):
 
 
 class DiasporaRequest(DiasporaEntityMixin, Relationship):
-    """Diaspora relationship request."""
+    """Diaspora legacy request."""
     relationship = "sharing"
 
     def to_xml(self):
@@ -113,6 +113,24 @@ class DiasporaRequest(DiasporaEntityMixin, Relationship):
         struct_to_xml(element, [
             {"sender_handle": self.handle},
             {"recipient_handle": self.target_handle},
+        ])
+        return element
+
+
+class DiasporaContact(DiasporaEntityMixin, Follow):
+    """Diaspora contact.
+
+    Note we don't implement 'sharing' at the moment so just send it as the same as 'following'.
+    """
+
+    def to_xml(self):
+        """Convert to XML message."""
+        element = etree.Element("contact")
+        struct_to_xml(element, [
+            {"author": self.handle},
+            {"recipient": self.target_handle},
+            {"following": "true" if self.following else "false"},
+            {"sharing": "true" if self.following else "false"},
         ])
         return element
 
