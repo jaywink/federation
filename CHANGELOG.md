@@ -9,6 +9,9 @@
 * New style Diaspora public payloads are now supported (see [here](https://github.com/diaspora/diaspora_federation/issues/30)). Old style payloads are still supported. Payloads are also still sent out old style.
 * Add new `Follow` base entity and support for the new Diaspora "contact" payload. The simple `Follow` maps to Diaspora contact entity with following/sharing both true or false. Sharing as a separate concept is not currently supported.
 
+### Fixed
+* Legacy Diaspora retraction of sharing/following is now supported correctly. The end result is a `DiasporaRetraction` for entity type `Profile`.
+
 
 ## [0.11.0] - 2017-05-08
 
