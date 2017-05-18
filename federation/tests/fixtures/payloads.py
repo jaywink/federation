@@ -174,6 +174,14 @@ DIASPORA_RETRACTION = """
     </retraction>
 """
 
+DIASPORA_LEGACY_REQUEST_RETRACTION = """
+    <retraction>
+        <diaspora_handle>jaywink@iliketoast.net</diaspora_handle>
+        <post_guid>7ed1555bc6ae03db</post_guid>
+        <type>Person</type>
+    </retraction>
+"""
+
 DIASPORA_CONTACT = """
     <contact>
         <author>alice@example.com</author>

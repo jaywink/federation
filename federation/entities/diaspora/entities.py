@@ -172,6 +172,7 @@ class DiasporaRetraction(DiasporaEntityMixin, Retraction):
     mapped = {
         "Like": "Reaction",
         "Photo": "Image",
+        "Person": "Profile",
     }
 
     def to_xml(self):

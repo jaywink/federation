@@ -14,7 +14,8 @@ from federation.tests.fixtures.keys import get_dummy_private_key
 from federation.tests.fixtures.payloads import (
     DIASPORA_POST_SIMPLE, DIASPORA_POST_COMMENT, DIASPORA_POST_LIKE,
     DIASPORA_REQUEST, DIASPORA_PROFILE, DIASPORA_POST_INVALID, DIASPORA_RETRACTION,
-    DIASPORA_POST_WITH_PHOTOS, DIASPORA_POST_LEGACY_TIMESTAMP, DIASPORA_POST_LEGACY, DIASPORA_CONTACT)
+    DIASPORA_POST_WITH_PHOTOS, DIASPORA_POST_LEGACY_TIMESTAMP, DIASPORA_POST_LEGACY, DIASPORA_CONTACT,
+    DIASPORA_LEGACY_REQUEST_RETRACTION)
 
 
 def mock_fill(attributes):
@@ -153,6 +154,15 @@ class TestDiasporaEntityMappersReceive():
         assert entity.handle == "bob@example.com"
         assert entity.target_guid == "x" * 16
         assert entity.entity_type == "Post"
+
+    def test_message_to_objects_retraction_legacy_request(self):
+        entities = message_to_objects(DIASPORA_LEGACY_REQUEST_RETRACTION)
+        assert len(entities) == 1
+        entity = entities[0]
+        assert isinstance(entity, Retraction)
+        assert entity.handle == "jaywink@iliketoast.net"
+        assert entity.target_guid == "7ed1555bc6ae03db"
+        assert entity.entity_type == "Profile"
 
     def test_message_to_objects_contact(self):
         entities = message_to_objects(DIASPORA_CONTACT)
