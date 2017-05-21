@@ -13,6 +13,8 @@ class BaseEntity(object):
     _required = []
     _children = []
     _allowed_children = ()
+    # If we have a receiver for a private payload, store receiving user guid here
+    _receiving_guid = ""
     _source_protocol = ""
     _source_object = None
     _sender_key = ""
