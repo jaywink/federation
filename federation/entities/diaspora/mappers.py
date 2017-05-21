@@ -52,7 +52,7 @@ def xml_children_as_dict(node):
     return dict((e.tag, e.text) for e in node)
 
 
-def element_to_objects(element, sender_key_fetcher=None):
+def element_to_objects(element, sender_key_fetcher=None, user=None):
     """Transform an Element to a list of entities recursively.
 
     Possible child entities are added to each entity `_children` list.
@@ -60,6 +60,7 @@ def element_to_objects(element, sender_key_fetcher=None):
     :param tree: Element
     :param sender_key_fetcher: Function to fetch sender public key. If not given, key will always be fetched
         over network. The function should take sender handle as the only parameter.
+    :param user: Optional receiving user object. If given, should have a `handle`.
     :returns: list of entities
     """
     entities = []
@@ -76,6 +77,9 @@ def element_to_objects(element, sender_key_fetcher=None):
     entity._source_protocol = "diaspora"
     # Save element object to entity for possible later use
     entity._source_object = element
+    # Save receiving guid to object
+    if user and hasattr(user, "guid"):
+        entity._receiving_guid = user.guid
     # If relayable, fetch sender key for validation
     if issubclass(cls, DiasporaRelayableMixin):
         entity._xml_tags = get_element_child_info(element, "tag")
@@ -106,24 +110,25 @@ def element_to_objects(element, sender_key_fetcher=None):
     return entities
 
 
-def message_to_objects(message, sender_key_fetcher=None):
+def message_to_objects(message, sender_key_fetcher=None, user=None):
     """Takes in a message extracted by a protocol and maps it to entities.
 
     :param message: XML payload
     :type message: str
     :param sender_key_fetcher: Function to fetch sender public key. If not given, key will always be fetched
         over network. The function should take sender handle as the only parameter.
+    :param user: Optional receiving user object. If given, should have a `handle`.
     :returns: list of entities
     """
     doc = etree.fromstring(message)
     # Future Diaspora protocol version contains the element at top level
     if doc.tag in TAGS:
-        return element_to_objects(doc, sender_key_fetcher)
+        return element_to_objects(doc, sender_key_fetcher, user)
     # Legacy Diaspora protocol wraps the element in <XML><post></post></XML>, so find the right element
     for tag in TAGS:
         element = doc.find(".//%s" % tag)
         if element is not None:
-            return element_to_objects(element, sender_key_fetcher)
+            return element_to_objects(element, sender_key_fetcher, user)
     return []
 
 

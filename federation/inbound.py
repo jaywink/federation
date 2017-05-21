@@ -23,7 +23,8 @@ def handle_receive(payload, user=None, sender_key_fetcher=None, skip_author_veri
     could actually be a different identity.
 
     :arg payload: Payload blob (str)
-    :arg user: User that will be passed to `protocol.receive` (required on private encrypted content)
+    :arg user: User that will be passed to `protocol.receive` (only required on private encrypted content)
+        MUST have a `private_key` and `guid` if given.
     :arg sender_key_fetcher: Function that accepts sender handle and returns public key (optional)
     :arg skip_author_verification: Don't verify sender (test purposes, false default)
     :returns: Tuple of sender handle, protocol name and list of entity objects
@@ -47,7 +48,7 @@ def handle_receive(payload, user=None, sender_key_fetcher=None, skip_author_veri
         raise NoSuitableProtocolFoundError()
 
     mappers = importlib.import_module("federation.entities.%s.mappers" % found_protocol.PROTOCOL_NAME)
-    entities = mappers.message_to_objects(message, sender_key_fetcher)
+    entities = mappers.message_to_objects(message, sender_key_fetcher, user)
     logger.debug("handle_receive: entities %s", entities)
 
     return sender, found_protocol.PROTOCOL_NAME, entities
