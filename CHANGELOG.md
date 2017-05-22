@@ -1,6 +1,6 @@
 # Changelog
 
-## [unreleased]
+## [0.12.0] - 2017-05-22
 
 ### Backwards incompatible changes
 * Removed exception class `NoHeaderInMessageError`. New style Diaspora protocol does not have a custom header in the Salmon magic envelope and thus there is no need to raise this anywhere.
