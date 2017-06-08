@@ -118,7 +118,9 @@ class Protocol(BaseProtocol):
         except AttributeError:
             # Look at the message, try various elements
             message = etree.fromstring(self.content)
-            element = message.find(".//sender_handle")
+            element = message.find(".//author")
+            if element is None:
+                element = message.find(".//sender_handle")
             if element is None:
                 element = message.find(".//diaspora_handle")
             if element is None:
@@ -137,6 +139,7 @@ class Protocol(BaseProtocol):
         else:
             body = urlsafe_b64decode(body.encode("ascii"))
 
+        logger.debug("diaspora.protocol.get_message_content: %s", body)
         return body
 
     def _get_encrypted_body(self, body):

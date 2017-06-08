@@ -1,5 +1,10 @@
 # Changelog
 
+## [unreleased]
+
+### Fixed
+* Fix getting sender from a combination of legacy Diaspora encrypted payload and new entity names (for example `author`). This combination probably only existed in this library.
+
 ## [0.12.0] - 2017-05-22
 
 ### Backwards incompatible changes

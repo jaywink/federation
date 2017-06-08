@@ -36,7 +36,12 @@ def retrieve_diaspora_webfinger(handle):
     :arg handle: Remote handle to retrieve
     :returns: ``XRD`` instance
     """
-    hostmeta = retrieve_diaspora_host_meta(handle.split("@")[1])
+    try:
+        host = handle.split("@")[1]
+    except AttributeError:
+        logger.warning("retrieve_diaspora_webfinger: invalid handle given: %s", handle)
+        return None
+    hostmeta = retrieve_diaspora_host_meta(host)
     if not hostmeta:
         return None
     url = hostmeta.find_link(rels="lrdd").template.replace("{uri}", quote(handle))
