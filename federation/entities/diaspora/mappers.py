@@ -165,7 +165,8 @@ def transform_attributes(attrs, cls):
                 transformed["image_urls"] = {}
             transformed["image_urls"]["medium"] = value
         elif key == "tag_string":
-            transformed["tag_list"] = value.replace("#", "").split(" ")
+            if value:
+                transformed["tag_list"] = value.replace("#", "").split(" ")
         elif key == "bio":
             transformed["raw_content"] = value
         elif key == "searchable":
