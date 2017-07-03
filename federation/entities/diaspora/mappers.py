@@ -99,7 +99,7 @@ def element_to_objects(element, sender_key_fetcher=None, user=None):
         return []
     # Do child elements
     for child in element:
-        entity._children = element_to_objects(child)
+        entity._children.extend(element_to_objects(child))
     # Add to entities list
     entities.append(entity)
     if cls == DiasporaRequest:

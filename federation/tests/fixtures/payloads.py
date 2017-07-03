@@ -109,6 +109,30 @@ DIASPORA_POST_WITH_PHOTOS = """
 """
 
 
+DIASPORA_POST_WITH_PHOTOS_2 = """
+    <status_message>
+        <diaspora_handle>xxxxxxxxxxxxxxx@diasp.org</diaspora_handle>
+        <guid>fewhefihefifhwihfwehfwehfiuwehfiuwhif</guid>
+        <created_at>2017-06-10T14:41:47Z</created_at>
+        <provider_display_name>mobile</provider_display_name>
+        <raw_message>#foo #bar (fewfefewfwfewfwe)</raw_message>
+        <photo>
+            <guid>fjwjewiofjoiwjfiowefewew</guid>
+            <diaspora_handle>xxxxxxxxxxxxxxxxx@diasp.org</diaspora_handle>
+            <public>true</public>
+            <created_at>2017-06-10T14:41:28Z</created_at>
+            <remote_photo_path>https://diasp.org/uploads/images/</remote_photo_path>
+            <remote_photo_name>fewhuwehiufhuiefhuiwee.jpg</remote_photo_name>
+            <text/>
+            <status_message_guid>fewhefihefifhwihfwehfwehfiuwehfiuwhif</status_message_guid>
+            <height>4032</height>
+            <width>3024</width>
+        </photo>
+        <public>true</public>
+    </status_message>
+"""
+
+
 DIASPORA_POST_INVALID = """
     <status_message>
       <text>((status message))</text>

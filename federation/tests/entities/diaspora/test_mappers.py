@@ -15,7 +15,7 @@ from federation.tests.fixtures.payloads import (
     DIASPORA_POST_SIMPLE, DIASPORA_POST_COMMENT, DIASPORA_POST_LIKE,
     DIASPORA_REQUEST, DIASPORA_PROFILE, DIASPORA_POST_INVALID, DIASPORA_RETRACTION,
     DIASPORA_POST_WITH_PHOTOS, DIASPORA_POST_LEGACY_TIMESTAMP, DIASPORA_POST_LEGACY, DIASPORA_CONTACT,
-    DIASPORA_LEGACY_REQUEST_RETRACTION)
+    DIASPORA_LEGACY_REQUEST_RETRACTION, DIASPORA_POST_WITH_PHOTOS_2)
 
 
 def mock_fill(attributes):
@@ -74,6 +74,13 @@ class TestDiasporaEntityMappersReceive():
         assert photo.handle == "alice@alice.diaspora.example.org"
         assert photo.public == False
         assert photo.created_at == datetime(2011, 7, 20, 1, 36, 7)
+
+        entities = message_to_objects(DIASPORA_POST_WITH_PHOTOS_2)
+        assert len(entities) == 1
+        post = entities[0]
+        assert isinstance(post, DiasporaPost)
+        photo = post._children[0]
+        assert isinstance(photo, Image)
 
     @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
     def test_message_to_objects_comment(self, mock_validate):
