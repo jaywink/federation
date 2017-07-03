@@ -12,7 +12,7 @@ class TestGetBaseAttributes():
         entity = Post()
         attrs = get_base_attributes(entity).keys()
         assert set(attrs) == {
-            "created_at", "guid", "handle", "location", "photos", "provider_display_name", "public", "raw_content",
+            "created_at", "guid", "handle", "location", "provider_display_name", "public", "raw_content",
             "signature",
         }
 

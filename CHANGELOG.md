@@ -5,6 +5,9 @@
 ### Fixed
 * Fix getting sender from a combination of legacy Diaspora encrypted payload and new entity names (for example `author`). This combination probably only existed in this library.
 
+### Removed
+* `Post.photos` entity attribute was never used by any code and has been removed. Child entities of type `Image` are stored in the `Post._children` as before.
+
 ## [0.12.0] - 2017-05-22
 
 ### Backwards incompatible changes

@@ -191,7 +191,6 @@ class Post(RawContentMixin, GUIDMixin, HandleMixin, PublicMixin, CreatedAtMixin,
     """Reflects a post, status message, etc, which will be composed from the message or to the message."""
     provider_display_name = ""
     location = ""
-    photos = []
 
     _allowed_children = (Image,)
 
