@@ -10,8 +10,6 @@ __all__ = (
 
 
 class BaseEntity(object):
-    _required = []
-    _children = []
     _allowed_children = ()
     # If we have a receiver for a private payload, store receiving user guid here
     _receiving_guid = ""
@@ -22,6 +20,7 @@ class BaseEntity(object):
 
     def __init__(self, *args, **kwargs):
         self._required = []
+        self._children = []
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)
@@ -287,16 +286,19 @@ class Profile(CreatedAtMixin, HandleMixin, OptionalRawContentMixin, PublicMixin,
     """Represents a profile for a user."""
     name = ""
     email = ""
-    image_urls = {
-        "small": "", "medium": "", "large": ""
-    }
     gender = ""
     location = ""
     nsfw = False
-    tag_list = []
     public_key = ""
 
     _allowed_children = (Image,)
+
+    def __init__(self, *args, **kwargs):
+        self.image_urls = {
+            "small": "", "medium": "", "large": ""
+        }
+        self.tag_list = []
+        super().__init__(*args, **kwargs)
 
     def validate_email(self):
         if self.email:
