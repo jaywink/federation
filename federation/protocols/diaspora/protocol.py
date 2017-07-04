@@ -1,6 +1,5 @@
 import json
 import logging
-import warnings
 from base64 import b64decode, urlsafe_b64decode, b64encode, urlsafe_b64encode
 from json import JSONDecodeError
 from urllib.parse import unquote_plus
