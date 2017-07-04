@@ -8,7 +8,7 @@ from lxml import etree
 NAMESPACE = "http://salmon-protocol.org/ns/magic-env"
 
 
-class MagicEnvelope():
+class MagicEnvelope:
     """Diaspora protocol magic envelope.
 
     See: http://diaspora.github.io/diaspora_federation/federation/magicsig.html
