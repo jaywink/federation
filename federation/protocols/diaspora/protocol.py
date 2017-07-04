@@ -78,12 +78,7 @@ class Protocol(BaseProtocol):
         return self.sender_handle, self.content
 
     def _get_user_key(self, user):
-        if not hasattr(self.user, "private_key") or not self.user.private_key:
-            if hasattr(self.user, "key") and self.user.key:
-                warnings.warn("Using `key` in user object for private key has been deprecated. Please "
-                              "have available `private_key` instead. Usage of `key` will be removed after 0.8.0.",
-                              DeprecationWarning)
-                return self.user.key
+        if not getattr(self.user, "private_key", None):
             raise EncryptedMessageError("Cannot decrypt private message without user key")
         return self.user.private_key
 

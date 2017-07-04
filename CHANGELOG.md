@@ -9,6 +9,7 @@
 
 ### Removed
 * `Post.photos` entity attribute was never used by any code and has been removed. Child entities of type `Image` are stored in the `Post._children` as before.
+* Removed deprecated user private key lookup using `user.key` in Diaspora receive processing. Passed in `user` objects must now have a `private_key` attribute. 
 
 ## [0.12.0] - 2017-05-22
 
