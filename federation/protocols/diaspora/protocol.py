@@ -1,7 +1,6 @@
 import json
 import logging
 from base64 import b64decode, urlsafe_b64decode, b64encode, urlsafe_b64encode
-from json import JSONDecodeError
 from urllib.parse import unquote_plus
 
 from Crypto.Cipher import AES, PKCS1_v1_5
@@ -69,14 +68,15 @@ class Protocol(BaseProtocol):
         """Get the Magic Envelope, trying JSON first."""
         try:
             json_payload = json.loads(payload)
-            logger.debug("diaspora.protocol.store_magic_envelope_doc: json payload: %s", json_payload)
-            self.doc = self.get_json_payload_magic_envelope(json_payload)
-        except JSONDecodeError:
+        except ValueError:
             # XML payload
             xml = unquote_plus(payload)
             xml = xml.lstrip().encode("utf-8")
             logger.debug("diaspora.protocol.store_magic_envelope_doc: xml payload: %s", xml)
             self.doc = etree.fromstring(xml)
+        else:
+            logger.debug("diaspora.protocol.store_magic_envelope_doc: json payload: %s", json_payload)
+            self.doc = self.get_json_payload_magic_envelope(json_payload)
 
     def receive(self, payload, user=None, sender_key_fetcher=None, skip_author_verification=False):
         """Receive a payload.
