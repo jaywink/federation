@@ -20,9 +20,8 @@ class EncryptedPayload:
     def decrypt(payload, private_key):
         """Decrypt an encrypted JSON payload and return the Magic Envelope document inside."""
         cipher = PKCS1_v1_5.new(private_key)
-        aes_key = json.loads(
-            cipher.decrypt(b64decode(payload.get("aes_key")), sentinel=None)
-        )
+        aes_key_str = cipher.decrypt(b64decode(payload.get("aes_key")), sentinel=None)
+        aes_key = json.loads(aes_key_str.decode("utf-8"))
         key = b64decode(aes_key.get("key"))
         iv = b64decode(aes_key.get("iv"))
         encrypted_magic_envelope = b64decode(payload.get("encrypted_magic_envelope"))

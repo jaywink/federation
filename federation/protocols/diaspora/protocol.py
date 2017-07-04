@@ -14,6 +14,7 @@ from federation.exceptions import EncryptedMessageError, NoSenderKeyFoundError, 
 from federation.protocols.base import BaseProtocol
 from federation.protocols.diaspora.encrypted import EncryptedPayload
 from federation.protocols.diaspora.magic_envelope import MagicEnvelope
+from federation.utils.text import decode_if_bytes
 
 logger = logging.getLogger("federation")
 
@@ -29,7 +30,7 @@ def identify_payload(payload):
     """
     # Private encrypted JSON payload
     try:
-        data = json.loads(payload)
+        data = json.loads(decode_if_bytes(payload))
         if "encrypted_magic_envelope" in data:
             return True
     except Exception:
@@ -67,7 +68,7 @@ class Protocol(BaseProtocol):
     def store_magic_envelope_doc(self, payload):
         """Get the Magic Envelope, trying JSON first."""
         try:
-            json_payload = json.loads(payload)
+            json_payload = json.loads(decode_if_bytes(payload))
         except ValueError:
             # XML payload
             xml = unquote_plus(payload)
