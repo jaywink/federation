@@ -29,9 +29,13 @@ Building local documentation
    cd docs
    make html
 
+Built documentation is available at ``docs/_build/html/index.html``.
+
 Contact for help
 ----------------
 
-Easiest via FreeNode IRC, channel #python-federation (`webchat here <http://webchat.freenode.net?channels=%23python-federation&uio=d4>`_).
+Easiest via FreeNode IRC, channel ``#python-federation`` (`webchat here <http://webchat.freenode.net?channels=%23python-federation&uio=d4>`_).
+
+There is also a `Gitter chat <https://gitter.im/python-federation/Lobby>`_ available.
 
 You can also ask questions or give feedback via issues.

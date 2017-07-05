@@ -14,6 +14,8 @@ lxml itself is installed by pip but the dependencies need to be installed `as pe
 Installation
 ------------
 
-Install with pip or include in your requirements file.::
+Install with pip or include in your requirements file.
+
+::
 
    pip install federation
