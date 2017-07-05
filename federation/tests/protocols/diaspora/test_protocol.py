@@ -155,3 +155,24 @@ class TestDiasporaProtocol(DiasporaTestBase):
         data = protocol.build_send(entity, from_user)
         mock_init_message.assert_called_once_with(mock_entity_xml, from_user.handle, from_user.private_key)
         assert data == {"xml": "xmldata"}
+
+    @patch("federation.protocols.diaspora.protocol.EncryptedPayload.decrypt")
+    def test_get_json_payload_magic_envelope(self, mock_decrypt):
+        protocol = Protocol()
+        protocol.user = MockUser()
+        protocol.get_json_payload_magic_envelope("payload")
+        mock_decrypt.assert_called_once_with(payload="payload", private_key="foobar")
+
+    @patch.object(Protocol, "get_json_payload_magic_envelope", return_value=etree.fromstring("<foo>bar</foo>"))
+    def test_store_magic_envelope_doc_json_payload(self, mock_store):
+        protocol = Protocol()
+        protocol.store_magic_envelope_doc('{"foo": "bar"}')
+        mock_store.assert_called_once_with({"foo": "bar"})
+        assert protocol.doc.tag == "foo"
+        assert protocol.doc.text == "bar"
+
+    def test_store_magic_envelope_doc_xml_payload(self):
+        protocol = Protocol()
+        protocol.store_magic_envelope_doc("<foo>bar</foo>")
+        assert protocol.doc.tag == "foo"
+        assert protocol.doc.text == "bar"

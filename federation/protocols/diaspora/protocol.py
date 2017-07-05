@@ -1,6 +1,5 @@
 import json
 import logging
-import warnings
 from base64 import b64decode, urlsafe_b64decode, b64encode, urlsafe_b64encode
 from urllib.parse import unquote_plus
 
@@ -13,7 +12,9 @@ from lxml import etree
 
 from federation.exceptions import EncryptedMessageError, NoSenderKeyFoundError, SignatureVerificationError
 from federation.protocols.base import BaseProtocol
+from federation.protocols.diaspora.encrypted import EncryptedPayload
 from federation.protocols.diaspora.magic_envelope import MagicEnvelope
+from federation.utils.text import decode_if_bytes
 
 logger = logging.getLogger("federation")
 
@@ -29,7 +30,7 @@ def identify_payload(payload):
     """
     # Private encrypted JSON payload
     try:
-        data = json.loads(payload)
+        data = json.loads(decode_if_bytes(payload))
         if "encrypted_magic_envelope" in data:
             return True
     except Exception:
@@ -55,17 +56,36 @@ class Protocol(BaseProtocol):
 
     Mostly taken from Pyaspora (https://github.com/lukeross/pyaspora).
     """
-    def receive(self, payload, user=None, sender_key_fetcher=None, skip_author_verification=False, *args, **kwargs):
+    def __init__(self):
+        super().__init__()
+        self.encrypted = self.legacy = False
+
+    def get_json_payload_magic_envelope(self, payload):
+        """Encrypted JSON payload"""
+        private_key = self._get_user_key(self.user)
+        return EncryptedPayload.decrypt(payload=payload, private_key=private_key)
+
+    def store_magic_envelope_doc(self, payload):
+        """Get the Magic Envelope, trying JSON first."""
+        try:
+            json_payload = json.loads(decode_if_bytes(payload))
+        except ValueError:
+            # XML payload
+            xml = unquote_plus(payload)
+            xml = xml.lstrip().encode("utf-8")
+            logger.debug("diaspora.protocol.store_magic_envelope_doc: xml payload: %s", xml)
+            self.doc = etree.fromstring(xml)
+        else:
+            logger.debug("diaspora.protocol.store_magic_envelope_doc: json payload: %s", json_payload)
+            self.doc = self.get_json_payload_magic_envelope(json_payload)
+
+    def receive(self, payload, user=None, sender_key_fetcher=None, skip_author_verification=False):
         """Receive a payload.
 
         For testing purposes, `skip_author_verification` can be passed. Authorship will not be verified."""
         self.user = user
         self.get_contact_key = sender_key_fetcher
-        # Prepare payload
-        xml = unquote_plus(payload)
-        xml = xml.lstrip().encode("utf-8")
-        logger.debug("diaspora.protocol.receive: xml content: %s", xml)
-        self.doc = etree.fromstring(xml)
+        self.store_magic_envelope_doc(payload)
         # Check for a legacy header
         self.find_header()
         # Open payload and get actual message
@@ -78,17 +98,11 @@ class Protocol(BaseProtocol):
         return self.sender_handle, self.content
 
     def _get_user_key(self, user):
-        if not hasattr(self.user, "private_key") or not self.user.private_key:
-            if hasattr(self.user, "key") and self.user.key:
-                warnings.warn("Using `key` in user object for private key has been deprecated. Please "
-                              "have available `private_key` instead. Usage of `key` will be removed after 0.8.0.",
-                              DeprecationWarning)
-                return self.user.key
+        if not getattr(self.user, "private_key", None):
             raise EncryptedMessageError("Cannot decrypt private message without user key")
         return self.user.private_key
 
     def find_header(self):
-        self.encrypted = self.legacy = False
         self.header = self.doc.find(".//{"+PROTOCOL_NS+"}header")
         if self.header != None:
             # Legacy public header found

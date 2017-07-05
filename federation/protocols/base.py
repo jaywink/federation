@@ -37,7 +37,7 @@ class BaseProtocol(object):
         """
         raise NotImplementedError("Implement in subclass")
 
-    def receive(self, payload, user=None, sender_key_fetcher=None, *args, **kwargs):
+    def receive(self, payload, user=None, sender_key_fetcher=None):
         """Receive a payload.
 
         Args:
