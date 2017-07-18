@@ -71,7 +71,7 @@ class Protocol(BaseProtocol):
             json_payload = json.loads(decode_if_bytes(payload))
         except ValueError:
             # XML payload
-            xml = unquote_plus(payload)
+            xml = unquote_plus(decode_if_bytes(payload))
             xml = xml.lstrip().encode("utf-8")
             logger.debug("diaspora.protocol.store_magic_envelope_doc: xml payload: %s", xml)
             self.doc = etree.fromstring(xml)
