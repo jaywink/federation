@@ -117,6 +117,7 @@ class TestDiasporaProtocol(DiasporaTestBase):
 
     def test_identify_payload_with_diaspora_public_payload(self):
         assert identify_payload(DIASPORA_PUBLIC_PAYLOAD) == True
+        assert identify_payload(bytes(DIASPORA_PUBLIC_PAYLOAD, encoding="utf-8")) == True
 
     def test_identify_payload_with_diaspora_encrypted_payload(self):
         assert identify_payload(DIASPORA_ENCRYPTED_PAYLOAD) == True

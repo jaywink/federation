@@ -14,7 +14,7 @@ from federation.exceptions import EncryptedMessageError, NoSenderKeyFoundError, 
 from federation.protocols.base import BaseProtocol
 from federation.protocols.diaspora.encrypted import EncryptedPayload
 from federation.protocols.diaspora.magic_envelope import MagicEnvelope
-from federation.utils.text import decode_if_bytes
+from federation.utils.text import decode_if_bytes, encode_if_text
 
 logger = logging.getLogger("federation")
 
@@ -37,7 +37,7 @@ def identify_payload(payload):
         pass
     # Public XML payload
     try:
-        xml = etree.fromstring(bytes(payload, encoding="utf-8"))
+        xml = etree.fromstring(encode_if_text(payload))
         if xml.tag == MAGIC_ENV_TAG:
             return True
     except Exception:
