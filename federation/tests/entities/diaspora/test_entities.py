@@ -1,3 +1,4 @@
+import datetime
 from unittest.mock import patch
 
 import pytest
@@ -11,7 +12,7 @@ from federation.exceptions import SignatureVerificationError
 from federation.tests.fixtures.keys import get_dummy_private_key
 
 
-class TestEntitiesConvertToXML():
+class TestEntitiesConvertToXML:
     def test_post_to_xml(self):
         entity = DiasporaPost(
             raw_content="raw_content", guid="guid", handle="handle", public=True,
@@ -33,10 +34,12 @@ class TestEntitiesConvertToXML():
         )
         result = entity.to_xml()
         assert result.tag == "comment"
+        assert len(result.find("created_at").text) > 0
+        result.find("created_at").text = ""  # timestamp makes testing painful
         converted = b"<comment><guid>guid</guid><parent_guid>target_guid</parent_guid>" \
                     b"<author_signature>signature</author_signature><parent_author_signature>" \
                     b"</parent_author_signature><text>raw_content</text><diaspora_handle>handle</diaspora_handle>" \
-                    b"</comment>"
+                    b"<created_at></created_at></comment>"
         assert etree.tostring(result) == converted
 
     def test_like_to_xml(self):
@@ -104,7 +107,7 @@ class TestDiasporaProfileFillExtraAttributes():
         assert attrs == {"handle": "foo", "guid": "guidguidguidguid"}
 
 
-class TestDiasporaRetractionEntityConverters():
+class TestDiasporaRetractionEntityConverters:
     def test_entity_type_from_remote(self):
         assert DiasporaRetraction.entity_type_from_remote("Post") == "Post"
         assert DiasporaRetraction.entity_type_from_remote("Like") == "Reaction"
@@ -118,17 +121,18 @@ class TestDiasporaRetractionEntityConverters():
         assert DiasporaRetraction.entity_type_to_remote("Comment") == "Comment"
 
 
-class TestDiasporaRelayableEntitySigning():
+class TestDiasporaRelayableMixin:
     def test_signing_comment_works(self):
         entity = DiasporaComment(
             raw_content="raw_content", guid="guid", target_guid="target_guid", handle="handle",
+            created_at=datetime.datetime(2016, 3, 2),
         )
         entity.sign(get_dummy_private_key())
-        assert entity.signature == "f3wkKDEhlT8zThEfaBcuKs4s0MbbWm9XPyx2ivrAg3jBtXQ6lXm5mgi9buwm+QyzxAGnk5Zth6HrYYB+" \
-                                   "NoieyoR4j54ryyPMB0gHwUO05tzjAMpvLyDlOyxLYFIl302ib2In9LJ5wa15VaEm9DW2+1WlCK72FonO" \
-                                   "oGx0qXDUc+NRn4s/UXBPNgM/Xsz3466AM1y98rUowHnpa0bxDjKcf7HMy4zuJ7XcsJAlofUHXCMX9TOm" \
-                                   "SBIwF5MlCkFL28R2cRAzJgNOBLw+a8arfi613bqo1Xq26+2PuFF0ng/OVOQOVFsO60H5wi/49FREWYdG" \
-                                   "ZdmHltxf76yWG6R1Zqpvag=="
+        assert entity.signature == "Z7Yh/zvH8oSct+UZhvHHLESd5HmjyC9LOhXqO/Kan4DYVwW3aoIwQWtWDESnjzjdNeBTVale5koGI1wI" \
+                                   "HGFd1WbaD7h5Fzi2uh4pl8u75ELhN0qTfWsd5hULj6eCkun0ytc2W+cwJAmRzhyxlmCkxwvmUoP4AS7M" \
+                                   "OVmV/79PkVfyJWp9XcPn0TB4IBifI/i6iA2PBPrczcAnopzmIg7xehqwd7aX/dGaRruAPR9mxDTMrKmd" \
+                                   "w8cuLarcMfHQTU5lu9Py2kCie+kGYbg7O92khaQdZrLkly1i2tyLZGpC6uFdGXYOYfLcZ7e2aOWHnwzp" \
+                                   "QxbyIb7jhjSWf9i97GTtAA=="
 
     def test_signing_like_works(self):
         entity = DiasporaLike(guid="guid", target_guid="target_guid", handle="handle")

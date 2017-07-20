@@ -64,6 +64,7 @@ class DiasporaComment(DiasporaRelayableMixin, Comment):
             {"parent_author_signature": self.parent_signature},
             {"text": self.raw_content},
             {"diaspora_handle": self.handle},
+            {"created_at": format_dt(self.created_at)},
         ])
         return element
 

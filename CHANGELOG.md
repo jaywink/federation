@@ -5,6 +5,7 @@
 ### Added
 * New style Diaspora private encrypted JSON payloads are now supported in the receiving side. Outbound private Diaspora payloads are still sent as legacy encrypted payloads. ([issue](https://github.com/jaywink/federation/issues/83))
     * No additional changes need to be made when calling `handle_receive` from your task processing. Just pass in the full received XML or JSON payload as a string with recipient user object as before.
+* Add `created_at` to Diaspora `Comment` entity XML creator. This is required in renewed Diaspora protocol. ([related issue](https://github.com/jaywink/federation/issues/59))
 
 ### Fixed
 * Fix getting sender from a combination of legacy Diaspora encrypted payload and new entity names (for example `author`). This combination probably only existed in this library.
