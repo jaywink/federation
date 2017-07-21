@@ -9,11 +9,12 @@ __all__ = (
 )
 
 
-class BaseEntity(object):
+class BaseEntity:
     _allowed_children = ()
     # If we have a receiver for a private payload, store receiving user guid here
     _receiving_guid = ""
     _source_protocol = ""
+    # Contains the original object from payload as a string
     _source_object = None
     _sender_key = ""
     signature = ""
@@ -92,7 +93,11 @@ class BaseEntity(object):
         pass
 
     def sign(self, private_key):
-        """Implement in subclasses."""
+        """Implement in subclasses if needed."""
+        pass
+
+    def sign_with_parent(self, private_key):
+        """Implement in subclasses if needed."""
         pass
 
 

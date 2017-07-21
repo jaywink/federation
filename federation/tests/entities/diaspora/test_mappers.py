@@ -1,4 +1,5 @@
 from datetime import datetime
+from lxml import etree
 from unittest.mock import patch, Mock
 
 import pytest
@@ -197,6 +198,12 @@ class TestDiasporaEntityMappersReceive():
         assert entities[0]._source_protocol == "diaspora"
 
     @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
+    def test_source_object(self, mock_validate):
+        entities = message_to_objects(DIASPORA_POST_COMMENT, sender_key_fetcher=Mock())
+        entity = entities[0]
+        assert entity._source_object == etree.tostring(etree.fromstring(DIASPORA_POST_COMMENT))
+
+    @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
     def test_element_to_objects_calls_sender_key_fetcher(self, mock_validate):
         mock_fetcher = Mock()
         message_to_objects(DIASPORA_POST_COMMENT, mock_fetcher)
@@ -271,3 +278,8 @@ class TestGetOutboundEntity():
         dummy_key = get_dummy_private_key()
         outbound = get_outbound_entity(entity, dummy_key)
         assert outbound.signature != ""
+
+    def test_returns_entity_if_outbound_doc_on_entity(self):
+        entity = Comment()
+        entity.outbound_doc = "foobar"
+        assert get_outbound_entity(entity, "private_key") == entity

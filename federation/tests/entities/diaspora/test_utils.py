@@ -2,12 +2,14 @@ import datetime
 import re
 
 import arrow
+from lxml import etree
 
 from federation.entities.base import Post
-from federation.entities.diaspora.utils import get_base_attributes, get_full_xml_representation, format_dt
+from federation.entities.diaspora.utils import (
+    get_base_attributes, get_full_xml_representation, format_dt, add_element_to_doc)
 
 
-class TestGetBaseAttributes():
+class TestGetBaseAttributes:
     def test_get_base_attributes_returns_only_intended_attributes(self):
         entity = Post()
         attrs = get_base_attributes(entity).keys()
@@ -17,7 +19,7 @@ class TestGetBaseAttributes():
         }
 
 
-class TestGetFullXMLRepresentation():
+class TestGetFullXMLRepresentation:
     def test_returns_xml_document(self):
         entity = Post()
         document = get_full_xml_representation(entity, "")
@@ -27,7 +29,26 @@ class TestGetFullXMLRepresentation():
                            "<provider_display_name></provider_display_name></status_message></post></XML>"
 
 
-class TestFormatDt():
+class TestFormatDt:
     def test_formatted_string_returned_from_tz_aware_datetime(self):
         dt = arrow.get(datetime.datetime(2017, 1, 28, 3, 2, 3), "Europe/Helsinki").datetime
         assert format_dt(dt) == "2017-01-28T01:02:03Z"
+
+
+def test_add_element_to_doc():
+    # Replacing value
+    doc = etree.fromstring("<comment><text>foobar</text><parent_author_signature>barfoo</parent_author_signature>"
+                           "</comment>")
+    add_element_to_doc(doc, "parent_author_signature", "newsig")
+    assert etree.tostring(doc) == b"<comment><text>foobar</text><parent_author_signature>newsig" \
+                                  b"</parent_author_signature></comment>"
+    # Adding value to an empty tag
+    doc = etree.fromstring("<comment><text>foobar</text><parent_author_signature /></comment>")
+    add_element_to_doc(doc, "parent_author_signature", "newsig")
+    assert etree.tostring(doc) == b"<comment><text>foobar</text><parent_author_signature>newsig" \
+                                  b"</parent_author_signature></comment>"
+    # Adding missing tag
+    doc = etree.fromstring("<comment><text>foobar</text></comment>")
+    add_element_to_doc(doc, "parent_author_signature", "newsig")
+    assert etree.tostring(doc) == b"<comment><text>foobar</text><parent_author_signature>newsig" \
+                                  b"</parent_author_signature></comment>"

@@ -2,15 +2,21 @@
 
 ## [unreleased]
 
+### Backwards incompatible changes
+* When processing Diaspora payloads, entity used to get a `_source_object` stored to it. This was an `etree.Element` created from the source object. Due to serialization issues in applications (for example pushing the object to a task queue or saving to database), `_source_object` is now a byte string representation for the element done with `etree.tostring()`. 
+
 ### Added
 * New style Diaspora private encrypted JSON payloads are now supported in the receiving side. Outbound private Diaspora payloads are still sent as legacy encrypted payloads. ([issue](https://github.com/jaywink/federation/issues/83))
     * No additional changes need to be made when calling `handle_receive` from your task processing. Just pass in the full received XML or JSON payload as a string with recipient user object as before.
+* Add `created_at` to Diaspora `Comment` entity XML creator. This is required in renewed Diaspora protocol. ([related issue](https://github.com/jaywink/federation/issues/59))
 
 ### Fixed
 * Fix getting sender from a combination of legacy Diaspora encrypted payload and new entity names (for example `author`). This combination probably only existed in this library.
 * Correctly extend entity `_children`. Certain Diaspora payloads caused `_children` for an entity to be written over by an empty list, causing for example status message photos to not be saved. Correctly do an extend on it. ([issue](https://github.com/jaywink/federation/issues/89))
 * Fix parsing Diaspora profile `tag_string` into `Profile.tag_list` if the `tag_string` is an empty string. This caused the whole `Profile` object creation to fail. ([issue](https://github.com/jaywink/federation/issues/88))
 * Fix processing Diaspora payload if it is passed to `handle_receive` as a `bytes` object. ([issue](https://github.com/jaywink/federation/issues/91))
+* Fix broken Diaspora relayables after latest 0.2.0 protocol changes. Previously relayables worked only because they were reverse engineered from the legacy protocol. Now that XML order is not important and tag names can be different depending on which protocol version, the relayable forwarding broke. To fix, we don't regenerate the entity when forwarding it but store the original received object when generating a `parent_author_signature` (which is optional in some cases, but we generate it anyway for now). This happens in the previously existing `entity.sign_with_parent()` method. In the sending part, if the original received object (now with a parent author signature) exists in the entity, we send that to the remote instead of serializing the entity to XML.
+     * To forward a relayable you must call `entity.sign_with_parent()` before calling `handle_send` to send the entity.
 
 ### Removed
 * `Post.photos` entity attribute was never used by any code and has been removed. Child entities of type `Image` are stored in the `Post._children` as before.

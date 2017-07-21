@@ -18,3 +18,4 @@ recommonmark
 
 # Some datetime magic
 arrow
+freezegun

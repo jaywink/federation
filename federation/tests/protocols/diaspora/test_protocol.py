@@ -151,11 +151,20 @@ class TestDiasporaProtocol(DiasporaTestBase):
         mock_create_salmon.return_value = "xmldata"
         protocol = self.init_protocol()
         mock_entity_xml = Mock()
-        entity = Mock(to_xml=Mock(return_value=mock_entity_xml))
+        entity = Mock(to_xml=Mock(return_value=mock_entity_xml), outbound_doc=None)
         from_user = Mock(handle="foobar", private_key="barfoo")
         data = protocol.build_send(entity, from_user)
         mock_init_message.assert_called_once_with(mock_entity_xml, from_user.handle, from_user.private_key)
         assert data == {"xml": "xmldata"}
+
+    @patch.object(Protocol, "init_message")
+    @patch.object(Protocol, "create_salmon_envelope")
+    def test_build_send_uses_outbound_doc(self, mock_create_salmon, mock_init_message):
+        protocol = self.init_protocol()
+        entity = Mock(to_xml=Mock(return_value=Mock()), outbound_doc="outbound_doc")
+        from_user = Mock(handle="foobar", private_key="barfoo")
+        protocol.build_send(entity, from_user)
+        mock_init_message.assert_called_once_with("outbound_doc", from_user.handle, from_user.private_key)
 
     @patch("federation.protocols.diaspora.protocol.EncryptedPayload.decrypt")
     def test_get_json_payload_magic_envelope(self, mock_decrypt):
