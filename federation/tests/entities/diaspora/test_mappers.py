@@ -278,3 +278,8 @@ class TestGetOutboundEntity():
         dummy_key = get_dummy_private_key()
         outbound = get_outbound_entity(entity, dummy_key)
         assert outbound.signature != ""
+
+    def test_returns_entity_if_outbound_doc_on_entity(self):
+        entity = Comment()
+        entity.outbound_doc = "foobar"
+        assert get_outbound_entity(entity, "private_key") == entity

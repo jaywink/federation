@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 import pytest
 from lxml import etree
@@ -7,8 +7,10 @@ from federation.entities.base import Profile
 from federation.entities.diaspora.entities import (
     DiasporaComment, DiasporaPost, DiasporaLike, DiasporaRequest, DiasporaProfile, DiasporaRetraction,
     DiasporaContact)
+from federation.entities.diaspora.mappers import message_to_objects
 from federation.exceptions import SignatureVerificationError
 from federation.tests.fixtures.keys import get_dummy_private_key
+from federation.tests.fixtures.payloads import DIASPORA_POST_COMMENT
 
 
 class TestEntitiesConvertToXML:
@@ -142,6 +144,30 @@ class TestDiasporaRelayableMixin:
                                    "Q0t+vWGl8cgSS0/34mvvqX+HKUdmun2vQ50bPckNLoj3hDI6HcmZ8qFf/xx8y1BbE0zx5rTo7yOlWq8Y" \
                                    "sC28oRHqHpIzOfhkIHyt+hOjO/mpuZLd7qOPfIySnGW6hM1iKewoJVDuVMN5w5VB46ETRum8JpvTQO8i" \
                                    "DPB+ZqbqcEasfm2CQIxVLA=="
+
+    @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
+    def test_sign_with_parent(self, mock_validate):
+        entities = message_to_objects(DIASPORA_POST_COMMENT, sender_key_fetcher=Mock())
+        entity = entities[0]
+        entity.sign_with_parent(get_dummy_private_key())
+        assert entity.parent_signature == "UTIDiFZqjxfU6ssVlmjz2RwOD/WPmMTFv57qOm0BZvBhF8Ef49Ynse1c2XTtx3rs8DyRMn54" \
+                                          "Uw4E0T+3t0Q5SHEQTLtRnOdRXrgNGAnlJ2xRmBWqe6xvvgc4nJ8OnffXhVgI8DBx6YUFRDjJ" \
+                                          "fnVQhnqbWr4ZAcpywCyL9IDkap3cTyn6wHo2WFRtq5syTCtMS8RZLXgpVLCeMfHhrXlePIA/" \
+                                          "YwMNn0GGi+9qSWXYVFG75cPjcWeY4t5q8EHCQReSSxG4a3HGbc7MigLvHzuhdOWOV8563dYo" \
+                                          "/5xS3zlQUt8I3AwXOzHr+57r1egMBHYyXTXsS8gFisj7mH4TsLM+Yw=="
+        assert etree.tostring(entity.outbound_doc) == b'<comment>\n      <guid>((guidguidguidguidguidguid))</guid>\n' \
+                                                      b'      <parent_guid>((parent_guidparent_guidparent_guidparent' \
+                                                      b'_guid))</parent_guid>\n      <author_signature>((base64-enco' \
+                                                      b'ded data))</author_signature>\n      <text>((text))</text>\n' \
+                                                      b'      <author>alice@alice.diaspora.example.org</author>\n   ' \
+                                                      b'   <author_signature>((signature))</author_signature>\n    ' \
+                                                      b'<parent_author_signature>UTIDiFZqjxfU6ssVlmjz2RwOD/WPmMTFv57' \
+                                                      b'qOm0BZvBhF8Ef49Ynse1c2XTtx3rs8DyRMn54Uw4E0T+3t0Q5SHEQTLtRnOd' \
+                                                      b'RXrgNGAnlJ2xRmBWqe6xvvgc4nJ8OnffXhVgI8DBx6YUFRDjJfnVQhnqbWr4' \
+                                                      b'ZAcpywCyL9IDkap3cTyn6wHo2WFRtq5syTCtMS8RZLXgpVLCeMfHhrXlePIA' \
+                                                      b'/YwMNn0GGi+9qSWXYVFG75cPjcWeY4t5q8EHCQReSSxG4a3HGbc7MigLvHzu' \
+                                                      b'hdOWOV8563dYo/5xS3zlQUt8I3AwXOzHr+57r1egMBHYyXTXsS8gFisj7mH4' \
+                                                      b'TsLM+Yw==</parent_author_signature></comment>'
 
 
 class TestDiasporaRelayableEntityValidate():

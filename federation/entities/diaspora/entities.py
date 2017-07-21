@@ -55,8 +55,8 @@ class DiasporaRelayableMixin(DiasporaEntityMixin):
 
     def sign_with_parent(self, private_key):
         doc = etree.fromstring(self._source_object)
-        signature = create_relayable_signature(private_key, doc)
-        add_element_to_doc(doc, "parent_author_signature", signature)
+        self.parent_signature = create_relayable_signature(private_key, doc)
+        add_element_to_doc(doc, "parent_author_signature", self.parent_signature)
         self.outbound_doc = doc
 
 
