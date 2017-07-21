@@ -1,6 +1,6 @@
 # Changelog
 
-## [unreleased]
+## [0.13.0] - 2017-07-22
 
 ### Backwards incompatible changes
 * When processing Diaspora payloads, entity used to get a `_source_object` stored to it. This was an `etree.Element` created from the source object. Due to serialization issues in applications (for example pushing the object to a task queue or saving to database), `_source_object` is now a byte string representation for the element done with `etree.tostring()`. 
