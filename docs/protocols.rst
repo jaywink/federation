@@ -23,6 +23,7 @@ The feature set supported by this release is approximately the following:
    * Profile
    * Retraction
    * StatusMessage
+   * Contact
 
 Implementation unfortunately currently requires knowledge of how Diaspora discovery works as the implementer has to implement all the necessary views correctly (even though this library provides document generators). However, the magic envelope, signature and entity building is all abstracted inside the library.
 

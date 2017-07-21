@@ -10,6 +10,7 @@ Federation has it's own base entity classes. When incoming messages are processe
 Entity types are as follows below.
 
 .. autoclass:: federation.entities.base.Comment
+.. autoclass:: federation.entities.base.Follow
 .. autoclass:: federation.entities.base.Image
 .. autoclass:: federation.entities.base.Post
 .. autoclass:: federation.entities.base.Profile
