@@ -244,7 +244,11 @@ class Protocol(BaseProtocol):
 
     def build_send(self, entity, from_user, to_user=None, *args, **kwargs):
         """Build POST data for sending out to remotes."""
-        xml = entity.to_xml()
+        if entity.outbound_doc:
+            # Use pregenerated outbound document
+            xml = entity.outbound_doc
+        else:
+            xml = entity.to_xml()
         self.init_message(xml, from_user.handle, from_user.private_key)
         xml = self.create_salmon_envelope(to_user)
         return {'xml': xml}

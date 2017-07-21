@@ -1,4 +1,3 @@
-import datetime
 from unittest.mock import patch
 
 import pytest
@@ -93,7 +92,7 @@ class TestEntitiesConvertToXML:
         assert etree.tostring(result) == converted
 
 
-class TestDiasporaProfileFillExtraAttributes():
+class TestDiasporaProfileFillExtraAttributes:
     def test_raises_if_no_handle(self):
         attrs = {"foo": "bar"}
         with pytest.raises(ValueError):
@@ -122,17 +121,18 @@ class TestDiasporaRetractionEntityConverters:
 
 
 class TestDiasporaRelayableMixin:
-    def test_signing_comment_works(self):
+    @patch("federation.entities.diaspora.entities.format_dt", side_effect=lambda v: v)
+    def test_signing_comment_works(self, mock_format_dt):
         entity = DiasporaComment(
             raw_content="raw_content", guid="guid", target_guid="target_guid", handle="handle",
-            created_at=datetime.datetime(2016, 3, 2),
+            created_at="created_at",
         )
         entity.sign(get_dummy_private_key())
-        assert entity.signature == "Z7Yh/zvH8oSct+UZhvHHLESd5HmjyC9LOhXqO/Kan4DYVwW3aoIwQWtWDESnjzjdNeBTVale5koGI1wI" \
-                                   "HGFd1WbaD7h5Fzi2uh4pl8u75ELhN0qTfWsd5hULj6eCkun0ytc2W+cwJAmRzhyxlmCkxwvmUoP4AS7M" \
-                                   "OVmV/79PkVfyJWp9XcPn0TB4IBifI/i6iA2PBPrczcAnopzmIg7xehqwd7aX/dGaRruAPR9mxDTMrKmd" \
-                                   "w8cuLarcMfHQTU5lu9Py2kCie+kGYbg7O92khaQdZrLkly1i2tyLZGpC6uFdGXYOYfLcZ7e2aOWHnwzp" \
-                                   "QxbyIb7jhjSWf9i97GTtAA=="
+        assert entity.signature == "OWvW/Yxw4uCnx0WDn0n5/B4uhyZ8Pr6h3FZaw8J7PCXyPluOfYXFoHO21bykP8c2aVnuJNHe+lmeAkUC" \
+                                   "/kHnl4yxk/jqe3uroW842OWvsyDRQ11vHxhIqNMjiepFPkZmXX3vqrYYh5FrC/tUsZrEc8hHoOIHXFR2" \
+                                   "kGD0gPV+4EEG6pbMNNZ+SBVun0hvruX8iKQVnBdc/+zUI9+T/MZmLyqTq/CvuPxDyHzQPSHi68N9rJyr" \
+                                   "4Xa1K+R33Xq8eHHxs8LVNRqzaHGeD3DX8yBu/vP9TYmZsiWlymbuGwLCa4Yfv/VS1hQZovhg6YTxV4CR" \
+                                   "v4ToGL+CAJ7UHEugRRBwDw=="
 
     def test_signing_like_works(self):
         entity = DiasporaLike(guid="guid", target_guid="target_guid", handle="handle")
@@ -154,13 +154,11 @@ class TestDiasporaRelayableEntityValidate():
     def test_calls_verify_signature(self, mock_verify):
         entity = DiasporaComment()
         entity._sender_key = "key"
-        entity._source_object = "obj"
+        entity._source_object = "<obj></obj>"
         entity.signature = "sig"
         mock_verify.return_value = False
         with pytest.raises(SignatureVerificationError):
             entity._validate_signatures()
-            mock_verify.assert_called_once_with("key", "obj", "sig")
         mock_verify.reset_mock()
         mock_verify.return_value = True
         entity._validate_signatures()
-        mock_verify.assert_called_once_with("key", "obj", "sig")

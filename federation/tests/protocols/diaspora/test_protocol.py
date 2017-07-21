@@ -151,7 +151,7 @@ class TestDiasporaProtocol(DiasporaTestBase):
         mock_create_salmon.return_value = "xmldata"
         protocol = self.init_protocol()
         mock_entity_xml = Mock()
-        entity = Mock(to_xml=Mock(return_value=mock_entity_xml))
+        entity = Mock(to_xml=Mock(return_value=mock_entity_xml), outbound_doc=None)
         from_user = Mock(handle="foobar", private_key="barfoo")
         data = protocol.build_send(entity, from_user)
         mock_init_message.assert_called_once_with(mock_entity_xml, from_user.handle, from_user.private_key)

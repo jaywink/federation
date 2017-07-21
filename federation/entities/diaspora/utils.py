@@ -62,3 +62,11 @@ def get_full_xml_representation(entity, private_key):
     diaspora_entity = get_outbound_entity(entity, private_key)
     xml = diaspora_entity.to_xml()
     return "<XML><post>%s</post></XML>" % etree.tostring(xml).decode("utf-8")
+
+
+def add_element_to_doc(doc, tag, value):
+    """Set text value of an etree.Element of tag, appending a new element with given tag if it doesn't exist."""
+    element = doc.find(".//%s" % tag)
+    if element is None:
+        element = etree.SubElement(doc, tag)
+    element.text = value

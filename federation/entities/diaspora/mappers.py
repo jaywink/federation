@@ -76,7 +76,7 @@ def element_to_objects(element, sender_key_fetcher=None, user=None):
     # Add protocol name
     entity._source_protocol = "diaspora"
     # Save element object to entity for possible later use
-    entity._source_object = element
+    entity._source_object = etree.tostring(element)
     # Save receiving guid to object
     if user and hasattr(user, "guid"):
         entity._receiving_guid = user.guid
@@ -212,6 +212,9 @@ def get_outbound_entity(entity, private_key):
     :returns: Protocol specific entity class instance.
     :raises ValueError: If conversion cannot be done.
     """
+    if getattr(entity, "outbound_doc", None):
+        # If the entity already has an outbound doc, just return the entity as is
+        return entity
     outbound = None
     cls = entity.__class__
     if cls in [DiasporaPost, DiasporaRequest, DiasporaComment, DiasporaLike, DiasporaProfile, DiasporaRetraction,

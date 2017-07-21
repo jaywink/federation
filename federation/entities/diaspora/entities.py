@@ -1,13 +1,16 @@
 from lxml import etree
 
 from federation.entities.base import Comment, Post, Reaction, Relationship, Profile, Retraction, BaseEntity, Follow
-from federation.entities.diaspora.utils import format_dt, struct_to_xml, get_base_attributes
+from federation.entities.diaspora.utils import format_dt, struct_to_xml, get_base_attributes, add_element_to_doc
 from federation.exceptions import SignatureVerificationError
 from federation.protocols.diaspora.signatures import verify_relayable_signature, create_relayable_signature
 from federation.utils.diaspora import retrieve_and_parse_profile
 
 
 class DiasporaEntityMixin(BaseEntity):
+    # Normally outbound document is generated from entity. Store one here if at some point we already have a doc
+    outbound_doc = None
+
     def to_xml(self):
         """Override in subclasses."""
         raise NotImplementedError
@@ -43,14 +46,18 @@ class DiasporaRelayableMixin(DiasporaEntityMixin):
         super()._validate_signatures()
         if not self._sender_key:
             raise SignatureVerificationError("Cannot verify entity signature - no sender key available")
-        if not verify_relayable_signature(self._sender_key, self._source_object, self.signature):
+        source_doc = etree.fromstring(self._source_object)
+        if not verify_relayable_signature(self._sender_key, source_doc, self.signature):
             raise SignatureVerificationError("Signature verification failed.")
 
     def sign(self, private_key):
         self.signature = create_relayable_signature(private_key, self.to_xml())
 
     def sign_with_parent(self, private_key):
-        self.parent_signature = create_relayable_signature(private_key, self.to_xml())
+        doc = etree.fromstring(self._source_object)
+        signature = create_relayable_signature(private_key, doc)
+        add_element_to_doc(doc, "parent_author_signature", signature)
+        self.outbound_doc = doc
 
 
 class DiasporaComment(DiasporaRelayableMixin, Comment):
