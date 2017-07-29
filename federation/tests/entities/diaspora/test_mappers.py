@@ -11,7 +11,6 @@ from federation.entities.diaspora.entities import (
     DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest,
     DiasporaProfile, DiasporaRetraction, DiasporaContact)
 from federation.entities.diaspora.mappers import message_to_objects, get_outbound_entity
-from federation.tests.fixtures.keys import get_dummy_private_key
 from federation.tests.fixtures.payloads import (
     DIASPORA_POST_SIMPLE, DIASPORA_POST_COMMENT, DIASPORA_POST_LIKE,
     DIASPORA_REQUEST, DIASPORA_PROFILE, DIASPORA_POST_INVALID, DIASPORA_RETRACTION,
@@ -216,70 +215,67 @@ class TestDiasporaEntityMappersReceive():
         mock_retrieve.assert_called_once_with("alice@alice.diaspora.example.org")
 
 
-class TestGetOutboundEntity():
-    def test_already_fine_entities_are_returned_as_is(self):
-        dummy_key = get_dummy_private_key()
+class TestGetOutboundEntity:
+    def test_already_fine_entities_are_returned_as_is(self, private_key):
         entity = DiasporaPost()
-        assert get_outbound_entity(entity, dummy_key) == entity
+        assert get_outbound_entity(entity, private_key) == entity
         entity = DiasporaLike()
-        assert get_outbound_entity(entity, dummy_key) == entity
+        assert get_outbound_entity(entity, private_key) == entity
         entity = DiasporaComment()
-        assert get_outbound_entity(entity, dummy_key) == entity
+        assert get_outbound_entity(entity, private_key) == entity
         entity = DiasporaRequest()
-        assert get_outbound_entity(entity, dummy_key) == entity
+        assert get_outbound_entity(entity, private_key) == entity
         entity = DiasporaProfile()
-        assert get_outbound_entity(entity, dummy_key) == entity
+        assert get_outbound_entity(entity, private_key) == entity
         entity = DiasporaContact()
-        assert get_outbound_entity(entity, dummy_key) == entity
+        assert get_outbound_entity(entity, private_key) == entity
 
-    def test_post_is_converted_to_diasporapost(self):
+    def test_post_is_converted_to_diasporapost(self, private_key):
         entity = Post()
-        assert isinstance(get_outbound_entity(entity, get_dummy_private_key()), DiasporaPost)
+        assert isinstance(get_outbound_entity(entity, private_key), DiasporaPost)
 
-    def test_comment_is_converted_to_diasporacomment(self):
+    def test_comment_is_converted_to_diasporacomment(self, private_key):
         entity = Comment()
-        assert isinstance(get_outbound_entity(entity, get_dummy_private_key()), DiasporaComment)
+        assert isinstance(get_outbound_entity(entity, private_key), DiasporaComment)
 
-    def test_reaction_of_like_is_converted_to_diasporalike(self):
+    def test_reaction_of_like_is_converted_to_diasporalike(self, private_key):
         entity = Reaction(reaction="like")
-        assert isinstance(get_outbound_entity(entity, get_dummy_private_key()), DiasporaLike)
+        assert isinstance(get_outbound_entity(entity, private_key), DiasporaLike)
 
-    def test_relationship_of_sharing_or_following_is_converted_to_diasporarequest(self):
-        dummy_key = get_dummy_private_key()
+    def test_relationship_of_sharing_or_following_is_converted_to_diasporarequest(self, private_key):
         entity = Relationship(relationship="sharing")
-        assert isinstance(get_outbound_entity(entity, dummy_key), DiasporaRequest)
+        assert isinstance(get_outbound_entity(entity, private_key), DiasporaRequest)
         entity = Relationship(relationship="following")
-        assert isinstance(get_outbound_entity(entity, dummy_key), DiasporaRequest)
+        assert isinstance(get_outbound_entity(entity, private_key), DiasporaRequest)
 
-    def test_profile_is_converted_to_diasporaprofile(self):
+    def test_profile_is_converted_to_diasporaprofile(self, private_key):
         entity = Profile()
-        assert isinstance(get_outbound_entity(entity, get_dummy_private_key()), DiasporaProfile)
+        assert isinstance(get_outbound_entity(entity, private_key), DiasporaProfile)
 
-    def test_other_reaction_raises(self):
+    def test_other_reaction_raises(self, private_key):
         entity = Reaction(reaction="foo")
         with pytest.raises(ValueError):
-            get_outbound_entity(entity, get_dummy_private_key())
+            get_outbound_entity(entity, private_key)
 
-    def test_other_relation_raises(self):
+    def test_other_relation_raises(self, private_key):
         entity = Relationship(relationship="foo")
         with pytest.raises(ValueError):
-            get_outbound_entity(entity, get_dummy_private_key())
+            get_outbound_entity(entity, private_key)
 
-    def test_retraction_is_converted_to_diasporaretraction(self):
+    def test_retraction_is_converted_to_diasporaretraction(self, private_key):
         entity = Retraction()
-        assert isinstance(get_outbound_entity(entity, get_dummy_private_key()), DiasporaRetraction)
+        assert isinstance(get_outbound_entity(entity, private_key), DiasporaRetraction)
 
-    def test_follow_is_converted_to_diasporacontact(self):
+    def test_follow_is_converted_to_diasporacontact(self, private_key):
         entity = Follow()
-        assert isinstance(get_outbound_entity(entity, get_dummy_private_key()), DiasporaContact)
+        assert isinstance(get_outbound_entity(entity, private_key), DiasporaContact)
 
-    def test_signs_relayable_if_no_signature(self):
+    def test_signs_relayable_if_no_signature(self, private_key):
         entity = DiasporaComment()
-        dummy_key = get_dummy_private_key()
-        outbound = get_outbound_entity(entity, dummy_key)
+        outbound = get_outbound_entity(entity, private_key)
         assert outbound.signature != ""
 
-    def test_returns_entity_if_outbound_doc_on_entity(self):
+    def test_returns_entity_if_outbound_doc_on_entity(self, private_key):
         entity = Comment()
         entity.outbound_doc = "foobar"
-        assert get_outbound_entity(entity, "private_key") == entity
+        assert get_outbound_entity(entity, private_key) == entity

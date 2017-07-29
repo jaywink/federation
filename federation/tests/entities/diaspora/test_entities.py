@@ -169,6 +169,13 @@ class TestDiasporaRelayableMixin:
                                                       b'hdOWOV8563dYo/5xS3zlQUt8I3AwXOzHr+57r1egMBHYyXTXsS8gFisj7mH4' \
                                                       b'TsLM+Yw==</parent_author_signature></comment>'
 
+    @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
+    def test_sign_with_parent(self, mock_validate):
+        entity = DiasporaComment()
+        with patch.object(entity, "to_xml") as mock_to_xml:
+            entity.sign_with_parent(get_dummy_private_key())
+            mock_to_xml.assert_called_once_with()
+
 
 class TestDiasporaRelayableEntityValidate():
     def test_raises_if_no_sender_key(self):

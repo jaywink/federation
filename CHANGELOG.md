@@ -1,5 +1,12 @@
 # Changelog
 
+## [unreleased]
+
+### Changed
+* **Breaking change.** The high level `federation.outbound` functions `handle_send` and `handle_create_payload` signatures have been changed. This has been done to better represent the objects that are actually sent in and to add an optional `parent_user` object.
+
+  For both functions the `from_user` parameter has been renamed to `author_user`. Optionally a `parent_user` object can also be passed in. Both the user objects must have `private_key` and `handle` attributes. In the case that `parent_user` is given, that user will be used to sign the payload and for Diaspora relayables an extra `parent_author_signature` in the payload itself.
+
 ## [0.13.0] - 2017-07-22
 
 ### Backwards incompatible changes
