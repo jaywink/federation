@@ -2,6 +2,11 @@
 
 ## [unreleased]
 
+### Security
+* Add proper checks to make sure Diaspora protocol payload handle and entity handle are the same. Even though we already verified the signature of the sender, we didn't ensure that the sender isn't trying to fake an entity authored by someone else. 
+
+  The Diaspora protocol functions `message_to_objects` and `element_to_objects` now require a new parameter, the payload sender handle. These functions should normally not be needed to be used directly. 
+
 ### Changed
 * **Breaking change.** The high level `federation.outbound` functions `handle_send` and `handle_create_payload` signatures have been changed. This has been done to better represent the objects that are actually sent in and to add an optional `parent_user` object.
 
