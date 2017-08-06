@@ -1,6 +1,6 @@
 # Changelog
 
-## [unreleased]
+## [0.14.0] - 2017-08-06
 
 ### Security
 * Add proper checks to make sure Diaspora protocol payload handle and entity handle are the same. Even though we already verified the signature of the sender, we didn't ensure that the sender isn't trying to fake an entity authored by someone else. 
