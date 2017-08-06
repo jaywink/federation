@@ -88,8 +88,6 @@ def element_to_objects(element, sender, sender_key_fetcher=None, user=None):
     if hasattr(cls, "fill_extra_attributes"):
         transformed = cls.fill_extra_attributes(transformed)
     entity = cls(**transformed)
-    if not check_sender_and_entity_handle_match(sender, entity.handle):
-        return []
     # Add protocol name
     entity._source_protocol = "diaspora"
     # Save element object to entity for possible later use
@@ -97,8 +95,8 @@ def element_to_objects(element, sender, sender_key_fetcher=None, user=None):
     # Save receiving guid to object
     if user and hasattr(user, "guid"):
         entity._receiving_guid = user.guid
-    # If relayable, fetch sender key for validation
     if issubclass(cls, DiasporaRelayableMixin):
+        # If relayable, fetch sender key for validation
         entity._xml_tags = get_element_child_info(element, "tag")
         if sender_key_fetcher:
             entity._sender_key = sender_key_fetcher(entity.handle)
@@ -106,6 +104,10 @@ def element_to_objects(element, sender, sender_key_fetcher=None, user=None):
             profile = retrieve_and_parse_profile(entity.handle)
             if profile:
                 entity._sender_key = profile.public_key
+    else:
+        # If not relayable, ensure handles match
+        if not check_sender_and_entity_handle_match(sender, entity.handle):
+            return []
     try:
         entity.validate()
     except ValueError as ex:
