@@ -118,7 +118,7 @@ DIASPORA_POST_WITH_PHOTOS_2 = """
         <raw_message>#foo #bar (fewfefewfwfewfwe)</raw_message>
         <photo>
             <guid>fjwjewiofjoiwjfiowefewew</guid>
-            <diaspora_handle>xxxxxxxxxxxxxxxxx@diasp.org</diaspora_handle>
+            <diaspora_handle>xxxxxxxxxxxxxxx@diasp.org</diaspora_handle>
             <public>true</public>
             <created_at>2017-06-10T14:41:28Z</created_at>
             <remote_photo_path>https://diasp.org/uploads/images/</remote_photo_path>

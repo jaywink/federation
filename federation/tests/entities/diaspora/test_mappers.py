@@ -10,7 +10,8 @@ from federation.entities.base import (
 from federation.entities.diaspora.entities import (
     DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest,
     DiasporaProfile, DiasporaRetraction, DiasporaContact)
-from federation.entities.diaspora.mappers import message_to_objects, get_outbound_entity
+from federation.entities.diaspora.mappers import (
+    message_to_objects, get_outbound_entity, check_sender_and_entity_handle_match)
 from federation.tests.fixtures.payloads import (
     DIASPORA_POST_SIMPLE, DIASPORA_POST_COMMENT, DIASPORA_POST_LIKE,
     DIASPORA_REQUEST, DIASPORA_PROFILE, DIASPORA_POST_INVALID, DIASPORA_RETRACTION,
@@ -23,9 +24,9 @@ def mock_fill(attributes):
     return attributes
 
 
-class TestDiasporaEntityMappersReceive():
+class TestDiasporaEntityMappersReceive:
     def test_message_to_objects_simple_post(self):
-        entities = message_to_objects(DIASPORA_POST_SIMPLE)
+        entities = message_to_objects(DIASPORA_POST_SIMPLE, "alice@alice.diaspora.example.org")
         assert len(entities) == 1
         post = entities[0]
         assert isinstance(post, DiasporaPost)
@@ -39,7 +40,7 @@ class TestDiasporaEntityMappersReceive():
 
     def test_message_to_objects_post_legacy(self):
         # This is the previous XML schema used before renewal of protocol
-        entities = message_to_objects(DIASPORA_POST_LEGACY)
+        entities = message_to_objects(DIASPORA_POST_LEGACY, "alice@alice.diaspora.example.org")
         assert len(entities) == 1
         post = entities[0]
         assert isinstance(post, DiasporaPost)
@@ -52,12 +53,12 @@ class TestDiasporaEntityMappersReceive():
         assert post.provider_display_name == "Socialhome"
 
     def test_message_to_objects_legact_timestamp(self):
-        entities = message_to_objects(DIASPORA_POST_LEGACY_TIMESTAMP)
+        entities = message_to_objects(DIASPORA_POST_LEGACY_TIMESTAMP, "alice@alice.diaspora.example.org")
         post = entities[0]
         assert post.created_at == datetime(2011, 7, 20, 1, 36, 7)
 
     def test_message_to_objects_post_with_photos(self):
-        entities = message_to_objects(DIASPORA_POST_WITH_PHOTOS)
+        entities = message_to_objects(DIASPORA_POST_WITH_PHOTOS, "alice@alice.diaspora.example.org")
         assert len(entities) == 1
         post = entities[0]
         assert isinstance(post, DiasporaPost)
@@ -75,7 +76,7 @@ class TestDiasporaEntityMappersReceive():
         assert photo.public == False
         assert photo.created_at == datetime(2011, 7, 20, 1, 36, 7)
 
-        entities = message_to_objects(DIASPORA_POST_WITH_PHOTOS_2)
+        entities = message_to_objects(DIASPORA_POST_WITH_PHOTOS_2, "xxxxxxxxxxxxxxx@diasp.org")
         assert len(entities) == 1
         post = entities[0]
         assert isinstance(post, DiasporaPost)
@@ -84,7 +85,8 @@ class TestDiasporaEntityMappersReceive():
 
     @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
     def test_message_to_objects_comment(self, mock_validate):
-        entities = message_to_objects(DIASPORA_POST_COMMENT, sender_key_fetcher=Mock())
+        entities = message_to_objects(DIASPORA_POST_COMMENT, "alice@alice.diaspora.example.org",
+                                      sender_key_fetcher=Mock())
         assert len(entities) == 1
         comment = entities[0]
         assert isinstance(comment, DiasporaComment)
@@ -102,7 +104,7 @@ class TestDiasporaEntityMappersReceive():
 
     @patch("federation.entities.diaspora.mappers.DiasporaLike._validate_signatures")
     def test_message_to_objects_like(self, mock_validate):
-        entities = message_to_objects(DIASPORA_POST_LIKE, sender_key_fetcher=Mock())
+        entities = message_to_objects(DIASPORA_POST_LIKE, "alice@alice.diaspora.example.org", sender_key_fetcher=Mock())
         assert len(entities) == 1
         like = entities[0]
         assert isinstance(like, DiasporaLike)
@@ -119,7 +121,7 @@ class TestDiasporaEntityMappersReceive():
         mock_validate.assert_called_once_with()
 
     def test_message_to_objects_request(self):
-        entities = message_to_objects(DIASPORA_REQUEST)
+        entities = message_to_objects(DIASPORA_REQUEST, "bob@example.com")
         assert len(entities) == 2
         sharing = entities[0]
         assert isinstance(sharing, DiasporaRequest)
@@ -136,7 +138,7 @@ class TestDiasporaEntityMappersReceive():
 
     @patch("federation.entities.diaspora.entities.DiasporaProfile.fill_extra_attributes", new=mock_fill)
     def test_message_to_objects_profile(self):
-        entities = message_to_objects(DIASPORA_PROFILE)
+        entities = message_to_objects(DIASPORA_PROFILE, "bob@example.com")
         assert len(entities) == 1
         profile = entities[0]
         assert profile.handle == "bob@example.com"
@@ -155,11 +157,11 @@ class TestDiasporaEntityMappersReceive():
 
     @patch("federation.entities.diaspora.entities.DiasporaProfile.fill_extra_attributes", new=mock_fill)
     def test_message_to_objects_profile_survives_empty_tag_string(self):
-        entities = message_to_objects(DIASPORA_PROFILE_EMPTY_TAGS)
+        entities = message_to_objects(DIASPORA_PROFILE_EMPTY_TAGS, "bob@example.com")
         assert len(entities) == 1
 
     def test_message_to_objects_retraction(self):
-        entities = message_to_objects(DIASPORA_RETRACTION)
+        entities = message_to_objects(DIASPORA_RETRACTION, "bob@example.com")
         assert len(entities) == 1
         entity = entities[0]
         assert isinstance(entity, Retraction)
@@ -168,7 +170,8 @@ class TestDiasporaEntityMappersReceive():
         assert entity.entity_type == "Post"
 
     def test_message_to_objects_retraction_legacy_request(self):
-        entities = message_to_objects(DIASPORA_LEGACY_REQUEST_RETRACTION, user=Mock(guid="swfeuihiwehuifhiwheiuf"))
+        entities = message_to_objects(DIASPORA_LEGACY_REQUEST_RETRACTION, "jaywink@iliketoast.net",
+                                      user=Mock(guid="swfeuihiwehuifhiwheiuf"))
         assert len(entities) == 1
         entity = entities[0]
         assert isinstance(entity, Retraction)
@@ -178,7 +181,7 @@ class TestDiasporaEntityMappersReceive():
         assert entity._receiving_guid == "swfeuihiwehuifhiwheiuf"
 
     def test_message_to_objects_contact(self):
-        entities = message_to_objects(DIASPORA_CONTACT)
+        entities = message_to_objects(DIASPORA_CONTACT, "alice@example.com")
         assert len(entities) == 1
         entity = entities[0]
         assert isinstance(entity, DiasporaContact)
@@ -188,31 +191,41 @@ class TestDiasporaEntityMappersReceive():
 
     @patch("federation.entities.diaspora.mappers.logger.error")
     def test_invalid_entity_logs_an_error(self, mock_logger):
-        entities = message_to_objects(DIASPORA_POST_INVALID)
+        entities = message_to_objects(DIASPORA_POST_INVALID, "alice@alice.diaspora.example.org")
         assert len(entities) == 0
         assert mock_logger.called
 
     def test_adds_source_protocol_to_entity(self):
-        entities = message_to_objects(DIASPORA_POST_SIMPLE)
+        entities = message_to_objects(DIASPORA_POST_SIMPLE, "alice@alice.diaspora.example.org")
         assert entities[0]._source_protocol == "diaspora"
 
     @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
     def test_source_object(self, mock_validate):
-        entities = message_to_objects(DIASPORA_POST_COMMENT, sender_key_fetcher=Mock())
+        entities = message_to_objects(DIASPORA_POST_COMMENT, "alice@alice.diaspora.example.org",
+                                      sender_key_fetcher=Mock())
         entity = entities[0]
         assert entity._source_object == etree.tostring(etree.fromstring(DIASPORA_POST_COMMENT))
 
     @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
     def test_element_to_objects_calls_sender_key_fetcher(self, mock_validate):
         mock_fetcher = Mock()
-        message_to_objects(DIASPORA_POST_COMMENT, mock_fetcher)
+        message_to_objects(DIASPORA_POST_COMMENT, "alice@alice.diaspora.example.org", mock_fetcher)
         mock_fetcher.assert_called_once_with("alice@alice.diaspora.example.org")
 
     @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
     @patch("federation.entities.diaspora.mappers.retrieve_and_parse_profile")
     def test_element_to_objects_calls_retrieve_remote_profile(self, mock_retrieve, mock_validate):
-        message_to_objects(DIASPORA_POST_COMMENT)
+        message_to_objects(DIASPORA_POST_COMMENT, "alice@alice.diaspora.example.org")
         mock_retrieve.assert_called_once_with("alice@alice.diaspora.example.org")
+
+    @patch("federation.entities.diaspora.mappers.check_sender_and_entity_handle_match")
+    def test_element_to_objects_verifies_handles_are_the_same(self, mock_check):
+        message_to_objects(DIASPORA_POST_SIMPLE, "bob@example.org")
+        mock_check.assert_called_once_with("bob@example.org", "alice@alice.diaspora.example.org")
+
+    def test_element_to_objects_returns_no_entity_if_handles_are_different(self):
+        entities = message_to_objects(DIASPORA_POST_SIMPLE, "bob@example.org")
+        assert not entities
 
 
 class TestGetOutboundEntity:
@@ -279,3 +292,8 @@ class TestGetOutboundEntity:
         entity = Comment()
         entity.outbound_doc = "foobar"
         assert get_outbound_entity(entity, private_key) == entity
+
+
+def test_check_sender_and_entity_handle_match():
+    assert not check_sender_and_entity_handle_match("foo", "bar")
+    assert check_sender_and_entity_handle_match("foo", "foo")

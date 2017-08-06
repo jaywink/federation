@@ -52,12 +52,27 @@ def xml_children_as_dict(node):
     return dict((e.tag, e.text) for e in node)
 
 
-def element_to_objects(element, sender_key_fetcher=None, user=None):
+def check_sender_and_entity_handle_match(sender_handle, entity_handle):
+    """Ensure that sender and entity handles match.
+
+    Basically we've already verified the sender is who they say when receiving the payload. However, the sender might
+    be trying to set another author in the payload itself, since Diaspora has the sender in both the payload headers
+    AND the object. We must ensure they're the same.
+    """
+    if sender_handle != entity_handle:
+        logger.warning("sender_handle and entity_handle don't match, aborting! sender_handle: %s, entity_handle: %s",
+                       sender_handle, entity_handle)
+        return False
+    return True
+
+
+def element_to_objects(element, sender, sender_key_fetcher=None, user=None):
     """Transform an Element to a list of entities recursively.
 
     Possible child entities are added to each entity `_children` list.
 
     :param tree: Element
+    :param sender: Payload sender handle
     :param sender_key_fetcher: Function to fetch sender public key. If not given, key will always be fetched
         over network. The function should take sender handle as the only parameter.
     :param user: Optional receiving user object. If given, should have a `handle`.
@@ -73,6 +88,8 @@ def element_to_objects(element, sender_key_fetcher=None, user=None):
     if hasattr(cls, "fill_extra_attributes"):
         transformed = cls.fill_extra_attributes(transformed)
     entity = cls(**transformed)
+    if not check_sender_and_entity_handle_match(sender, entity.handle):
+        return []
     # Add protocol name
     entity._source_protocol = "diaspora"
     # Save element object to entity for possible later use
@@ -99,7 +116,7 @@ def element_to_objects(element, sender_key_fetcher=None, user=None):
         return []
     # Do child elements
     for child in element:
-        entity._children.extend(element_to_objects(child))
+        entity._children.extend(element_to_objects(child, sender))
     # Add to entities list
     entities.append(entity)
     if cls == DiasporaRequest:
@@ -110,10 +127,12 @@ def element_to_objects(element, sender_key_fetcher=None, user=None):
     return entities
 
 
-def message_to_objects(message, sender_key_fetcher=None, user=None):
+def message_to_objects(message, sender, sender_key_fetcher=None, user=None):
     """Takes in a message extracted by a protocol and maps it to entities.
 
     :param message: XML payload
+    :type message: str
+    :param sender: Payload sender handle
     :type message: str
     :param sender_key_fetcher: Function to fetch sender public key. If not given, key will always be fetched
         over network. The function should take sender handle as the only parameter.
@@ -123,12 +142,12 @@ def message_to_objects(message, sender_key_fetcher=None, user=None):
     doc = etree.fromstring(message)
     # Future Diaspora protocol version contains the element at top level
     if doc.tag in TAGS:
-        return element_to_objects(doc, sender_key_fetcher, user)
+        return element_to_objects(doc, sender, sender_key_fetcher, user)
     # Legacy Diaspora protocol wraps the element in <XML><post></post></XML>, so find the right element
     for tag in TAGS:
         element = doc.find(".//%s" % tag)
         if element is not None:
-            return element_to_objects(element, sender_key_fetcher, user)
+            return element_to_objects(element, sender, sender_key_fetcher, user)
     return []
 
 
