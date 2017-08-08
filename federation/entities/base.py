@@ -294,6 +294,8 @@ class Profile(CreatedAtMixin, HandleMixin, OptionalRawContentMixin, PublicMixin,
     location = ""
     nsfw = False
     public_key = ""
+    image_urls = None
+    tag_list = None
 
     _allowed_children = (Image,)
 
