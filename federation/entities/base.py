@@ -5,7 +5,7 @@ from dirty_validators.basic import Email
 
 
 __all__ = (
-    "Post", "Image", "Comment", "Reaction", "Relationship", "Profile", "Retraction", "Follow",
+    "Post", "Image", "Comment", "Reaction", "Relationship", "Profile", "Retraction", "Follow", "Share,"
 )
 
 
@@ -125,6 +125,24 @@ class TargetGUIDMixin(BaseEntity):
             raise ValueError("Target GUID must be at least 16 characters")
 
 
+class ParticipationMixin(TargetGUIDMixin):
+    """Reflects a participation to something."""
+    participation = ""
+
+    _participation_valid_values = ["reaction", "subscription", "comment"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._required += ["participation"]
+
+    def validate_participation(self):
+        """Ensure participation is of a certain type."""
+        if self.participation not in self._participation_valid_values:
+            raise ValueError("participation should be one of: {valid}".format(
+                valid=", ".join(self._participation_valid_values)
+            ))
+
+
 class HandleMixin(BaseEntity):
     handle = ""
 
@@ -178,7 +196,43 @@ class OptionalRawContentMixin(RawContentMixin):
         self._required.remove("raw_content")
 
 
-class Image(GUIDMixin, HandleMixin, PublicMixin, OptionalRawContentMixin, CreatedAtMixin, BaseEntity):
+class EntityTypeMixin(BaseEntity):
+    """Provides a field for entity type.
+
+    Validates it is one of our entities.
+    """
+    entity_type = ""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._required += ["entity_type"]
+
+    def validate_entity_type(self):
+        """Ensure type is some entity we know of."""
+        if self.entity_type not in __all__:
+            raise ValueError("Entity type %s not recognized." % self.entity_type)
+
+
+class ProviderDisplayNameMixin(BaseEntity):
+    """Provides a field for provider display name."""
+    provider_display_name = ""
+
+
+class TargetHandleMixin(BaseEntity):
+    """Provides a target handle field."""
+    target_handle = ""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._required += ["target_handle"]
+
+    def validate_target_handle(self):
+        validator = Email()
+        if not validator.is_valid(self.target_handle):
+            raise ValueError("Target handle is not valid")
+
+
+class Image(GUIDMixin, HandleMixin, PublicMixin, OptionalRawContentMixin, CreatedAtMixin):
     """Reflects a single image, possibly linked to another object."""
     remote_path = ""
     remote_name = ""
@@ -192,30 +246,11 @@ class Image(GUIDMixin, HandleMixin, PublicMixin, OptionalRawContentMixin, Create
         self._required += ["remote_path", "remote_name"]
 
 
-class Post(RawContentMixin, GUIDMixin, HandleMixin, PublicMixin, CreatedAtMixin, BaseEntity):
+class Post(RawContentMixin, GUIDMixin, HandleMixin, PublicMixin, CreatedAtMixin, ProviderDisplayNameMixin):
     """Reflects a post, status message, etc, which will be composed from the message or to the message."""
-    provider_display_name = ""
     location = ""
 
     _allowed_children = (Image,)
-
-
-class ParticipationMixin(TargetGUIDMixin):
-    """Reflects a participation to something."""
-    participation = ""
-
-    _participation_valid_values = ["reaction", "subscription", "comment"]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._required += ["participation"]
-
-    def validate_participation(self):
-        """Ensure participation is of a certain type."""
-        if self.participation not in self._participation_valid_values:
-            raise ValueError("participation should be one of: {valid}".format(
-                valid=", ".join(self._participation_valid_values)
-            ))
 
 
 class Comment(RawContentMixin, GUIDMixin, ParticipationMixin, CreatedAtMixin, HandleMixin):
@@ -247,21 +282,15 @@ class Reaction(GUIDMixin, ParticipationMixin, CreatedAtMixin, HandleMixin):
             ))
 
 
-class Relationship(CreatedAtMixin, HandleMixin):
+class Relationship(CreatedAtMixin, HandleMixin, TargetHandleMixin):
     """Represents a relationship between two handles."""
-    target_handle = ""
     relationship = ""
 
     _relationship_valid_values = ["sharing", "following", "ignoring", "blocking"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._required += ["relationship", "target_handle"]
-
-    def validate_target_handle(self):
-        validator = Email()
-        if not validator.is_valid(self.target_handle):
-            raise ValueError("Target handle is not valid")
+        self._required += ["relationship"]
 
     def validate_relationship(self):
         """Ensure relationship is of a certain type."""
@@ -271,19 +300,13 @@ class Relationship(CreatedAtMixin, HandleMixin):
             ))
 
 
-class Follow(CreatedAtMixin, HandleMixin):
+class Follow(CreatedAtMixin, HandleMixin, TargetHandleMixin):
     """Represents a handle following or unfollowing another handle."""
-    target_handle = ""
     following = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._required += ["target_handle", "following"]
-
-    def validate_target_handle(self):
-        validator = Email()
-        if not validator.is_valid(self.target_handle):
-            raise ValueError("Target handle is not valid")
+        self._required += ["following"]
 
 
 class Profile(CreatedAtMixin, HandleMixin, OptionalRawContentMixin, PublicMixin, GUIDMixin):
@@ -313,15 +336,19 @@ class Profile(CreatedAtMixin, HandleMixin, OptionalRawContentMixin, PublicMixin,
                 raise ValueError("Email is not valid")
 
 
-class Retraction(CreatedAtMixin, HandleMixin, TargetGUIDMixin):
+class Retraction(CreatedAtMixin, HandleMixin, TargetGUIDMixin, EntityTypeMixin):
     """Represents a retraction of content by author."""
-    entity_type = ""
+    pass
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._required += ["entity_type"]
 
-    def validate_entity_type(self):
-        """Ensure type is some entity we know of."""
-        if self.entity_type not in __all__:
-            raise ValueError("Entity type %s not recognized." % self.entity_type)
+class Share(CreatedAtMixin, HandleMixin, TargetGUIDMixin, GUIDMixin, EntityTypeMixin, OptionalRawContentMixin,
+            PublicMixin, ProviderDisplayNameMixin, TargetHandleMixin):
+    """Represents a share of another entity.
+
+    ``entity_type`` defaults to "Post" but can be any base entity class name. It should be the class name of the
+    entity that was shared.
+
+    The optional ``raw_content`` can be used for a "quoted share" case where the sharer adds their own note to the
+    share.
+    """
+    entity_type = "Post"

@@ -6,17 +6,18 @@ import pytest
 
 from federation.entities.base import (
     Comment, Post, Reaction, Relationship, Profile, Retraction, Image,
-    Follow)
+    Follow, Share)
 from federation.entities.diaspora.entities import (
     DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest,
-    DiasporaProfile, DiasporaRetraction, DiasporaContact)
+    DiasporaProfile, DiasporaRetraction, DiasporaContact, DiasporaReshare)
 from federation.entities.diaspora.mappers import (
     message_to_objects, get_outbound_entity, check_sender_and_entity_handle_match)
 from federation.tests.fixtures.payloads import (
     DIASPORA_POST_SIMPLE, DIASPORA_POST_COMMENT, DIASPORA_POST_LIKE,
     DIASPORA_REQUEST, DIASPORA_PROFILE, DIASPORA_POST_INVALID, DIASPORA_RETRACTION,
     DIASPORA_POST_WITH_PHOTOS, DIASPORA_POST_LEGACY_TIMESTAMP, DIASPORA_POST_LEGACY, DIASPORA_CONTACT,
-    DIASPORA_LEGACY_REQUEST_RETRACTION, DIASPORA_POST_WITH_PHOTOS_2, DIASPORA_PROFILE_EMPTY_TAGS)
+    DIASPORA_LEGACY_REQUEST_RETRACTION, DIASPORA_POST_WITH_PHOTOS_2, DIASPORA_PROFILE_EMPTY_TAGS, DIASPORA_RESHARE,
+    DIASPORA_RESHARE_WITH_EXTRA_PROPERTIES, DIASPORA_RESHARE_LEGACY)
 
 
 def mock_fill(attributes):
@@ -189,6 +190,40 @@ class TestDiasporaEntityMappersReceive:
         assert entity.target_handle == "bob@example.org"
         assert entity.following is True
 
+    def test_message_to_objects_reshare(self):
+        entities = message_to_objects(DIASPORA_RESHARE, "alice@example.org")
+        assert len(entities) == 1
+        entity = entities[0]
+        assert isinstance(entity, DiasporaReshare)
+        assert entity.handle == "alice@example.org"
+        assert entity.guid == "a0b53e5029f6013487753131731751e9"
+        assert entity.provider_display_name == ""
+        assert entity.target_handle == "bob@example.com"
+        assert entity.target_guid == "a0b53bc029f6013487753131731751e9"
+        assert entity.public is True
+        assert entity.entity_type == "Post"
+
+    def test_message_to_objects_reshare_legacy(self):
+        entities = message_to_objects(DIASPORA_RESHARE_LEGACY, "alice@example.org")
+        assert len(entities) == 1
+        entity = entities[0]
+        assert isinstance(entity, DiasporaReshare)
+        assert entity.handle == "alice@example.org"
+        assert entity.guid == "a0b53e5029f6013487753131731751e9"
+        assert entity.provider_display_name == ""
+        assert entity.target_handle == "bob@example.com"
+        assert entity.target_guid == "a0b53bc029f6013487753131731751e9"
+        assert entity.public is True
+        assert entity.entity_type == "Post"
+
+    def test_message_to_objects_reshare_extra_properties(self):
+        entities = message_to_objects(DIASPORA_RESHARE_WITH_EXTRA_PROPERTIES, "alice@example.org")
+        assert len(entities) == 1
+        entity = entities[0]
+        assert isinstance(entity, DiasporaReshare)
+        assert entity.raw_content == "Important note here"
+        assert entity.entity_type == "Comment"
+
     @patch("federation.entities.diaspora.mappers.logger.error")
     def test_invalid_entity_logs_an_error(self, mock_logger):
         entities = message_to_objects(DIASPORA_POST_INVALID, "alice@alice.diaspora.example.org")
@@ -242,6 +277,8 @@ class TestGetOutboundEntity:
         assert get_outbound_entity(entity, private_key) == entity
         entity = DiasporaContact()
         assert get_outbound_entity(entity, private_key) == entity
+        entity = DiasporaReshare()
+        assert get_outbound_entity(entity, private_key) == entity
 
     def test_post_is_converted_to_diasporapost(self, private_key):
         entity = Post()
@@ -282,6 +319,10 @@ class TestGetOutboundEntity:
     def test_follow_is_converted_to_diasporacontact(self, private_key):
         entity = Follow()
         assert isinstance(get_outbound_entity(entity, private_key), DiasporaContact)
+
+    def test_share_is_converted_to_diasporareshare(self, private_key):
+        entity = Share()
+        assert isinstance(get_outbound_entity(entity, private_key), DiasporaReshare)
 
     def test_signs_relayable_if_no_signature(self, private_key):
         entity = DiasporaComment()

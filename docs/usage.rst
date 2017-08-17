@@ -17,6 +17,7 @@ Entity types are as follows below.
 .. autoclass:: federation.entities.base.Reaction
 .. autoclass:: federation.entities.base.Relationship
 .. autoclass:: federation.entities.base.Retraction
+.. autoclass:: federation.entities.base.Share
 
 Protocol entities
 .................
