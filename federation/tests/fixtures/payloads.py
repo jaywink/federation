@@ -231,3 +231,41 @@ DIASPORA_CONTACT = """
         <sharing>true</sharing>
     </contact>
 """
+
+DIASPORA_RESHARE = """
+    <reshare>
+        <author>alice@example.org</author>
+        <guid>a0b53e5029f6013487753131731751e9</guid>
+        <created_at>2016-07-12T00:36:42Z</created_at>
+        <provider_display_name/>
+        <root_author>bob@example.com</root_author>
+        <root_guid>a0b53bc029f6013487753131731751e9</root_guid>
+        <public>true</public>
+    </reshare>
+"""
+
+DIASPORA_RESHARE_LEGACY = """
+    <reshare>
+        <diaspora_handle>alice@example.org</diaspora_handle>
+        <guid>a0b53e5029f6013487753131731751e9</guid>
+        <created_at>2016-07-12T00:36:42Z</created_at>
+        <provider_display_name/>
+        <root_diaspora_id>bob@example.com</root_diaspora_id>
+        <root_guid>a0b53bc029f6013487753131731751e9</root_guid>
+        <public>true</public>
+    </reshare>
+"""
+
+DIASPORA_RESHARE_WITH_EXTRA_PROPERTIES = """
+    <reshare>
+        <author>alice@example.org</author>
+        <guid>a0b53e5029f6013487753131731751e9</guid>
+        <created_at>2016-07-12T00:36:42Z</created_at>
+        <provider_display_name/>
+        <root_author>bob@example.com</root_author>
+        <root_guid>a0b53bc029f6013487753131731751e9</root_guid>
+        <public>true</public>
+        <raw_content>Important note here</raw_content>
+        <entity_type>Comment</entity_type>
+    </reshare>
+"""

@@ -6,9 +6,10 @@ from lxml import etree
 from federation.entities.base import Profile
 from federation.entities.diaspora.entities import (
     DiasporaComment, DiasporaPost, DiasporaLike, DiasporaRequest, DiasporaProfile, DiasporaRetraction,
-    DiasporaContact)
+    DiasporaContact, DiasporaReshare)
 from federation.entities.diaspora.mappers import message_to_objects
 from federation.exceptions import SignatureVerificationError
+from federation.tests.factories.entities import ShareFactory
 from federation.tests.fixtures.keys import get_dummy_private_key
 from federation.tests.fixtures.payloads import DIASPORA_POST_COMMENT
 
@@ -92,6 +93,21 @@ class TestEntitiesConvertToXML:
         converted = b"<contact><author>alice@example.com</author><recipient>bob@example.org</recipient>" \
                     b"<following>true</following><sharing>true</sharing></contact>"
         assert etree.tostring(result) == converted
+
+    def test_reshare_to_xml(self):
+        base_entity = ShareFactory()
+        entity = DiasporaReshare.from_base(base_entity)
+        result = entity.to_xml()
+        assert result.tag == "reshare"
+        result.find("created_at").text = ""  # timestamp makes testing painful
+        converted = "<reshare><author>%s</author><guid>%s</guid><created_at></created_at><root_author>%s" \
+                    "</root_author><root_guid>%s</root_guid><provider_display_name>%s</provider_display_name>" \
+                    "<public>%s</public><raw_content>%s</raw_content><entity_type>%s</entity_type></reshare>" % (
+                        entity.handle, entity.guid, entity.target_handle, entity.target_guid,
+                        entity.provider_display_name, "true" if entity.public else "false", entity.raw_content,
+                        entity.entity_type,
+                    )
+        assert etree.tostring(result).decode("utf-8") == converted
 
 
 class TestDiasporaProfileFillExtraAttributes:

@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
 from random import shuffle
 import factory
 from factory import fuzzy
 
-from federation.entities.base import Post, Profile
+from federation.entities.base import Post, Profile, Share
 from federation.entities.diaspora.entities import DiasporaPost
 
 
@@ -47,3 +46,15 @@ class ProfileFactory(GUIDMixinFactory, HandleMixinFactory, RawContentMixinFactor
 
     name = fuzzy.FuzzyText(length=30)
     public_key = fuzzy.FuzzyText(length=300)
+
+
+class ShareFactory(GUIDMixinFactory, HandleMixinFactory):
+    class Meta:
+        model = Share
+
+    target_guid = factory.Faker("uuid4")
+    entity_type = "Post"
+    raw_content = ""
+    public = factory.Faker("pybool")
+    provider_display_name = ""
+    target_handle = factory.Faker("safe_email")

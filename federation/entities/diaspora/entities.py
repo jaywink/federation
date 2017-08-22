@@ -1,6 +1,7 @@
 from lxml import etree
 
-from federation.entities.base import Comment, Post, Reaction, Relationship, Profile, Retraction, BaseEntity, Follow
+from federation.entities.base import (
+    Comment, Post, Reaction, Relationship, Profile, Retraction, BaseEntity, Follow, Share)
 from federation.entities.diaspora.utils import format_dt, struct_to_xml, get_base_attributes, add_element_to_doc
 from federation.exceptions import SignatureVerificationError
 from federation.protocols.diaspora.signatures import verify_relayable_signature, create_relayable_signature
@@ -211,3 +212,22 @@ class DiasporaRetraction(DiasporaEntityMixin, Retraction):
             index = values.index(value)
             return list(DiasporaRetraction.mapped.keys())[index]
         return value
+
+
+class DiasporaReshare(DiasporaEntityMixin, Share):
+    """Diaspora Reshare."""
+    def to_xml(self):
+        element = etree.Element("reshare")
+        struct_to_xml(element, [
+            {"author": self.handle},
+            {"guid": self.guid},
+            {"created_at": format_dt(self.created_at)},
+            {"root_author": self.target_handle},
+            {"root_guid": self.target_guid},
+            {"provider_display_name": self.provider_display_name},
+            {"public": "true" if self.public else "false"},
+            # Some of our own not in Diaspora protocol
+            {"raw_content": self.raw_content},
+            {"entity_type": self.entity_type},
+        ])
+        return element

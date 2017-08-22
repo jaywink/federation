@@ -4,11 +4,11 @@ import pytest
 
 from federation.entities.base import (
     BaseEntity, Relationship, Profile, RawContentMixin, GUIDMixin, HandleMixin, PublicMixin, Image, Retraction,
-    Follow)
-from federation.tests.factories.entities import TaggedPostFactory, PostFactory
+    Follow, TargetHandleMixin)
+from federation.tests.factories.entities import TaggedPostFactory, PostFactory, ShareFactory
 
 
-class TestPostEntityTags():
+class TestPostEntityTags:
     def test_post_entity_returns_list_of_tags(self):
         post = TaggedPostFactory()
         assert post.tags == {"tagone", "tagtwo", "tagthree", "upper", "snakecase"}
@@ -18,7 +18,7 @@ class TestPostEntityTags():
         assert post.tags == set()
 
 
-class TestBaseEntityCallsValidateMethods():
+class TestBaseEntityCallsValidateMethods:
     def test_entity_calls_attribute_validate_method(self):
         post = PostFactory()
         post.validate_location = Mock()
@@ -48,28 +48,41 @@ class TestBaseEntityCallsValidateMethods():
             post._validate_children()
 
 
-class TestGUIDMixinValidate():
+class TestGUIDMixinValidate:
     def test_validate_guid_raises_on_low_length(self):
         guid = GUIDMixin(guid="x"*15)
         with pytest.raises(ValueError):
             guid.validate()
+        guid = GUIDMixin(guid="x" * 16)
+        guid.validate()
 
 
-class TestHandleMixinValidate():
+class TestHandleMixinValidate:
     def test_validate_handle_raises_on_invalid_format(self):
         handle = HandleMixin(handle="foobar")
         with pytest.raises(ValueError):
             handle.validate()
+        handle = HandleMixin(handle="foobar@example.com")
+        handle.validate()
 
 
-class TestPublicMixinValidate():
+class TestTargetHandleMixinValidate:
+    def test_validate_target_handle_raises_on_invalid_format(self):
+        handle = TargetHandleMixin(target_handle="foobar")
+        with pytest.raises(ValueError):
+            handle.validate()
+        handle = TargetHandleMixin(target_handle="foobar@example.com")
+        handle.validate()
+
+
+class TestPublicMixinValidate:
     def test_validate_public_raises_on_low_length(self):
         public = PublicMixin(public="foobar")
         with pytest.raises(ValueError):
             public.validate()
 
 
-class TestEntityRequiredAttributes():
+class TestEntityRequiredAttributes:
     def test_entity_checks_for_required_attributes(self):
         entity = BaseEntity()
         entity._required = ["foobar"]
@@ -85,7 +98,7 @@ class TestEntityRequiredAttributes():
             entity.validate()
 
 
-class TestRelationshipEntity():
+class TestRelationshipEntity:
     def test_instance_creation(self):
         entity = Relationship(handle="bob@example.com", target_handle="alice@example.com", relationship="following")
         assert entity
@@ -95,13 +108,8 @@ class TestRelationshipEntity():
             entity = Relationship(handle="bob@example.com", target_handle="alice@example.com", relationship="hating")
             entity.validate()
 
-    def test_instance_creation_validates_target_handle_value(self):
-        with pytest.raises(ValueError):
-            entity = Relationship(handle="bob@example.com", target_handle="fefle.com", relationship="following")
-            entity.validate()
 
-
-class TestProfileEntity():
+class TestProfileEntity:
     def test_instance_creation(self):
         entity = Profile(handle="bob@example.com", raw_content="foobar")
         assert entity
@@ -117,7 +125,7 @@ class TestProfileEntity():
             entity.validate()
 
 
-class TestImageEntity():
+class TestImageEntity:
     def test_instance_creation(self):
         entity = Image(
             guid="x"*16, handle="foo@example.com", public=False, remote_path="foobar", remote_name="barfoo"
@@ -137,7 +145,7 @@ class TestImageEntity():
             entity.validate()
 
 
-class TestRetractionEntity():
+class TestRetractionEntity:
     def test_instance_creation(self):
         entity = Retraction(
             handle="foo@example.com", target_guid="x"*16, entity_type="Post"
@@ -162,16 +170,15 @@ class TestRetractionEntity():
             entity.validate()
 
 
-class TestFollowEntity():
+class TestFollowEntity:
     def test_instance_creation(self):
         entity = Follow(
             handle="foo@example.com", target_handle="bar@example.org", following=True
         )
         entity.validate()
 
-    def test_required_validates(self):
-        entity = Follow(
-            handle="foo@example.com", following=True
-        )
-        with pytest.raises(ValueError):
-            entity.validate()
+
+class TestShareEntity:
+    def test_instance_creation(self):
+        entity = ShareFactory()
+        entity.validate()

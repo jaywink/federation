@@ -2,6 +2,11 @@
 
 ## [unreleased]
 
+### Added
+* Added base entity `Share` which maps to a `DiasporaReshare` for the Diaspora protocol. ([related issue](https://github.com/jaywink/federation/issues/94))
+
+  The `Share` entity supports all the properties that a Diaspora reshare does. Additionally two other properties are supported: `raw_content` and `entity_type`. The former can be used for a "quoted share" case where the sharer adds their own note to the share. The latter can be used to reference the type of object that was shared, to help the receiver, if it is not sharing a `Post` entity. The value must be a base entity class name.
+
 ### Fixed
 * Converting base entity `Profile` to `DiasporaProfile` for outbound sending missed two attributes, `image_urls` and `tag_list`. Those are now included so that the values transfer into the built payload.
 

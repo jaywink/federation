@@ -3,10 +3,10 @@ from datetime import datetime
 
 from lxml import etree
 
-from federation.entities.base import Image, Relationship, Post, Reaction, Comment, Profile, Retraction, Follow
+from federation.entities.base import Image, Relationship, Post, Reaction, Comment, Profile, Retraction, Follow, Share
 from federation.entities.diaspora.entities import (
     DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest, DiasporaProfile, DiasporaRetraction,
-    DiasporaRelayableMixin, DiasporaContact)
+    DiasporaRelayableMixin, DiasporaContact, DiasporaReshare)
 from federation.protocols.diaspora.signatures import get_element_child_info
 from federation.utils.diaspora import retrieve_and_parse_profile
 
@@ -21,11 +21,12 @@ MAPPINGS = {
     "profile": DiasporaProfile,
     "retraction": DiasporaRetraction,
     "contact": DiasporaContact,
+    "reshare": DiasporaReshare,
 }
 
 TAGS = [
     # Order is important. Any top level tags should be before possibly child tags
-    "status_message", "comment", "like", "request", "profile", "retraction", "photo", "contact",
+    "reshare", "status_message", "comment", "like", "request", "profile", "retraction", "photo", "contact",
 ]
 
 BOOLEAN_KEYS = (
@@ -43,6 +44,7 @@ INTEGER_KEYS = (
     "height",
     "width",
 )
+
 
 def xml_children_as_dict(node):
     """Turn the children of node <xml> into a dict, keyed by tag name.
@@ -167,9 +169,9 @@ def transform_attributes(attrs, cls):
             transformed["raw_content"] = value
         elif key in ["diaspora_handle", "sender_handle", "author"]:
             transformed["handle"] = value
-        elif key in ["recipient_handle", "recipient"]:
+        elif key in ["recipient_handle", "recipient", "root_author", "root_diaspora_id"]:
             transformed["target_handle"] = value
-        elif key == "parent_guid":
+        elif key in ["parent_guid", "post_guid", "root_guid"]:
             transformed["target_guid"] = value
         elif key == "first_name":
             transformed["name"] = value
@@ -203,8 +205,6 @@ def transform_attributes(attrs, cls):
             transformed["linked_type"] = "Post"
         elif key == "author_signature":
             transformed["signature"] = value
-        elif key == "post_guid":
-            transformed["target_guid"] = value
         elif key in BOOLEAN_KEYS:
             transformed[key] = True if value == "true" else False
         elif key in DATETIME_KEYS:
@@ -239,7 +239,7 @@ def get_outbound_entity(entity, private_key):
     outbound = None
     cls = entity.__class__
     if cls in [DiasporaPost, DiasporaRequest, DiasporaComment, DiasporaLike, DiasporaProfile, DiasporaRetraction,
-               DiasporaContact]:
+               DiasporaContact, DiasporaReshare]:
         # Already fine
         outbound = entity
     elif cls == Post:
@@ -259,6 +259,8 @@ def get_outbound_entity(entity, private_key):
         outbound = DiasporaProfile.from_base(entity)
     elif cls == Retraction:
         outbound = DiasporaRetraction.from_base(entity)
+    elif cls == Share:
+        outbound = DiasporaReshare.from_base(entity)
     if not outbound:
         raise ValueError("Don't know how to convert this base entity to Diaspora protocol entities.")
     if isinstance(outbound, DiasporaRelayableMixin) and not outbound.signature:
