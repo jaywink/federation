@@ -66,6 +66,7 @@ Fetchers
 
 High level utility functions to fetch remote objects. These should be favoured instead of protocol specific utility functions.
 
+.. autofunction:: federation.fetchers.retrieve_remote_content
 .. autofunction:: federation.fetchers.retrieve_remote_profile
 
 
@@ -105,7 +106,11 @@ Various utils are provided for internal and external usage.
 Diaspora
 ........
 
+.. autofunction:: federation.utils.diaspora.fetch_public_key
+.. autofunction:: federation.utils.diaspora.get_fetch_content_endpoint
+.. autofunction:: federation.utils.diaspora.get_public_endpoint
 .. autofunction:: federation.utils.diaspora.parse_profile_from_hcard
+.. autofunction:: federation.utils.diaspora.retrieve_and_parse_content
 .. autofunction:: federation.utils.diaspora.retrieve_and_parse_profile
 .. autofunction:: federation.utils.diaspora.retrieve_diaspora_hcard
 .. autofunction:: federation.utils.diaspora.retrieve_diaspora_webfinger

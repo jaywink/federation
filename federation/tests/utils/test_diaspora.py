@@ -1,17 +1,33 @@
-# -*- coding: utf-8 -*-
 import xml
 from unittest.mock import patch, Mock
 from urllib.parse import quote
 
+import pytest
 from lxml import html
 
-from federation.entities.base import Profile
-from federation.hostmeta.generators import DiasporaWebFinger, DiasporaHostMeta, DiasporaHCard, generate_hcard
-from federation.utils.diaspora import retrieve_diaspora_hcard, retrieve_diaspora_webfinger, retrieve_diaspora_host_meta, \
-    _get_element_text_or_none, _get_element_attr_or_none, parse_profile_from_hcard, retrieve_and_parse_profile
+from federation.entities.base import Profile, Post
+from federation.hostmeta.generators import DiasporaWebFinger, DiasporaHostMeta, generate_hcard
+from federation.tests.fixtures.payloads import DIASPORA_PUBLIC_PAYLOAD
+from federation.utils.diaspora import (
+    retrieve_diaspora_hcard, retrieve_diaspora_webfinger, retrieve_diaspora_host_meta, _get_element_text_or_none,
+    _get_element_attr_or_none, parse_profile_from_hcard, retrieve_and_parse_profile, retrieve_and_parse_content,
+    get_fetch_content_endpoint, fetch_public_key)
 
 
-class TestRetrieveDiasporaHCard(object):
+@patch("federation.utils.diaspora.retrieve_and_parse_profile", autospec=True)
+def test_fetch_public_key(mock_retrieve):
+    mock_retrieve.return_value = Mock(public_key="public key")
+    result = fetch_public_key("spam@eggs")
+    mock_retrieve.assert_called_once_with("spam@eggs")
+    assert result == "public key"
+
+
+def test_get_fetch_content_endpoint():
+    assert get_fetch_content_endpoint("example.com", "status_message", "1234") == \
+           "https://example.com/fetch/status_message/1234"
+
+
+class TestRetrieveDiasporaHCard:
     @patch("federation.utils.diaspora.retrieve_diaspora_webfinger", return_value=None)
     def test_retrieve_webfinger_is_called(self, mock_retrieve):
         retrieve_diaspora_hcard("bob@localhost")
@@ -40,7 +56,7 @@ class TestRetrieveDiasporaHCard(object):
         assert document == None
 
 
-class TestRetrieveDiasporaWebfinger(object):
+class TestRetrieveDiasporaWebfinger:
     @patch("federation.utils.diaspora.retrieve_diaspora_host_meta", return_value=None)
     def test_retrieve_host_meta_is_called(self, mock_retrieve):
         retrieve_diaspora_webfinger("bob@localhost")
@@ -82,7 +98,7 @@ class TestRetrieveDiasporaWebfinger(object):
         assert document == None
 
 
-class TestRetrieveDiasporaHostMeta(object):
+class TestRetrieveDiasporaHostMeta:
     @patch("federation.utils.diaspora.XRD.parse_xrd")
     @patch("federation.utils.diaspora.fetch_document")
     def test_fetch_document_is_called(self, mock_fetch, mock_xrd):
@@ -100,7 +116,48 @@ class TestRetrieveDiasporaHostMeta(object):
         assert document == None
 
 
-class TestGetElementTextOrNone(object):
+class TestRetrieveAndParseContent:
+    @patch("federation.utils.diaspora.fetch_document", return_value=(None, 404, None))
+    @patch("federation.utils.diaspora.get_fetch_content_endpoint", return_value="https://example.com/fetch/spam/eggs")
+    def test_calls_fetch_document(self, mock_get, mock_fetch):
+        retrieve_and_parse_content(Post, "1234@example.com")
+        mock_fetch.assert_called_once_with("https://example.com/fetch/spam/eggs")
+
+    @patch("federation.utils.diaspora.fetch_document", return_value=(None, 404, None))
+    @patch("federation.utils.diaspora.get_fetch_content_endpoint")
+    def test_calls_get_fetch_content_endpoint(self, mock_get, mock_fetch):
+        retrieve_and_parse_content(Post, "1234@example.com")
+        mock_get.assert_called_once_with("example.com", "status_message", "1234")
+        mock_get.reset_mock()
+        retrieve_and_parse_content(Post, "fooobar@1234@example.com")
+        mock_get.assert_called_once_with("example.com", "status_message", "fooobar@1234")
+
+    @patch("federation.utils.diaspora.fetch_document", return_value=(DIASPORA_PUBLIC_PAYLOAD, 200, None))
+    @patch("federation.utils.diaspora.get_fetch_content_endpoint", return_value="https://example.com/fetch/spam/eggs")
+    @patch("federation.utils.diaspora.handle_receive", return_value=("sender", "protocol", ["entity"]))
+    def test_calls_handle_receive(self, mock_handle, mock_get, mock_fetch):
+        entity = retrieve_and_parse_content(Post, "1234@example.com", sender_key_fetcher=sum)
+        mock_handle.assert_called_once_with(DIASPORA_PUBLIC_PAYLOAD, sender_key_fetcher=sum)
+        assert entity == "entity"
+
+    @patch("federation.utils.diaspora.fetch_document", return_value=(None, None, Exception()))
+    @patch("federation.utils.diaspora.get_fetch_content_endpoint", return_value="https://example.com/fetch/spam/eggs")
+    def test_raises_on_fetch_error(self, mock_get, mock_fetch):
+        with pytest.raises(Exception):
+            retrieve_and_parse_content(Post, "1234@example.com")
+
+    def test_raises_on_unknown_entity(self):
+        with pytest.raises(ValueError):
+            retrieve_and_parse_content(dict, "1234@example.com")
+
+    @patch("federation.utils.diaspora.fetch_document", return_value=(None, 404, None))
+    @patch("federation.utils.diaspora.get_fetch_content_endpoint", return_value="https://example.com/fetch/spam/eggs")
+    def test_returns_on_404(self, mock_get, mock_fetch):
+        result = retrieve_and_parse_content(Post, "1234@example.com")
+        assert not result
+
+
+class TestGetElementTextOrNone:
     doc = html.fromstring("<foo>bar</foo>")
 
     def test_text_returned_on_element(self):
@@ -110,7 +167,7 @@ class TestGetElementTextOrNone(object):
         assert _get_element_text_or_none(self.doc, "bar") == None
 
 
-class TestGetElementAttrOrNone(object):
+class TestGetElementAttrOrNone:
     doc = html.fromstring("<foo src='baz'>bar</foo>")
 
     def test_attr_returned_on_attr(self):
@@ -123,7 +180,7 @@ class TestGetElementAttrOrNone(object):
         assert _get_element_attr_or_none(self.doc, "bar", "href") == None
 
 
-class TestParseProfileFromHCard(object):
+class TestParseProfileFromHCard:
     def test_profile_is_parsed(self):
         hcard = generate_hcard(
             "diaspora",
@@ -151,7 +208,7 @@ class TestParseProfileFromHCard(object):
         profile.validate()
 
 
-class TestRetrieveAndParseProfile(object):
+class TestRetrieveAndParseProfile:
     @patch("federation.utils.diaspora.retrieve_diaspora_hcard", return_value=None)
     def test_retrieve_diaspora_hcard_is_called(self, mock_retrieve):
         retrieve_and_parse_profile("foo@bar")

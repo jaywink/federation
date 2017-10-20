@@ -1,9 +1,13 @@
 from base64 import urlsafe_b64encode, b64encode, urlsafe_b64decode
 
 from Crypto.Hash import SHA256
-from Crypto.Signature import PKCS1_v1_5 as PKCSSign
+from Crypto.PublicKey import RSA
+from Crypto.Signature import PKCS1_v1_5
 from lxml import etree
 
+from federation.exceptions import SignatureVerificationError
+from federation.utils.diaspora import fetch_public_key
+from federation.utils.text import decode_if_bytes
 
 NAMESPACE = "http://salmon-protocol.org/ns/magic-env"
 
@@ -11,25 +15,70 @@ NAMESPACE = "http://salmon-protocol.org/ns/magic-env"
 class MagicEnvelope:
     """Diaspora protocol magic envelope.
 
-    See: http://diaspora.github.io/diaspora_federation/federation/magicsig.html
+    Can be used to construct and deconstruct MagicEnvelope documents.
+
+    When constructing, the following parameters should be given:
+    * message
+    * private_key
+    * author_handle
+
+    When deconstructing, the following should be given:
+    * payload
+    * public_key (optional, will be fetched if not given, using either 'sender_key_fetcher' or remote server)
+
+    Upstream specification: http://diaspora.github.io/diaspora_federation/federation/magicsig.html
     """
 
     nsmap = {
         "me": NAMESPACE,
     }
 
-    def __init__(self, message, private_key, author_handle, wrap_payload=False):
+    def __init__(self, message=None, private_key=None, author_handle=None, wrap_payload=False, payload=None,
+                 public_key=None, sender_key_fetcher=None, verify=False, doc=None):
         """
-        Args:
-            wrap_payload (bool) - Whether to wrap the message in <XML><post></post></XML>.
-                This is part of the legacy Diaspora protocol which will be removed in the future. (default False)
+        All parameters are optional. Some are required for signing, some for opening.
+
+        :param message: Message string. Required to create a MagicEnvelope document.
+        :param private_key: Private key RSA object.
+        :param author_handle: Author signing the Magic Envelope, owns the private key.
+        :param wrap_payload: - Boolean, whether to wrap the message in <XML><post></post></XML>.
+            This is part of the legacy Diaspora protocol which will be removed in the future. (default False)
+        :param payload: Magic Envelope payload as str or bytes.
+        :param public_key: Author public key in str format.
+        :param sender_key_fetcher: Function to use to fetch sender public key, if public key not given. Will fall back
+            to network fetch of the profile and the key. Function must take handle as only parameter and return
+            a public key string.
+        :param verify: Verify after creating object, defaults to False.
+        :param doc: MagicEnvelope document.
         """
-        self.message = message
+        self._message = message
         self.private_key = private_key
         self.author_handle = author_handle
         self.wrap_payload = wrap_payload
-        self.doc = None
-        self.payload = None
+        self.payload = payload
+        self.public_key = public_key
+        self.sender_key_fetcher = sender_key_fetcher
+        if payload:
+            self.extract_payload()
+        elif doc is not None:
+            self.doc = doc
+        else:
+            self.doc = None
+        if verify:
+            self.verify()
+
+    def extract_payload(self):
+        payload = decode_if_bytes(self.payload)
+        payload = payload.lstrip().encode("utf-8")
+        self.doc = etree.fromstring(payload)
+        self.author_handle = self.get_sender(self.doc)
+        self.message = self.message_from_doc()
+
+    def fetch_public_key(self):
+        if self.sender_key_fetcher:
+            self.public_key = self.sender_key_fetcher(self.author_handle)
+            return
+        self.public_key = fetch_public_key(self.author_handle)
 
     @staticmethod
     def get_sender(doc):
@@ -40,6 +89,19 @@ class MagicEnvelope:
         """
         key_id = doc.find(".//{%s}sig" % NAMESPACE).get("key_id")
         return urlsafe_b64decode(key_id).decode("utf-8")
+
+    @property
+    def message(self):
+        return self._message
+
+    @message.setter
+    def message(self, value):
+        self._message = value
+
+    def message_from_doc(self):
+        message = self.doc.find(
+            ".//{http://salmon-protocol.org/ns/magic-env}data").text
+        return urlsafe_b64decode(message.encode("ascii"))
 
     def create_payload(self):
         """Create the payload doc.
@@ -65,7 +127,7 @@ class MagicEnvelope:
             b64encode(b"base64url").decode("ascii") + "." + \
             b64encode(b"RSA-SHA256").decode("ascii")
         sig_hash = SHA256.new(sig_contents.encode("ascii"))
-        cipher = PKCSSign.new(self.private_key)
+        cipher = PKCS1_v1_5.new(self.private_key)
         sig = urlsafe_b64encode(cipher.sign(sig_hash))
         key_id = urlsafe_b64encode(bytes(self.author_handle, encoding="utf-8"))
         return sig, key_id
@@ -84,3 +146,20 @@ class MagicEnvelope:
         if self.doc is None:
             self.build()
         return etree.tostring(self.doc, encoding="unicode")
+
+    def verify(self):
+        """Verify Magic Envelope document against public key."""
+        if not self.public_key:
+            self.fetch_public_key()
+        data = self.doc.find(".//{http://salmon-protocol.org/ns/magic-env}data").text
+        sig = self.doc.find(".//{http://salmon-protocol.org/ns/magic-env}sig").text
+        sig_contents = '.'.join([
+            data,
+            b64encode(b"application/xml").decode("ascii"),
+            b64encode(b"base64url").decode("ascii"),
+            b64encode(b"RSA-SHA256").decode("ascii")
+        ])
+        sig_hash = SHA256.new(sig_contents.encode("ascii"))
+        cipher = PKCS1_v1_5.new(RSA.importKey(self.public_key))
+        if not cipher.verify(sig_hash, urlsafe_b64decode(sig)):
+            raise SignatureVerificationError("Signature cannot be verified using the given public key")

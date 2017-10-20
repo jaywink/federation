@@ -12,6 +12,18 @@ from federation.utils.diaspora import retrieve_and_parse_profile
 
 logger = logging.getLogger("federation")
 
+BASE_MAPPINGS = {
+    Comment: "comment",
+    Follow: "contact",
+    Image: "photo",
+    Post: "status_message",
+    Profile: "profile",
+    Reaction: "like",
+    Relationship: "request",
+    Retraction: "retraction",
+    Share: "reshare",
+}
+
 MAPPINGS = {
     "status_message": DiasporaPost,
     "photo": Image,

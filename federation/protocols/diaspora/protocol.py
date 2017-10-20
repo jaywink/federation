@@ -5,15 +5,15 @@ from urllib.parse import unquote_plus
 
 from Crypto.Cipher import AES, PKCS1_v1_5
 from Crypto.Hash import SHA256
-from Crypto.PublicKey import RSA
 from Crypto.Random import get_random_bytes
 from Crypto.Signature import PKCS1_v1_5 as PKCSSign
 from lxml import etree
 
-from federation.exceptions import EncryptedMessageError, NoSenderKeyFoundError, SignatureVerificationError
+from federation.exceptions import EncryptedMessageError, NoSenderKeyFoundError
 from federation.protocols.base import BaseProtocol
 from federation.protocols.diaspora.encrypted import EncryptedPayload
 from federation.protocols.diaspora.magic_envelope import MagicEnvelope
+from federation.utils.diaspora import fetch_public_key
 from federation.utils.text import decode_if_bytes, encode_if_text
 
 logger = logging.getLogger("federation")
@@ -174,23 +174,13 @@ class Protocol(BaseProtocol):
         Verify the signed XML elements to have confidence that the claimed
         author did actually generate this message.
         """
-        sender_key = self.get_contact_key(self.sender_handle)
+        if self.get_contact_key:
+            sender_key = self.get_contact_key(self.sender_handle)
+        else:
+            sender_key = fetch_public_key(self.sender_handle)
         if not sender_key:
             raise NoSenderKeyFoundError("Could not find a sender contact to retrieve key")
-        body = self.doc.find(
-            ".//{http://salmon-protocol.org/ns/magic-env}data").text
-        sig = self.doc.find(
-            ".//{http://salmon-protocol.org/ns/magic-env}sig").text
-        sig_contents = '.'.join([
-            body,
-            b64encode(b"application/xml").decode("ascii"),
-            b64encode(b"base64url").decode("ascii"),
-            b64encode(b"RSA-SHA256").decode("ascii")
-        ])
-        sig_hash = SHA256.new(sig_contents.encode("ascii"))
-        cipher = PKCSSign.new(RSA.importKey(sender_key))
-        if not cipher.verify(sig_hash, urlsafe_b64decode(sig)):
-            raise SignatureVerificationError("Signature cannot be verified using the given contact key")
+        MagicEnvelope(doc=self.doc, public_key=sender_key, verify=True)
 
     def parse_header(self, b64data, key):
         """

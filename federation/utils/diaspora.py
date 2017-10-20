@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import logging
 import xml
 from urllib.parse import quote
@@ -7,9 +6,20 @@ from lxml import html
 from xrd import XRD
 
 from federation.entities.base import Profile
+from federation.inbound import handle_receive
 from federation.utils.network import fetch_document
 
 logger = logging.getLogger("federation")
+
+
+def fetch_public_key(handle):
+    """Fetch public key over the network.
+
+    :param handle: Remote handle to retrieve public key for.
+    :return: Public key in str format from parsed profile.
+    """
+    profile = retrieve_and_parse_profile(handle)
+    return profile.public_key
 
 
 def retrieve_diaspora_hcard(handle):
@@ -122,6 +132,43 @@ def parse_profile_from_hcard(hcard, handle):
     return profile
 
 
+def retrieve_and_parse_content(entity_class, id, sender_key_fetcher=None):
+    """Retrieve remote content and return an Entity class instance.
+
+    This is basically the inverse of receiving an entity. Instead, we fetch it, then call 'handle_receive'.
+
+    :param entity_class: Federation entity class (from ``federation.entity.base``).
+    :param id: GUID and domain of the remote entity, in format``guid@domain.tld``.
+    :param sender_key_fetcher: Function to use to fetch sender public key. If not given, network will be used
+        to fetch the profile and the key. Function must take handle as only parameter and return a public key.
+    :returns: Entity object instance or ``None``
+    :raises: ``ValueError`` if ``entity_class`` is not valid.
+    """
+    from federation.entities.diaspora.mappers import BASE_MAPPINGS
+    entity_type = BASE_MAPPINGS.get(entity_class)
+    if not entity_type:
+        raise ValueError("Unknown entity_class %s" % entity_class)
+    guid, domain = id.rsplit("@", 1)
+    url = get_fetch_content_endpoint(domain, entity_type, guid)
+    document, status_code, error = fetch_document(url)
+    if status_code == 200:
+        _sender, _protocol, entities = handle_receive(document, sender_key_fetcher=sender_key_fetcher)
+        if len(entities) > 1:
+            logger.warning("retrieve_and_parse_content - more than one entity parsed from remote even though we"
+                           "expected only one! ID %s", id)
+        if entities:
+            return entities[0]
+        return
+    elif status_code == 404:
+        logger.warning("retrieve_and_parse_content - remote content %s not found", id)
+        return
+    if error:
+        raise error
+    raise Exception("retrieve_and_parse_content - unknown problem when fetching document: %s, %s, %s" % (
+        document, status_code, error,
+    ))
+
+
 def retrieve_and_parse_profile(handle):
     """
     Retrieve the remote user and return a Profile object.
@@ -142,5 +189,14 @@ def retrieve_and_parse_profile(handle):
     return profile
 
 
+def get_fetch_content_endpoint(domain, entity_type, guid):
+    """Get remote fetch content endpoint.
+
+    See: https://diaspora.github.io/diaspora_federation/federation/fetching.html
+    """
+    return "https://%s/fetch/%s/%s" % (domain, entity_type, guid)
+
+
 def get_public_endpoint(domain):
+    """Get remote endpoint for delivering public payloads."""
     return "https://%s/receive/public" % domain

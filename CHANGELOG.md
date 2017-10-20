@@ -6,6 +6,31 @@
 * Added base entity `Share` which maps to a `DiasporaReshare` for the Diaspora protocol. ([related issue](https://github.com/jaywink/federation/issues/94))
 
   The `Share` entity supports all the properties that a Diaspora reshare does. Additionally two other properties are supported: `raw_content` and `entity_type`. The former can be used for a "quoted share" case where the sharer adds their own note to the share. The latter can be used to reference the type of object that was shared, to help the receiver, if it is not sharing a `Post` entity. The value must be a base entity class name.
+  
+* New high level fetcher function `federation.fetchers.retrieve_remote_content`. ([related issue](https://github.com/jaywink/federation/issues/103))
+
+  This function takes the following parameters:
+  
+    * `entity_class` - Base entity class to fetch (for example `Post`).
+    * `id` - Object ID. Currently since only Diaspora is supported and the ID is expected to be in format `<guid>@<domain.tld>`.
+    * `sender_key_fetcher` - Optional function that takes a profile `handle` and returns a public key in `str` format. If this is not given, the public key will be fetched from the remote profile over the network.
+    
+  The given ID will be fetched using the correct entity class specific remote endpoint, validated to be from the correct author against their public key and then an instance of the entity class will be constructed and returned.
+
+* New Diaspora protocol helper `federation.utils.diaspora.retrieve_and_parse_content`. See notes regarding the high level fetcher above.
+
+* New Diaspora protocol helper `federation.utils.fetch_public_key`. Given a `handle` as a parameter, will fetch the remote profile and return the `public_key` from it.
+
+### Changed
+* Refactoring for Diaspora `MagicEnvelope` class.
+
+  The class init now also allows passing in parameters to construct and verify MagicEnvelope instances. The order of init parameters has not been changed, but they are now all optional. When creating a class instance, one should always pass in the necessary parameters depnding on whether the class instance will be used for building a payload or verifying an incoming payload. See class docstring for details.
+  
+* Diaspora procotol receive flow now uses the `MagicEnvelope` class to verify payloads.
+
+* Diaspora protocol receive flow now fetches the sender public key over the network if a `sender_key_fetcher` function is not passed in. Previously an error would be raised.
+
+  Note that fetching over the network for each payload is wasteful. Implementers should instead cache public keys when possible and pass in a function to retrieve them, as before.
 
 ### Fixed
 * Converting base entity `Profile` to `DiasporaProfile` for outbound sending missed two attributes, `image_urls` and `tag_list`. Those are now included so that the values transfer into the built payload.
