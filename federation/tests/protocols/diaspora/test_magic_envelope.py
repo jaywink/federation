@@ -1,21 +1,16 @@
-from lxml import etree
+from unittest.mock import patch, Mock
 
-from Crypto import Random
-from Crypto.PublicKey import RSA
+import pytest
+from lxml import etree
 from lxml.etree import _Element
 
+from federation.exceptions import SignatureVerificationError
 from federation.protocols.diaspora.magic_envelope import MagicEnvelope
-from federation.tests.fixtures.keys import get_dummy_private_key
+from federation.tests.fixtures.keys import get_dummy_private_key, PUBKEY
 from federation.tests.fixtures.payloads import DIASPORA_PUBLIC_PAYLOAD
 
 
-class TestMagicEnvelope():
-    @staticmethod
-    def generate_rsa_private_key():
-        """Generate a new RSA private key."""
-        rand = Random.new().read
-        return RSA.generate(2048, rand)
-
+class TestMagicEnvelope:
     def test_build(self):
         env = MagicEnvelope(
             message="<status_message><foo>bar</foo></status_message>",
@@ -40,10 +35,73 @@ class TestMagicEnvelope():
         env = MagicEnvelope(
             message="<status_message><foo>bar</foo></status_message>",
             private_key="key",
-            author_handle="foobar@example.com"
+            author_handle="foobar@example.com",
         )
         payload = env.create_payload()
         assert payload == "PHN0YXR1c19tZXNzYWdlPjxmb28-YmFyPC9mb28-PC9zdGF0dXNfbWVzc2FnZT4="
+
+    def test_extract_payload(self, diaspora_public_payload):
+        env = MagicEnvelope()
+        env.payload = diaspora_public_payload
+        assert not env.doc
+        assert not env.author_handle
+        assert not env.message
+        env.extract_payload()
+        assert isinstance(env.doc, _Element)
+        assert env.author_handle == "foobar@example.com"
+        assert env.message == b"<status_message><foo>bar</foo></status_message>"
+
+    @patch("federation.protocols.diaspora.magic_envelope.fetch_public_key", autospec=True)
+    def test_fetch_public_key__calls_sender_key_fetcher(self, mock_fetch):
+        mock_fetcher = Mock(return_value="public key")
+        env = MagicEnvelope(author_handle="spam@eggs", sender_key_fetcher=mock_fetcher)
+        env.fetch_public_key()
+        mock_fetcher.assert_called_once_with("spam@eggs")
+        assert not mock_fetch.called
+
+    @patch("federation.protocols.diaspora.magic_envelope.fetch_public_key", autospec=True)
+    def test_fetch_public_key__calls_fetch_public_key(self, mock_fetch):
+        env = MagicEnvelope(author_handle="spam@eggs")
+        env.fetch_public_key()
+        mock_fetch.assert_called_once_with("spam@eggs")
+
+    def test_message_from_doc(self, diaspora_public_payload):
+        env = MagicEnvelope(payload=diaspora_public_payload)
+        assert env.message_from_doc() == env.message
+
+    def test_payload_extracted_on_init(self, diaspora_public_payload):
+        env = MagicEnvelope(payload=diaspora_public_payload)
+        assert isinstance(env.doc, _Element)
+        assert env.author_handle == "foobar@example.com"
+        assert env.message == b"<status_message><foo>bar</foo></status_message>"
+
+    def test_verify(self, private_key, public_key):
+        me = MagicEnvelope(
+            message="<status_message><foo>bar</foo></status_message>",
+            private_key=private_key,
+            author_handle="foobar@example.com"
+        )
+        me.build()
+        output = me.render()
+
+        MagicEnvelope(payload=output, public_key=public_key, verify=True)
+
+        with pytest.raises(SignatureVerificationError):
+            MagicEnvelope(payload=output, public_key=PUBKEY, verify=True)
+
+    def test_verify__calls_fetch_public_key(self, diaspora_public_payload):
+        me = MagicEnvelope(payload=diaspora_public_payload)
+        with pytest.raises(TypeError):
+            with patch.object(me, "fetch_public_key") as mock_fetch:
+                me.verify()
+                mock_fetch.assert_called_once_with()
+
+    @patch("federation.protocols.diaspora.magic_envelope.MagicEnvelope.verify")
+    def test_verify_on_init(self, mock_verify, diaspora_public_payload):
+        MagicEnvelope(payload=diaspora_public_payload)
+        assert not mock_verify.called
+        MagicEnvelope(payload=diaspora_public_payload, verify=True)
+        assert mock_verify.called
 
     def test_build_signature(self):
         env = MagicEnvelope(

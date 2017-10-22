@@ -1,5 +1,19 @@
-# -*- coding: utf-8 -*-
 import importlib
+
+
+def retrieve_remote_content(id, sender_key_fetcher=None):
+    """Retrieve remote content and return an Entity object.
+
+    Currently, due to no other protocols supported, always use the Diaspora protocol.
+
+    :param id: ID of the remote entity.
+    :param sender_key_fetcher: Function to use to fetch sender public key. If not given, network will be used
+        to fetch the profile and the key. Function must take handle as only parameter and return a public key.
+    :returns: Entity class instance or ``None``
+    """
+    protocol_name = "diaspora"
+    utils = importlib.import_module("federation.utils.%s" % protocol_name)
+    return utils.retrieve_and_parse_content(id, sender_key_fetcher=sender_key_fetcher)
 
 
 def retrieve_remote_profile(handle):
@@ -10,7 +24,7 @@ def retrieve_remote_profile(handle):
 
     Currently, due to no other protocols supported, always use the Diaspora protocol.
 
-    :arg handle: The profile handle in format username@domain.tld
+    :param handle: The profile handle in format username@domain.tld
     :returns: ``federation.entities.base.Profile`` or ``None``
     """
     protocol_name = "diaspora"

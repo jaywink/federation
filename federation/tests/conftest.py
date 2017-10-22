@@ -2,7 +2,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from federation.entities.diaspora.entities import DiasporaPost
+# noinspection PyUnresolvedReferences
+from federation.tests.fixtures.diaspora import *
 from federation.tests.fixtures.keys import get_dummy_private_key
 
 
@@ -23,10 +24,10 @@ def disable_network_calls(monkeypatch):
 
 
 @pytest.fixture
-def diasporapost():
-    return DiasporaPost()
+def private_key():
+    return get_dummy_private_key()
 
 
 @pytest.fixture
-def private_key():
-    return get_dummy_private_key()
+def public_key(private_key):
+    return private_key.publickey().exportKey()

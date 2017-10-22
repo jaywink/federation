@@ -5,16 +5,16 @@ from xml.etree.ElementTree import ElementTree
 from lxml import etree
 import pytest
 
-from federation.exceptions import EncryptedMessageError, NoSenderKeyFoundError
+from federation.exceptions import EncryptedMessageError, NoSenderKeyFoundError, SignatureVerificationError
 from federation.protocols.diaspora.protocol import Protocol, identify_payload
+from federation.tests.fixtures.keys import PUBKEY
 from federation.tests.fixtures.payloads import (
-    ENCRYPTED_LEGACY_DIASPORA_PAYLOAD, UNENCRYPTED_LEGACY_DIASPORA_PAYLOAD,
-    DIASPORA_PUBLIC_PAYLOAD,
+    ENCRYPTED_LEGACY_DIASPORA_PAYLOAD, UNENCRYPTED_LEGACY_DIASPORA_PAYLOAD, DIASPORA_PUBLIC_PAYLOAD,
     DIASPORA_ENCRYPTED_PAYLOAD,
 )
 
 
-class MockUser():
+class MockUser:
     private_key = "foobar"
 
     def __init__(self, nokey=False):
@@ -30,7 +30,7 @@ def mock_not_found_get_contact_key(contact):
     return None
 
 
-class DiasporaTestBase():
+class DiasporaTestBase:
     def init_protocol(self):
         return Protocol()
 
@@ -99,11 +99,37 @@ class TestDiasporaProtocol(DiasporaTestBase):
         with pytest.raises(EncryptedMessageError):
             protocol.receive(ENCRYPTED_LEGACY_DIASPORA_PAYLOAD, user)
 
-    def test_receive_raises_if_sender_key_cannot_be_found(self):
+    @patch("federation.protocols.diaspora.protocol.fetch_public_key", autospec=True)
+    def test_receive_raises_if_sender_key_cannot_be_found(self, mock_fetch):
         protocol = self.init_protocol()
         user = self.get_mock_user()
         with pytest.raises(NoSenderKeyFoundError):
             protocol.receive(UNENCRYPTED_LEGACY_DIASPORA_PAYLOAD, user, mock_not_found_get_contact_key)
+        assert not mock_fetch.called
+
+    @patch("federation.protocols.diaspora.protocol.fetch_public_key", autospec=True, return_value=None)
+    def test_receive_calls_fetch_public_key_if_key_fetcher_not_given(self, mock_fetch):
+        protocol = self.init_protocol()
+        user = self.get_mock_user()
+        with pytest.raises(NoSenderKeyFoundError):
+            protocol.receive(UNENCRYPTED_LEGACY_DIASPORA_PAYLOAD, user)
+        mock_fetch.assert_called_once_with("bob@example.com")
+
+    @patch("federation.protocols.diaspora.protocol.MagicEnvelope", autospec=True)
+    @patch("federation.protocols.diaspora.protocol.fetch_public_key", autospec=True, return_value="key")
+    def test_receive_creates_and_verifies_magic_envelope_instance(self, mock_fetch, mock_env):
+        protocol = self.init_protocol()
+        user = self.get_mock_user()
+        protocol.receive(UNENCRYPTED_LEGACY_DIASPORA_PAYLOAD, user)
+        mock_env.assert_called_once_with(doc=protocol.doc, public_key="key", verify=True)
+
+    @patch("federation.protocols.diaspora.protocol.fetch_public_key", autospec=True)
+    def test_receive_raises_on_signature_verification_failure(self, mock_fetch):
+        mock_fetch.return_value = PUBKEY
+        protocol = self.init_protocol()
+        user = self.get_mock_user()
+        with pytest.raises(SignatureVerificationError):
+            protocol.receive(DIASPORA_PUBLIC_PAYLOAD, user)
 
     def test_get_message_content(self):
         protocol = self.init_protocol()

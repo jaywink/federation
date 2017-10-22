@@ -1,16 +1,57 @@
+import importlib
+
 from lxml import etree
 
 from federation.entities.base import (
-    Comment, Post, Reaction, Relationship, Profile, Retraction, BaseEntity, Follow, Share)
+    Comment, Post, Reaction, Relationship, Profile, Retraction, BaseEntity, Follow, Share, Image,
+)
 from federation.entities.diaspora.utils import format_dt, struct_to_xml, get_base_attributes, add_element_to_doc
 from federation.exceptions import SignatureVerificationError
 from federation.protocols.diaspora.signatures import verify_relayable_signature, create_relayable_signature
 from federation.utils.diaspora import retrieve_and_parse_profile
 
+CLASS_TO_TAG_MAPPING = {
+    Comment: "comment",
+    Follow: "contact",
+    Image: "photo",
+    Post: "status_message",
+    Profile: "profile",
+    Reaction: "like",
+    Relationship: "request",
+    Retraction: "retraction",
+    Share: "reshare",
+}
+
 
 class DiasporaEntityMixin(BaseEntity):
     # Normally outbound document is generated from entity. Store one here if at some point we already have a doc
     outbound_doc = None
+
+    @property
+    def id(self):
+        """Diaspora URI scheme format ID.
+
+        Only available for entities that own a handle and a guid.
+        """
+        try:
+            # noinspection PyUnresolvedReferences
+            return "diaspora://%s/%s/%s" % (self.handle, self._tag_name, self.guid)
+        except AttributeError:
+            return None
+
+    # noinspection PyUnresolvedReferences
+    @property
+    def target_id(self):
+        """Diaspora URI scheme format target ID.
+
+        Only available for entities that own a target_handle, target_guid and entity_type.
+        """
+        try:
+            cls_module = importlib.import_module("federation.entities.base")
+            cls = getattr(cls_module, self.entity_type)
+            return "diaspora://%s/%s/%s" % (self.target_handle, CLASS_TO_TAG_MAPPING[cls], self.target_guid)
+        except (AttributeError, ImportError, KeyError):
+            return None
 
     def to_xml(self):
         """Override in subclasses."""
@@ -66,8 +107,10 @@ class DiasporaRelayableMixin(DiasporaEntityMixin):
 
 class DiasporaComment(DiasporaRelayableMixin, Comment):
     """Diaspora comment."""
+    _tag_name = "comment"
+
     def to_xml(self):
-        element = etree.Element("comment")
+        element = etree.Element(self._tag_name)
         struct_to_xml(element, [
             {"guid": self.guid},
             {"parent_guid": self.target_guid},
@@ -82,9 +125,11 @@ class DiasporaComment(DiasporaRelayableMixin, Comment):
 
 class DiasporaPost(DiasporaEntityMixin, Post):
     """Diaspora post, ie status message."""
+    _tag_name = "status_message"
+
     def to_xml(self):
         """Convert to XML message."""
-        element = etree.Element("status_message")
+        element = etree.Element(self._tag_name)
         struct_to_xml(element, [
             {"raw_message": self.raw_content},
             {"guid": self.guid},
@@ -98,11 +143,12 @@ class DiasporaPost(DiasporaEntityMixin, Post):
 
 class DiasporaLike(DiasporaRelayableMixin, Reaction):
     """Diaspora like."""
+    _tag_name = "like"
     reaction = "like"
 
     def to_xml(self):
         """Convert to XML message."""
-        element = etree.Element("like")
+        element = etree.Element(self._tag_name)
         struct_to_xml(element, [
             {"target_type": "Post"},
             {"guid": self.guid},
@@ -117,11 +163,12 @@ class DiasporaLike(DiasporaRelayableMixin, Reaction):
 
 class DiasporaRequest(DiasporaEntityMixin, Relationship):
     """Diaspora legacy request."""
+    _tag_name = "request"
     relationship = "sharing"
 
     def to_xml(self):
         """Convert to XML message."""
-        element = etree.Element("request")
+        element = etree.Element(self._tag_name)
         struct_to_xml(element, [
             {"sender_handle": self.handle},
             {"recipient_handle": self.target_handle},
@@ -134,10 +181,11 @@ class DiasporaContact(DiasporaEntityMixin, Follow):
 
     Note we don't implement 'sharing' at the moment so just send it as the same as 'following'.
     """
+    _tag_name = "contact"
 
     def to_xml(self):
         """Convert to XML message."""
-        element = etree.Element("contact")
+        element = etree.Element(self._tag_name)
         struct_to_xml(element, [
             {"author": self.handle},
             {"recipient": self.target_handle},
@@ -149,10 +197,11 @@ class DiasporaContact(DiasporaEntityMixin, Follow):
 
 class DiasporaProfile(DiasporaEntityMixin, Profile):
     """Diaspora profile."""
+    _tag_name = "profile"
 
     def to_xml(self):
         """Convert to XML message."""
-        element = etree.Element("profile")
+        element = etree.Element(self._tag_name)
         struct_to_xml(element, [
             {"diaspora_handle": self.handle},
             {"first_name": self.name},
@@ -181,6 +230,7 @@ class DiasporaProfile(DiasporaEntityMixin, Profile):
 
 class DiasporaRetraction(DiasporaEntityMixin, Retraction):
     """Diaspora Retraction."""
+    _tag_name = "retraction"
     mapped = {
         "Like": "Reaction",
         "Photo": "Image",
@@ -189,7 +239,7 @@ class DiasporaRetraction(DiasporaEntityMixin, Retraction):
 
     def to_xml(self):
         """Convert to XML message."""
-        element = etree.Element("retraction")
+        element = etree.Element(self._tag_name)
         struct_to_xml(element, [
             {"author": self.handle},
             {"target_guid": self.target_guid},
@@ -216,8 +266,10 @@ class DiasporaRetraction(DiasporaEntityMixin, Retraction):
 
 class DiasporaReshare(DiasporaEntityMixin, Share):
     """Diaspora Reshare."""
+    _tag_name = "reshare"
+
     def to_xml(self):
-        element = etree.Element("reshare")
+        element = etree.Element(self._tag_name)
         struct_to_xml(element, [
             {"author": self.handle},
             {"guid": self.guid},
