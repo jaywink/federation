@@ -1,6 +1,5 @@
 from unittest.mock import patch, Mock
 
-from federation.entities.base import Post
 from federation.fetchers import retrieve_remote_profile, retrieve_remote_content
 
 
@@ -9,9 +8,9 @@ class TestRetrieveRemoteContent:
     def test_calls_diaspora_retrieve_and_parse_content(self, mock_import):
         mock_retrieve = Mock()
         mock_import.return_value = mock_retrieve
-        retrieve_remote_content(Post, "1234@example.com", sender_key_fetcher=sum)
+        retrieve_remote_content("diaspora://user@example.com/status_message/1234", sender_key_fetcher=sum)
         mock_retrieve.retrieve_and_parse_content.assert_called_once_with(
-            Post, "1234@example.com", sender_key_fetcher=sum,
+            "diaspora://user@example.com/status_message/1234", sender_key_fetcher=sum,
         )
 
 

@@ -30,6 +30,14 @@ class BaseEntity:
                     self.__class__.__name__, key
                 ))
 
+    @property
+    def id(self):
+        """Global network ID.
+
+        Future expansion: Convert later into an attribute which with ActivityPub will have the 'id' directly.
+        """
+        return
+
     def validate(self):
         """Do validation.
 
@@ -119,6 +127,14 @@ class TargetGUIDMixin(BaseEntity):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._required += ["target_guid"]
+
+    @property
+    def target_id(self):
+        """Global network target ID.
+
+        Future expansion: convert to attribute when ActivityPub is supported.
+        """
+        return
 
     def validate_target_guid(self):
         if len(self.target_guid) < 16:

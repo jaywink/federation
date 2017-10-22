@@ -110,6 +110,42 @@ class TestEntitiesConvertToXML:
         assert etree.tostring(result).decode("utf-8") == converted
 
 
+class TestEntityAttributes:
+    def test_comment_ids(self, diasporacomment):
+        assert diasporacomment.id == "diaspora://handle/comment/guid"
+        assert not diasporacomment.target_id
+
+    def test_contact_ids(self, diasporacontact):
+        assert not diasporacontact.id
+        assert not diasporacontact.target_id
+
+    def test_like_ids(self, diasporalike):
+        assert diasporalike.id == "diaspora://handle/like/guid"
+        assert not diasporalike.target_id
+
+    def test_post_ids(self, diasporapost):
+        assert diasporapost.id == "diaspora://handle/status_message/guid"
+        assert not diasporapost.target_id
+
+    def test_profile_ids(self, diasporaprofile):
+        assert diasporaprofile.id == "diaspora://bob@example.com/profile/"
+        assert not diasporaprofile.target_id
+
+    def test_request_ids(self, diasporarequest):
+        assert not diasporarequest.id
+        assert not diasporarequest.target_id
+
+    def test_reshare_ids(self, diasporareshare):
+        assert diasporareshare.id == "diaspora://%s/reshare/%s" % (diasporareshare.handle, diasporareshare.guid)
+        assert diasporareshare.target_id == "diaspora://%s/status_message/%s" % (
+            diasporareshare.target_handle, diasporareshare.target_guid
+        )
+
+    def test_retraction_ids(self, diasporaretraction):
+        assert not diasporaretraction.id
+        assert not diasporaretraction.target_id
+
+
 class TestDiasporaProfileFillExtraAttributes:
     def test_raises_if_no_handle(self):
         attrs = {"foo": "bar"}

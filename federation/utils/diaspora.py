@@ -108,6 +108,22 @@ def _get_element_attr_or_none(document, selector, attribute):
     return None
 
 
+def parse_diaspora_uri(uri):
+    """Parse Diaspora URI scheme string.
+
+    See: https://diaspora.github.io/diaspora_federation/federation/diaspora_scheme.html
+
+    :return: tuple of (handle, entity_type, guid) or ``None``.
+    """
+    if not uri.startswith("diaspora://"):
+        return
+    try:
+        handle, entity_type, guid = uri.replace("diaspora://", "").rsplit("/", maxsplit=2)
+    except ValueError:
+        return
+    return handle, entity_type, guid
+
+
 def parse_profile_from_hcard(hcard, handle):
     """
     Parse all the fields we can from a hCard document to get a Profile.
@@ -132,23 +148,18 @@ def parse_profile_from_hcard(hcard, handle):
     return profile
 
 
-def retrieve_and_parse_content(entity_class, id, sender_key_fetcher=None):
+def retrieve_and_parse_content(id, sender_key_fetcher=None):
     """Retrieve remote content and return an Entity class instance.
 
     This is basically the inverse of receiving an entity. Instead, we fetch it, then call 'handle_receive'.
 
-    :param entity_class: Federation entity class (from ``federation.entity.base``).
-    :param id: GUID and domain of the remote entity, in format``guid@domain.tld``.
+    :param id: Diaspora URI scheme format ID.
     :param sender_key_fetcher: Function to use to fetch sender public key. If not given, network will be used
         to fetch the profile and the key. Function must take handle as only parameter and return a public key.
     :returns: Entity object instance or ``None``
-    :raises: ``ValueError`` if ``entity_class`` is not valid.
     """
-    from federation.entities.diaspora.mappers import BASE_MAPPINGS
-    entity_type = BASE_MAPPINGS.get(entity_class)
-    if not entity_type:
-        raise ValueError("Unknown entity_class %s" % entity_class)
-    guid, domain = id.rsplit("@", 1)
+    handle, entity_type, guid = parse_diaspora_uri(id)
+    _username, domain = handle.split("@")
     url = get_fetch_content_endpoint(domain, entity_type, guid)
     document, status_code, error = fetch_document(url)
     if status_code == 200:

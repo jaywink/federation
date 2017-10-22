@@ -3,26 +3,15 @@ from datetime import datetime
 
 from lxml import etree
 
-from federation.entities.base import Image, Relationship, Post, Reaction, Comment, Profile, Retraction, Follow, Share
+from federation.entities.base import Comment, Follow, Image, Post, Profile, Reaction, Relationship, Retraction, Share
 from federation.entities.diaspora.entities import (
-    DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest, DiasporaProfile, DiasporaRetraction,
-    DiasporaRelayableMixin, DiasporaContact, DiasporaReshare)
+    DiasporaComment, DiasporaContact, DiasporaLike, DiasporaPost,
+    DiasporaProfile, DiasporaRelayableMixin, DiasporaRequest, DiasporaReshare, DiasporaRetraction,
+)
 from federation.protocols.diaspora.signatures import get_element_child_info
 from federation.utils.diaspora import retrieve_and_parse_profile
 
 logger = logging.getLogger("federation")
-
-BASE_MAPPINGS = {
-    Comment: "comment",
-    Follow: "contact",
-    Image: "photo",
-    Post: "status_message",
-    Profile: "profile",
-    Reaction: "like",
-    Relationship: "request",
-    Retraction: "retraction",
-    Share: "reshare",
-}
 
 MAPPINGS = {
     "status_message": DiasporaPost,

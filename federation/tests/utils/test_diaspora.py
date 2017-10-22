@@ -5,13 +5,14 @@ from urllib.parse import quote
 import pytest
 from lxml import html
 
-from federation.entities.base import Profile, Post
+from federation.entities.base import Profile
 from federation.hostmeta.generators import DiasporaWebFinger, DiasporaHostMeta, generate_hcard
 from federation.tests.fixtures.payloads import DIASPORA_PUBLIC_PAYLOAD
 from federation.utils.diaspora import (
     retrieve_diaspora_hcard, retrieve_diaspora_webfinger, retrieve_diaspora_host_meta, _get_element_text_or_none,
     _get_element_attr_or_none, parse_profile_from_hcard, retrieve_and_parse_profile, retrieve_and_parse_content,
-    get_fetch_content_endpoint, fetch_public_key)
+    get_fetch_content_endpoint, fetch_public_key, parse_diaspora_uri,
+)
 
 
 @patch("federation.utils.diaspora.retrieve_and_parse_profile", autospec=True)
@@ -25,6 +26,13 @@ def test_fetch_public_key(mock_retrieve):
 def test_get_fetch_content_endpoint():
     assert get_fetch_content_endpoint("example.com", "status_message", "1234") == \
            "https://example.com/fetch/status_message/1234"
+
+
+def test_parse_diaspora_uri():
+    assert parse_diaspora_uri("diaspora://user@example.com/spam/eggs") == ("user@example.com", "spam", "eggs")
+    assert parse_diaspora_uri("diaspora://user@example.com/spam/eggs@spam") == ("user@example.com", "spam", "eggs@spam")
+    assert not parse_diaspora_uri("https://user@example.com/spam/eggs")
+    assert not parse_diaspora_uri("spam and eggs")
 
 
 class TestRetrieveDiasporaHCard:
@@ -120,23 +128,23 @@ class TestRetrieveAndParseContent:
     @patch("federation.utils.diaspora.fetch_document", return_value=(None, 404, None))
     @patch("federation.utils.diaspora.get_fetch_content_endpoint", return_value="https://example.com/fetch/spam/eggs")
     def test_calls_fetch_document(self, mock_get, mock_fetch):
-        retrieve_and_parse_content(Post, "1234@example.com")
+        retrieve_and_parse_content("diaspora://user@example.com/spam/eggs")
         mock_fetch.assert_called_once_with("https://example.com/fetch/spam/eggs")
 
     @patch("federation.utils.diaspora.fetch_document", return_value=(None, 404, None))
     @patch("federation.utils.diaspora.get_fetch_content_endpoint")
     def test_calls_get_fetch_content_endpoint(self, mock_get, mock_fetch):
-        retrieve_and_parse_content(Post, "1234@example.com")
-        mock_get.assert_called_once_with("example.com", "status_message", "1234")
+        retrieve_and_parse_content("diaspora://user@example.com/spam/eggs")
+        mock_get.assert_called_once_with("example.com", "spam", "eggs")
         mock_get.reset_mock()
-        retrieve_and_parse_content(Post, "fooobar@1234@example.com")
-        mock_get.assert_called_once_with("example.com", "status_message", "fooobar@1234")
+        retrieve_and_parse_content("diaspora://user@example.com/spam/eggs@spam")
+        mock_get.assert_called_once_with("example.com", "spam", "eggs@spam")
 
     @patch("federation.utils.diaspora.fetch_document", return_value=(DIASPORA_PUBLIC_PAYLOAD, 200, None))
     @patch("federation.utils.diaspora.get_fetch_content_endpoint", return_value="https://example.com/fetch/spam/eggs")
     @patch("federation.utils.diaspora.handle_receive", return_value=("sender", "protocol", ["entity"]))
     def test_calls_handle_receive(self, mock_handle, mock_get, mock_fetch):
-        entity = retrieve_and_parse_content(Post, "1234@example.com", sender_key_fetcher=sum)
+        entity = retrieve_and_parse_content("diaspora://user@example.com/spam/eggs", sender_key_fetcher=sum)
         mock_handle.assert_called_once_with(DIASPORA_PUBLIC_PAYLOAD, sender_key_fetcher=sum)
         assert entity == "entity"
 
@@ -144,16 +152,12 @@ class TestRetrieveAndParseContent:
     @patch("federation.utils.diaspora.get_fetch_content_endpoint", return_value="https://example.com/fetch/spam/eggs")
     def test_raises_on_fetch_error(self, mock_get, mock_fetch):
         with pytest.raises(Exception):
-            retrieve_and_parse_content(Post, "1234@example.com")
-
-    def test_raises_on_unknown_entity(self):
-        with pytest.raises(ValueError):
-            retrieve_and_parse_content(dict, "1234@example.com")
+            retrieve_and_parse_content("diaspora://user@example.com/spam/eggs")
 
     @patch("federation.utils.diaspora.fetch_document", return_value=(None, 404, None))
     @patch("federation.utils.diaspora.get_fetch_content_endpoint", return_value="https://example.com/fetch/spam/eggs")
     def test_returns_on_404(self, mock_get, mock_fetch):
-        result = retrieve_and_parse_content(Post, "1234@example.com")
+        result = retrieve_and_parse_content("diaspora://user@example.com/spam/eggs")
         assert not result
 
 
