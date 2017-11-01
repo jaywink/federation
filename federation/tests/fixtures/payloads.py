@@ -237,10 +237,8 @@ DIASPORA_RESHARE = """
         <author>alice@example.org</author>
         <guid>a0b53e5029f6013487753131731751e9</guid>
         <created_at>2016-07-12T00:36:42Z</created_at>
-        <provider_display_name/>
         <root_author>bob@example.com</root_author>
         <root_guid>a0b53bc029f6013487753131731751e9</root_guid>
-        <public>true</public>
     </reshare>
 """
 
@@ -252,7 +250,7 @@ DIASPORA_RESHARE_LEGACY = """
         <provider_display_name/>
         <root_diaspora_id>bob@example.com</root_diaspora_id>
         <root_guid>a0b53bc029f6013487753131731751e9</root_guid>
-        <public>true</public>
+        <public>false</public>
     </reshare>
 """
 

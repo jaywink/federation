@@ -213,7 +213,7 @@ class TestDiasporaEntityMappersReceive:
         assert entity.provider_display_name == ""
         assert entity.target_handle == "bob@example.com"
         assert entity.target_guid == "a0b53bc029f6013487753131731751e9"
-        assert entity.public is True
+        assert entity.public is False
         assert entity.entity_type == "Post"
 
     def test_message_to_objects_reshare_extra_properties(self):

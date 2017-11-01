@@ -268,6 +268,16 @@ class DiasporaReshare(DiasporaEntityMixin, Share):
     """Diaspora Reshare."""
     _tag_name = "reshare"
 
+    @staticmethod
+    def fill_extra_attributes(attributes):
+        """If `public` is missing, add it as True.
+
+        Diaspora removed this from protocol version 0.2.2 so assume all future reshares are public.
+        """
+        if attributes.get("public") is None:
+            attributes["public"] = True
+        return attributes
+
     def to_xml(self):
         element = etree.Element(self._tag_name)
         struct_to_xml(element, [
