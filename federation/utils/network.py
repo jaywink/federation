@@ -3,6 +3,7 @@ import logging
 
 import requests
 from requests.exceptions import RequestException, HTTPError, SSLError
+from requests.exceptions import ConnectionError
 from requests.structures import CaseInsensitiveDict
 
 from federation import __version__
@@ -53,7 +54,7 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
         logger.debug("fetch_document: found document, code %s", response.status_code)
         response.raise_for_status()
         return response.text, response.status_code, None
-    except (HTTPError, SSLError) as ex:
+    except (HTTPError, SSLError, ConnectionError) as ex:
         if isinstance(ex, SSLError) and raise_ssl_errors:
             logger.debug("fetch_document: exception %s", ex)
             return None, None, ex
