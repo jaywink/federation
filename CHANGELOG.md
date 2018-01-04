@@ -40,6 +40,8 @@
 ### Fixed
 * Converting base entity `Profile` to `DiasporaProfile` for outbound sending missed two attributes, `image_urls` and `tag_list`. Those are now included so that the values transfer into the built payload.
 
+* Fix fallback to HTTP in the `fetch_document` network helper in the case of `ConnectionError` when trying HTTPS. Thanks @autogestion.
+
 ## [0.14.1] - 2017-08-06
 
 ### Fixed
