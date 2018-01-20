@@ -21,3 +21,10 @@ class TestRetrieveRemoteProfile:
         mock_import.return_value = mock_retrieve
         retrieve_remote_profile("foo@bar")
         mock_retrieve.retrieve_and_parse_profile.assert_called_once_with("foo@bar")
+
+    @patch("federation.fetchers.importlib.import_module")
+    def test_calls_diaspora_retrieve_and_parse_profile__lower_cases_handle_when_needed(self, mock_import):
+        mock_retrieve = Mock()
+        mock_import.return_value = mock_retrieve
+        retrieve_remote_profile("foo@Bar")
+        mock_retrieve.retrieve_and_parse_profile.assert_called_once_with("foo@bar")

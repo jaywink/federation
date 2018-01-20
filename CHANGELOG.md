@@ -42,6 +42,8 @@
 
 * Fix fallback to HTTP in the `fetch_document` network helper in the case of `ConnectionError` when trying HTTPS. Thanks @autogestion.
 
+* Ensure `handle` is always lower cased when fetching remote profile using `retrieve_remote_profile`. Warning will be logged if an upper case handle is passed in.
+
 ## [0.14.1] - 2017-08-06
 
 ### Fixed

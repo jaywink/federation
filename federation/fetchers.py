@@ -1,4 +1,7 @@
 import importlib
+import logging
+
+logger = logging.getLogger("federation")
 
 
 def retrieve_remote_content(id, sender_key_fetcher=None):
@@ -29,4 +32,6 @@ def retrieve_remote_profile(handle):
     """
     protocol_name = "diaspora"
     utils = importlib.import_module("federation.utils.%s" % protocol_name)
-    return utils.retrieve_and_parse_profile(handle)
+    if not handle.islower():
+        logger.warning("retrieve_remote_profile - Handle is not lower case! Will use lower case version to continue.")
+    return utils.retrieve_and_parse_profile(handle.lower())
