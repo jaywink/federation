@@ -1,18 +1,31 @@
-import xml
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, call
 from urllib.parse import quote
 
 import pytest
 from lxml import html
 
 from federation.entities.base import Profile
-from federation.hostmeta.generators import DiasporaWebFinger, DiasporaHostMeta, generate_hcard
-from federation.tests.fixtures.payloads import DIASPORA_PUBLIC_PAYLOAD
+from federation.hostmeta.generators import DiasporaHostMeta, generate_hcard
+from federation.tests.fixtures.payloads import DIASPORA_PUBLIC_PAYLOAD, DIASPORA_WEBFINGER_JSON, DIASPORA_WEBFINGER
 from federation.utils.diaspora import (
-    retrieve_diaspora_hcard, retrieve_diaspora_webfinger, retrieve_diaspora_host_meta, _get_element_text_or_none,
+    retrieve_diaspora_hcard, retrieve_diaspora_host_meta, _get_element_text_or_none,
     _get_element_attr_or_none, parse_profile_from_hcard, retrieve_and_parse_profile, retrieve_and_parse_content,
     get_fetch_content_endpoint, fetch_public_key, parse_diaspora_uri,
-)
+    retrieve_and_parse_diaspora_webfinger, parse_diaspora_webfinger)
+
+
+class TestParseDiasporaWebfinger:
+    def test_json_webfinger_is_parsed(self):
+        result = parse_diaspora_webfinger(DIASPORA_WEBFINGER_JSON)
+        assert result == {"hcard_url": "https://example.org/hcard/users/7dba7ca01d64013485eb3131731751e9"}
+
+    def test_xml_webfinger_is_parsed(self):
+        result = parse_diaspora_webfinger(DIASPORA_WEBFINGER)
+        assert result == {"hcard_url": "https://server.example/hcard/users/0123456789abcdef"}
+
+    def test_returns_default_if_parsing_fails(self):
+        result = parse_diaspora_webfinger("not a valid doc")
+        assert result == {"hcard_url": None}
 
 
 @patch("federation.utils.diaspora.retrieve_and_parse_profile", autospec=True)
@@ -36,74 +49,69 @@ def test_parse_diaspora_uri():
 
 
 class TestRetrieveDiasporaHCard:
-    @patch("federation.utils.diaspora.retrieve_diaspora_webfinger", return_value=None)
+    @patch("federation.utils.diaspora.retrieve_and_parse_diaspora_webfinger", return_value={
+        "hcard_url": "http://localhost",
+    })
     def test_retrieve_webfinger_is_called(self, mock_retrieve):
         retrieve_diaspora_hcard("bob@localhost")
         assert mock_retrieve.called_with("bob@localhost")
 
     @patch("federation.utils.diaspora.fetch_document")
-    @patch("federation.utils.diaspora.retrieve_diaspora_webfinger")
+    @patch("federation.utils.diaspora.retrieve_and_parse_diaspora_webfinger", return_value={
+        "hcard_url": "http://localhost",
+    })
     def test_fetch_document_is_called(self, mock_retrieve, mock_fetch):
-        mock_retrieve.return_value = DiasporaWebFinger(
-            "bob@localhost", "https://localhost", "123", "456"
-        ).xrd
         mock_fetch.return_value = "document", None, None
-        document = retrieve_diaspora_hcard("bob@localhost")
-        mock_fetch.assert_called_with("https://localhost/hcard/users/123")
-        assert document == "document"
+        retrieve_diaspora_hcard("bob@localhost")
+        mock_fetch.assert_called_with("http://localhost")
 
     @patch("federation.utils.diaspora.fetch_document")
-    @patch("federation.utils.diaspora.retrieve_diaspora_webfinger")
+    @patch("federation.utils.diaspora.retrieve_and_parse_diaspora_webfinger", return_value={
+        "hcard_url": "http://localhost",
+    })
     def test_returns_none_on_fetch_document_exception(self, mock_retrieve, mock_fetch):
-        mock_retrieve.return_value = DiasporaWebFinger(
-            "bob@localhost", "https://localhost", "123", "456"
-        ).xrd
         mock_fetch.return_value = None, None, ValueError()
-        document = retrieve_diaspora_hcard("bob@localhost")
-        mock_fetch.assert_called_with("https://localhost/hcard/users/123")
-        assert document == None
+        result = retrieve_diaspora_hcard("bob@localhost")
+        mock_fetch.assert_called_with("http://localhost")
+        assert result is None
 
 
-class TestRetrieveDiasporaWebfinger:
+class TestRetrieveAndParseDiasporaWebfinger:
     @patch("federation.utils.diaspora.retrieve_diaspora_host_meta", return_value=None)
     def test_retrieve_host_meta_is_called(self, mock_retrieve):
-        retrieve_diaspora_webfinger("bob@localhost")
+        retrieve_and_parse_diaspora_webfinger("bob@localhost")
         mock_retrieve.assert_called_with("localhost")
 
+    @patch("federation.utils.diaspora.fetch_document", return_value=(None, None, None))
+    @patch("federation.utils.diaspora.retrieve_diaspora_host_meta", return_value=None)
+    def test_fetch_document_is_called__to_fetch_json_webfinger(self, mock_retrieve, mock_fetch):
+        retrieve_and_parse_diaspora_webfinger("bob@localhost")
+        mock_fetch.assert_called_once_with(
+            host="localhost",
+            path="/.well-known/webfinger?resource=acct:bob%40localhost",
+        )
+
     @patch("federation.utils.diaspora.XRD.parse_xrd")
-    @patch("federation.utils.diaspora.fetch_document")
+    @patch("federation.utils.diaspora.fetch_document", return_value=(None, None, None))
+    @patch("federation.utils.diaspora.parse_diaspora_webfinger", return_value={'hcard_url': None})
     @patch("federation.utils.diaspora.retrieve_diaspora_host_meta", return_value=None)
-    def test_retrieve_fetch_document_is_called(self, mock_retrieve, mock_fetch, mock_xrd):
+    def test_fetch_document_is_called__to_fetch_xml_webfinger(self, mock_retrieve, mock_parse, mock_fetch, mock_xrd):
         mock_retrieve.return_value = DiasporaHostMeta(
             webfinger_host="https://localhost"
         ).xrd
-        mock_fetch.return_value = "document", None, None
+        # mock_fetch.return_value = "document", None, None
         mock_xrd.return_value = "document"
-        document = retrieve_diaspora_webfinger("bob@localhost")
-        mock_fetch.assert_called_with("https://localhost/webfinger?q=%s" % quote("bob@localhost"))
-        assert document == "document"
-
-    @patch("federation.utils.diaspora.fetch_document")
-    @patch("federation.utils.diaspora.retrieve_diaspora_host_meta", return_value=None)
-    def test_returns_none_on_fetch_document_exception(self, mock_retrieve, mock_fetch):
-        mock_retrieve.return_value = DiasporaHostMeta(
-            webfinger_host="https://localhost"
-        ).xrd
-        mock_fetch.return_value = None, None, ValueError()
-        document = retrieve_diaspora_webfinger("bob@localhost")
-        mock_fetch.assert_called_with("https://localhost/webfinger?q=%s" % quote("bob@localhost"))
-        assert document == None
-
-    @patch("federation.utils.diaspora.fetch_document", return_value=("document", None, None))
-    @patch("federation.utils.diaspora.retrieve_diaspora_host_meta", return_value=None)
-    @patch("federation.utils.diaspora.XRD.parse_xrd", side_effect=xml.parsers.expat.ExpatError)
-    def test_returns_none_on_xrd_parse_exception(self, mock_parse, mock_retrieve, mock_fetch):
-        mock_retrieve.return_value = DiasporaHostMeta(
-            webfinger_host="https://localhost"
-        ).xrd
-        document = retrieve_diaspora_webfinger("bob@localhost")
-        mock_parse.assert_called_once_with("document")
-        assert document == None
+        result = retrieve_and_parse_diaspora_webfinger("bob@localhost")
+        calls = [
+            call(
+                host="localhost",
+                path="/.well-known/webfinger?resource=acct:bob%40localhost",
+            ),
+            call("https://localhost/webfinger?q=%s" % quote("bob@localhost")),
+        ]
+        assert calls == mock_fetch.call_args_list
+        # mock_fetch.assert_called_with("https://localhost/webfinger?q=%s" % quote("bob@localhost"))
+        assert result == {'hcard_url': None}
 
 
 class TestRetrieveDiasporaHostMeta:

@@ -267,3 +267,39 @@ DIASPORA_RESHARE_WITH_EXTRA_PROPERTIES = """
         <entity_type>Comment</entity_type>
     </reshare>
 """
+
+DIASPORA_WEBFINGER_JSON = """{
+  "subject": "acct:alice@example.org",
+  "links": [
+    {
+      "rel": "http://microformats.org/profile/hcard",
+      "type": "text/html",
+      "href": "https://example.org/hcard/users/7dba7ca01d64013485eb3131731751e9"
+    },
+    {
+      "rel": "http://joindiaspora.com/seed_location",
+      "type": "text/html",
+      "href": "https://example.org/"
+    }
+  ]
+}
+"""
+
+DIASPORA_HOSTMETA = """<?xml version="1.0" encoding="UTF-8"?>
+<XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0">
+  <Link rel="lrdd" template="https://example.com/webfinger?q={uri}" type="application/xrd+xml"/>
+</XRD>
+"""
+
+DIASPORA_WEBFINGER = """<?xml version="1.0" encoding="UTF-8"?>
+<XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0">
+  <Subject>acct:user@server.example</Subject>
+  <Alias>https://server.example/people/0123456789abcdef</Alias>
+  <Link href="https://server.example/hcard/users/0123456789abcdef" rel="http://microformats.org/profile/hcard" type="text/html"/>
+  <Link href="https://server.example" rel="http://joindiaspora.com/seed_location" type="text/html"/>
+  <Link href="0123456789abcdef" rel="http://joindiaspora.com/guid" type="text/html"/>
+  <Link href="https://server.example/u/user" rel="http://webfinger.net/rel/profile-page" type="text/html"/>
+  <Link href="https://server.example/public/user.atom" rel="http://schemas.google.com/g/2010#updates-from" type="application/atom+xml"/>
+  <Link href="QUJDREVGPT0=" rel="diaspora-public-key" type="RSA"/>
+</XRD>
+"""

@@ -24,7 +24,11 @@
 
   * `retrieve_and_parse_content`. See notes regarding the high level fetcher above.
   * `fetch_public_key`. Given a `handle` as a parameter, will fetch the remote profile and return the `public_key` from it.
-  * `parse_diaspora_uri`. Parses a Diaspora URI scheme string, returns either `None` if parsing fails or a `tuple` of `handle`, `entity_type` and `guid`. 
+  * `parse_diaspora_uri`. Parses a Diaspora URI scheme string, returns either `None` if parsing fails or a `tuple` of `handle`, `entity_type` and `guid`.
+  
+* Support fetching new style Diaspora protocol Webfinger (RFC 3033) ([related issue](https://github.com/jaywink/federation/issues/108))
+
+  The legaxy Webfinger is still used as fallback if the new Webfinger is not found. 
 
 ### Changed
 * Refactoring for Diaspora `MagicEnvelope` class.
