@@ -1,3 +1,4 @@
+import json
 import logging
 import xml
 from urllib.parse import quote
@@ -22,6 +23,34 @@ def fetch_public_key(handle):
     return profile.public_key
 
 
+def parse_diaspora_webfinger(document):
+    """
+    Parse Diaspora webfinger which is either in JSON format (new) or XRD (old).
+
+    https://diaspora.github.io/diaspora_federation/discovery/webfinger.html
+    """
+    webfinger = {
+        "hcard_url": None,
+    }
+    try:
+        doc = json.loads(document)
+        for link in doc["links"]:
+            if link["rel"] == "http://microformats.org/profile/hcard":
+                webfinger["hcard_url"] = link["href"]
+                break
+        else:
+            logger.warning("parse_diaspora_webfinger: found JSON webfinger but it has no hcard href")
+            raise ValueError
+    except Exception:
+        try:
+            xrd = XRD.parse_xrd(document)
+            webfinger["hcard_url"] = xrd.find_link(rels="http://microformats.org/profile/hcard").href
+        except xml.parsers.expat.ExpatError:
+            logger.warning("parse_diaspora_webfinger: found XML webfinger but it fails to parse (ExpatError)")
+            pass
+    return webfinger
+
+
 def retrieve_diaspora_hcard(handle):
     """
     Retrieve a remote Diaspora hCard document.
@@ -29,28 +58,30 @@ def retrieve_diaspora_hcard(handle):
     :arg handle: Remote handle to retrieve
     :return: str (HTML document)
     """
-    webfinger = retrieve_diaspora_webfinger(handle)
-    if not webfinger:
-        return None
-    url = webfinger.find_link(rels="http://microformats.org/profile/hcard").href
-    document, code, exception = fetch_document(url)
+    webfinger = retrieve_and_parse_diaspora_webfinger(handle)
+    document, code, exception = fetch_document(webfinger.get("hcard_url"))
     if exception:
         return None
     return document
 
 
-def retrieve_diaspora_webfinger(handle):
+def retrieve_and_parse_diaspora_webfinger(handle):
     """
-    Retrieve a remote Diaspora webfinger document.
+    Retrieve a and parse a remote Diaspora webfinger document.
 
     :arg handle: Remote handle to retrieve
-    :returns: ``XRD`` instance
+    :returns: dict
     """
     try:
         host = handle.split("@")[1]
     except AttributeError:
-        logger.warning("retrieve_diaspora_webfinger: invalid handle given: %s", handle)
+        logger.warning("retrieve_and_parse_diaspora_webfinger: invalid handle given: %s", handle)
         return None
+    document, code, exception = fetch_document(
+        host=host, path="/.well-known/webfinger?resource=acct:%s" % quote(handle),
+    )
+    if document:
+        return parse_diaspora_webfinger(document)
     hostmeta = retrieve_diaspora_host_meta(host)
     if not hostmeta:
         return None
@@ -58,11 +89,7 @@ def retrieve_diaspora_webfinger(handle):
     document, code, exception = fetch_document(url)
     if exception:
         return None
-    try:
-        xrd = XRD.parse_xrd(document)
-    except xml.parsers.expat.ExpatError:
-        return None
-    return xrd
+    return parse_diaspora_webfinger(document)
 
 
 def retrieve_diaspora_host_meta(host):
@@ -151,7 +178,7 @@ def parse_profile_from_hcard(hcard, handle):
 def retrieve_and_parse_content(id, sender_key_fetcher=None):
     """Retrieve remote content and return an Entity class instance.
 
-    This is basically the inverse of receiving an entity. Instead, we fetch it, then call 'handle_receive'.
+    This is basically the inverse of receiving an entity. Instead, we fetch it, then call "handle_receive".
 
     :param id: Diaspora URI scheme format ID.
     :param sender_key_fetcher: Function to use to fetch sender public key. If not given, network will be used
