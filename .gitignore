@@ -1,6 +1,7 @@
 *.py[cod]
 __pycache__
 .cache
+.pytest_cache/
 
 database.sqlite
 
