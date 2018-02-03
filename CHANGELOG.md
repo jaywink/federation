@@ -35,6 +35,10 @@
 * Support fetching new style Diaspora protocol Webfinger (RFC 3033) ([related issue](https://github.com/jaywink/federation/issues/108))
 
   The legaxy Webfinger is still used as fallback if the new Webfinger is not found. 
+  
+* Enable generating encrypted JSON payloads with the Diaspora protocol which adds private message support. ([related issue](https://github.com/jaywink/federation/issues/82))
+
+  JSON encrypted payload encryption and decryption is handled by the Diaspora `EncryptedPayload` class.
 
 ### Changed
 * Refactoring for Diaspora `MagicEnvelope` class.

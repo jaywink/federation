@@ -230,12 +230,21 @@ class Protocol(BaseProtocol):
             return data[0:-data[-1]]
 
     def build_send(self, entity, from_user, to_user=None, *args, **kwargs):
-        """Build POST data for sending out to remotes."""
+        """
+        Build POST data for sending out to remotes.
+
+        :param entity: The outbound ready entity for this protocol.
+        :param from_user: The user sending this payload. Must have ``private_key`` and ``handle`` properties.
+        :param to_user: (Optional) user to send private payload to. Must have ``key`` as receiving user public key.
+        :returns: dict or string depending on if private or public payload.
+        """
         if entity.outbound_doc is not None:
             # Use pregenerated outbound document
             xml = entity.outbound_doc
         else:
             xml = entity.to_xml()
         me = MagicEnvelope(etree.tostring(xml), private_key=from_user.private_key, author_handle=from_user.handle)
-        # TODO wrap if doing encrypted delivery
-        return me.render()
+        rendered = me.render()
+        if to_user:
+            return EncryptedPayload.encrypt(rendered, to_user.key)
+        return rendered

@@ -80,7 +80,7 @@ def send_document(url, data, timeout=10, *args, **kwargs):
     Additional ``*args`` and ``**kwargs`` will be passed on to ``requests.post``.
 
     :arg url: Full url to send to, including protocol
-    :arg data: POST data to send (dict)
+    :arg data: Dictionary (will be form-encoded), bytes, or file-like object to send in the body
     :arg timeout: Seconds to wait for response (defaults to 10)
     :returns: Tuple of status code (int or None) and error (exception class instance or None)
     """
