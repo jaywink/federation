@@ -194,6 +194,28 @@ class TestDiasporaProtocol(DiasporaTestBase):
         assert data == "rendered"
 
     @patch("federation.protocols.diaspora.protocol.MagicEnvelope")
+    @patch("federation.protocols.diaspora.protocol.EncryptedPayload.encrypt", return_value="encrypted")
+    def test_build_send_does_right_calls__private_payload(self, mock_encrypt, mock_me):
+        mock_render = Mock(return_value="rendered")
+        mock_me_instance = Mock(render=mock_render)
+        mock_me.return_value = mock_me_instance
+        protocol = Protocol()
+        entity = DiasporaPost()
+        private_key = get_dummy_private_key()
+        outbound_entity = get_outbound_entity(entity, private_key)
+        data = protocol.build_send(outbound_entity, to_user_key="public key", from_user=Mock(
+            private_key=private_key, handle="johnny@localhost",
+        ))
+        mock_me.assert_called_once_with(
+            etree.tostring(entity.to_xml()), private_key=private_key, author_handle="johnny@localhost",
+        )
+        mock_render.assert_called_once_with()
+        mock_encrypt.assert_called_once_with(
+            "rendered", "public key",
+        )
+        assert data == "encrypted"
+
+    @patch("federation.protocols.diaspora.protocol.MagicEnvelope")
     def test_build_send_uses_outbound_doc(self, mock_me):
         protocol = self.init_protocol()
         outbound_doc = etree.fromstring("<xml>foo</xml>")

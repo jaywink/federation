@@ -1,8 +1,10 @@
 from unittest.mock import patch, Mock
 
 from Crypto.Cipher import AES
+from lxml import etree
 
 from federation.protocols.diaspora.encrypted import pkcs7_unpad, EncryptedPayload
+from federation.tests.fixtures.keys import get_dummy_private_key
 
 
 def test_pkcs7_unpad():
@@ -31,3 +33,13 @@ class TestEncryptedPayload:
         mock_encrypter.assert_called_once_with("magically encrypted")
         assert doc.tag == "foo"
         assert doc.text == "bar"
+
+    def test_encrypt(self):
+        private_key = get_dummy_private_key()
+        public_key = private_key.publickey()
+        encrypted = EncryptedPayload.encrypt("<spam>eggs</spam>", public_key)
+        assert "aes_key" in encrypted
+        assert "encrypted_magic_envelope" in encrypted
+        # See we can decrypt it too
+        decrypted = EncryptedPayload.decrypt(encrypted, private_key)
+        assert etree.tostring(decrypted).decode("utf-8") == "<spam>eggs</spam>"
