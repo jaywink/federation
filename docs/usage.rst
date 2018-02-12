@@ -109,6 +109,7 @@ Diaspora
 .. autofunction:: federation.utils.diaspora.fetch_public_key
 .. autofunction:: federation.utils.diaspora.get_fetch_content_endpoint
 .. autofunction:: federation.utils.diaspora.get_public_endpoint
+.. autofunction:: federation.utils.diaspora.get_private_endpoint
 .. autofunction:: federation.utils.diaspora.parse_diaspora_uri
 .. autofunction:: federation.utils.diaspora.parse_profile_from_hcard
 .. autofunction:: federation.utils.diaspora.retrieve_and_parse_content
