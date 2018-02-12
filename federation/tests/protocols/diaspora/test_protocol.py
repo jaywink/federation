@@ -1,3 +1,4 @@
+import datetime
 from base64 import urlsafe_b64decode
 from unittest.mock import Mock, patch
 from xml.etree.ElementTree import ElementTree
@@ -5,9 +6,12 @@ from xml.etree.ElementTree import ElementTree
 from lxml import etree
 import pytest
 
+from federation.entities.base import Post
+from federation.entities.diaspora.entities import DiasporaPost
+from federation.entities.diaspora.mappers import get_outbound_entity
 from federation.exceptions import EncryptedMessageError, NoSenderKeyFoundError, SignatureVerificationError
 from federation.protocols.diaspora.protocol import Protocol, identify_payload
-from federation.tests.fixtures.keys import PUBKEY
+from federation.tests.fixtures.keys import PUBKEY, get_dummy_private_key
 from federation.tests.fixtures.payloads import (
     ENCRYPTED_LEGACY_DIASPORA_PAYLOAD, UNENCRYPTED_LEGACY_DIASPORA_PAYLOAD, DIASPORA_PUBLIC_PAYLOAD,
     DIASPORA_ENCRYPTED_PAYLOAD,
@@ -171,26 +175,32 @@ class TestDiasporaProtocol(DiasporaTestBase):
         protocol.content = "<content><handle>bob@example.com</handle></content>"
         assert protocol.get_sender_legacy() is None
 
-    @patch.object(Protocol, "init_message")
-    @patch.object(Protocol, "create_salmon_envelope")
-    def test_build_send(self, mock_create_salmon, mock_init_message):
-        mock_create_salmon.return_value = "xmldata"
-        protocol = self.init_protocol()
-        mock_entity_xml = Mock()
-        entity = Mock(to_xml=Mock(return_value=mock_entity_xml), outbound_doc=None)
-        from_user = Mock(handle="foobar", private_key="barfoo")
-        data = protocol.build_send(entity, from_user)
-        mock_init_message.assert_called_once_with(mock_entity_xml, from_user.handle, from_user.private_key)
-        assert data == {"xml": "xmldata"}
+    @patch("federation.protocols.diaspora.protocol.MagicEnvelope")
+    def test_build_send_does_right_calls(self, mock_me):
+        mock_render = Mock(return_value="rendered")
+        mock_me_instance = Mock(render=mock_render)
+        mock_me.return_value = mock_me_instance
+        protocol = Protocol()
+        entity = DiasporaPost()
+        private_key = get_dummy_private_key()
+        outbound_entity = get_outbound_entity(entity, private_key)
+        data = protocol.build_send(outbound_entity, from_user=Mock(
+            private_key=private_key, handle="johnny@localhost",
+        ))
+        mock_me.assert_called_once_with(
+            etree.tostring(entity.to_xml()), private_key=private_key, author_handle="johnny@localhost",
+        )
+        mock_render.assert_called_once_with()
+        assert data == "rendered"
 
-    @patch.object(Protocol, "init_message")
-    @patch.object(Protocol, "create_salmon_envelope")
-    def test_build_send_uses_outbound_doc(self, mock_create_salmon, mock_init_message):
+    @patch("federation.protocols.diaspora.protocol.MagicEnvelope")
+    def test_build_send_uses_outbound_doc(self, mock_me):
         protocol = self.init_protocol()
-        entity = Mock(to_xml=Mock(return_value=Mock()), outbound_doc="outbound_doc")
+        outbound_doc = etree.fromstring("<xml>foo</xml>")
+        entity = Mock(outbound_doc=outbound_doc)
         from_user = Mock(handle="foobar", private_key="barfoo")
         protocol.build_send(entity, from_user)
-        mock_init_message.assert_called_once_with("outbound_doc", from_user.handle, from_user.private_key)
+        mock_me.assert_called_once_with(b"<xml>foo</xml>", private_key=from_user.private_key, author_handle="foobar")
 
     @patch("federation.protocols.diaspora.protocol.EncryptedPayload.decrypt")
     def test_get_json_payload_magic_envelope(self, mock_decrypt):

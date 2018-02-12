@@ -1,5 +1,11 @@
 # Changelog
 
+## [unreleased]
+
+### Changed
+
+* Send outbound Diaspora payloads in new format. Remove possibility to generate legacy MagicEnvelope payloads. ([related issue](https://github.com/jaywink/federation/issues/82)) 
+
 ## [0.15.0] - 2018-02-12
 
 ### Added
