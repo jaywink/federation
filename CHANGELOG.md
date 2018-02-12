@@ -1,6 +1,6 @@
 # Changelog
 
-## [unreleased]
+## [0.15.0] - 2018-02-12
 
 ### Added
 * Added base entity `Share` which maps to a `DiasporaReshare` for the Diaspora protocol. ([related issue](https://github.com/jaywink/federation/issues/94))
