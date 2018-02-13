@@ -11,7 +11,7 @@ from federation.utils.diaspora import (
     retrieve_diaspora_hcard, retrieve_diaspora_host_meta, _get_element_text_or_none,
     _get_element_attr_or_none, parse_profile_from_hcard, retrieve_and_parse_profile, retrieve_and_parse_content,
     get_fetch_content_endpoint, fetch_public_key, parse_diaspora_uri,
-    retrieve_and_parse_diaspora_webfinger, parse_diaspora_webfinger)
+    retrieve_and_parse_diaspora_webfinger, parse_diaspora_webfinger, get_public_endpoint, get_private_endpoint)
 
 
 class TestParseDiasporaWebfinger:
@@ -99,7 +99,6 @@ class TestRetrieveAndParseDiasporaWebfinger:
         mock_retrieve.return_value = DiasporaHostMeta(
             webfinger_host="https://localhost"
         ).xrd
-        # mock_fetch.return_value = "document", None, None
         mock_xrd.return_value = "document"
         result = retrieve_and_parse_diaspora_webfinger("bob@localhost")
         calls = [
@@ -110,7 +109,6 @@ class TestRetrieveAndParseDiasporaWebfinger:
             call("https://localhost/webfinger?q=%s" % quote("bob@localhost")),
         ]
         assert calls == mock_fetch.call_args_list
-        # mock_fetch.assert_called_with("https://localhost/webfinger?q=%s" % quote("bob@localhost"))
         assert result == {'hcard_url': None}
 
 
@@ -291,3 +289,19 @@ class TestRetrieveAndParseProfile:
         mock_parse.return_value = mock_profile
         retrieve_and_parse_profile("foo@bar")
         assert mock_profile.validate.called
+
+
+class TestGetPublicEndpoint:
+    def test_correct_endpoint(self):
+        endpoint = get_public_endpoint("diaspora://foobar@example.com/profile/123456")
+        assert endpoint == "https://example.com/receive/public"
+
+
+class TestGetPrivateEndpoint:
+    def test_correct_endpoint(self):
+        endpoint = get_private_endpoint("diaspora://foobar@example.com/profile/123456")
+        assert endpoint == "https://example.com/receive/users/123456"
+
+    def test_raises_value_error_for_non_profile_id(self):
+        with pytest.raises(ValueError):
+            get_private_endpoint("diaspora://foobar@example.com/comment/123456")

@@ -2,10 +2,27 @@
 
 ## [unreleased]
 
+### Added
+
+* Enable generating encrypted JSON payloads with the Diaspora protocol which adds private message support. ([related issue](https://github.com/jaywink/federation/issues/82))
+
+  JSON encrypted payload encryption and decryption is handled by the Diaspora `EncryptedPayload` class.
+
 ### Changed
 
-* Send outbound Diaspora payloads in new format. Remove possibility to generate legacy MagicEnvelope payloads. ([related issue](https://github.com/jaywink/federation/issues/82)) 
+* Send outbound Diaspora payloads in new format. Remove possibility to generate legacy MagicEnvelope payloads. ([related issue](https://github.com/jaywink/federation/issues/82))
 
+* **Backwards incompatible**.  Refactor `handle_send` function
+    
+  Now handle_send high level outbound helper function also allows delivering private payloads using the Diaspora protocol. ([related issue](https://github.com/jaywink/federation/issues/82))
+  
+  The signature has changed. Parameter `recipients` should now be a list of recipients to delivery to. Each recipient should either be an `id` or a tuple of `(id, public key)`. If public key is provided, Diaspora protocol delivery will be made as an encrypted private delivery.
+  
+* **Backwards incompatible**. Change `handle_create_payload` function signature.
+
+  Parameter `to_user` is now `to_user_key` and thus instead of an object containing the `key` attribute it should now be an RSA public key object instance. This simplifies things since we only need the key from the user, nothing else.
+
+    
 ## [0.15.0] - 2018-02-12
 
 ### Added

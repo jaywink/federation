@@ -235,6 +235,19 @@ def get_fetch_content_endpoint(domain, entity_type, guid):
     return "https://%s/fetch/%s/%s" % (domain, entity_type, guid)
 
 
-def get_public_endpoint(domain):
+def get_public_endpoint(id):
     """Get remote endpoint for delivering public payloads."""
+    handle, _entity_type, _guid = parse_diaspora_uri(id)
+    _username, domain = handle.split("@")
     return "https://%s/receive/public" % domain
+
+
+def get_private_endpoint(id):
+    """Get remote endpoint for delivering private payloads."""
+    handle, entity_type, guid = parse_diaspora_uri(id)
+    if entity_type != "profile":
+        raise ValueError(
+            "Invalid entity type %s to generate private remote endpoint for delivery. Must be 'profile'." % entity_type
+        )
+    _username, domain = handle.split("@")
+    return "https://%s/receive/users/%s" % (domain, guid)
