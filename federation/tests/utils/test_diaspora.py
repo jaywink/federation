@@ -11,7 +11,8 @@ from federation.utils.diaspora import (
     retrieve_diaspora_hcard, retrieve_diaspora_host_meta, _get_element_text_or_none,
     _get_element_attr_or_none, parse_profile_from_hcard, retrieve_and_parse_profile, retrieve_and_parse_content,
     get_fetch_content_endpoint, fetch_public_key, parse_diaspora_uri,
-    retrieve_and_parse_diaspora_webfinger, parse_diaspora_webfinger, get_public_endpoint, get_private_endpoint)
+    retrieve_and_parse_diaspora_webfinger, parse_diaspora_webfinger, get_public_endpoint, get_private_endpoint,
+    parse_profile_diaspora_id, generate_diaspora_profile_id)
 
 
 class TestParseDiasporaWebfinger:
@@ -46,6 +47,16 @@ def test_parse_diaspora_uri():
     assert parse_diaspora_uri("diaspora://user@example.com/spam/eggs@spam") == ("user@example.com", "spam", "eggs@spam")
     assert not parse_diaspora_uri("https://user@example.com/spam/eggs")
     assert not parse_diaspora_uri("spam and eggs")
+
+
+def test_parse_profile_diaspora_id():
+    assert parse_profile_diaspora_id("diaspora://foobar@example.com/profile/1234") == ("foobar@example.com", "1234")
+    with pytest.raises(ValueError):
+        assert parse_profile_diaspora_id("diaspora://foobar@example.com/like/1234")
+
+
+def test_generate_diaspora_profile_id():
+    assert generate_diaspora_profile_id("foobar@example.com", "1234") == "diaspora://foobar@example.com/profile/1234"
 
 
 class TestRetrieveDiasporaHCard:

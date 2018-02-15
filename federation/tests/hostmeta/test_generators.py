@@ -1,15 +1,15 @@
-# -*- coding: utf-8 -*-
 import json
 from jsonschema import validate, ValidationError
 import pytest
 
-from federation.hostmeta.generators import generate_host_meta, generate_legacy_webfinger, generate_hcard, \
-    SocialRelayWellKnown, NodeInfo, get_nodeinfo_well_known_document
+from federation.hostmeta.generators import (
+    generate_host_meta, generate_legacy_webfinger, generate_hcard,
+    SocialRelayWellKnown, NodeInfo, get_nodeinfo_well_known_document, RFC3033Webfinger,
+)
 from federation.tests.fixtures.payloads import DIASPORA_HOSTMETA, DIASPORA_WEBFINGER
 
 
-class TestDiasporaHostMetaGenerator(object):
-
+class TestDiasporaHostMetaGenerator:
     def test_generate_valid_host_meta(self):
         hostmeta = generate_host_meta("diaspora", webfinger_host="https://example.com")
         assert hostmeta.decode("UTF-8") == DIASPORA_HOSTMETA
@@ -19,8 +19,7 @@ class TestDiasporaHostMetaGenerator(object):
             generate_host_meta("diaspora")
 
 
-class TestDiasporaWebFingerGenerator(object):
-
+class TestDiasporaWebFingerGenerator:
     def test_generate_valid_webfinger(self):
         webfinger = generate_legacy_webfinger(
             "diaspora",
@@ -36,8 +35,7 @@ class TestDiasporaWebFingerGenerator(object):
             generate_legacy_webfinger("diaspora")
 
 
-class TestDiasporaHCardGenerator(object):
-
+class TestDiasporaHCardGenerator:
     def test_generate_valid_hcard(self):
         with open("federation/hostmeta/templates/hcard_diaspora.html") as f:
             template = f.read().replace("$", "")
@@ -77,8 +75,7 @@ class TestDiasporaHCardGenerator(object):
             )
 
 
-class TestSocialRelayWellKnownGenerator(object):
-
+class TestSocialRelayWellKnownGenerator:
     def test_valid_social_relay_well_known(self):
         with open("federation/hostmeta/schemas/social-relay-well-known.json") as f:
             schema = json.load(f)
@@ -125,7 +122,7 @@ class TestSocialRelayWellKnownGenerator(object):
             well_known.render()
 
 
-class TestNodeInfoGenerator(object):
+class TestNodeInfoGenerator:
     def _valid_nodeinfo(self, raise_on_validate=False):
         return NodeInfo(
             software={"name": "diaspora", "version": "0.5.4.3"},
@@ -179,3 +176,25 @@ class TestNodeInfoGenerator(object):
         wellknown = get_nodeinfo_well_known_document("https://example.com")
         assert wellknown["links"][0]["rel"] == "http://nodeinfo.diaspora.software/ns/schema/1.0"
         assert wellknown["links"][0]["href"] == "https://example.com/nodeinfo/1.0"
+
+
+def test_rfc3033_webfinger():
+    webfinger = RFC3033Webfinger(
+        "diaspora://foobar@example.com/profile/1234",
+        "https://example.com",
+    ).render()
+    assert webfinger == {
+        "subject": "acct:foobar@example.com",
+        "links": [
+            {
+                "rel": "http://microformats.org/profile/hcard",
+                "type": "text/html",
+                "href": "https://example.com/hcard/users/1234",
+            },
+            {
+                "rel": "http://joindiaspora.com/seed_location",
+                "type": "text/html",
+                "href": "https://example.com",
+            },
+        ],
+    }

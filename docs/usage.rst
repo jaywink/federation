@@ -58,8 +58,8 @@ Generator classes
 .. autoclass:: federation.hostmeta.generators.DiasporaWebFinger
 .. autoclass:: federation.hostmeta.generators.DiasporaHCard
 .. autoclass:: federation.hostmeta.generators.NodeInfo
+.. autoclass:: federation.hostmeta.generators.RFC3033Webfinger
 .. autoclass:: federation.hostmeta.generators.SocialRelayWellKnown
-
 
 Fetchers
 --------
@@ -87,6 +87,35 @@ High level utility functions to pass outbound entities to. These should be favou
 .. autofunction:: federation.outbound.handle_create_payload
 .. autofunction:: federation.outbound.handle_send
 
+Django
+------
+
+Some ready provided views and URL configuration exist for Django.
+
+Note! Django is not part of the normal requirements for this library. It must be installed separately.
+
+.. autofunction:: federation.hostmeta.django.generators.rfc3033_webfinger_view
+
+Configuration
+.............
+
+To use the Django views, ensure a modern version of Django is installed and add the views to your URL config for example as follows. The URL's must be mounted on root if Diaspora protocol support is required.
+
+::
+
+    url(r"", include("federation.hostmeta.django.urls")),
+
+Some settings need to be set in Django settings. An example is below:
+
+::
+
+    FEDERATION = {
+        "base_url": "https://myserver.domain.tld,
+        "profile_id_function": "myproject.utils.get_profile_id_by_handle",
+    }
+
+* ``base_url`` is the base URL of the server, ie protocol://domain.tld.
+* ``profile_id_function`` should be the full path to a function that given a handle will return the Diaspora URI format profile ID.
 
 Protocols
 ---------
@@ -107,10 +136,12 @@ Diaspora
 ........
 
 .. autofunction:: federation.utils.diaspora.fetch_public_key
+.. autofunction:: federation.utils.diaspora.generate_diaspora_profile_id
 .. autofunction:: federation.utils.diaspora.get_fetch_content_endpoint
-.. autofunction:: federation.utils.diaspora.get_public_endpoint
 .. autofunction:: federation.utils.diaspora.get_private_endpoint
+.. autofunction:: federation.utils.diaspora.get_public_endpoint
 .. autofunction:: federation.utils.diaspora.parse_diaspora_uri
+.. autofunction:: federation.utils.diaspora.parse_profile_diaspora_id
 .. autofunction:: federation.utils.diaspora.parse_profile_from_hcard
 .. autofunction:: federation.utils.diaspora.retrieve_and_parse_content
 .. autofunction:: federation.utils.diaspora.retrieve_and_parse_profile
