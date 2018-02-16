@@ -7,6 +7,10 @@
 * Enable generating encrypted JSON payloads with the Diaspora protocol which adds private message support. ([related issue](https://github.com/jaywink/federation/issues/82))
 
   JSON encrypted payload encryption and decryption is handled by the Diaspora `EncryptedPayload` class.
+  
+* Add RFC3033 webfinger generator ([related issue](https://github.com/jaywink/federation/issues/108))
+
+  Also provided is a Django view and url configuration for easy addition into Django projects. Django is not a hard dependency of this library, usage of the Django view obviously requires installing Django itself. For configuration details see documentation.
 
 ### Changed
 

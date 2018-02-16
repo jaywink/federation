@@ -151,6 +151,25 @@ def parse_diaspora_uri(uri):
     return handle, entity_type, guid
 
 
+def parse_profile_diaspora_id(id):
+    """
+    Parse profile handle and guid from diaspora ID.
+    """
+    handle, entity_type, guid = parse_diaspora_uri(id)
+    if entity_type != "profile":
+        raise ValueError(
+            "Invalid entity type %s to generate private remote endpoint for delivery. Must be 'profile'." % entity_type
+        )
+    return handle, guid
+
+
+def generate_diaspora_profile_id(handle, guid):
+    """
+    Generate a Diaspora profile ID from handle and guid.
+    """
+    return "diaspora://%s/profile/%s" % (handle, guid)
+
+
 def parse_profile_from_hcard(hcard, handle):
     """
     Parse all the fields we can from a hCard document to get a Profile.
@@ -244,10 +263,6 @@ def get_public_endpoint(id):
 
 def get_private_endpoint(id):
     """Get remote endpoint for delivering private payloads."""
-    handle, entity_type, guid = parse_diaspora_uri(id)
-    if entity_type != "profile":
-        raise ValueError(
-            "Invalid entity type %s to generate private remote endpoint for delivery. Must be 'profile'." % entity_type
-        )
+    handle, guid = parse_profile_diaspora_id(id)
     _username, domain = handle.split("@")
     return "https://%s/receive/users/%s" % (domain, guid)

@@ -1,13 +1,14 @@
-# -*- coding: utf-8 -*-
-import warnings
-
-from base64 import b64encode
 import json
 import os
+import warnings
+from base64 import b64encode
 from string import Template
+
 from jsonschema import validate
 from jsonschema.exceptions import ValidationError
 from xrd import XRD, Link, Element
+
+from federation.utils.diaspora import parse_profile_diaspora_id
 
 
 def generate_host_meta(template=None, *args, **kwargs):
@@ -55,7 +56,7 @@ def generate_hcard(template=None, **kwargs):
     return hcard.render()
 
 
-class BaseHostMeta(object):
+class BaseHostMeta:
     def __init__(self, *args, **kwargs):
         self.xrd = XRD()
 
@@ -152,7 +153,7 @@ class DiasporaWebFinger(BaseLegacyWebFinger):
         ))
 
 
-class DiasporaHCard(object):
+class DiasporaHCard:
     """Diaspora hCard document.
 
     Must receive the `required` attributes as keyword arguments to init.
@@ -178,7 +179,7 @@ class DiasporaHCard(object):
         return self.template.substitute(self.kwargs)
 
 
-class SocialRelayWellKnown(object):
+class SocialRelayWellKnown:
     """A `.well-known/social-relay` document in JSON.
 
     For apps wanting to announce their preferences towards relay applications.
@@ -209,7 +210,7 @@ class SocialRelayWellKnown(object):
         validate(self.doc, schema)
 
 
-class NodeInfo(object):
+class NodeInfo:
     """Generate a NodeInfo document.
 
     See spec: http://nodeinfo.diaspora.software
@@ -276,3 +277,37 @@ def get_nodeinfo_well_known_document(url, document_path=None):
             }
         ]
     }
+
+
+class RFC3033Webfinger:
+    """
+    RFC 3033 webfinger - see https://diaspora.github.io/diaspora_federation/discovery/webfinger.html
+
+    A Django view is also available, see the child ``django`` module for view and url configuration.
+
+    :param id: Diaspora ID in URI format
+    :param base_url: The base URL of the server (protocol://domain.tld)
+    :param hcard_path: (Optional) hCard path, defaults to ``/hcard/users/``.
+    :returns: dict
+    """
+    def __init__(self, id, base_url, hcard_path="/hcard/users/"):
+        self.handle, self.guid = parse_profile_diaspora_id(id)
+        self.base_url = base_url
+        self.hcard_path = hcard_path
+
+    def render(self):
+        return {
+            "subject": "acct:%s" % self.handle,
+            "links": [
+                {
+                    "rel": "http://microformats.org/profile/hcard",
+                    "type": "text/html",
+                    "href": "%s%s%s" % (self.base_url, self.hcard_path, self.guid),
+                },
+                {
+                    "rel": "http://joindiaspora.com/seed_location",
+                    "type": "text/html",
+                    "href": self.base_url,
+                },
+            ],
+        }
