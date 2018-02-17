@@ -44,6 +44,7 @@ def test_get_fetch_content_endpoint():
 
 def test_parse_diaspora_uri():
     assert parse_diaspora_uri("diaspora://user@example.com/spam/eggs") == ("user@example.com", "spam", "eggs")
+    assert parse_diaspora_uri("diaspora://user@example.com/spam/") == ("user@example.com", "spam", "")
     assert parse_diaspora_uri("diaspora://user@example.com/spam/eggs@spam") == ("user@example.com", "spam", "eggs@spam")
     assert not parse_diaspora_uri("https://user@example.com/spam/eggs")
     assert not parse_diaspora_uri("spam and eggs")
@@ -57,6 +58,7 @@ def test_parse_profile_diaspora_id():
 
 def test_generate_diaspora_profile_id():
     assert generate_diaspora_profile_id("foobar@example.com", "1234") == "diaspora://foobar@example.com/profile/1234"
+    assert generate_diaspora_profile_id("foobar@example.com") == "diaspora://foobar@example.com/profile/"
 
 
 class TestRetrieveDiasporaHCard:

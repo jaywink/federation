@@ -163,11 +163,14 @@ def parse_profile_diaspora_id(id):
     return handle, guid
 
 
-def generate_diaspora_profile_id(handle, guid):
+def generate_diaspora_profile_id(handle, guid=None):
     """
     Generate a Diaspora profile ID from handle and guid.
+
+    Sometimes we don't know the guid if we just have a handle, but still we want to store it
+    in URI format.
     """
-    return "diaspora://%s/profile/%s" % (handle, guid)
+    return "diaspora://%s/profile/%s" % (handle, guid or "")
 
 
 def parse_profile_from_hcard(hcard, handle):
