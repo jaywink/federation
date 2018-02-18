@@ -1,7 +1,11 @@
+import logging
+
 from federation.entities.diaspora.mappers import get_outbound_entity
 from federation.protocols.diaspora.protocol import Protocol
 from federation.utils.diaspora import get_public_endpoint, get_private_endpoint
 from federation.utils.network import send_document
+
+logger = logging.getLogger("federation")
 
 
 def handle_create_payload(entity, author_user, to_user_key=None, parent_user=None):
@@ -86,6 +90,8 @@ def handle_send(entity, author_user, recipients=None, parent_user=None):
         payloads.append({
             "urls": public_payloads["diaspora"]["urls"], "payload": public_payloads["diaspora"]["payload"],
         })
+
+    logger.debug("handle_send - %s", payloads)
 
     # Do actual sending
     for payload in payloads:
