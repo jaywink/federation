@@ -60,16 +60,18 @@ class TestHandleSend:
         handle_send(diasporapost, mock_author, recipients)
 
         # Ensure first call is a private payload
-        assert mock_send.call_args_list[0][0][0] == "https://127.0.0.1/receive/users/xyz"
-        encrypted = mock_send.call_args_list[0][0][1]
-        assert "aes_key" in encrypted
-        assert "encrypted_magic_envelope" in encrypted
+        args, kwargs = mock_send.call_args_list[0]
+        assert args[0] == "https://127.0.0.1/receive/users/xyz"
+        assert "aes_key" in args[1]
+        assert "encrypted_magic_envelope" in args[1]
+        assert kwargs['headers'] == {'Content-Type': 'application/json'}
 
         # Ensure public payloads and recipients, one per unique host
-        public_endpoints = {
-            mock_send.call_args_list[1][0][0],
-            mock_send.call_args_list[2][0][0],
-        }
+        args1, kwargs1 = mock_send.call_args_list[1]
+        args2, kwargs2 = mock_send.call_args_list[2]
+        public_endpoints = {args1[0], args2[0]}
         assert public_endpoints == {"https://example.net/receive/public", "https://localhost/receive/public"}
-        assert mock_send.call_args_list[1][0][1].startswith("<me:env xmlns:me=")
-        assert mock_send.call_args_list[2][0][1].startswith("<me:env xmlns:me=")
+        assert args1[1].startswith("<me:env xmlns:me=")
+        assert args2[1].startswith("<me:env xmlns:me=")
+        assert kwargs1['headers'] == {'Content-Type': 'application/magic-envelope+xml'}
+        assert kwargs2['headers'] == {'Content-Type': 'application/magic-envelope+xml'}

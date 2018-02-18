@@ -83,6 +83,6 @@ class EncryptedPayload:
         padded_payload = pkcs7_pad(payload.encode("utf-8"), AES.block_size)
         encrypted_me = b64encode(encrypter.encrypt(padded_payload))
         return {
-            "aes_key": aes_key,
-            "encrypted_magic_envelope": encrypted_me,
+            "aes_key": aes_key.decode("utf-8"),
+            "encrypted_magic_envelope": encrypted_me.decode("utf8"),
         }
