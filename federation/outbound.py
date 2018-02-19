@@ -1,3 +1,4 @@
+import json
 import logging
 
 from federation.entities.diaspora.mappers import get_outbound_entity
@@ -70,11 +71,16 @@ def handle_send(entity, author_user, recipients=None, parent_user=None):
         public_key = recipient[1] if isinstance(recipient, tuple) and len(recipient) > 1 else None
         if public_key:
             # Private payload
-            payload = handle_create_payload(entity, author_user, to_user_key=public_key, parent_user=parent_user)
+            try:
+                payload = handle_create_payload(entity, author_user, to_user_key=public_key, parent_user=parent_user)
+                payload = json.dumps(payload)
+            except Exception as ex:
+                logger.error("handle_send - failed to generate private payload for %s: %s", id, ex)
+                continue
             # TODO get_private_endpoint should be imported per protocol
             url = get_private_endpoint(id)
             payloads.append({
-                "urls": {url}, "payload": payload,
+                "urls": {url}, "payload": payload, "content_type": "application/json",
             })
         else:
             if not public_payloads["diaspora"]["payload"]:
@@ -89,6 +95,7 @@ def handle_send(entity, author_user, recipients=None, parent_user=None):
     if public_payloads["diaspora"]["payload"]:
         payloads.append({
             "urls": public_payloads["diaspora"]["urls"], "payload": public_payloads["diaspora"]["payload"],
+            "content_type": "application/magic-envelope+xml",
         })
 
     logger.debug("handle_send - %s", payloads)
@@ -96,5 +103,7 @@ def handle_send(entity, author_user, recipients=None, parent_user=None):
     # Do actual sending
     for payload in payloads:
         for url in payload["urls"]:
-            # TODO set content type per protocol above when collecting and use here
-            send_document(url, payload["payload"])
+            try:
+                send_document(url, payload["payload"], headers={"Content-Type": payload["content_type"]})
+            except Exception as ex:
+                logger.error("handle_send - failed to send payload to %s: %s, payload: %s", url, ex, payload["payload"])
