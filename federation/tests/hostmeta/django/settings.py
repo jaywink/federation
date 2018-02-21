@@ -4,5 +4,6 @@ INSTALLED_APPS = tuple()
 
 FEDERATION = {
     "base_url": "https://example.com",
-    "profile_id_function": "federation.tests.hostmeta.django.utils.get_profile_id_by_handle",
+    "get_profile_function": "federation.tests.hostmeta.django.utils.get_profile_by_handle",
+    "search_path": "/search?q=",
 }

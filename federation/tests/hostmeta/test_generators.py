@@ -178,23 +178,77 @@ class TestNodeInfoGenerator:
         assert wellknown["links"][0]["href"] == "https://example.com/nodeinfo/1.0"
 
 
-def test_rfc3033_webfinger():
-    webfinger = RFC3033Webfinger(
-        "diaspora://foobar@example.com/profile/1234",
-        "https://example.com",
-    ).render()
-    assert webfinger == {
-        "subject": "acct:foobar@example.com",
-        "links": [
-            {
-                "rel": "http://microformats.org/profile/hcard",
-                "type": "text/html",
-                "href": "https://example.com/hcard/users/1234",
-            },
-            {
-                "rel": "http://joindiaspora.com/seed_location",
-                "type": "text/html",
-                "href": "https://example.com",
-            },
-        ],
-    }
+class TestRFC3033Webfinger:
+    def test_rfc3033_webfinger__all_properties(self):
+        webfinger = RFC3033Webfinger(
+            "diaspora://foobar@example.com/profile/1234",
+            "https://example.com",
+            profile_path="/profile/1234/",
+            hcard_path="/hcard/path/",
+            atom_path="/profile/1234/atom.xml",
+            search_path="/search?q=",
+        ).render()
+        assert webfinger == {
+            "subject": "acct:foobar@example.com",
+            "links": [
+                {
+                    "rel": "http://microformats.org/profile/hcard",
+                    "type": "text/html",
+                    "href": "https://example.com/hcard/path/1234",
+                },
+                {
+                    "rel": "http://joindiaspora.com/seed_location",
+                    "type": "text/html",
+                    "href": "https://example.com",
+                },
+                {
+                    "rel": "http://webfinger.net/rel/profile-page",
+                    "type": "text/html",
+                    "href": "https://example.com/profile/1234/",
+                },
+                {
+                    "rel": "salmon",
+                    "href": "https://example.com/receive/users/1234",
+                },
+                {
+                    "rel": "http://schemas.google.com/g/2010#updates-from",
+                    "type": "application/atom+xml",
+                    "href": "https://example.com/profile/1234/atom.xml",
+                },
+                {
+                    "rel": "http://ostatus.org/schema/1.0/subscribe",
+                    "template": "https://example.com/search?q={uri}",
+                },
+            ],
+        }
+
+    def test_rfc3033_webfinger__minimal(self):
+        webfinger = RFC3033Webfinger(
+            "diaspora://foobar@example.com/profile/1234",
+            "https://example.com",
+            profile_path="/profile/1234/",
+        ).render()
+        assert webfinger == {
+            "subject": "acct:foobar@example.com",
+            "links": [
+                {
+                    "rel": "http://microformats.org/profile/hcard",
+                    "type": "text/html",
+                    "href": "https://example.com/hcard/users/1234",
+                },
+                {
+                    "rel": "http://joindiaspora.com/seed_location",
+                    "type": "text/html",
+                    "href": "https://example.com",
+                },
+                {
+                    "rel": "http://webfinger.net/rel/profile-page",
+                    "type": "text/html",
+                    "href": "https://example.com/profile/1234/",
+                },
+                {
+                    "rel": "salmon",
+                    "href": "https://example.com/receive/users/1234",
+                },
+            ],
+        }

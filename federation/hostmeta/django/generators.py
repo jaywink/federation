@@ -16,23 +16,23 @@ def get_configuration():
     """
     configuration = {
         "hcard_path": "/hcard/users/",
+        "search_path": None,
     }
     configuration.update(settings.FEDERATION)
     if not all([
-        "profile_id_function" in configuration,
+        "get_profile_function" in configuration,
         "base_url" in configuration,
-        "hcard_path" in configuration,
     ]):
         raise ImproperlyConfigured("Missing required FEDERATION settings, please check documentation.")
     return configuration
 
 
-def get_profile_id_func():
+def get_profile_func():
     """
-    Import the function to get profile ID by handle.
+    Import the function to get profile by handle.
     """
     config = get_configuration()
-    profile_func_path = config.get("profile_id_function")
+    profile_func_path = config.get("get_profile_function")
     module_path, func_name = profile_func_path.rsplit(".", 1)
     module = importlib.import_module(module_path)
     profile_func = getattr(module, func_name)
@@ -50,19 +50,22 @@ def rfc3033_webfinger_view(request, *args, **kwargs):
         return HttpResponseBadRequest("Invalid resource")
 
     handle = resource.replace("acct:", "")
-    profile_id_func = get_profile_id_func()
+    profile_func = get_profile_func()
 
     try:
-        profile_id = profile_id_func(handle)
+        profile = profile_func(handle)
     except Exception as exc:
-        logger.warning("rfc3033_webfinger_view - Failed to get profile ID by handle %s: %s", handle, exc)
+        logger.warning("rfc3033_webfinger_view - Failed to get profile by handle %s: %s", handle, exc)
         return HttpResponseNotFound()
 
     config = get_configuration()
     webfinger = RFC3033Webfinger(
-        id=profile_id,
+        id=profile.get('id'),
         base_url=config.get('base_url'),
+        profile_path=profile.get('profile_path'),
         hcard_path=config.get('hcard_path'),
+        atom_path=profile.get('atom_path'),
+        search_path=config.get('search_path'),
     )
 
     return JsonResponse(
