@@ -206,6 +206,10 @@ class TestRFC3033Webfinger:
                     "href": "https://example.com/profile/1234/",
                 },
                 {
+                    "rel": "salmon",
+                    "href": "https://example.com/receive/users/1234",
+                },
+                {
                     "rel": "http://schemas.google.com/g/2010#updates-from",
                     "type": "application/atom+xml",
                     "href": "https://example.com/profile/1234/atom.xml",
@@ -236,6 +240,10 @@ class TestRFC3033Webfinger:
                     "rel": "http://webfinger.net/rel/profile-page",
                     "type": "text/html",
                     "href": "https://example.com/profile/1234/",
+                },
+                {
+                    "rel": "salmon",
+                    "href": "https://example.com/receive/users/1234",
                 },
             ],
         }

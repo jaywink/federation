@@ -318,6 +318,10 @@ class RFC3033Webfinger:
                     "type": "text/html",
                     "href": "%s%s" % (self.base_url, self.profile_path),
                 },
+                {
+                    "rel": "salmon",
+                    "href": "%s/receive/users/%s" % (self.base_url, self.guid),
+                },
             ],
         }
         if self.atom_path:
