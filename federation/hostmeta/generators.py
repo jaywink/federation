@@ -289,16 +289,18 @@ class RFC3033Webfinger:
     :param base_url: The base URL of the server (protocol://domain.tld)
     :param profile_path: Profile path for the user (for example `/profile/johndoe/`)
     :param hcard_path: (Optional) hCard path, defaults to ``/hcard/users/``.
+    :param atom_path: (Optional) atom feed path
     :returns: dict
     """
-    def __init__(self, id, base_url, profile_path, hcard_path="/hcard/users/"):
+    def __init__(self, id, base_url, profile_path, hcard_path="/hcard/users/", atom_path=None):
         self.handle, self.guid = parse_profile_diaspora_id(id)
         self.base_url = base_url
         self.hcard_path = hcard_path
         self.profile_path = profile_path
+        self.atom_path = atom_path
 
     def render(self):
-        return {
+        webfinger = {
             "subject": "acct:%s" % self.handle,
             "links": [
                 {
@@ -318,3 +320,12 @@ class RFC3033Webfinger:
                 },
             ],
         }
+        if self.atom_path:
+            webfinger['links'].append(
+                {
+                    "rel": "http://schemas.google.com/g/2010#updates-from",
+                    "type": "application/atom+xml",
+                    "href": "%s%s" % (self.base_url, self.atom_path),
+                }
+            )
+        return webfinger

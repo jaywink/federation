@@ -53,5 +53,10 @@ class TestRFC3033WebfingerView:
                     "type": "text/html",
                     "href": "https://example.com/profile/1234/",
                 },
+                {
+                    "rel": "http://schemas.google.com/g/2010#updates-from",
+                    "type": "application/atom+xml",
+                    "href": "https://example.com/profile/1234/atom.xml",
+                },
             ],
         }

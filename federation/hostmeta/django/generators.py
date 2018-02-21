@@ -64,6 +64,7 @@ def rfc3033_webfinger_view(request, *args, **kwargs):
         base_url=config.get('base_url'),
         profile_path=profile.get('profile_path'),
         hcard_path=config.get('hcard_path'),
+        atom_path=profile.get('atom_path'),
     )
 
     return JsonResponse(
