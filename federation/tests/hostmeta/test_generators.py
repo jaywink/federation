@@ -182,6 +182,7 @@ def test_rfc3033_webfinger():
     webfinger = RFC3033Webfinger(
         "diaspora://foobar@example.com/profile/1234",
         "https://example.com",
+        profile_path="/profile/1234/",
     ).render()
     assert webfinger == {
         "subject": "acct:foobar@example.com",
@@ -195,6 +196,11 @@ def test_rfc3033_webfinger():
                 "rel": "http://joindiaspora.com/seed_location",
                 "type": "text/html",
                 "href": "https://example.com",
+            },
+            {
+                "rel": "http://webfinger.net/rel/profile-page",
+                "type": "text/html",
+                "href": "https://example.com/profile/1234/",
             },
         ],
     }

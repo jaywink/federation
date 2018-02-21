@@ -287,13 +287,15 @@ class RFC3033Webfinger:
 
     :param id: Diaspora ID in URI format
     :param base_url: The base URL of the server (protocol://domain.tld)
+    :param profile_path: Profile path for the user (for example `/profile/johndoe/`)
     :param hcard_path: (Optional) hCard path, defaults to ``/hcard/users/``.
     :returns: dict
     """
-    def __init__(self, id, base_url, hcard_path="/hcard/users/"):
+    def __init__(self, id, base_url, profile_path, hcard_path="/hcard/users/"):
         self.handle, self.guid = parse_profile_diaspora_id(id)
         self.base_url = base_url
         self.hcard_path = hcard_path
+        self.profile_path = profile_path
 
     def render(self):
         return {
@@ -308,6 +310,11 @@ class RFC3033Webfinger:
                     "rel": "http://joindiaspora.com/seed_location",
                     "type": "text/html",
                     "href": self.base_url,
+                },
+                {
+                    "rel": "http://webfinger.net/rel/profile-page",
+                    "type": "text/html",
+                    "href": "%s%s" % (self.base_url, self.profile_path),
                 },
             ],
         }

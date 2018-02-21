@@ -111,11 +111,14 @@ Some settings need to be set in Django settings. An example is below:
 
     FEDERATION = {
         "base_url": "https://myserver.domain.tld,
-        "profile_id_function": "myproject.utils.get_profile_id_by_handle",
+        "get_profile_function": "myproject.utils.get_profile_by_handle",
     }
 
 * ``base_url`` is the base URL of the server, ie protocol://domain.tld.
-* ``profile_id_function`` should be the full path to a function that given a handle will return the Diaspora URI format profile ID.
+* ``profile_id_function`` should be the full path to a function that given a handle will return a dictionary with information that will be used to generate the webfinger document. The dict should contain the following elements:
+
+  * ``id`` - Diaspora URI format ID.
+  * ``profile_path`` - profile path for generating an absolute URL to the profile page of the user.
 
 Protocols
 ---------
