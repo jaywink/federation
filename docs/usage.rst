@@ -112,6 +112,7 @@ Some settings need to be set in Django settings. An example is below:
     FEDERATION = {
         "base_url": "https://myserver.domain.tld,
         "get_profile_function": "myproject.utils.get_profile_by_handle",
+        "search_path": "/search/?q=",
     }
 
 * ``base_url`` is the base URL of the server, ie protocol://domain.tld.
@@ -119,6 +120,9 @@ Some settings need to be set in Django settings. An example is below:
 
   * ``id`` - Diaspora URI format ID.
   * ``profile_path`` - profile path for generating an absolute URL to the profile page of the user.
+  * ``atom_path`` - (optional) atom feed path for the profile
+
+* ``search_path`` (optional) site search path which ends in a parameter for search input, for example "/search?q="
 
 Protocols
 ---------

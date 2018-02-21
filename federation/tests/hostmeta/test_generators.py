@@ -186,6 +186,7 @@ class TestRFC3033Webfinger:
             profile_path="/profile/1234/",
             hcard_path="/hcard/path/",
             atom_path="/profile/1234/atom.xml",
+            search_path="/search?q=",
         ).render()
         assert webfinger == {
             "subject": "acct:foobar@example.com",
@@ -213,6 +214,10 @@ class TestRFC3033Webfinger:
                     "rel": "http://schemas.google.com/g/2010#updates-from",
                     "type": "application/atom+xml",
                     "href": "https://example.com/profile/1234/atom.xml",
+                },
+                {
+                    "rel": "http://ostatus.org/schema/1.0/subscribe",
+                    "template": "https://example.com/search?q={uri}",
                 },
             ],
         }

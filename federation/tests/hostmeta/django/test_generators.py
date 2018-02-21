@@ -62,5 +62,9 @@ class TestRFC3033WebfingerView:
                     "type": "application/atom+xml",
                     "href": "https://example.com/profile/1234/atom.xml",
                 },
+                {
+                    "rel": "http://ostatus.org/schema/1.0/subscribe",
+                    "template": "https://example.com/search?q={uri}",
+                },
             ],
         }

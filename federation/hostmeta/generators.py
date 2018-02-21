@@ -292,12 +292,13 @@ class RFC3033Webfinger:
     :param atom_path: (Optional) atom feed path
     :returns: dict
     """
-    def __init__(self, id, base_url, profile_path, hcard_path="/hcard/users/", atom_path=None):
+    def __init__(self, id, base_url, profile_path, hcard_path="/hcard/users/", atom_path=None, search_path=None):
         self.handle, self.guid = parse_profile_diaspora_id(id)
         self.base_url = base_url
         self.hcard_path = hcard_path
         self.profile_path = profile_path
         self.atom_path = atom_path
+        self.search_path = search_path
 
     def render(self):
         webfinger = {
@@ -331,5 +332,12 @@ class RFC3033Webfinger:
                     "type": "application/atom+xml",
                     "href": "%s%s" % (self.base_url, self.atom_path),
                 }
+            )
+        if self.search_path:
+            webfinger['links'].append(
+                {
+                    "rel": "http://ostatus.org/schema/1.0/subscribe",
+                    "template": "%s%s{uri}" % (self.base_url, self.search_path),
+                },
             )
         return webfinger

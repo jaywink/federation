@@ -16,12 +16,12 @@ def get_configuration():
     """
     configuration = {
         "hcard_path": "/hcard/users/",
+        "search_path": None,
     }
     configuration.update(settings.FEDERATION)
     if not all([
         "get_profile_function" in configuration,
         "base_url" in configuration,
-        "hcard_path" in configuration,
     ]):
         raise ImproperlyConfigured("Missing required FEDERATION settings, please check documentation.")
     return configuration
@@ -65,6 +65,7 @@ def rfc3033_webfinger_view(request, *args, **kwargs):
         profile_path=profile.get('profile_path'),
         hcard_path=config.get('hcard_path'),
         atom_path=profile.get('atom_path'),
+        search_path=config.get('search_path'),
     )
 
     return JsonResponse(
