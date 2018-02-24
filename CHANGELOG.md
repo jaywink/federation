@@ -26,6 +26,10 @@
 
   Parameter `to_user` is now `to_user_key` and thus instead of an object containing the `key` attribute it should now be an RSA public key object instance. This simplifies things since we only need the key from the user, nothing else.
 
+* Switch Diaspora protocol to send new style entities ([related issue](https://github.com/jaywink/federation/issues/59))
+
+  We've already accepted these on incoming payloads for a long time and so do all the other platforms now, so now we always send out entities with the new property names. This can break federation with really old servers that don't understand these keys yet. 
+
 ### Fixed
 
 * Change unquote method used when preparing Diaspora XML payloads for verification ([related issue](https://github.com/jaywink/federation/issues/115))
