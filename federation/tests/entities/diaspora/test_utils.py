@@ -29,8 +29,8 @@ class TestGetFullXMLRepresentation:
         entity = Post()
         document = get_full_xml_representation(entity, "")
         document = re.sub(r"<created_at>.*</created_at>", "", document)  # Dates are annoying to compare
-        assert document == "<XML><post><status_message><raw_message></raw_message><guid></guid>" \
-                           "<diaspora_handle></diaspora_handle><public>false</public>" \
+        assert document == "<XML><post><status_message><text></text><guid></guid>" \
+                           "<author></author><public>false</public>" \
                            "<provider_display_name></provider_display_name></status_message></post></XML>"
 
 

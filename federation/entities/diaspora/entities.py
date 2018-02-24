@@ -117,7 +117,7 @@ class DiasporaComment(DiasporaRelayableMixin, Comment):
             {"author_signature": self.signature},
             {"parent_author_signature": self.parent_signature},
             {"text": self.raw_content},
-            {"diaspora_handle": self.handle},
+            {"author": self.handle},
             {"created_at": format_dt(self.created_at)},
         ])
         return element
@@ -131,9 +131,9 @@ class DiasporaPost(DiasporaEntityMixin, Post):
         """Convert to XML message."""
         element = etree.Element(self._tag_name)
         struct_to_xml(element, [
-            {"raw_message": self.raw_content},
+            {"text": self.raw_content},
             {"guid": self.guid},
-            {"diaspora_handle": self.handle},
+            {"author": self.handle},
             {"public": "true" if self.public else "false"},
             {"created_at": format_dt(self.created_at)},
             {"provider_display_name": self.provider_display_name},
@@ -150,13 +150,13 @@ class DiasporaLike(DiasporaRelayableMixin, Reaction):
         """Convert to XML message."""
         element = etree.Element(self._tag_name)
         struct_to_xml(element, [
-            {"target_type": "Post"},
+            {"parent_type": "Post"},
             {"guid": self.guid},
             {"parent_guid": self.target_guid},
             {"author_signature": self.signature},
             {"parent_author_signature": self.parent_signature},
             {"positive": "true"},
-            {"diaspora_handle": self.handle},
+            {"author": self.handle},
         ])
         return element
 
@@ -203,7 +203,7 @@ class DiasporaProfile(DiasporaEntityMixin, Profile):
         """Convert to XML message."""
         element = etree.Element(self._tag_name)
         struct_to_xml(element, [
-            {"diaspora_handle": self.handle},
+            {"author": self.handle},
             {"first_name": self.name},
             {"last_name": ""},  # Not used in Diaspora modern profiles
             {"image_url": self.image_urls["large"]},
@@ -289,7 +289,7 @@ class DiasporaReshare(DiasporaEntityMixin, Share):
             {"provider_display_name": self.provider_display_name},
             {"public": "true" if self.public else "false"},
             # Some of our own not in Diaspora protocol
-            {"raw_content": self.raw_content},
+            {"text": self.raw_content},
             {"entity_type": self.entity_type},
         ])
         return element
