@@ -26,6 +26,11 @@
 
   Parameter `to_user` is now `to_user_key` and thus instead of an object containing the `key` attribute it should now be an RSA public key object instance. This simplifies things since we only need the key from the user, nothing else.
 
+### Fixed
+
+* Change unquote method used when preparing Diaspora XML payloads for verification ([related issue](https://github.com/jaywink/federation/issues/115))
+
+  Some platforms deliver payloads not using the urlsafe base64 standard which caused problems when validating the unquoted signature. Ensure maximum compatibility by allowing non-standard urlsafe quoted payloads.
     
 ## [0.15.0] - 2018-02-12
 

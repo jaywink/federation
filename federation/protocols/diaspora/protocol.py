@@ -1,7 +1,7 @@
 import json
 import logging
 from base64 import b64decode, urlsafe_b64decode
-from urllib.parse import unquote_plus
+from urllib.parse import unquote_plus, unquote
 
 from Crypto.Cipher import AES, PKCS1_v1_5
 from lxml import etree
@@ -68,7 +68,7 @@ class Protocol(BaseProtocol):
             json_payload = json.loads(decode_if_bytes(payload))
         except ValueError:
             # XML payload
-            xml = unquote_plus(decode_if_bytes(payload))
+            xml = unquote(decode_if_bytes(payload))
             xml = xml.lstrip().encode("utf-8")
             logger.debug("diaspora.protocol.store_magic_envelope_doc: xml payload: %s", xml)
             self.doc = etree.fromstring(xml)
