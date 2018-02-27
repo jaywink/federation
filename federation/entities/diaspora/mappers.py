@@ -166,6 +166,8 @@ def transform_attributes(attrs, cls):
     """
     transformed = {}
     for key, value in attrs.items():
+        if value is None:
+            value = ""
         if key in ["raw_message", "text"]:
             transformed["raw_content"] = value
         elif key in ["diaspora_handle", "sender_handle", "author"]:
@@ -218,7 +220,7 @@ def transform_attributes(attrs, cls):
         elif key in INTEGER_KEYS:
             transformed[key] = int(value)
         else:
-            transformed[key] = value or ""
+            transformed[key] = value
     return transformed
 
 

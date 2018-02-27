@@ -239,6 +239,7 @@ DIASPORA_RESHARE = """
         <created_at>2016-07-12T00:36:42Z</created_at>
         <root_author>bob@example.com</root_author>
         <root_guid>a0b53bc029f6013487753131731751e9</root_guid>
+        <text></text>
     </reshare>
 """
 

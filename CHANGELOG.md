@@ -35,6 +35,8 @@
 * Change unquote method used when preparing Diaspora XML payloads for verification ([related issue](https://github.com/jaywink/federation/issues/115))
 
   Some platforms deliver payloads not using the urlsafe base64 standard which caused problems when validating the unquoted signature. Ensure maximum compatibility by allowing non-standard urlsafe quoted payloads.
+  
+* Fix for empty values in Diaspora protocol entities sometimes ending up as `None` instead of empty string when processing incoming payloads.
     
 ## [0.15.0] - 2018-02-12
 

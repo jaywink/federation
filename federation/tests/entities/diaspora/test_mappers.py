@@ -67,7 +67,7 @@ class TestDiasporaEntityMappersReceive:
         assert isinstance(photo, Image)
         assert photo.remote_path == "https://alice.diaspora.example.org/uploads/images/"
         assert photo.remote_name == "1234.jpg"
-        assert photo.raw_content == None
+        assert photo.raw_content == ""
         assert photo.linked_type == "Post"
         assert photo.linked_guid == "((guidguidguidguidguidguidguid))"
         assert photo.height == 120
@@ -202,6 +202,7 @@ class TestDiasporaEntityMappersReceive:
         assert entity.target_guid == "a0b53bc029f6013487753131731751e9"
         assert entity.public is True
         assert entity.entity_type == "Post"
+        assert entity.raw_content == ""
 
     def test_message_to_objects_reshare_legacy(self):
         entities = message_to_objects(DIASPORA_RESHARE_LEGACY, "alice@example.org")
