@@ -3,6 +3,7 @@ import warnings
 
 from dirty_validators.basic import Email
 
+from federation.utils.text import validate_handle
 
 __all__ = (
     "Post", "Image", "Comment", "Reaction", "Relationship", "Profile", "Retraction", "Follow", "Share",
@@ -167,8 +168,7 @@ class HandleMixin(BaseEntity):
         self._required += ["handle"]
 
     def validate_handle(self):
-        validator = Email()
-        if not validator.is_valid(self.handle):
+        if not validate_handle(self.handle):
             raise ValueError("Handle is not valid")
 
 
@@ -243,8 +243,7 @@ class TargetHandleMixin(BaseEntity):
         self._required += ["target_handle"]
 
     def validate_target_handle(self):
-        validator = Email()
-        if not validator.is_valid(self.target_handle):
+        if not validate_handle(self.target_handle):
             raise ValueError("Target handle is not valid")
 
 

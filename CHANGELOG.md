@@ -39,6 +39,10 @@
 * Fix for empty values in Diaspora protocol entities sometimes ending up as `None` instead of empty string when processing incoming payloads.
 
 * Fix validation of `Retraction` with entity type `Share`
+
+* Allow port in Diaspora handles as per the protocol specification
+
+  Previously handles were validated like emails.
     
 ## [0.15.0] - 2018-02-12
 
