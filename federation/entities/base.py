@@ -5,7 +5,7 @@ from dirty_validators.basic import Email
 
 
 __all__ = (
-    "Post", "Image", "Comment", "Reaction", "Relationship", "Profile", "Retraction", "Follow", "Share,"
+    "Post", "Image", "Comment", "Reaction", "Relationship", "Profile", "Retraction", "Follow", "Share",
 )
 
 

@@ -37,6 +37,8 @@
   Some platforms deliver payloads not using the urlsafe base64 standard which caused problems when validating the unquoted signature. Ensure maximum compatibility by allowing non-standard urlsafe quoted payloads.
   
 * Fix for empty values in Diaspora protocol entities sometimes ending up as `None` instead of empty string when processing incoming payloads.
+
+* Fix validation of `Retraction` with entity type `Share`
     
 ## [0.15.0] - 2018-02-12
 
