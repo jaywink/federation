@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 
+import eventlet
 import requests
 from requests.exceptions import RequestException, HTTPError, SSLError
 from requests.exceptions import ConnectionError
@@ -33,15 +34,17 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
 
     logger.debug("fetch_document: url=%s, host=%s, path=%s, timeout=%s, raise_ssl_errors=%s",
                  url, host, path, timeout, raise_ssl_errors)
+    eventlet.monkey_patch(socket=True)
     headers = {'user-agent': USER_AGENT}
     if url:
         # Use url since it was given
         logger.debug("fetch_document: trying %s", url)
         try:
-            response = requests.get(url, timeout=timeout, headers=headers)
+            with eventlet.Timeout(timeout):
+                response = requests.get(url, timeout=timeout, headers=headers)
             logger.debug("fetch_document: found document, code %s", response.status_code)
             return response.text, response.status_code, None
-        except RequestException as ex:
+        except (RequestException, eventlet.Timeout) as ex:
             logger.debug("fetch_document: exception %s", ex)
             return None, None, ex
     # Build url with some little sanitizing
@@ -50,11 +53,12 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
     url = "https://%s%s" % (host_string, path_string)
     logger.debug("fetch_document: trying %s", url)
     try:
-        response = requests.get(url, timeout=timeout, headers=headers)
+        with eventlet.Timeout(timeout):
+            response = requests.get(url, timeout=timeout, headers=headers)
         logger.debug("fetch_document: found document, code %s", response.status_code)
         response.raise_for_status()
         return response.text, response.status_code, None
-    except (HTTPError, SSLError, ConnectionError) as ex:
+    except (HTTPError, SSLError, ConnectionError, eventlet.Timeout) as ex:
         if isinstance(ex, SSLError) and raise_ssl_errors:
             logger.debug("fetch_document: exception %s", ex)
             return None, None, ex
@@ -62,14 +66,15 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
         url = url.replace("https://", "http://")
         logger.debug("fetch_document: trying %s", url)
         try:
-            response = requests.get(url, timeout=timeout, headers=headers)
+            with eventlet.Timeout(timeout):
+                response = requests.get(url, timeout=timeout, headers=headers)
             logger.debug("fetch_document: found document, code %s", response.status_code)
             response.raise_for_status()
             return response.text, response.status_code, None
         except RequestException as ex:
             logger.debug("fetch_document: exception %s", ex)
             return None, None, ex
-    except RequestException as ex:
+    except (RequestException, eventlet.Timeout) as ex:
         logger.debug("fetch_document: exception %s", ex)
         return None, None, ex
 
@@ -85,6 +90,7 @@ def send_document(url, data, timeout=10, *args, **kwargs):
     :returns: Tuple of status code (int or None) and error (exception class instance or None)
     """
     logger.debug("send_document: url=%s, data=%s, timeout=%s", url, data, timeout)
+    eventlet.monkey_patch(socket=True)
     headers = CaseInsensitiveDict({
         'User-Agent': USER_AGENT,
     })
@@ -95,9 +101,10 @@ def send_document(url, data, timeout=10, *args, **kwargs):
         "data": data, "timeout": timeout, "headers": headers
     })
     try:
-        response = requests.post(url, *args, **kwargs)
+        with eventlet.Timeout(timeout):
+            response = requests.post(url, *args, **kwargs)
         logger.debug("send_document: response status code %s", response.status_code)
         return response.status_code, None
-    except RequestException as ex:
+    except (RequestException, eventlet.Timeout) as ex:
         logger.debug("send_document: exception %s", ex)
         return None, ex

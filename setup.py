@@ -29,6 +29,7 @@ setup(
     install_requires=[
         "cssselect>=0.9.2",
         "dirty-validators>=0.3.0",
+        "eventlet",
         "lxml>=3.4.0",
         "jsonschema>=2.0.0",
         "pycrypto>=2.6.0",
