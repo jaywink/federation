@@ -29,6 +29,10 @@
 * Switch Diaspora protocol to send new style entities ([related issue](https://github.com/jaywink/federation/issues/59))
 
   We've already accepted these on incoming payloads for a long time and so do all the other platforms now, so now we always send out entities with the new property names. This can break federation with really old servers that don't understand these keys yet. 
+  
+* Enforce network request timeouts for the whole request time, not just connection or idle time.
+
+  Default timeout is still 10s in both fetch and send helpers but now it will kick in even if a a server is just transferring slowly.
 
 ### Fixed
 
