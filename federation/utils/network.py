@@ -95,9 +95,9 @@ def send_document(url, data, timeout=10, *args, **kwargs):
         "data": data, "timeout": timeout, "headers": headers
     })
     try:
-        #response = requests.post(url, *args, **kwargs)
-        #logger.debug("send_document: response status code %s", response.status_code)
-        return 200, None
+        response = requests.post(url, *args, **kwargs)
+        logger.debug("send_document: response status code %s", response.status_code)
+        return response.status_code, None
     except RequestException as ex:
         logger.debug("send_document: exception %s", ex)
         return None, ex
