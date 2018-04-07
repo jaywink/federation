@@ -12,6 +12,8 @@
 
   Also provided is a Django view and url configuration for easy addition into Django projects. Django is not a hard dependency of this library, usage of the Django view obviously requires installing Django itself. For configuration details see documentation.
 
+* Add fetchers and parsers for NodeInfo, NodeInfo2 and StatisticsJSON server metainfo documents.
+
 ### Changed
 
 * Send outbound Diaspora payloads in new format. Remove possibility to generate legacy MagicEnvelope payloads. ([related issue](https://github.com/jaywink/federation/issues/82))

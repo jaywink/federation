@@ -36,7 +36,7 @@ If you need the correct protocol speficic entity class from the base entity, eac
 Discovery
 ---------
 
-Federation provides many generators to allow providing the discovery documents that are necessary for the Diaspora protocol for example. The have been made as Pythonic as possible so that library users don't have to meddle with the various documents and their internals. Since each web framework will have it's own way of constructing views, one will still have to provide the view code to call the generators.
+Federation provides many generators to allow providing the discovery documents that are necessary for the Diaspora protocol for example. The have been made as Pythonic as possible so that library users don't have to meddle with the various documents and their internals.
 
 The protocols themselves are too complex to document within this library, please consult protocol documentation on what kind of discovery documents are expected to be served by the application.
 
@@ -46,6 +46,9 @@ Generators
 Helper methods
 ++++++++++++++
 
+.. autofunction:: federation.hostmeta.fetchers.fetch_nodeinfo_document
+.. autofunction:: federation.hostmeta.fetchers.fetch_nodeinfo2_document
+.. autofunction:: federation.hostmeta.fetchers.fetch_statisticsjson_document
 .. autofunction:: federation.hostmeta.generators.generate_host_meta
 .. autofunction:: federation.hostmeta.generators.generate_legacy_webfinger
 .. autofunction:: federation.hostmeta.generators.generate_hcard
