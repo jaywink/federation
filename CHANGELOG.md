@@ -14,6 +14,8 @@
 
 * Add fetchers and parsers for NodeInfo, NodeInfo2 and StatisticsJSON server metainfo documents.
 
+* Add NodeInfo2 generator and Django view. See documentation for details. ([related issue](https://github.com/jaywink/federation/issues/32))
+
 ### Changed
 
 * Send outbound Diaspora payloads in new format. Remove possibility to generate legacy MagicEnvelope payloads. ([related issue](https://github.com/jaywink/federation/issues/82))

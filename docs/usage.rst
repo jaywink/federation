@@ -52,6 +52,7 @@ Helper methods
 .. autofunction:: federation.hostmeta.generators.generate_host_meta
 .. autofunction:: federation.hostmeta.generators.generate_legacy_webfinger
 .. autofunction:: federation.hostmeta.generators.generate_hcard
+.. autofunction:: federation.hostmeta.generators.generate_nodeinfo2_document
 .. autofunction:: federation.hostmeta.generators.get_nodeinfo_well_known_document
 
 Generator classes
@@ -98,6 +99,7 @@ Some ready provided views and URL configuration exist for Django.
 Note! Django is not part of the normal requirements for this library. It must be installed separately.
 
 .. autofunction:: federation.hostmeta.django.generators.rfc3033_webfinger_view
+.. autofunction:: federation.hostmeta.django.generators.nodeinfo2_view
 
 Configuration
 .............
@@ -115,6 +117,7 @@ Some settings need to be set in Django settings. An example is below:
     FEDERATION = {
         "base_url": "https://myserver.domain.tld,
         "get_profile_function": "myproject.utils.get_profile_by_handle",
+        "nodeinfo2_function": "myproject.utils.get_nodeinfo2_data",
         "search_path": "/search/?q=",
     }
 
@@ -124,6 +127,18 @@ Some settings need to be set in Django settings. An example is below:
   * ``id`` - Diaspora URI format ID.
   * ``profile_path`` - profile path for generating an absolute URL to the profile page of the user.
   * ``atom_path`` - (optional) atom feed path for the profile
+
+* ``nodeinfo2_function`` (optional) function that returns data for generating a `NodeInfo2 document <https://github.com/jaywink/nodeinfo2>`_. Once configured the path ``/.well-known/x-nodeinfo2`` will automatically generate a NodeInfo2 document. The function should return a ``dict`` corresponding to the NodeInfo2 schema, with the following minimum items:
+
+::
+
+    {server:
+        baseUrl
+        name
+        software
+        version
+    }
+    openRegistrations
 
 * ``search_path`` (optional) site search path which ends in a parameter for search input, for example "/search?q="
 
@@ -154,9 +169,9 @@ Diaspora
 .. autofunction:: federation.utils.diaspora.parse_profile_diaspora_id
 .. autofunction:: federation.utils.diaspora.parse_profile_from_hcard
 .. autofunction:: federation.utils.diaspora.retrieve_and_parse_content
+.. autofunction:: federation.utils.diaspora.retrieve_and_parse_diaspora_webfinger
 .. autofunction:: federation.utils.diaspora.retrieve_and_parse_profile
 .. autofunction:: federation.utils.diaspora.retrieve_diaspora_hcard
-.. autofunction:: federation.utils.diaspora.retrieve_diaspora_webfinger
 .. autofunction:: federation.utils.diaspora.retrieve_diaspora_host_meta
 
 Network

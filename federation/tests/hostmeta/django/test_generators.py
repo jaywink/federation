@@ -4,12 +4,27 @@ from unittest.mock import patch, Mock
 from django.test import RequestFactory
 
 from federation.hostmeta.django import rfc3033_webfinger_view
-from federation.hostmeta.django.generators import get_profile_func
+from federation.hostmeta.django.generators import get_function_from_config, nodeinfo2_view
+from federation.tests.fixtures.hostmeta import NODEINFO2_10_DOC
 
 
-def test_get_profile_func():
-    func = get_profile_func()
+def test_get_function_from_config():
+    func = get_function_from_config("get_profile_function")
     assert callable(func)
+
+
+class TestNodeInfo2View:
+    def test_returns_400_if_not_configured(self):
+        request = RequestFactory().get('/.well-known/x-nodeinfo2')
+        response = nodeinfo2_view(request)
+        assert response.status_code == 400
+
+    @patch("federation.hostmeta.django.generators.get_function_from_config")
+    def test_returns_200(self, mock_get_func):
+        mock_get_func.return_value = Mock(return_value=json.loads(NODEINFO2_10_DOC))
+        request = RequestFactory().get('/.well-known/x-nodeinfo2')
+        response = nodeinfo2_view(request)
+        assert response.status_code == 200
 
 
 class TestRFC3033WebfingerView:
@@ -23,7 +38,7 @@ class TestRFC3033WebfingerView:
         response = rfc3033_webfinger_view(request)
         assert response.status_code == 400
 
-    @patch("federation.hostmeta.django.generators.get_profile_func")
+    @patch("federation.hostmeta.django.generators.get_function_from_config")
     def test_unknown_handle_returns_not_found(self, mock_get_func):
         mock_get_func.return_value = Mock(side_effect=Exception)
         request = RequestFactory().get("/.well-known/webfinger?resource=acct:foobar@domain.tld")

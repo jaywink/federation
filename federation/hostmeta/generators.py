@@ -41,6 +41,60 @@ def generate_legacy_webfinger(template=None, *args, **kwargs):
     return webfinger.render()
 
 
+def generate_nodeinfo2_document(**kwargs):
+    """
+    Generate a NodeInfo2 document.
+
+    Pass in a dictionary as per NodeInfo2 1.0 schema:
+    https://github.com/jaywink/nodeinfo2/blob/master/schemas/1.0/schema.json
+
+    Minimum required schema:
+        {server:
+          baseUrl
+          name
+          software
+          version
+        }
+        openRegistrations
+
+    Protocols default will match what this library supports, ie "diaspora" currently.
+
+    :return: dict
+    :raises: KeyError on missing required items
+    """
+    return {
+        "version": "1.0",
+        "server": {
+            "baseUrl": kwargs['server']['baseUrl'],
+            "name": kwargs['server']['name'],
+            "software": kwargs['server']['software'],
+            "version": kwargs['server']['version'],
+        },
+        "organization": {
+            "name": kwargs.get('organization', {}).get('name', None),
+            "contact": kwargs.get('organization', {}).get('contact', None),
+            "account": kwargs.get('organization', {}).get('account', None),
+        },
+        "protocols": kwargs.get('protocols', ["diaspora"]),
+        "relay": kwargs.get('relay', ''),
+        "services": {
+            "inbound": kwargs.get('service', {}).get('inbound', []),
+            "outbound": kwargs.get('service', {}).get('outbound', []),
+        },
+        "openRegistrations": kwargs['openRegistrations'],
+        "usage": {
+            "users": {
+                "total": kwargs.get('usage', {}).get('users', {}).get('total'),
+                "activeHalfyear": kwargs.get('usage', {}).get('users', {}).get('activeHalfyear'),
+                "activeMonth": kwargs.get('usage', {}).get('users', {}).get('activeMonth'),
+                "activeWeek": kwargs.get('usage', {}).get('users', {}).get('activeWeek'),
+            },
+            "localPosts": kwargs.get('usage', {}).get('localPosts'),
+            "localComments": kwargs.get('usage', {}).get('localComments'),
+        }
+    }
+
+
 def generate_hcard(template=None, **kwargs):
     """Generate a hCard document.
 

@@ -5,7 +5,7 @@ import pytest
 from federation.hostmeta.generators import (
     generate_host_meta, generate_legacy_webfinger, generate_hcard,
     SocialRelayWellKnown, NodeInfo, get_nodeinfo_well_known_document, RFC3033Webfinger,
-)
+    generate_nodeinfo2_document)
 from federation.tests.fixtures.payloads import DIASPORA_HOSTMETA, DIASPORA_WEBFINGER
 
 
@@ -73,6 +73,51 @@ class TestDiasporaHCardGenerator:
                 firstname="firstname",
                 unknown="unknown"
             )
+
+
+class TestGenerateNodeInfo2Document:
+    def test_generate_with_minimum_data(self):
+        data = {
+            "server": {
+                "baseUrl": "https://example.com",
+                "name": "Example server",
+                "software": "example",
+                "version": "0.5.0"
+            },
+            "openRegistrations": True,
+        }
+        expected = {
+            "version": "1.0",
+            "server": {
+                "baseUrl": "https://example.com",
+                "name": "Example server",
+                "software": "example",
+                "version": "0.5.0"
+            },
+            "organization": {
+                "account": None,
+                "contact": None,
+                "name": None,
+            },
+            "protocols": ["diaspora"],
+            "relay": "",
+            "services": {
+                "inbound": [],
+                "outbound": []
+            },
+            "openRegistrations": True,
+            "usage": {
+                "users": {
+                    "total": None,
+                    "activeHalfyear": None,
+                    "activeMonth": None,
+                    "activeWeek": None,
+                },
+                "localPosts": None,
+                "localComments": None,
+            }
+        }
+        assert generate_nodeinfo2_document(**data) == expected
 
 
 class TestSocialRelayWellKnownGenerator:
