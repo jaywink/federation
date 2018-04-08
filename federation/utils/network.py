@@ -101,3 +101,8 @@ def send_document(url, data, timeout=10, *args, **kwargs):
     except RequestException as ex:
         logger.debug("send_document: exception %s", ex)
         return None, ex
+
+
+def fetch_host_ip_and_country(host):
+    # TODO implement
+    return '', ''
