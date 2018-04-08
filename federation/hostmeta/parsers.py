@@ -15,7 +15,7 @@ defaults = {
     'name': '',
     'open_signups': False,
     'protocols': [],
-    'relay': False,
+    'relay': '',
     'server_meta': {},
     'services': [],
     'platform': '',
@@ -85,7 +85,7 @@ def parse_nodeinfo2_document(doc, host):
     services = sorted(list(set(inbound + outbound)))
     result['services'] = services
     result['protocols'] = sorted(doc.get('protocols', []))
-    result['relay'] = doc.get('relay', False)
+    result['relay'] = doc.get('relay', '')
     result['organization']['contact'] = doc.get('organization', {}).get('contact', '')
     result['organization']['name'] = doc.get('organization', {}).get('name', '')
     result['organization']['account'] = doc.get('organization', {}).get('account', '')
