@@ -35,6 +35,15 @@ defaults = {
 }
 
 
+def int_or_none(value):
+    if value is None or value == '':
+        return None
+    try:
+        return int(value)
+    except ValueError:
+        return None
+
+
 def parse_nodeinfo_document(doc, host):
     result = deepcopy(defaults)
     nodeinfo_version = doc.get('version', '1.0')
@@ -54,11 +63,11 @@ def parse_nodeinfo_document(doc, host):
     services = sorted(list(set(inbound + outbound)))
     result['services'] = services
     result['open_signups'] = doc.get('openRegistrations', False)
-    result['activity']['users']['total'] = doc.get('usage', {}).get('users', {}).get('total', None)
-    result['activity']['users']['half_year'] = doc.get('usage', {}).get('users', {}).get('activeHalfyear', None)
-    result['activity']['users']['monthly'] = doc.get('usage', {}).get('users', {}).get('activeMonth', None)
-    result['activity']['local_posts'] = doc.get('usage', {}).get('localPosts', None)
-    result['activity']['local_comments'] = doc.get('usage', {}).get('localComments', None)
+    result['activity']['users']['total'] = int_or_none(doc.get('usage', {}).get('users', {}).get('total'))
+    result['activity']['users']['half_year'] = int_or_none(doc.get('usage', {}).get('users', {}).get('activeHalfyear'))
+    result['activity']['users']['monthly'] = int_or_none(doc.get('usage', {}).get('users', {}).get('activeMonth'))
+    result['activity']['local_posts'] = int_or_none(doc.get('usage', {}).get('localPosts'))
+    result['activity']['local_comments'] = int_or_none(doc.get('usage', {}).get('localComments'))
     result['features'] = doc.get('metadata', {})
     admin_handle = doc.get('metadata', {}).get('adminAccount', None)
     if admin_handle:
@@ -90,12 +99,12 @@ def parse_nodeinfo2_document(doc, host):
     result['organization']['name'] = doc.get('organization', {}).get('name', '')
     result['organization']['account'] = doc.get('organization', {}).get('account', '')
     result['features'] = doc.get('otherFeatures', {})
-    result['activity']['users']['total'] = doc.get('usage', {}).get('users', {}).get('total', None)
-    result['activity']['users']['half_year'] = doc.get('usage', {}).get('users', {}).get('activeHalfyear', None)
-    result['activity']['users']['monthly'] = doc.get('usage', {}).get('users', {}).get('activeMonth', None)
-    result['activity']['users']['weekly'] = doc.get('usage', {}).get('users', {}).get('activeWeek', None)
-    result['activity']['local_posts'] = doc.get('usage', {}).get('localPosts', None)
-    result['activity']['local_comments'] = doc.get('usage', {}).get('localComments', None)
+    result['activity']['users']['total'] = int_or_none(doc.get('usage', {}).get('users', {}).get('total'))
+    result['activity']['users']['half_year'] = int_or_none(doc.get('usage', {}).get('users', {}).get('activeHalfyear'))
+    result['activity']['users']['monthly'] = int_or_none(doc.get('usage', {}).get('users', {}).get('activeMonth'))
+    result['activity']['users']['weekly'] = int_or_none(doc.get('usage', {}).get('users', {}).get('activeWeek'))
+    result['activity']['local_posts'] = int_or_none(doc.get('usage', {}).get('localPosts'))
+    result['activity']['local_comments'] = int_or_none(doc.get('usage', {}).get('localComments'))
     result['ip'], result['country'] = fetch_host_ip_and_country(host)
     return result
 
@@ -109,10 +118,10 @@ def parse_statisticsjson_document(doc, host):
     result['open_signups'] = doc.get('registrations_open', False)
     result['services'] = sorted(doc.get('services', []))
     result['protocols'] = ['diaspora']  # Reasonable default
-    result['activity']['users']['total'] = doc.get('total_users', None)
-    result['activity']['users']['half_year'] = doc.get('active_users_halfyear', None)
-    result['activity']['users']['monthly'] = doc.get('active_users_monthly', None)
-    result['activity']['local_posts'] = doc.get('local_posts', None)
-    result['activity']['local_comments'] = doc.get('local_comments', None)
+    result['activity']['users']['total'] = int_or_none(doc.get('total_users'))
+    result['activity']['users']['half_year'] = int_or_none(doc.get('active_users_halfyear'))
+    result['activity']['users']['monthly'] = int_or_none(doc.get('active_users_monthly'))
+    result['activity']['local_posts'] = int_or_none(doc.get('local_posts'))
+    result['activity']['local_comments'] = int_or_none(doc.get('local_comments'))
     result['ip'], result['country'] = fetch_host_ip_and_country(host)
     return result
