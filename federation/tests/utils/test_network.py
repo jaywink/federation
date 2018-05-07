@@ -1,14 +1,27 @@
-# -*- coding: utf-8 -*-
 from unittest.mock import patch, Mock, call
 
 import pytest
 from requests import HTTPError
 from requests.exceptions import SSLError, RequestException
 
-from federation.utils.network import fetch_document, USER_AGENT, send_document
+from federation.utils.network import (
+    fetch_document, USER_AGENT, send_document, fetch_country_by_ip, fetch_host_ip_and_country)
 
 
-class TestFetchDocument(object):
+@patch('federation.utils.network.requests.get', autospec=True, return_value=Mock(
+    status_code=200, json=Mock(return_value={'countryCode': 'FI'}),
+))
+class TestFetchCountryByIp:
+    def test_calls_ip_api_endpoint(self, mock_get):
+        fetch_country_by_ip('127.0.0.1')
+        mock_get.assert_called_once_with('http://ip-api.com/json/127.0.0.1"')
+
+    def test_returns_country_code(self, mock_get):
+        result = fetch_country_by_ip('127.0.0.1')
+        assert result == 'FI'
+
+
+class TestFetchDocument:
     call_args = {"timeout": 10, "headers": {'user-agent': USER_AGENT}}
 
     def test_raises_without_url_and_host(self):
@@ -88,7 +101,17 @@ class TestFetchDocument(object):
         assert exc.__class__ == RequestException
 
 
-class TestSendDocument(object):
+class TestHostIpAndCountry:
+    @patch('federation.utils.network.socket.gethostbyname', autospec=True, return_value='127.0.0.1')
+    @patch('federation.utils.network.fetch_country_by_ip', autospec=True, return_value='FI')
+    def test_calls(self, mock_fetch_country, mock_get_ip):
+        result = fetch_host_ip_and_country('domain.local')
+        assert result == ('127.0.0.1', 'FI')
+        mock_get_ip.assert_called_once_with('domain.local')
+        mock_fetch_country.assert_called_once_with('127.0.0.1')
+
+
+class TestSendDocument:
     call_args = {"timeout": 10, "headers": {'user-agent': USER_AGENT}}
 
     @patch("federation.utils.network.requests.post", return_value=Mock(status_code=200))

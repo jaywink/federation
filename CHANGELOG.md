@@ -16,6 +16,12 @@
 
 * Add NodeInfo2 generator and Django view. See documentation for details. ([related issue](https://github.com/jaywink/federation/issues/32))
 
+* Added new network utilities to fetch IP and country information from a host.
+
+  The country information is fetched using the free `ip-api.com` service. NOTE! This service is rate limited to 150 requests per minute and requires a paid plan for commercial usage. Please make sure to respect the terms.
+  
+  Country information is automatically fetched when using the NodeInfo, NodeInfo2 and StatisticsJSON parsers.
+
 ### Changed
 
 * Send outbound Diaspora payloads in new format. Remove possibility to generate legacy MagicEnvelope payloads. ([related issue](https://github.com/jaywink/federation/issues/82))
