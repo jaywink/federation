@@ -1,11 +1,13 @@
 import json
+from unittest.mock import patch
 
 from federation.hostmeta.parsers import parse_nodeinfo_document, parse_nodeinfo2_document, parse_statisticsjson_document
 from federation.tests.fixtures.hostmeta import NODEINFO2_10_DOC, NODEINFO_10_DOC, NODEINFO_20_DOC, STATISTICS_JSON_DOC
 
 
+@patch('federation.hostmeta.parsers.fetch_host_ip_and_country', return_value=("", ""))
 class TestParseNodeInfoDocument:
-    def test_parse_nodeinfo_10_document(self):
+    def test_parse_nodeinfo_10_document(self, mock_ip):
         result = parse_nodeinfo_document(json.loads(NODEINFO_10_DOC), 'iliketoast.net')
         assert result == {
             'organization': {
@@ -46,7 +48,7 @@ class TestParseNodeInfoDocument:
             },
         }
 
-    def test_parse_nodeinfo_20_document(self):
+    def test_parse_nodeinfo_20_document(self, mock_ip):
         result = parse_nodeinfo_document(json.loads(NODEINFO_20_DOC), 'iliketoast.net')
         assert result == {
             'organization': {
@@ -88,8 +90,9 @@ class TestParseNodeInfoDocument:
         }
 
 
+@patch('federation.hostmeta.parsers.fetch_host_ip_and_country', return_value=("", ""))
 class TestParseNodeInfo2Document:
-    def test_parse_nodeinfo2_10_document(self):
+    def test_parse_nodeinfo2_10_document(self, mock_ip):
         result = parse_nodeinfo2_document(json.loads(NODEINFO2_10_DOC), 'example.com')
         assert result == {
             'organization': {
@@ -122,8 +125,9 @@ class TestParseNodeInfo2Document:
         }
 
 
+@patch('federation.hostmeta.parsers.fetch_host_ip_and_country', return_value=("", ""))
 class TestParseStatisticsJSONDocument:
-    def test_parse_statisticsjson_document(self):
+    def test_parse_statisticsjson_document(self, mock_ip):
         result = parse_statisticsjson_document(json.loads(STATISTICS_JSON_DOC), 'example.com')
         assert result == {
             'organization': {

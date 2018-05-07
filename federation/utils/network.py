@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 import logging
+import socket
 
 import requests
 from requests.exceptions import RequestException, HTTPError, SSLError
@@ -11,6 +11,27 @@ from federation import __version__
 logger = logging.getLogger("federation")
 
 USER_AGENT = "python/federation/%s" % __version__
+
+
+def fetch_country_by_ip(ip):
+    """
+    Fetches country code by IP
+
+    Returns empty string if the request fails in non-200 code.
+
+    Uses the ip-api.com service which has the following rules:
+
+    * Max 150 requests per minute
+    * Non-commercial use only without a paid plan!
+
+    See: http://ip-api.com/docs/api:json
+    """
+    result = requests.get("http://ip-api.com/json/%s" % ip)
+    if result.status_code != 200:
+        return ''
+
+    result = result.json()
+    return result['countryCode']
 
 
 def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=True):
@@ -74,6 +95,20 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
         return None, None, ex
 
 
+def fetch_host_ip_and_country(host):
+    """
+    Fetch ip and country by host
+    """
+    try:
+        ip = socket.gethostbyname(host)
+    except socket.gaierror:
+        return '', ''
+
+    country = fetch_country_by_ip(ip)
+
+    return ip, country
+
+
 def send_document(url, data, timeout=10, *args, **kwargs):
     """Helper method to send a document via POST.
 
@@ -101,8 +136,3 @@ def send_document(url, data, timeout=10, *args, **kwargs):
     except RequestException as ex:
         logger.debug("send_document: exception %s", ex)
         return None, ex
-
-
-def fetch_host_ip_and_country(host):
-    # TODO implement
-    return '', ''
