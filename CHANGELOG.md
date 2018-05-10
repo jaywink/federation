@@ -20,8 +20,6 @@
 
   The country information is fetched using the free `ip-api.com` service. NOTE! This service is rate limited to 150 requests per minute and requires a paid plan for commercial usage. Please make sure to respect the terms.
   
-  Country information is automatically fetched when using the NodeInfo, NodeInfo2 and StatisticsJSON parsers.
-
 ### Changed
 
 * Send outbound Diaspora payloads in new format. Remove possibility to generate legacy MagicEnvelope payloads. ([related issue](https://github.com/jaywink/federation/issues/82))

@@ -2,7 +2,6 @@ import re
 from copy import deepcopy
 
 from federation.utils.diaspora import generate_diaspora_profile_id
-from federation.utils.network import fetch_host_ip_and_country
 
 defaults = {
     'organization': {
@@ -11,7 +10,6 @@ defaults = {
         'name': '',
     },
     'host': '',
-    'ip': '',
     'name': '',
     'open_signups': False,
     'protocols': [],
@@ -21,7 +19,6 @@ defaults = {
     'platform': '',
     'version': '',
     'features': {},
-    'country': '',
     'activity': {
         'users': {
             'total': None,
@@ -72,7 +69,6 @@ def parse_nodeinfo_document(doc, host):
     admin_handle = doc.get('metadata', {}).get('adminAccount', None)
     if admin_handle:
         result['organization']['account'] = generate_diaspora_profile_id("%s@%s" % (admin_handle, host))
-    result['ip'], result['country'] = fetch_host_ip_and_country(host)
     return result
 
 
@@ -105,7 +101,6 @@ def parse_nodeinfo2_document(doc, host):
     result['activity']['users']['weekly'] = int_or_none(doc.get('usage', {}).get('users', {}).get('activeWeek'))
     result['activity']['local_posts'] = int_or_none(doc.get('usage', {}).get('localPosts'))
     result['activity']['local_comments'] = int_or_none(doc.get('usage', {}).get('localComments'))
-    result['ip'], result['country'] = fetch_host_ip_and_country(host)
     return result
 
 
@@ -123,5 +118,4 @@ def parse_statisticsjson_document(doc, host):
     result['activity']['users']['monthly'] = int_or_none(doc.get('active_users_monthly'))
     result['activity']['local_posts'] = int_or_none(doc.get('local_posts'))
     result['activity']['local_comments'] = int_or_none(doc.get('local_comments'))
-    result['ip'], result['country'] = fetch_host_ip_and_country(host)
     return result

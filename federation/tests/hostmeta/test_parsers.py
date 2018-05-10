@@ -5,9 +5,8 @@ from federation.hostmeta.parsers import parse_nodeinfo_document, parse_nodeinfo2
 from federation.tests.fixtures.hostmeta import NODEINFO2_10_DOC, NODEINFO_10_DOC, NODEINFO_20_DOC, STATISTICS_JSON_DOC
 
 
-@patch('federation.hostmeta.parsers.fetch_host_ip_and_country', return_value=("", ""))
 class TestParseNodeInfoDocument:
-    def test_parse_nodeinfo_10_document(self, mock_ip):
+    def test_parse_nodeinfo_10_document(self):
         result = parse_nodeinfo_document(json.loads(NODEINFO_10_DOC), 'iliketoast.net')
         assert result == {
             'organization': {
@@ -16,7 +15,6 @@ class TestParseNodeInfoDocument:
                 'name': '',
             },
             'host': 'iliketoast.net',
-            'ip': '',
             'name': 'I Like Toast',
             'open_signups': True,
             'protocols': ["diaspora"],
@@ -35,7 +33,6 @@ class TestParseNodeInfoDocument:
                 },
                 "adminAccount": "podmin",
             },
-            'country': '',
             'activity': {
                 'users': {
                     'total': 348,
@@ -48,7 +45,7 @@ class TestParseNodeInfoDocument:
             },
         }
 
-    def test_parse_nodeinfo_20_document(self, mock_ip):
+    def test_parse_nodeinfo_20_document(self):
         result = parse_nodeinfo_document(json.loads(NODEINFO_20_DOC), 'iliketoast.net')
         assert result == {
             'organization': {
@@ -57,7 +54,6 @@ class TestParseNodeInfoDocument:
                 'name': '',
             },
             'host': 'iliketoast.net',
-            'ip': '',
             'name': 'I Like Toast',
             'open_signups': True,
             'protocols': ["diaspora"],
@@ -76,7 +72,6 @@ class TestParseNodeInfoDocument:
                 },
                 "adminAccount": "podmin",
             },
-            'country': '',
             'activity': {
                 'users': {
                     'total': 348,
@@ -90,9 +85,8 @@ class TestParseNodeInfoDocument:
         }
 
 
-@patch('federation.hostmeta.parsers.fetch_host_ip_and_country', return_value=("", ""))
 class TestParseNodeInfo2Document:
-    def test_parse_nodeinfo2_10_document(self, mock_ip):
+    def test_parse_nodeinfo2_10_document(self):
         result = parse_nodeinfo2_document(json.loads(NODEINFO2_10_DOC), 'example.com')
         assert result == {
             'organization': {
@@ -101,7 +95,6 @@ class TestParseNodeInfo2Document:
                 'name': 'Example organization',
             },
             'host': 'example.com',
-            'ip': '',
             'name': 'Example server',
             'open_signups': True,
             'protocols': ["diaspora", "zot"],
@@ -111,7 +104,6 @@ class TestParseNodeInfo2Document:
             'platform': 'example',
             'version': '0.5.0',
             'features': {},
-            'country': '',
             'activity': {
                 'users': {
                     'total': 123,
@@ -125,9 +117,8 @@ class TestParseNodeInfo2Document:
         }
 
 
-@patch('federation.hostmeta.parsers.fetch_host_ip_and_country', return_value=("", ""))
 class TestParseStatisticsJSONDocument:
-    def test_parse_statisticsjson_document(self, mock_ip):
+    def test_parse_statisticsjson_document(self):
         result = parse_statisticsjson_document(json.loads(STATISTICS_JSON_DOC), 'example.com')
         assert result == {
             'organization': {
@@ -136,7 +127,6 @@ class TestParseStatisticsJSONDocument:
                 'name': '',
             },
             'host': 'example.com',
-            'ip': '',
             'name': 'diaspora*',
             'open_signups': True,
             'protocols': ["diaspora"],
@@ -146,7 +136,6 @@ class TestParseStatisticsJSONDocument:
             'platform': 'diaspora',
             'version': '0.5.7.0-p56ebcc76',
             'features': {},
-            'country': '',
             'activity': {
                 'users': {
                     'total': None,
