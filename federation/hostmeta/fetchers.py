@@ -13,10 +13,15 @@ def fetch_nodeinfo_document(host):
     doc = json.loads(doc)
 
     url, highest_version = '', 0.0
-    for link in doc.get('links'):
-        version = float(link.get('rel').split('/')[-1])
-        if version > highest_version and version <= HIGHEST_SUPPORTED_NODEINFO_VERSION:
-            url, highest_version = link.get('href'), version
+
+    if doc.get('0'):
+        # Buggy NodeInfo from certain old Hubzilla versions
+        url = doc.get('0', {}).get('href')
+    else:
+        for link in doc.get('links'):
+            version = float(link.get('rel').split('/')[-1])
+            if version > highest_version and version <= HIGHEST_SUPPORTED_NODEINFO_VERSION:
+                url, highest_version = link.get('href'), version
 
     if not url:
         return

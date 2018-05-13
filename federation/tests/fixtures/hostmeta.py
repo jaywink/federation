@@ -11,6 +11,11 @@ NODEINFO_20_DOC = '{"version":"2.0","software":{"name":"diaspora","version":"0.7
                   '22,"localComments":17671},"metadata":{"nodeName":"I Like Toast","xmppChat":false,"camo":{"' \
                   'markdown":false,"opengraph":false,"remotePods":false},"adminAccount":"podmin"}}'
 
+# Buggy NodeInfo well known found in certain older Hubzilla versions
+NODEINFO_WELL_KNOWN_BUGGY = '{"links":{"rel":"http:\/\/nodeinfo.diaspora.software\/ns\/schema\/1.0","href":"h' \
+                            'ttps:\/\/example.com\/nodeinfo\/1.0"},"0":{"rel":"http:\/\/nodeinfo.diaspo' \
+                            'ra.software\/ns\/schema\/2.0","href":"https:\/\/example.com\/nodeinfo\/2.0"}}'
+
 NODEINFO2_10_DOC = """
 {
   "version": "1.0",
