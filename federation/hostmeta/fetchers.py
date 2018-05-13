@@ -17,6 +17,9 @@ def fetch_nodeinfo_document(host):
     if doc.get('0'):
         # Buggy NodeInfo from certain old Hubzilla versions
         url = doc.get('0', {}).get('href')
+    elif isinstance(doc.get('links'), dict):
+        # Another buggy NodeInfo from certain old Hubzilla versions
+        url = doc.get('links').get('href')
     else:
         for link in doc.get('links'):
             version = float(link.get('rel').split('/')[-1])

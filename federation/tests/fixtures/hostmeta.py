@@ -16,6 +16,10 @@ NODEINFO_WELL_KNOWN_BUGGY = '{"links":{"rel":"http:\/\/nodeinfo.diaspora.softwar
                             'ttps:\/\/example.com\/nodeinfo\/1.0"},"0":{"rel":"http:\/\/nodeinfo.diaspo' \
                             'ra.software\/ns\/schema\/2.0","href":"https:\/\/example.com\/nodeinfo\/2.0"}}'
 
+# Another buggy old NodeInfo
+NODEINFO_WELL_KNOWN_BUGGY_2 = '{"links":{"rel":"http:\/\/nodeinfo.diaspora.software\/ns\/schema\/1.0","href":' \
+                              '"https:\/\/example.com\/nodeinfo\/1.0"}}'
+
 NODEINFO2_10_DOC = """
 {
   "version": "1.0",

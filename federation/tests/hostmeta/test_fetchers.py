@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from federation.hostmeta.fetchers import (
     fetch_nodeinfo_document, fetch_nodeinfo2_document, fetch_statisticsjson_document)
-from federation.tests.fixtures.hostmeta import NODEINFO_WELL_KNOWN_BUGGY
+from federation.tests.fixtures.hostmeta import NODEINFO_WELL_KNOWN_BUGGY, NODEINFO_WELL_KNOWN_BUGGY_2
 
 
 class TestFetchNodeInfoDocument:
@@ -34,6 +34,17 @@ class TestFetchNodeInfoDocument:
         assert kwargs['path'] == '/.well-known/nodeinfo'
         args, kwargs = mock_fetch.call_args_list[1]
         assert kwargs['url'] == 'https://example.com/nodeinfo/2.0'
+
+    @patch("federation.hostmeta.fetchers.fetch_document",
+           return_value=(NODEINFO_WELL_KNOWN_BUGGY_2, 200, None), autospec=True)
+    @patch("federation.hostmeta.fetchers.parse_nodeinfo_document", autospec=True)
+    def test_makes_right_calls__buggy_nodeinfo_wellknown_2(self, mock_parse, mock_fetch):
+        fetch_nodeinfo_document('example.com')
+        args, kwargs = mock_fetch.call_args_list[0]
+        assert kwargs['host'] == 'example.com'
+        assert kwargs['path'] == '/.well-known/nodeinfo'
+        args, kwargs = mock_fetch.call_args_list[1]
+        assert kwargs['url'] == 'https://example.com/nodeinfo/1.0'
 
 
 class TestFetchNodeInfo2Document:
