@@ -1,8 +1,13 @@
 import json
-from unittest.mock import patch
 
-from federation.hostmeta.parsers import parse_nodeinfo_document, parse_nodeinfo2_document, parse_statisticsjson_document
+from federation.hostmeta.parsers import (
+    parse_nodeinfo_document, parse_nodeinfo2_document, parse_statisticsjson_document, int_or_none)
 from federation.tests.fixtures.hostmeta import NODEINFO2_10_DOC, NODEINFO_10_DOC, NODEINFO_20_DOC, STATISTICS_JSON_DOC
+
+
+class TestIntOrNone:
+    def test_returns_negative_values_as_none(self):
+        assert int_or_none(-1) is None
 
 
 class TestParseNodeInfoDocument:

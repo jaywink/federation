@@ -36,7 +36,10 @@ def int_or_none(value):
     if value is None or value == '':
         return None
     try:
-        return int(value)
+        result = int(value)
+        if result < 0:
+            return None
+        return result
     except ValueError:
         return None
 
