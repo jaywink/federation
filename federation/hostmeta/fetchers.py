@@ -10,7 +10,10 @@ def fetch_nodeinfo_document(host):
     doc, status_code, error = fetch_document(host=host, path='/.well-known/nodeinfo')
     if not doc:
         return
-    doc = json.loads(doc)
+    try:
+        doc = json.loads(doc)
+    except json.JSONDecodeError:
+        return
 
     url, highest_version = '', 0.0
 
@@ -40,7 +43,10 @@ def fetch_nodeinfo2_document(host):
     doc, status_code, error = fetch_document(host=host, path='/.well-known/x-nodeinfo2')
     if not doc:
         return
-    doc = json.loads(doc)
+    try:
+        doc = json.loads(doc)
+    except json.JSONDecodeError:
+        return
     return parse_nodeinfo2_document(doc, host)
 
 
@@ -48,5 +54,8 @@ def fetch_statisticsjson_document(host):
     doc, status_code, error = fetch_document(host=host, path='/statistics.json')
     if not doc:
         return
-    doc = json.loads(doc)
+    try:
+        doc = json.loads(doc)
+    except json.JSONDecodeError:
+        return
     return parse_statisticsjson_document(doc, host)
