@@ -74,9 +74,9 @@ def parse_nodeinfo_document(doc, host):
 
 def parse_nodeinfo2_document(doc, host):
     result = deepcopy(defaults)
-    result['name'] = doc.get('server', {}).get('name', '')
+    result['name'] = doc.get('server', {}).get('name', '') or ''
     result['platform'] = doc.get('server', {}).get('software', 'unknown').lower()
-    result['version'] = doc.get('server', {}).get('version', '')
+    result['version'] = doc.get('server', {}).get('version', '') or ''
     # Ensure baseUrl is reported as the host we called
     base_url = doc.get('server', {}).get('baseUrl', '')
     cleaned_base_url = re.sub(r'https?://', '', base_url)
@@ -90,10 +90,10 @@ def parse_nodeinfo2_document(doc, host):
     services = sorted(list(set(inbound + outbound)))
     result['services'] = services
     result['protocols'] = sorted(doc.get('protocols', []))
-    result['relay'] = doc.get('relay', '')
-    result['organization']['contact'] = doc.get('organization', {}).get('contact', '')
-    result['organization']['name'] = doc.get('organization', {}).get('name', '')
-    result['organization']['account'] = doc.get('organization', {}).get('account', '')
+    result['relay'] = doc.get('relay', '') or ''
+    result['organization']['contact'] = doc.get('organization', {}).get('contact', '') or ''
+    result['organization']['name'] = doc.get('organization', {}).get('name', '') or ''
+    result['organization']['account'] = doc.get('organization', {}).get('account', '') or ''
     result['features'] = doc.get('otherFeatures', {})
     result['activity']['users']['total'] = int_or_none(doc.get('usage', {}).get('users', {}).get('total'))
     result['activity']['users']['half_year'] = int_or_none(doc.get('usage', {}).get('users', {}).get('activeHalfyear'))
