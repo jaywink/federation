@@ -12,7 +12,7 @@
 
   Also provided is a Django view and url configuration for easy addition into Django projects. Django is not a hard dependency of this library, usage of the Django view obviously requires installing Django itself. For configuration details see documentation.
 
-* Add fetchers and parsers for NodeInfo, NodeInfo2 and StatisticsJSON server metainfo documents.
+* Add fetchers and parsers for NodeInfo, NodeInfo2, StatisticsJSON and Mastodon server metainfo documents.
 
 * Add NodeInfo2 generator and Django view. See documentation for details. ([related issue](https://github.com/jaywink/federation/issues/32))
 

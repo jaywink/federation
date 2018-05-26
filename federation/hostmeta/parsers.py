@@ -1,7 +1,14 @@
+import json
 import re
 from copy import deepcopy
 
 from federation.utils.diaspora import generate_diaspora_profile_id
+from federation.utils.network import fetch_document
+
+WEEKLY_USERS_HALFYEAR_MULTIPLIER = 10.34
+WEEKLY_USERS_MONTHLY_MULTIPLIER = 3.17
+MONTHLY_USERS_WEEKLY_MULTIPLIER = 0.316
+HALFYEAR_USERS_WEEKLY_MULTIPLIER = 0.097
 
 defaults = {
     'organization': {
@@ -44,6 +51,45 @@ def int_or_none(value):
         return None
 
 
+def parse_mastodon_document(doc, host):
+    result = deepcopy(defaults)
+    result['host'] = host
+    result['name'] = doc.get('title', host)
+    result['platform'] = 'mastodon'
+    result['version'] = doc.get('version', '')
+    # TODO parse about page
+    # https://github.com/TheKinrar/mastodon-instances/blob/master/tasks/update_instances.js#L508
+    # result['open_signups']
+    version = [int(part) for part in doc.get('version', '').split('.')]
+    if version >= [1, 6, 0]:
+        result['protocols'] = ['ostatus', 'activitypub']
+    else:
+        result['protocols'] = ['ostatus']
+    result['relay'] = False
+
+    result['activity']['users']['total'] = int_or_none(doc.get('stats', {}).get('user_count'))
+    # TODO figure out what to do with posts vs comments vs statuses
+    #result['activity']['users']['local_posts'] = int_or_none(doc.get('stats', {}).get('status_count'))
+
+    activity_doc, _status_code, _error = fetch_document(host=host, path='/api/v1/instance/activity')
+    if activity_doc:
+        try:
+            activity_doc = json.loads(activity_doc)
+        except json.JSONDecodeError:
+            return
+        else:
+            weekly_count = int_or_none(activity_doc[0].get('logins'))
+            result['activity']['users']['weekly'] = weekly_count
+            if weekly_count:
+                result['activity']['users']['half_year'] = int(weekly_count * WEEKLY_USERS_HALFYEAR_MULTIPLIER)
+                result['activity']['users']['monthly'] = int(weekly_count * WEEKLY_USERS_MONTHLY_MULTIPLIER)
+
+    result['organization']['account'] = doc.get('contact_account', {}).get('url', '')
+    result['organization']['contact'] = doc.get('email', '')
+    result['organization']['name'] = doc.get('contact_account', {}).get('display_name', '')
+    return result
+
+
 def parse_nodeinfo_document(doc, host):
     result = deepcopy(defaults)
     nodeinfo_version = doc.get('version', '1.0')
@@ -65,7 +111,10 @@ def parse_nodeinfo_document(doc, host):
     result['open_signups'] = doc.get('openRegistrations', False)
     result['activity']['users']['total'] = int_or_none(doc.get('usage', {}).get('users', {}).get('total'))
     result['activity']['users']['half_year'] = int_or_none(doc.get('usage', {}).get('users', {}).get('activeHalfyear'))
-    result['activity']['users']['monthly'] = int_or_none(doc.get('usage', {}).get('users', {}).get('activeMonth'))
+    monthly = int_or_none(doc.get('usage', {}).get('users', {}).get('activeMonth'))
+    result['activity']['users']['monthly'] = monthly
+    if monthly:
+        result['activity']['users']['weekly'] = int(monthly * MONTHLY_USERS_WEEKLY_MULTIPLIER)
     result['activity']['local_posts'] = int_or_none(doc.get('usage', {}).get('localPosts'))
     result['activity']['local_comments'] = int_or_none(doc.get('usage', {}).get('localComments'))
     result['features'] = doc.get('metadata', {})
@@ -118,7 +167,10 @@ def parse_statisticsjson_document(doc, host):
     result['protocols'] = ['diaspora']  # Reasonable default
     result['activity']['users']['total'] = int_or_none(doc.get('total_users'))
     result['activity']['users']['half_year'] = int_or_none(doc.get('active_users_halfyear'))
-    result['activity']['users']['monthly'] = int_or_none(doc.get('active_users_monthly'))
+    monthly = int_or_none(doc.get('active_users_monthly'))
+    result['activity']['users']['monthly'] = monthly
+    if monthly:
+        result['activity']['users']['weekly'] = int(monthly * MONTHLY_USERS_WEEKLY_MULTIPLIER)
     result['activity']['local_posts'] = int_or_none(doc.get('local_posts'))
     result['activity']['local_comments'] = int_or_none(doc.get('local_comments'))
     return result
