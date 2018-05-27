@@ -30,6 +30,7 @@ setup(
         "cssselect>=0.9.2",
         "dirty-validators>=0.3.0",
         "lxml>=3.4.0",
+        "ipdata>=2.6",
         "jsonschema>=2.0.0",
         "pycrypto>=2.6.0",
         "python-dateutil>=2.4.0",
@@ -52,5 +53,5 @@ setup(
         'Topic :: Internet',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    keywords='federation diaspora federate social',
+    keywords='federation diaspora activitypub federate social',
 )

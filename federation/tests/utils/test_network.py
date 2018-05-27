@@ -8,17 +8,14 @@ from federation.utils.network import (
     fetch_document, USER_AGENT, send_document, fetch_country_by_ip, fetch_host_ip_and_country)
 
 
-@patch('federation.utils.network.requests.get', autospec=True, return_value=Mock(
-    status_code=200, json=Mock(return_value={'countryCode': 'FI'}),
-))
+@patch('federation.utils.network.ipdata', autospec=True)
 class TestFetchCountryByIp:
-    def test_calls_ip_api_endpoint(self, mock_get):
-        fetch_country_by_ip('127.0.0.1')
-        mock_get.assert_called_once_with('http://ip-api.com/json/127.0.0.1"')
-
-    def test_returns_country_code(self, mock_get):
-        result = fetch_country_by_ip('127.0.0.1')
-        assert result == 'FI'
+    def test_calls_ip_api_endpoint(self, mock_ipdata):
+        mock_lookup = Mock(lookup=Mock(return_value={'status': 200, 'response': {'country_code': 'DE'}}))
+        mock_ipdata.ipdata.return_value = mock_lookup
+        country = fetch_country_by_ip('127.0.0.1')
+        mock_lookup.lookup.assert_called_once_with('127.0.0.1')
+        assert country == 'DE'
 
 
 class TestFetchDocument:

@@ -2,6 +2,7 @@ import logging
 import socket
 
 import requests
+from ipdata import ipdata
 from requests.exceptions import RequestException, HTTPError, SSLError
 from requests.exceptions import ConnectionError
 from requests.structures import CaseInsensitiveDict
@@ -19,19 +20,18 @@ def fetch_country_by_ip(ip):
 
     Returns empty string if the request fails in non-200 code.
 
-    Uses the ip-api.com service which has the following rules:
+    Uses the ipdata.co service which has the following rules:
 
-    * Max 150 requests per minute
-    * Non-commercial use only without a paid plan!
+    * Max 1500 requests per day
 
-    See: http://ip-api.com/docs/api:json
+    See: https://ipdata.co/docs.html#python-library
     """
-    result = requests.get("http://ip-api.com/json/%s" % ip)
-    if result.status_code != 200:
+    iplookup = ipdata.ipdata()
+    data = iplookup.lookup(ip)
+    if data.get('status') != 200:
         return ''
 
-    result = result.json()
-    return result['countryCode']
+    return data.get('response', {}).get('country_code', '')
 
 
 def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=True):
