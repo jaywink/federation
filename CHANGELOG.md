@@ -18,7 +18,7 @@
 
 * Added new network utilities to fetch IP and country information from a host.
 
-  The country information is fetched using the free `ip-api.com` service. NOTE! This service is rate limited to 150 requests per minute and requires a paid plan for commercial usage. Please make sure to respect the terms.
+  The country information is fetched using the free `ipdata.co` service. NOTE! This service is rate limited to 1500 requests per day.
   
 ### Changed
 
