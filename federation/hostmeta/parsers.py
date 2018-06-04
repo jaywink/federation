@@ -2,6 +2,8 @@ import json
 import re
 from copy import deepcopy
 
+from django.utils.timezone import now
+
 from federation.utils.diaspora import generate_diaspora_profile_id
 from federation.utils.network import fetch_document
 
@@ -51,6 +53,12 @@ def int_or_none(value):
         return None
 
 
+def mastodon_weekly_from_day_logins(logins):
+    dow = now().date().weekday()
+    multiplier = 7 - dow
+    return logins * multiplier
+
+
 def parse_mastodon_document(doc, host):
     result = deepcopy(defaults)
     result['host'] = host
@@ -80,8 +88,9 @@ def parse_mastodon_document(doc, host):
             return
         else:
             weekly_count = int_or_none(activity_doc[0].get('logins'))
-            result['activity']['users']['weekly'] = weekly_count
             if weekly_count:
+                weekly_count = mastodon_weekly_from_day_logins(weekly_count)
+                result['activity']['users']['weekly'] = weekly_count
                 result['activity']['users']['half_year'] = int(weekly_count * WEEKLY_USERS_HALFYEAR_MULTIPLIER)
                 result['activity']['users']['monthly'] = int(weekly_count * WEEKLY_USERS_MONTHLY_MULTIPLIER)
 

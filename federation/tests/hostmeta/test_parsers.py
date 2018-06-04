@@ -1,9 +1,11 @@
 import json
 from unittest.mock import patch
 
+from freezegun import freeze_time
+
 from federation.hostmeta.parsers import (
     parse_nodeinfo_document, parse_nodeinfo2_document, parse_statisticsjson_document, int_or_none,
-    parse_mastodon_document)
+    parse_mastodon_document, mastodon_weekly_from_day_logins)
 from federation.tests.fixtures.hostmeta import (
     NODEINFO2_10_DOC, NODEINFO_10_DOC, NODEINFO_20_DOC, STATISTICS_JSON_DOC, MASTODON_DOC, MASTODON_ACTIVITY_DOC,
     MASTODON_RC_DOC)
@@ -14,9 +16,40 @@ class TestIntOrNone:
         assert int_or_none(-1) is None
 
 
+class TestMastodonWeeklyFromDayLogins:
+    @freeze_time('2018-06-04')
+    def test_monday(self):
+        assert mastodon_weekly_from_day_logins(1) == 7
+
+    @freeze_time('2018-06-05')
+    def test_tuesday(self):
+        assert mastodon_weekly_from_day_logins(1) == 6
+
+    @freeze_time('2018-06-06')
+    def test_wednesday(self):
+        assert mastodon_weekly_from_day_logins(1) == 5
+
+    @freeze_time('2018-06-07')
+    def test_thursday(self):
+        assert mastodon_weekly_from_day_logins(1) == 4
+
+    @freeze_time('2018-06-08')
+    def test_friday(self):
+        assert mastodon_weekly_from_day_logins(1) == 3
+
+    @freeze_time('2018-06-09')
+    def test_saturday(self):
+        assert mastodon_weekly_from_day_logins(1) == 2
+
+    @freeze_time('2018-06-10')
+    def test_sunday(self):
+        assert mastodon_weekly_from_day_logins(1) == 1
+
+
 class TestParseMastodonDocument:
     @patch('federation.hostmeta.parsers.fetch_document')
-    def test_parse_mastodon_document(self, mock_fetch):
+    @patch('federation.hostmeta.parsers.mastodon_weekly_from_day_logins', side_effect=lambda x: x)
+    def test_parse_mastodon_document(self, mock_weekly, mock_fetch):
         mock_fetch.return_value = MASTODON_ACTIVITY_DOC, 200, None
         result = parse_mastodon_document(json.loads(MASTODON_DOC), 'example.com')
         assert result == {
@@ -48,7 +81,8 @@ class TestParseMastodonDocument:
         }
 
     @patch('federation.hostmeta.parsers.fetch_document')
-    def test_parse_mastodon_document__rc_version(self, mock_fetch):
+    @patch('federation.hostmeta.parsers.mastodon_weekly_from_day_logins', side_effect=lambda x: x)
+    def test_parse_mastodon_document__rc_version(self, mock_weekly, mock_fetch):
         mock_fetch.return_value = MASTODON_ACTIVITY_DOC, 200, None
         result = parse_mastodon_document(json.loads(MASTODON_RC_DOC), 'example.com')
         assert result == {
