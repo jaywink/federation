@@ -38,8 +38,8 @@ MASTODON_RC_DOC = """
 
 MASTODON_ACTIVITY_DOC = """
     [
-        {"week":"1526860800","statuses":"121188","logins":"8779","registrations":"1143"},
-        {"week":"1526256000","statuses":"200229","logins":"10034","registrations":"1379"}
+        {"week":"1526256000","statuses":"200229","logins":"10034","registrations":"1379"},
+        {"week":"1526860800","statuses":"121188","logins":"8779","registrations":"1143"}
     ]
 """
 

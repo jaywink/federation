@@ -2,8 +2,6 @@ import json
 import re
 from copy import deepcopy
 
-from django.utils.timezone import now
-
 from federation.utils.diaspora import generate_diaspora_profile_id
 from federation.utils.network import fetch_document
 
@@ -53,12 +51,6 @@ def int_or_none(value):
         return None
 
 
-def mastodon_weekly_from_day_logins(logins):
-    dow = now().date().weekday()
-    multiplier = 7 - dow
-    return logins * multiplier
-
-
 def parse_mastodon_document(doc, host):
     result = deepcopy(defaults)
     result['host'] = host
@@ -80,23 +72,27 @@ def parse_mastodon_document(doc, host):
     # TODO figure out what to do with posts vs comments vs statuses
     #result['activity']['users']['local_posts'] = int_or_none(doc.get('stats', {}).get('status_count'))
 
+    result['organization']['account'] = doc.get('contact_account', {}).get('url', '')
+    result['organization']['contact'] = doc.get('email', '')
+    result['organization']['name'] = doc.get('contact_account', {}).get('display_name', '')
+
     activity_doc, _status_code, _error = fetch_document(host=host, path='/api/v1/instance/activity')
     if activity_doc:
         try:
             activity_doc = json.loads(activity_doc)
         except json.JSONDecodeError:
-            return
+            return result
         else:
-            weekly_count = int_or_none(activity_doc[0].get('logins'))
+            try:
+                logins = activity_doc[1].get('logins')
+            except KeyError:
+                logins = activity_doc[0].get('logins')
+            weekly_count = int_or_none(logins)
             if weekly_count:
-                weekly_count = mastodon_weekly_from_day_logins(weekly_count)
                 result['activity']['users']['weekly'] = weekly_count
                 result['activity']['users']['half_year'] = int(weekly_count * WEEKLY_USERS_HALFYEAR_MULTIPLIER)
                 result['activity']['users']['monthly'] = int(weekly_count * WEEKLY_USERS_MONTHLY_MULTIPLIER)
 
-    result['organization']['account'] = doc.get('contact_account', {}).get('url', '')
-    result['organization']['contact'] = doc.get('email', '')
-    result['organization']['name'] = doc.get('contact_account', {}).get('display_name', '')
     return result
 
 
