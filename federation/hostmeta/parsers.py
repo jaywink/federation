@@ -60,7 +60,8 @@ def parse_mastodon_document(doc, host):
     # TODO parse about page
     # https://github.com/TheKinrar/mastodon-instances/blob/master/tasks/update_instances.js#L508
     # result['open_signups']
-    version = [int(part) for part in doc.get('version', '').split('.')]
+    version = re.sub(r'[^0-9.]', '', doc.get('version', ''))
+    version = [int(part) for part in version.split('.')]
     if version >= [1, 6, 0]:
         result['protocols'] = ['ostatus', 'activitypub']
     else:
