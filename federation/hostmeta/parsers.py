@@ -88,10 +88,18 @@ def parse_mastodon_document(doc, host):
             except KeyError:
                 logins = activity_doc[0].get('logins')
             weekly_count = int_or_none(logins)
-            if weekly_count:
+            if weekly_count and result['activity']['users']['total']:
                 result['activity']['users']['weekly'] = weekly_count
-                result['activity']['users']['half_year'] = int(weekly_count * WEEKLY_USERS_HALFYEAR_MULTIPLIER)
-                result['activity']['users']['monthly'] = int(weekly_count * WEEKLY_USERS_MONTHLY_MULTIPLIER)
+                # Ensure multiplied counts from weekly count don't go over total user count
+                result['activity']['users']['half_year'] = min(
+                    int(weekly_count * WEEKLY_USERS_HALFYEAR_MULTIPLIER),
+                    result['activity']['users']['total'],
+                )
+                result['activity']['users']['monthly'] = min(
+                    int(weekly_count * WEEKLY_USERS_MONTHLY_MULTIPLIER),
+                    result['activity']['users']['total'],
+                )
+
 
     return result
 
