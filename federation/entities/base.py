@@ -23,6 +23,7 @@ class BaseEntity:
     def __init__(self, *args, **kwargs):
         self._required = []
         self._children = []
+        self._mentions = set()
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)
@@ -30,6 +31,9 @@ class BaseEntity:
                 warnings.warn("%s.__init__ got parameter %s which this class does not support - ignoring." % (
                     self.__class__.__name__, key
                 ))
+
+    def extract_mentions(self):
+        return set()
 
     @property
     def id(self):

@@ -73,6 +73,18 @@ DIASPORA_POST_SIMPLE = """
 """
 
 
+DIASPORA_POST_SIMPLE_WITH_MENTION = """
+    <status_message>
+      <text>((status message)) @{Jason Robinson 🐍🍻; jaywink@jasonrobinson.me}</text>
+      <guid>((guidguidguidguidguidguidguid))</guid>
+      <author>alice@alice.diaspora.example.org</author>
+      <public>false</public>
+      <created_at>2011-07-20T01:36:07Z</created_at>
+      <provider_display_name>Socialhome</provider_display_name>
+    </status_message>
+"""
+
+
 DIASPORA_POST_LEGACY_TIMESTAMP = """
     <status_message>
       <text>((status message))</text>

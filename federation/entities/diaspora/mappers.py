@@ -119,6 +119,8 @@ def element_to_objects(element, sender, sender_key_fetcher=None, user=None):
             "transformed": transformed,
         })
         return []
+    # Extract mentions
+    entity._mentions = entity.extract_mentions()
     # Do child elements
     for child in element:
         entity._children.extend(element_to_objects(child, sender))

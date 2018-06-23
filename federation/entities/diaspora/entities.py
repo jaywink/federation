@@ -1,4 +1,5 @@
 import importlib
+import re
 
 from lxml import etree
 
@@ -8,7 +9,7 @@ from federation.entities.base import (
 from federation.entities.diaspora.utils import format_dt, struct_to_xml, get_base_attributes, add_element_to_doc
 from federation.exceptions import SignatureVerificationError
 from federation.protocols.diaspora.signatures import verify_relayable_signature, create_relayable_signature
-from federation.utils.diaspora import retrieve_and_parse_profile
+from federation.utils.diaspora import retrieve_and_parse_profile, generate_diaspora_profile_id
 
 CLASS_TO_TAG_MAPPING = {
     Comment: "comment",
@@ -26,6 +27,21 @@ CLASS_TO_TAG_MAPPING = {
 class DiasporaEntityMixin(BaseEntity):
     # Normally outbound document is generated from entity. Store one here if at some point we already have a doc
     outbound_doc = None
+
+    def extract_mentions(self):
+        """
+        Extract mentions from an entity with ``raw_content``.
+
+        :return: set
+        """
+        if not hasattr(self, "raw_content"):
+            return set()
+        mentions = re.findall(r'@{[^;]+; [\w.-]+@[^}]+}', self.raw_content)
+        if not mentions:
+            return set()
+        mentions = {s.split(';')[1].strip(' }') for s in mentions}
+        mentions = {generate_diaspora_profile_id(s) for s in mentions}
+        return mentions
 
     @property
     def id(self):
