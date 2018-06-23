@@ -20,6 +20,8 @@
 
   The country information is fetched using the free `ipdata.co` service. NOTE! This service is rate limited to 1500 requests per day.
   
+* Extract mentions from Diaspora payloads that have text content. The mentions will be available in the entity as `_mentions` which is a set of Diaspora ID's in URI format.
+  
 ### Changed
 
 * Send outbound Diaspora payloads in new format. Remove possibility to generate legacy MagicEnvelope payloads. ([related issue](https://github.com/jaywink/federation/issues/82))

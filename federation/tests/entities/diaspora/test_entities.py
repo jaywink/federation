@@ -110,6 +110,22 @@ class TestEntitiesConvertToXML:
         assert etree.tostring(result).decode("utf-8") == converted
 
 
+class TestEntitiesExtractMentions:
+    def test_extract_mentions__empty_set_if_no_raw_content(self, diasporacontact):
+        assert diasporacontact.extract_mentions() == set()
+
+    def test_extract_mentions__empty_set_if_no_mentions(self, diasporacomment):
+        assert diasporacomment.extract_mentions() == set()
+
+    def test_extract_mentions__set_contains_mentioned_handles(self, diasporapost):
+        diasporapost.raw_content = 'yeye @{Jason Robinson 🐍🍻; jaywink@jasonrobinson.me} foobar ' \
+                                   '@{bar; foo@example.com}'
+        assert diasporapost.extract_mentions() == {
+            'diaspora://jaywink@jasonrobinson.me/profile/',
+            'diaspora://foo@example.com/profile/',
+        }
+
+
 class TestEntityAttributes:
     def test_comment_ids(self, diasporacomment):
         assert diasporacomment.id == "diaspora://handle/comment/guid"
@@ -223,7 +239,7 @@ class TestDiasporaRelayableMixin:
                                                       b'TsLM+Yw==</parent_author_signature></comment>'
 
     @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
-    def test_sign_with_parent(self, mock_validate):
+    def test_sign_with_parent__calls_to_xml(self, mock_validate):
         entity = DiasporaComment()
         with patch.object(entity, "to_xml") as mock_to_xml:
             entity.sign_with_parent(get_dummy_private_key())

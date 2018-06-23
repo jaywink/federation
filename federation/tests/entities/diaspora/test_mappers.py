@@ -17,7 +17,7 @@ from federation.tests.fixtures.payloads import (
     DIASPORA_REQUEST, DIASPORA_PROFILE, DIASPORA_POST_INVALID, DIASPORA_RETRACTION,
     DIASPORA_POST_WITH_PHOTOS, DIASPORA_POST_LEGACY_TIMESTAMP, DIASPORA_POST_LEGACY, DIASPORA_CONTACT,
     DIASPORA_LEGACY_REQUEST_RETRACTION, DIASPORA_POST_WITH_PHOTOS_2, DIASPORA_PROFILE_EMPTY_TAGS, DIASPORA_RESHARE,
-    DIASPORA_RESHARE_WITH_EXTRA_PROPERTIES, DIASPORA_RESHARE_LEGACY)
+    DIASPORA_RESHARE_WITH_EXTRA_PROPERTIES, DIASPORA_RESHARE_LEGACY, DIASPORA_POST_SIMPLE_WITH_MENTION)
 
 
 def mock_fill(attributes):
@@ -26,6 +26,12 @@ def mock_fill(attributes):
 
 
 class TestDiasporaEntityMappersReceive:
+    def test_message_to_objects_mentions_are_extracted(self):
+        entities = message_to_objects(DIASPORA_POST_SIMPLE_WITH_MENTION, "alice@alice.diaspora.example.org")
+        assert len(entities) == 1
+        post = entities[0]
+        assert post._mentions == {'diaspora://jaywink@jasonrobinson.me/profile/'}
+
     def test_message_to_objects_simple_post(self):
         entities = message_to_objects(DIASPORA_POST_SIMPLE, "alice@alice.diaspora.example.org")
         assert len(entities) == 1
