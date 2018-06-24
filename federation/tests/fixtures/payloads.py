@@ -188,7 +188,24 @@ DIASPORA_REQUEST = """
 DIASPORA_PROFILE = """
     <profile>
         <author>bob@example.com</author>
-        <first_name>Bob Bobertson</first_name>
+        <first_name>Bob</first_name>
+        <last_name>Bobertson</last_name>
+        <image_url>https://example.com/uploads/images/thumb_large_c833747578b5.jpg</image_url>
+        <image_url_small>https://example.com/uploads/images/thumb_small_c8b147578b5.jpg</image_url_small>
+        <image_url_medium>https://example.com/uploads/images/thumb_medium_c8b1aab04f3.jpg</image_url_medium>
+        <gender></gender>
+        <bio>A cool bio</bio>
+        <location>Helsinki</location>
+        <searchable>true</searchable>
+        <nsfw>false</nsfw>
+        <tag_string>#socialfederation #federation</tag_string>
+    </profile>
+"""
+
+DIASPORA_PROFILE_FIRST_NAME_ONLY = """
+    <profile>
+        <author>bob@example.com</author>
+        <first_name>Bob</first_name>
         <last_name></last_name>
         <image_url>https://example.com/uploads/images/thumb_large_c833747578b5.jpg</image_url>
         <image_url_small>https://example.com/uploads/images/thumb_small_c8b147578b5.jpg</image_url_small>
@@ -205,8 +222,8 @@ DIASPORA_PROFILE = """
 DIASPORA_PROFILE_EMPTY_TAGS = """
     <profile>
         <author>bob@example.com</author>
-        <first_name>Bob Bobertson</first_name>
-        <last_name></last_name>
+        <first_name>Bob</first_name>
+        <last_name>Bobertson</last_name>
         <image_url>https://example.com/uploads/images/thumb_large_c833747578b5.jpg</image_url>
         <image_url_small>https://example.com/uploads/images/thumb_small_c8b147578b5.jpg</image_url_small>
         <image_url_medium>https://example.com/uploads/images/thumb_medium_c8b1aab04f3.jpg</image_url_medium>

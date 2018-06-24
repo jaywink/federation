@@ -53,6 +53,12 @@
 * Allow port in Diaspora handles as per the protocol specification
 
   Previously handles were validated like emails.
+  
+* Fix Diaspora `Profile` mapping regarding `last_name` property
+
+  Previously only `first_name` was used when creating the `Profile.name` value. Now both `first_name` and `last_name` are used.
+  
+  When creating outgoing payloads, the `Profile.name` will still be placed in `first_name` to avoid trying to artificially split it.
     
 ## [0.15.0] - 2018-02-12
 

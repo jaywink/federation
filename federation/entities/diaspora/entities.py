@@ -221,7 +221,7 @@ class DiasporaProfile(DiasporaEntityMixin, Profile):
         struct_to_xml(element, [
             {"author": self.handle},
             {"first_name": self.name},
-            {"last_name": ""},  # Not used in Diaspora modern profiles
+            {"last_name": ""},  # We only have one field - splitting it would be artificial
             {"image_url": self.image_urls["large"]},
             {"image_url_small": self.image_urls["small"]},
             {"image_url_medium": self.image_urls["medium"]},

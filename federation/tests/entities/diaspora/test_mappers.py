@@ -17,7 +17,8 @@ from federation.tests.fixtures.payloads import (
     DIASPORA_REQUEST, DIASPORA_PROFILE, DIASPORA_POST_INVALID, DIASPORA_RETRACTION,
     DIASPORA_POST_WITH_PHOTOS, DIASPORA_POST_LEGACY_TIMESTAMP, DIASPORA_POST_LEGACY, DIASPORA_CONTACT,
     DIASPORA_LEGACY_REQUEST_RETRACTION, DIASPORA_POST_WITH_PHOTOS_2, DIASPORA_PROFILE_EMPTY_TAGS, DIASPORA_RESHARE,
-    DIASPORA_RESHARE_WITH_EXTRA_PROPERTIES, DIASPORA_RESHARE_LEGACY, DIASPORA_POST_SIMPLE_WITH_MENTION)
+    DIASPORA_RESHARE_WITH_EXTRA_PROPERTIES, DIASPORA_RESHARE_LEGACY, DIASPORA_POST_SIMPLE_WITH_MENTION,
+    DIASPORA_PROFILE_FIRST_NAME_ONLY)
 
 
 def mock_fill(attributes):
@@ -161,6 +162,13 @@ class TestDiasporaEntityMappersReceive:
         assert profile.public == True
         assert profile.nsfw == False
         assert profile.tag_list == ["socialfederation", "federation"]
+
+    @patch("federation.entities.diaspora.entities.DiasporaProfile.fill_extra_attributes", new=mock_fill)
+    def test_message_to_objects_profile__first_name_only(self):
+        entities = message_to_objects(DIASPORA_PROFILE_FIRST_NAME_ONLY, "bob@example.com")
+        assert len(entities) == 1
+        profile = entities[0]
+        assert profile.name == "Bob"
 
     @patch("federation.entities.diaspora.entities.DiasporaProfile.fill_extra_attributes", new=mock_fill)
     def test_message_to_objects_profile_survives_empty_tag_string(self):

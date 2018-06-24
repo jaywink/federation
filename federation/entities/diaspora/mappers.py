@@ -178,8 +178,10 @@ def transform_attributes(attrs, cls):
             transformed["target_handle"] = value
         elif key in ["parent_guid", "post_guid", "root_guid"]:
             transformed["target_guid"] = value
-        elif key == "first_name":
-            transformed["name"] = value
+        elif key in ("first_name", "last_name"):
+            values = [attrs.get('first_name'), attrs.get('last_name')]
+            values = [v for v in values if v]
+            transformed["name"] = " ".join(values)
         elif key == "image_url":
             if "image_urls" not in transformed:
                 transformed["image_urls"] = {}
