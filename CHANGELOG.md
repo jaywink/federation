@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.17.0-dev] - unreleased
+
+### Changed
+
+* **Backwards incompatible.** Lowest compatible Python version is now 3.6.
+
 ## [0.16.0] - 2018-07-23
 
 ### Added
