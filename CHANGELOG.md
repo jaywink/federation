@@ -1,6 +1,6 @@
 # Changelog
 
-## [unreleased]
+## [0.16.0] - 2018-07-23
 
 ### Added
 
