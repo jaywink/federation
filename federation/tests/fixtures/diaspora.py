@@ -1,14 +1,14 @@
 import pytest
 
 from federation.entities.diaspora.entities import (
-    DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest, DiasporaProfile, DiasporaRetraction,
+    DiasporaPost, DiasporaComment, DiasporaLike, DiasporaProfile, DiasporaRetraction,
     DiasporaContact, DiasporaReshare,
 )
 from federation.tests.factories.entities import ShareFactory
 from federation.tests.fixtures.payloads import DIASPORA_PUBLIC_PAYLOAD
 
 __all__ = ("diasporacomment", "diasporacontact", "diasporalike", "diasporapost", "diasporaprofile",
-           "diasporareshare", "diasporarequest", "diasporaretraction", "diaspora_public_payload")
+           "diasporareshare", "diasporaretraction", "diaspora_public_payload")
 
 
 @pytest.fixture
@@ -56,11 +56,6 @@ def diasporaprofile():
 def diasporareshare():
     base_entity = ShareFactory()
     return DiasporaReshare.from_base(base_entity)
-
-
-@pytest.fixture
-def diasporarequest():
-    return DiasporaRequest(handle="bob@example.com", target_handle="alice@example.com", relationship="following")
 
 
 @pytest.fixture

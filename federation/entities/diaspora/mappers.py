@@ -147,14 +147,8 @@ def message_to_objects(message, sender, sender_key_fetcher=None, user=None):
     :returns: list of entities
     """
     doc = etree.fromstring(message)
-    # Future Diaspora protocol version contains the element at top level
     if doc.tag in TAGS:
         return element_to_objects(doc, sender, sender_key_fetcher, user)
-    # Legacy Diaspora protocol wraps the element in <XML><post></post></XML>, so find the right element
-    for tag in TAGS:
-        element = doc.find(".//%s" % tag)
-        if element is not None:
-            return element_to_objects(element, sender, sender_key_fetcher, user)
     return []
 
 
@@ -170,7 +164,7 @@ def transform_attributes(attrs, cls):
     for key, value in attrs.items():
         if value is None:
             value = ""
-        if key in ["raw_message", "text"]:
+        if key == "text":
             transformed["raw_content"] = value
         elif key in ["diaspora_handle", "sender_handle", "author"]:
             transformed["handle"] = value
@@ -201,7 +195,7 @@ def transform_attributes(attrs, cls):
             transformed["raw_content"] = value
         elif key == "searchable":
             transformed["public"] = True if value == "true" else False
-        elif key in ["target_type", "type"] and cls == DiasporaRetraction:
+        elif key in ["target_type"] and cls == DiasporaRetraction:
             transformed["entity_type"] = DiasporaRetraction.entity_type_from_remote(value)
         elif key == "remote_photo_path":
             transformed["remote_path"] = value
@@ -215,12 +209,7 @@ def transform_attributes(attrs, cls):
         elif key in BOOLEAN_KEYS:
             transformed[key] = True if value == "true" else False
         elif key in DATETIME_KEYS:
-            try:
-                # New style timestamps since in protocol 0.1.6
-                transformed[key] = datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
-            except ValueError:
-                # Legacy style timestamps
-                transformed[key] = datetime.strptime(value, "%Y-%m-%d %H:%M:%S %Z")
+            transformed[key] = datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
         elif key in INTEGER_KEYS:
             transformed[key] = int(value)
         else:
@@ -245,7 +234,7 @@ def get_outbound_entity(entity, private_key):
         return entity
     outbound = None
     cls = entity.__class__
-    if cls in [DiasporaPost, DiasporaRequest, DiasporaComment, DiasporaLike, DiasporaProfile, DiasporaRetraction,
+    if cls in [DiasporaPost, DiasporaImage, DiasporaComment, DiasporaLike, DiasporaProfile, DiasporaRetraction,
                DiasporaContact, DiasporaReshare]:
         # Already fine
         outbound = entity
@@ -256,10 +245,6 @@ def get_outbound_entity(entity, private_key):
     elif cls == Reaction:
         if entity.reaction == "like":
             outbound = DiasporaLike.from_base(entity)
-    elif cls == Relationship:
-        if entity.relationship in ["sharing", "following"]:
-            # Unfortunately we must send out in both cases since in Diaspora they are the same thing
-            outbound = DiasporaRequest.from_base(entity)
     elif cls == Follow:
         outbound = DiasporaContact.from_base(entity)
     elif cls == Profile:
