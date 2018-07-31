@@ -4,7 +4,8 @@ from unittest.mock import patch, Mock
 from django.test import RequestFactory
 
 from federation.hostmeta.django import rfc3033_webfinger_view
-from federation.hostmeta.django.generators import get_function_from_config, nodeinfo2_view
+from federation.hostmeta.django.generators import nodeinfo2_view
+from federation.utils.django import get_function_from_config
 from federation.tests.fixtures.hostmeta import NODEINFO2_10_DOC
 
 

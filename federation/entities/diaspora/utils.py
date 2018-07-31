@@ -1,5 +1,3 @@
-import inspect
-
 from dateutil.tz import tzlocal, tzutc
 from lxml import etree
 

@@ -46,8 +46,8 @@ def test_parse_diaspora_uri():
     assert parse_diaspora_uri("diaspora://user@example.com/spam/eggs") == ("user@example.com", "spam", "eggs")
     assert parse_diaspora_uri("diaspora://user@example.com/spam/") == ("user@example.com", "spam", "")
     assert parse_diaspora_uri("diaspora://user@example.com/spam/eggs@spam") == ("user@example.com", "spam", "eggs@spam")
-    assert not parse_diaspora_uri("https://user@example.com/spam/eggs")
-    assert not parse_diaspora_uri("spam and eggs")
+    assert parse_diaspora_uri("https://user@example.com/spam/eggs") == (None, None, None)
+    assert parse_diaspora_uri("spam and eggs") == (None, None, None)
 
 
 def test_parse_profile_diaspora_id():

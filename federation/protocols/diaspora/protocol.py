@@ -1,16 +1,18 @@
 import json
 import logging
-from base64 import b64decode, urlsafe_b64decode
-from urllib.parse import unquote_plus, unquote
+from base64 import urlsafe_b64decode
+from typing import Callable, Tuple, Union, Dict
+from urllib.parse import unquote
 
-from Crypto.Cipher import AES, PKCS1_v1_5
+from Crypto.PublicKey.RSA import RsaKey
 from lxml import etree
 
+from federation.entities.mixins import BaseEntity
 from federation.exceptions import EncryptedMessageError, NoSenderKeyFoundError
-from federation.protocols.base import BaseProtocol
 from federation.protocols.diaspora.encrypted import EncryptedPayload
 from federation.protocols.diaspora.magic_envelope import MagicEnvelope
-from federation.utils.diaspora import fetch_public_key
+from federation.types import UserType
+from federation.utils.diaspora import fetch_public_key, parse_profile_diaspora_id, generate_diaspora_profile_id
 from federation.utils.text import decode_if_bytes, encode_if_text
 
 logger = logging.getLogger("federation")
@@ -84,7 +86,8 @@ class Protocol:
         # Verify the message is from who it claims to be
         if not skip_author_verification:
             self.verify_signature()
-        return self.sender_handle, self.content
+        sender_id = generate_diaspora_profile_id(self.sender_handle)
+        return sender_id, self.content
 
     def _get_user_key(self, user):
         if not getattr(self.user, "private_key", None):
@@ -124,7 +127,7 @@ class Protocol:
         Build POST data for sending out to remotes.
 
         :param entity: The outbound ready entity for this protocol.
-        :param from_user: The user sending this payload. Must have ``private_key`` and ``handle`` properties.
+        :param from_user: The user sending this payload. Must have ``private_key`` and ``id`` properties.
         :param to_user_key: (Optional) Public key of user we're sending a private payload to.
         :returns: dict or string depending on if private or public payload.
         """
@@ -133,7 +136,8 @@ class Protocol:
             xml = entity.outbound_doc
         else:
             xml = entity.to_xml()
-        me = MagicEnvelope(etree.tostring(xml), private_key=from_user.private_key, author_handle=from_user.handle)
+        handle, _guid = parse_profile_diaspora_id(from_user.id)
+        me = MagicEnvelope(etree.tostring(xml), private_key=from_user.private_key, author_handle=handle)
         rendered = me.render()
         if to_user_key:
             return EncryptedPayload.encrypt(rendered, to_user_key)

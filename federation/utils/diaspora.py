@@ -1,12 +1,12 @@
 import json
 import logging
 import xml
+from typing import Tuple, Optional
 from urllib.parse import quote
 
 from lxml import html
 from xrd import XRD
 
-from federation.entities.base import Profile
 from federation.inbound import handle_receive
 from federation.utils.network import fetch_document
 
@@ -135,7 +135,7 @@ def _get_element_attr_or_none(document, selector, attribute):
     return None
 
 
-def parse_diaspora_uri(uri):
+def parse_diaspora_uri(uri: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """Parse Diaspora URI scheme string.
 
     See: https://diaspora.github.io/diaspora_federation/federation/diaspora_scheme.html
@@ -143,15 +143,15 @@ def parse_diaspora_uri(uri):
     :return: tuple of (handle, entity_type, guid) or ``None``.
     """
     if not uri.startswith("diaspora://"):
-        return
+        return None, None, None
     try:
         handle, entity_type, guid = uri.replace("diaspora://", "").rsplit("/", maxsplit=2)
     except ValueError:
-        return
+        return None, None, None
     return handle, entity_type, guid
 
 
-def parse_profile_diaspora_id(id):
+def parse_profile_diaspora_id(id: str) -> Tuple[str, str]:
     """
     Parse profile handle and guid from diaspora ID.
     """
@@ -163,26 +163,34 @@ def parse_profile_diaspora_id(id):
     return handle, guid
 
 
-def generate_diaspora_profile_id(handle, guid=None):
+def generate_diaspora_id(handle: str, entity_type: str, guid:str=None) -> str:
+    """
+    Generate a Diaspora ID from handle, type and guid.
+    """
+    return f"diaspora://{handle}/{entity_type}/{guid or ''}"
+
+
+def generate_diaspora_profile_id(handle: str, guid:str=None) -> str:
     """
     Generate a Diaspora profile ID from handle and guid.
 
     Sometimes we don't know the guid if we just have a handle, but still we want to store it
     in URI format.
     """
-    return "diaspora://%s/profile/%s" % (handle, guid or "")
+    return generate_diaspora_id(handle, "profile", guid=guid)
 
 
-def parse_profile_from_hcard(hcard, handle):
+def parse_profile_from_hcard(hcard: str, handle: str):
     """
     Parse all the fields we can from a hCard document to get a Profile.
 
     :arg hcard: HTML hcard document (str)
     :arg handle: User handle in username@domain.tld format
-    :returns: ``federation.entities.Profile`` instance
+    :returns: ``federation.entities.diaspora.entities.DiasporaProfile`` instance
     """
+    from federation.entities.diaspora.entities import DiasporaProfile  # Circulars
     doc = html.fromstring(hcard)
-    profile = Profile(
+    profile = DiasporaProfile(
         name=_get_element_text_or_none(doc, ".fn"),
         image_urls={
             "small": _get_element_attr_or_none(doc, ".entity_photo_small .photo", "src"),
@@ -190,8 +198,7 @@ def parse_profile_from_hcard(hcard, handle):
             "large": _get_element_attr_or_none(doc, ".entity_photo .photo", "src"),
         },
         public=True if _get_element_text_or_none(doc, ".searchable") == "true" else False,
-        handle=handle,
-        guid=_get_element_text_or_none(doc, ".uid"),
+        id=generate_diaspora_profile_id(handle, _get_element_text_or_none(doc, ".uid")),
         public_key=_get_element_text_or_none(doc, ".key"),
     )
     return profile

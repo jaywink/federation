@@ -1,15 +1,21 @@
 import json
 import logging
+from typing import List, Tuple, Union
+
+from Crypto.PublicKey.RSA import RsaKey
 
 from federation.entities.diaspora.mappers import get_outbound_entity
+from federation.entities.mixins import BaseEntity
 from federation.protocols.diaspora.protocol import Protocol
+from federation.types import UserType
 from federation.utils.diaspora import get_public_endpoint, get_private_endpoint
 from federation.utils.network import send_document
 
 logger = logging.getLogger("federation")
 
 
-def handle_create_payload(entity, author_user, to_user_key=None, parent_user=None):
+def handle_create_payload(
+        entity:BaseEntity, author_user:UserType, to_user_key:RsaKey=None, parent_user:UserType=None) -> str:
     """Create a payload with the correct protocol.
 
     Any given user arguments must have ``private_key`` and ``handle`` attributes.
@@ -32,13 +38,18 @@ def handle_create_payload(entity, author_user, to_user_key=None, parent_user=Non
     return data
 
 
-def handle_send(entity, author_user, recipients=None, parent_user=None):
+def handle_send(
+        entity: BaseEntity,
+        author_user: UserType,
+        recipients: List[Union[Tuple[str, RsaKey], str]]=None,
+        parent_user: UserType=None,
+) -> None:
     """Send an entity to remote servers.
 
     Using this we will build a list of payloads per protocol, after resolving any that need to be guessed or
     looked up over the network. After that, each recipient will get the generated protocol payload delivered.
 
-    Any given user arguments must have ``private_key`` and ``handle`` attributes.
+    Any given user arguments must have ``private_key`` and ``id`` attributes.
 
     :arg entity: Entity object to send. Can be a base entity or a protocol specific one.
     :arg author_user: User authoring the object.

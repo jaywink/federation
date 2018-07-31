@@ -1,7 +1,9 @@
 import importlib
 import logging
+from typing import Tuple, List, Callable
 
 from federation.exceptions import NoSuitableProtocolFoundError
+from federation.types import UserType
 
 logger = logging.getLogger("federation")
 
@@ -10,11 +12,16 @@ PROTOCOLS = (
 )
 
 
-def handle_receive(payload, user=None, sender_key_fetcher=None, skip_author_verification=False):
+def handle_receive(
+        payload: str,
+        user: UserType=None,
+        sender_key_fetcher: Callable[[str], str]=None,
+        skip_author_verification: bool=False
+) -> Tuple[str, str, List]:
     """Takes a payload and passes it to the correct protocol.
 
     Returns a tuple of:
-      - sender handle
+      - sender id
       - protocol name
       - list of entities
 
@@ -24,10 +31,10 @@ def handle_receive(payload, user=None, sender_key_fetcher=None, skip_author_veri
 
     :arg payload: Payload blob (str)
     :arg user: User that will be passed to `protocol.receive` (only required on private encrypted content)
-        MUST have a `private_key` and `guid` if given.
+        MUST have a `private_key` and `id` if given.
     :arg sender_key_fetcher: Function that accepts sender handle and returns public key (optional)
     :arg skip_author_verification: Don't verify sender (test purposes, false default)
-    :returns: Tuple of sender handle, protocol name and list of entity objects
+    :returns: Tuple of sender id, protocol name and list of entity objects
     :raises NoSuitableProtocolFound: When no protocol was identified to pass message to
     """
     logger.debug("handle_receive: processing payload: %s", payload)

@@ -1,43 +1,12 @@
-import importlib
 import logging
 
-from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpResponseBadRequest, JsonResponse, HttpResponseNotFound
 
 from federation.hostmeta.generators import RFC3033Webfinger, generate_nodeinfo2_document
+from federation.utils.django import get_configuration, get_function_from_config
+from federation.utils.text import get_path_from_url
 
 logger = logging.getLogger("federation")
-
-
-def get_configuration():
-    """
-    Combine defaults with the Django configuration.
-    """
-    configuration = {
-        "hcard_path": "/hcard/users/",
-        "nodeinfo2_function": None,
-        "search_path": None,
-    }
-    configuration.update(settings.FEDERATION)
-    if not all([
-        "get_profile_function" in configuration,
-        "base_url" in configuration,
-    ]):
-        raise ImproperlyConfigured("Missing required FEDERATION settings, please check documentation.")
-    return configuration
-
-
-def get_function_from_config(item):
-    """
-    Import the function to get profile by handle.
-    """
-    config = get_configuration()
-    func_path = config.get(item)
-    module_path, func_name = func_path.rsplit(".", 1)
-    module = importlib.import_module(module_path)
-    func = getattr(module, func_name)
-    return func
 
 
 def nodeinfo2_view(request, *args, **kwargs):
@@ -64,18 +33,21 @@ def rfc3033_webfinger_view(request, *args, **kwargs):
     profile_func = get_function_from_config("get_profile_function")
 
     try:
-        profile = profile_func(handle)
+        profile = profile_func(handle=handle, request=request)
     except Exception as exc:
         logger.warning("rfc3033_webfinger_view - Failed to get profile by handle %s: %s", handle, exc)
         return HttpResponseNotFound()
 
+    # TODO: remove this hotfix that is made to fix webfinger for diaspora in activitypub branch
+    profile = profile.as_protocol("diaspora")
+
     config = get_configuration()
     webfinger = RFC3033Webfinger(
-        id=profile.get('id'),
+        id=profile.id,
         base_url=config.get('base_url'),
-        profile_path=profile.get('profile_path'),
+        profile_path=get_path_from_url(profile.url),
         hcard_path=config.get('hcard_path'),
-        atom_path=profile.get('atom_path'),
+        atom_path=get_path_from_url(profile.atom_url),
         search_path=config.get('search_path'),
     )
 

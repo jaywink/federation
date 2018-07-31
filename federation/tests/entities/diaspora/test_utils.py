@@ -6,7 +6,8 @@ from lxml import etree
 
 from federation.entities.base import Post, Profile
 from federation.entities.diaspora.utils import (
-    get_base_attributes, get_full_xml_representation, format_dt, add_element_to_doc)
+    get_full_xml_representation, format_dt, add_element_to_doc)
+from federation.entities.utils import get_base_attributes
 
 
 class TestGetBaseAttributes:
@@ -14,14 +15,15 @@ class TestGetBaseAttributes:
         entity = Post()
         attrs = get_base_attributes(entity).keys()
         assert set(attrs) == {
-            "created_at", "guid", "handle", "location", "provider_display_name", "public", "raw_content",
-            "signature",
+            "created_at", "location", "provider_display_name", "public", "raw_content",
+            "signature", "base_url", "actor_id", "id",
         }
         entity = Profile()
         attrs = get_base_attributes(entity).keys()
         assert set(attrs) == {
-            "created_at", "guid", "handle", "name", "email", "gender", "raw_content", "location", "public",
-            "nsfw", "public_key", "image_urls", "tag_list", "signature",
+            "created_at", "name", "email", "gender", "raw_content", "location", "public",
+            "nsfw", "public_key", "image_urls", "tag_list", "signature", "url", "atom_url", "username",
+            "base_url", "id", "actor_id",
         }
 
 class TestGetFullXMLRepresentation:
