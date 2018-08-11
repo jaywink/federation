@@ -40,5 +40,5 @@ License
 Author
 ......
 
-Jason Robinson / `jasonrobinson.me <https://jasonrobinson.me>`_ / `GitHub <https://github.com/jaywink>`_
+Jason Robinson / `jasonrobinson.me <https://jasonrobinson.me>`_ / `GitHub <https://github.com/jaywink>`_ / `GitLab <https://git.feneas.org/jaywink>`_
 

@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/jaywink/federation.svg?branch=master)](https://travis-ci.org/jaywink/federation) [![codecov.io](https://codecov.io/github/jaywink/federation/coverage.svg?branch=master)](https://codecov.io/github/jaywink/federation?branch=master) [![Code Health](https://landscape.io/github/jaywink/federation/master/landscape.svg?style=flat)](https://landscape.io/github/jaywink/federation/master) [![Dependency Status](https://gemnasium.com/badges/github.com/jaywink/federation.svg)](https://gemnasium.com/github.com/jaywink/federation) [![Stories in Ready](https://badge.waffle.io/jaywink/federation.png?label=ready&title=Board)](https://waffle.io/jaywink/federation)
+[![Build Status](https://travis-ci.org/jaywink/federation.svg?branch=master)](https://travis-ci.org/jaywink/federation) [![codecov.io](https://codecov.io/github/jaywink/federation/coverage.svg?branch=master)](https://codecov.io/github/jaywink/federation?branch=master) [![Code Health](https://landscape.io/github/jaywink/federation/master/landscape.svg?style=flat)](https://landscape.io/github/jaywink/federation/master)
 
 [![PyPI version](https://badge.fury.io/py/federation.svg)](https://pypi.python.org/pypi/federation)  [![Documentation Status](http://readthedocs.org/projects/federation/badge/?version=latest)](http://federation.readthedocs.io/en/latest/?badge=latest) [![PyPI](https://img.shields.io/pypi/pyversions/federation.svg?maxAge=2592000)](https://pypi.python.org/pypi/federation) [![PyPI](https://img.shields.io/pypi/l/federation.svg?maxAge=2592000)](https://pypi.python.org/pypi/federation)
 
@@ -42,4 +42,4 @@ See [development and support documentation](http://federation.readthedocs.io/en/
 
 ### Author
 
-Jason Robinson / https://jasonrobinson.me / https://github.com/jaywink
+Jason Robinson / https://jasonrobinson.me / https://github.com/jaywink / https://git.feneas.org/jaywink

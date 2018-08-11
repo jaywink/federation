@@ -22,8 +22,8 @@ setup(
     author_email='mail@jasonrobinson.me',
     maintainer='Jason Robinson',
     maintainer_email='mail@jasonrobinson.me',
-    url='https://github.com/jaywink/federation',
-    download_url='https://github.com/jaywink/federation/releases',
+    url='https://git.feneas.org/jaywink/federation',
+    download_url='https://pypi.org/project/federation/',
     packages=find_packages(),
     license="BSD 3-clause",
     install_requires=[

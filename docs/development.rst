@@ -3,9 +3,9 @@ Development
 
 Help is more than welcome to extend this library. Please see the following resources.
 
-* `Source code repo <https://github.com/jaywink/federation>`_
-* `Issue tracker <https://github.com/jaywink/federation/issues>`_
-* `Kanban board <https://waffle.io/jaywink/federation>`_
+* `Source code repo <https://git.feneas.org/jaywink/federation>`_
+* `Issue tracker <https://git.feneas.org/jaywink/federation/issues>`_
+* `Kanban board <https://git.feneas.org/jaywink/federation/boards>`_
 
 Environment setup
 -----------------
