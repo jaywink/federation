@@ -1,10 +1,18 @@
 # Changelog
 
-## [0.17.0-dev] - unreleased
+## [0.18.0-dev] - unreleased
 
 ### Changed
 
 * **Backwards incompatible.** Lowest compatible Python version is now 3.6.
+
+## [0.17.0] - 2018-08-11
+
+### Fixed
+
+* Switch crypto library `pycrypto` to `pycryptodome`, which is a more up to date fork of the former. This fixes CVE-2018-6594 found in the former.
+
+  **Deployment note.** When updating an application, you *must* uninstall `pycrypto` first, otherwise there will be a conflict if both the versions are installed at the same time. To uninstall, do `pip uninstall pycrypto`.
 
 ## [0.16.0] - 2018-07-23
 
