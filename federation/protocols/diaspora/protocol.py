@@ -4,7 +4,7 @@ from base64 import urlsafe_b64decode
 from typing import Callable, Tuple, Union, Dict
 from urllib.parse import unquote
 
-from Crypto.PublicKey.RSA import _RSAobj
+from Crypto.PublicKey.RSA import RsaKey
 from lxml import etree
 
 from federation.entities.mixins import BaseEntity
@@ -122,7 +122,7 @@ class Protocol:
             raise NoSenderKeyFoundError("Could not find a sender contact to retrieve key")
         MagicEnvelope(doc=self.doc, public_key=sender_key, verify=True)
 
-    def build_send(self, entity:BaseEntity, from_user:UserType, to_user_key:_RSAobj=None) -> Union[str, Dict]:
+    def build_send(self, entity:BaseEntity, from_user:UserType, to_user_key:RsaKey=None) -> Union[str, Dict]:
         """
         Build POST data for sending out to remotes.
 

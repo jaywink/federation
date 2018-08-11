@@ -2,7 +2,7 @@ import json
 import logging
 from typing import List, Tuple, Union
 
-from Crypto.PublicKey.RSA import _RSAobj
+from Crypto.PublicKey.RSA import RsaKey
 
 from federation.entities.diaspora.mappers import get_outbound_entity
 from federation.entities.mixins import BaseEntity
@@ -15,7 +15,7 @@ logger = logging.getLogger("federation")
 
 
 def handle_create_payload(
-        entity:BaseEntity, author_user:UserType, to_user_key:_RSAobj=None, parent_user:UserType=None) -> str:
+        entity:BaseEntity, author_user:UserType, to_user_key:RsaKey=None, parent_user:UserType=None) -> str:
     """Create a payload with the correct protocol.
 
     Any given user arguments must have ``private_key`` and ``handle`` attributes.
@@ -41,7 +41,7 @@ def handle_create_payload(
 def handle_send(
         entity: BaseEntity,
         author_user: UserType,
-        recipients: List[Union[Tuple[str, _RSAobj], str]]=None,
+        recipients: List[Union[Tuple[str, RsaKey], str]]=None,
         parent_user: UserType=None,
 ) -> None:
     """Send an entity to remote servers.
