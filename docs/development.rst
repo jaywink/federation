@@ -10,7 +10,7 @@ Help is more than welcome to extend this library. Please see the following resou
 Environment setup
 -----------------
 
-Once you have your (Python 3.3+) virtualenv set up, install the development requirements::
+Once you have your (Python 3.6+) virtualenv set up, install the development requirements::
 
    pip install -r dev-requirements.txt
 

@@ -10,6 +10,7 @@ codecov
 coverage
 pytest-cov
 pytest-warnings
+tox
 
 # Docs
 sphinx
