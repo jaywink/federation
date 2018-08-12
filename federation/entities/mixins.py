@@ -5,8 +5,8 @@ import warnings
 
 class BaseEntity:
     _allowed_children = ()
-    # If we have a receiver for a private payload, store receiving user guid here
-    _receiving_guid = ""
+    # If we have a receiver for a private payload, store receiving actor id here
+    _receiving_actor_id = ""
     _source_protocol = ""
     # Contains the original object from payload as a string
     _source_object = None
