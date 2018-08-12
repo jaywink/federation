@@ -1,5 +1,9 @@
 import importlib
 import logging
+from typing import Optional
+
+from federation.entities.base import Profile
+from federation.utils.diaspora import parse_profile_diaspora_id
 
 logger = logging.getLogger("federation")
 
@@ -19,19 +23,16 @@ def retrieve_remote_content(id, sender_key_fetcher=None):
     return utils.retrieve_and_parse_content(id, sender_key_fetcher=sender_key_fetcher)
 
 
-def retrieve_remote_profile(handle):
+def retrieve_remote_profile(id: str) -> Optional[Profile]:
     """High level retrieve profile method.
 
     Retrieve the profile from a remote location, using either the given protocol or by checking each
     protocol until a user can be constructed from the remote documents.
 
     Currently, due to no other protocols supported, always use the Diaspora protocol.
-
-    :param handle: The profile handle in format username@domain.tld
-    :returns: ``federation.entities.base.Profile`` or ``None``
     """
+    # TODO add support for AP
     protocol_name = "diaspora"
     utils = importlib.import_module("federation.utils.%s" % protocol_name)
-    if not handle.islower():
-        logger.warning("retrieve_remote_profile - Handle is not lower case! Will use lower case version to continue.")
-    return utils.retrieve_and_parse_profile(handle.lower())
+    handle, _guid = parse_profile_diaspora_id(id.lower())
+    return utils.retrieve_and_parse_profile(handle)
