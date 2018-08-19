@@ -83,11 +83,11 @@ class Protocol:
         self.content = self.get_message_content()
         # Get sender handle
         self.sender_handle = self.get_sender()
+        self.sender_id = generate_diaspora_profile_id(self.sender_handle)
         # Verify the message is from who it claims to be
         if not skip_author_verification:
             self.verify_signature()
-        sender_id = generate_diaspora_profile_id(self.sender_handle)
-        return sender_id, self.content
+        return self.sender_id, self.content
 
     def _get_user_key(self, user):
         if not getattr(self.user, "private_key", None):
@@ -115,7 +115,7 @@ class Protocol:
         author did actually generate this message.
         """
         if self.get_contact_key:
-            sender_key = self.get_contact_key(self.sender_handle)
+            sender_key = self.get_contact_key(self.sender_id)
         else:
             sender_key = fetch_public_key(self.sender_handle)
         if not sender_key:
