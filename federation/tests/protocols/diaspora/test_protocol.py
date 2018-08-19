@@ -110,6 +110,7 @@ class TestDiasporaProtocol(DiasporaTestBase):
         outbound_entity = get_outbound_entity(entity, private_key)
         data = protocol.build_send(outbound_entity, from_user=Mock(
             private_key=private_key, id="diaspora://johnny@localhost/profile/",
+            handle="johnny@localhost",
         ))
         mock_me.assert_called_once_with(
             etree.tostring(entity.to_xml()), private_key=private_key, author_handle="johnny@localhost",
@@ -129,6 +130,7 @@ class TestDiasporaProtocol(DiasporaTestBase):
         outbound_entity = get_outbound_entity(entity, private_key)
         data = protocol.build_send(outbound_entity, to_user_key="public key", from_user=Mock(
             private_key=private_key, id="diaspora://johnny@localhost/profile/",
+            handle="johnny@localhost",
         ))
         mock_me.assert_called_once_with(
             etree.tostring(entity.to_xml()), private_key=private_key, author_handle="johnny@localhost",
@@ -144,7 +146,9 @@ class TestDiasporaProtocol(DiasporaTestBase):
         protocol = self.init_protocol()
         outbound_doc = etree.fromstring("<xml>foo</xml>")
         entity = Mock(outbound_doc=outbound_doc)
-        from_user = Mock(id="diaspora://foobar/profile/", private_key="barfoo")
+        from_user = Mock(
+            id="diaspora://foobar/profile/", private_key="barfoo", handle="foobar",
+        )
         protocol.build_send(entity, from_user)
         mock_me.assert_called_once_with(b"<xml>foo</xml>", private_key=from_user.private_key, author_handle="foobar")
 

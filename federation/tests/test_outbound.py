@@ -20,7 +20,9 @@ class TestHandleCreatePayloadBuildsAPayload:
     @patch("federation.outbound.get_outbound_entity")
     def test_handle_create_payload_calls_get_outbound_entity(self, mock_get_outbound_entity):
         mock_get_outbound_entity.return_value = DiasporaPost()
-        author_user = Mock(private_key=RSA.generate(2048), id="diaspora://foobar@domain.tld/profile/")
+        author_user = Mock(
+            private_key=RSA.generate(2048), id="diaspora://foobar@domain.tld/profile/", handle="foobar@domain.tld",
+        )
         entity = DiasporaPost()
         handle_create_payload(entity, author_user)
         mock_get_outbound_entity.assert_called_once_with(entity, author_user.private_key)
@@ -28,7 +30,9 @@ class TestHandleCreatePayloadBuildsAPayload:
     @patch("federation.outbound.get_outbound_entity")
     def test_handle_create_payload_calls_get_outbound_entity_with_author_user(self, mock_get_outbound_entity):
         mock_get_outbound_entity.return_value = DiasporaPost()
-        author_user = Mock(private_key=RSA.generate(2048), id="diaspora://foobar@domain.tld/profile/")
+        author_user = Mock(
+            private_key=RSA.generate(2048), id="diaspora://foobar@domain.tld/profile/", handle="foobar@domain.tld",
+        )
         entity = DiasporaPost()
         handle_create_payload(entity, author_user)
         mock_get_outbound_entity.assert_called_once_with(entity, author_user.private_key)
@@ -37,8 +41,12 @@ class TestHandleCreatePayloadBuildsAPayload:
     def test_handle_create_payload_calls_sign_with_parent(self, mock_get_outbound_entity):
         comment = DiasporaComment()
         mock_get_outbound_entity.return_value = comment
-        author_user = Mock(private_key=RSA.generate(2048), id="diaspora://foobar@domain.tld/profile/")
-        parent_user = Mock(private_key=RSA.generate(2048), id="diaspora://parent@domain.tld/profile/")
+        author_user = Mock(
+            private_key=RSA.generate(2048), id="diaspora://foobar@domain.tld/profile/", handle="foobar@domain.tld",
+        )
+        parent_user = Mock(
+            private_key=RSA.generate(2048), id="diaspora://parent@domain.tld/profile/", handle="parent@domain.tld",
+        )
         entity = DiasporaComment()
         with patch.object(comment, "sign_with_parent") as mock_sign:
             handle_create_payload(entity, author_user, parent_user=parent_user)
@@ -56,7 +64,9 @@ class TestHandleSend:
             "diaspora://qwer@example.net/profile/qwerty",  # Same host twice to ensure one delivery only per host
                                                            # for public payloads
         ]
-        mock_author = Mock(private_key=key, id="diaspora://foo@example.com/profile/")
+        mock_author = Mock(
+            private_key=key, id="diaspora://foo@example.com/profile/", handle="foo@example.com",
+        )
         handle_send(diasporapost, mock_author, recipients)
 
         # Ensure first call is a private payload

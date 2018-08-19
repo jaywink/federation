@@ -12,7 +12,7 @@ from federation.exceptions import EncryptedMessageError, NoSenderKeyFoundError
 from federation.protocols.diaspora.encrypted import EncryptedPayload
 from federation.protocols.diaspora.magic_envelope import MagicEnvelope
 from federation.types import UserType
-from federation.utils.diaspora import fetch_public_key, parse_profile_diaspora_id, generate_diaspora_profile_id
+from federation.utils.diaspora import fetch_public_key, generate_diaspora_profile_id
 from federation.utils.text import decode_if_bytes, encode_if_text
 
 logger = logging.getLogger("federation")
@@ -136,8 +136,7 @@ class Protocol:
             xml = entity.outbound_doc
         else:
             xml = entity.to_xml()
-        handle, _guid = parse_profile_diaspora_id(from_user.id)
-        me = MagicEnvelope(etree.tostring(xml), private_key=from_user.private_key, author_handle=handle)
+        me = MagicEnvelope(etree.tostring(xml), private_key=from_user.private_key, author_handle=from_user.handle)
         rendered = me.render()
         if to_user_key:
             return EncryptedPayload.encrypt(rendered, to_user_key)
