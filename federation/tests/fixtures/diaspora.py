@@ -65,6 +65,7 @@ def diasporaprofile():
             "large": "urllarge", "medium": "urlmedium", "small": "urlsmall"
         },
         id="diaspora://alice@example.com/profile/guid",
+        handle="alice@example.com",
     )
 
 

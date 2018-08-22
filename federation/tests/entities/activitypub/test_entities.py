@@ -1,7 +1,10 @@
+from unittest import skip
+
 from federation.entities.activitypub.constants import CONTEXTS_DEFAULT
 from federation.entities.activitypub.entities import ActivitypubProfile
 
 
+@skip
 class TestEntitiesConvertToAS2:
     def test_profile_to_as2(self):
         entity = ActivitypubProfile(

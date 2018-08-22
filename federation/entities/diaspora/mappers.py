@@ -175,6 +175,7 @@ def transform_attributes(attrs, cls):
                 # Diaspora Profile XML message contains no GUID. We need the guid. Fetch it.
                 profile = retrieve_and_parse_profile(value)
                 transformed["id"] = profile.id
+                transformed["handle"] = value
             else:
                 transformed["actor_id"] = generate_diaspora_profile_id(value)
         elif key == 'guid':

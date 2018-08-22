@@ -86,7 +86,7 @@ class DiasporaContact(HandleMixin, TargetHandleMixin, DiasporaEntityMixin, Follo
         return element
 
 
-class DiasporaProfile(GUIDMixin, HandleMixin, DiasporaEntityMixin, Profile):
+class DiasporaProfile(GUIDMixin, DiasporaEntityMixin, Profile):
     """Diaspora profile."""
     _tag_name = "profile"
 

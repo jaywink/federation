@@ -22,8 +22,8 @@ class TestGetBaseAttributes:
         attrs = get_base_attributes(entity).keys()
         assert set(attrs) == {
             "created_at", "name", "email", "gender", "raw_content", "location", "public",
-            "nsfw", "public_key", "image_urls", "tag_list", "signature", "url", "atom_url", "username",
-            "base_url", "id", "actor_id",
+            "nsfw", "public_key", "image_urls", "tag_list", "signature", "url", "atom_url",
+            "base_url", "id", "actor_id", "handle",
         }
 
 class TestGetFullXMLRepresentation:
