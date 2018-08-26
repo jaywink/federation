@@ -6,7 +6,7 @@ from Crypto.Signature import PKCS1_v1_5
 from lxml import etree
 
 from federation.exceptions import SignatureVerificationError
-from federation.utils.diaspora import fetch_public_key
+from federation.utils.diaspora import fetch_public_key, generate_diaspora_profile_id
 from federation.utils.text import decode_if_bytes
 
 NAMESPACE = "http://salmon-protocol.org/ns/magic-env"
@@ -73,7 +73,8 @@ class MagicEnvelope:
 
     def fetch_public_key(self):
         if self.sender_key_fetcher:
-            self.public_key = self.sender_key_fetcher(self.author_handle)
+            actor_id = generate_diaspora_profile_id(self.author_handle)
+            self.public_key = self.sender_key_fetcher(actor_id)
             return
         self.public_key = fetch_public_key(self.author_handle)
 

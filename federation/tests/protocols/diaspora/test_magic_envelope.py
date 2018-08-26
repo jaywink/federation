@@ -45,7 +45,7 @@ class TestMagicEnvelope:
         mock_fetcher = Mock(return_value="public key")
         env = MagicEnvelope(author_handle="spam@eggs", sender_key_fetcher=mock_fetcher)
         env.fetch_public_key()
-        mock_fetcher.assert_called_once_with("spam@eggs")
+        mock_fetcher.assert_called_once_with("diaspora://spam@eggs/profile/")
         assert not mock_fetch.called
 
     @patch("federation.protocols.diaspora.magic_envelope.fetch_public_key", autospec=True)

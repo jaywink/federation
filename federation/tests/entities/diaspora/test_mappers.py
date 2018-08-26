@@ -209,7 +209,7 @@ class TestDiasporaEntityMappersReceive:
     def test_element_to_objects_calls_sender_key_fetcher(self, mock_validate):
         mock_fetcher = Mock()
         message_to_objects(DIASPORA_POST_COMMENT, "diaspora://alice@alice.diaspora.example.org/profile/", mock_fetcher)
-        mock_fetcher.assert_called_once_with("alice@alice.diaspora.example.org")
+        mock_fetcher.assert_called_once_with("diaspora://alice@alice.diaspora.example.org/profile/")
 
     @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
     @patch("federation.entities.diaspora.mappers.retrieve_and_parse_profile")

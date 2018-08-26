@@ -109,7 +109,7 @@ def element_to_objects(
         # If relayable, fetch sender key for validation
         entity._xml_tags = get_element_child_info(element, "tag")
         if sender_key_fetcher:
-            entity._sender_key = sender_key_fetcher(entity.handle)
+            entity._sender_key = sender_key_fetcher(entity.actor_id)
         else:
             profile = retrieve_and_parse_profile(entity.handle)
             if profile:
