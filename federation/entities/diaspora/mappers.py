@@ -175,20 +175,25 @@ def transform_attributes(attrs, cls):
                 # Diaspora Profile XML message contains no GUID. We need the guid. Fetch it.
                 profile = retrieve_and_parse_profile(value)
                 transformed["id"] = profile.id
-                transformed["handle"] = value
+                transformed["guid"] = profile.guid
             else:
-                transformed["actor_id"] = generate_diaspora_profile_id(value)
+                transformed["actor_id"] = generate_diaspora_profile_id(value, attrs.get('guid'))
+                transformed["guid"] = attrs.get('guid')
+            transformed["handle"] = value
         elif key == 'guid':
             if cls != DiasporaProfile:
                 transformed["id"] = generate_diaspora_id(attrs.get('author'), cls._tag_name, value)
+                transformed["guid"] = value
         elif key == "recipient":
             transformed["target_id"] = generate_diaspora_profile_id(value)
         elif key == "root_author":
             transformed["target_id"] = generate_diaspora_id(value, cls._tag_name, attrs.get('root_guid'))
         elif key == "parent_guid":
             transformed["target_id"] = generate_diaspora_id("", cls._tag_name, value)
+            transformed["target_guid"] = value
         elif key == "target_guid":
             transformed["target_id"] = generate_diaspora_id(attrs.get("author"), cls._tag_name, value)
+            transformed["target_guid"] = value
         elif key in ("first_name", "last_name"):
             values = [attrs.get('first_name'), attrs.get('last_name')]
             values = [v for v in values if v]
