@@ -13,6 +13,25 @@ class DiasporaEntityMixin:
     # Normally outbound document is generated from entity. Store one here if at some point we already have a doc
     outbound_doc = None
 
+    def __init__(self, *args, **kwargs):
+        handle = kwargs.get('handle')
+        guid = kwargs.get('guid')
+        id = kwargs.get('id', '')
+        actor_id = kwargs.get('actor_id', '')
+        if not handle and not guid:
+            if id.startswith('diaspora://'):
+                kwargs['handle'], _type, kwargs['guid'] = parse_diaspora_uri(id)
+            elif actor_id.startswith('diaspora://'):
+                kwargs['handle'], _type, kwargs['guid'] = parse_diaspora_uri(actor_id)
+
+        target_handle = kwargs.get('target_handle')
+        target_guid = kwargs.get('target_guid')
+        target_id = kwargs.get('target_id', '')
+        if not target_handle and not target_guid and target_id.startswith('diaspora://'):
+            kwargs['target_handle'], _type, kwargs['target_guid'] = parse_diaspora_uri(target_id)
+
+        super().__init__(*args, **kwargs)
+
     def extract_mentions(self):
         """
         Extract mentions from an entity with ``raw_content``.
@@ -84,37 +103,3 @@ class DiasporaRelayableMixin(DiasporaEntityMixin):
         self.parent_signature = create_relayable_signature(private_key, doc)
         add_element_to_doc(doc, "parent_author_signature", self.parent_signature)
         self.outbound_doc = doc
-
-
-class GUIDMixin(DiasporaEntityMixin):
-    @property
-    def guid(self):
-        if not self.id.startswith('diaspora://'):
-            return ""
-        return parse_diaspora_uri(self.id)[2]
-
-
-class HandleMixin(DiasporaEntityMixin):
-    @property
-    def handle(self):
-        if not self.actor_id.startswith('diaspora://'):
-            if not self.id.startswith('diaspora://'):
-                return ""
-            return parse_diaspora_uri(self.id)[0]
-        return parse_diaspora_uri(self.actor_id)[0]
-
-
-class TargetGUIDMixin(DiasporaEntityMixin):
-    @property
-    def target_guid(self):
-        if not self.target_id.startswith('diaspora://'):
-            return ""
-        return parse_diaspora_uri(self.target_id)[2]
-
-
-class TargetHandleMixin(DiasporaEntityMixin):
-    @property
-    def target_handle(self):
-        if not self.target_id.startswith('diaspora://'):
-            return ""
-        return parse_diaspora_uri(self.target_id)[0]

@@ -2,12 +2,11 @@ from lxml import etree
 
 from federation.entities.base import (
     Comment, Post, Reaction, Profile, Retraction, Follow, Share, Image)
-from federation.entities.diaspora.mixins import (
-    DiasporaEntityMixin, DiasporaRelayableMixin, GUIDMixin, HandleMixin, TargetGUIDMixin, TargetHandleMixin)
+from federation.entities.diaspora.mixins import DiasporaEntityMixin, DiasporaRelayableMixin
 from federation.entities.diaspora.utils import format_dt, struct_to_xml
 
 
-class DiasporaComment(GUIDMixin, HandleMixin, TargetGUIDMixin, DiasporaRelayableMixin, Comment):
+class DiasporaComment(DiasporaRelayableMixin, Comment):
     """Diaspora comment."""
     _tag_name = "comment"
 
@@ -25,11 +24,11 @@ class DiasporaComment(GUIDMixin, HandleMixin, TargetGUIDMixin, DiasporaRelayable
         return element
 
 
-class DiasporaImage(GUIDMixin, HandleMixin, DiasporaEntityMixin, Image):
+class DiasporaImage(DiasporaEntityMixin, Image):
     _tag_name = "photo"
 
 
-class DiasporaPost(GUIDMixin, HandleMixin, DiasporaEntityMixin, Post):
+class DiasporaPost(DiasporaEntityMixin, Post):
     """Diaspora post, ie status message."""
     _tag_name = "status_message"
 
@@ -47,7 +46,7 @@ class DiasporaPost(GUIDMixin, HandleMixin, DiasporaEntityMixin, Post):
         return element
 
 
-class DiasporaLike(GUIDMixin, HandleMixin, TargetGUIDMixin, DiasporaRelayableMixin, Reaction):
+class DiasporaLike(DiasporaRelayableMixin, Reaction):
     """Diaspora like."""
     _tag_name = "like"
     reaction = "like"
@@ -67,7 +66,7 @@ class DiasporaLike(GUIDMixin, HandleMixin, TargetGUIDMixin, DiasporaRelayableMix
         return element
 
 
-class DiasporaContact(HandleMixin, TargetHandleMixin, DiasporaEntityMixin, Follow):
+class DiasporaContact(DiasporaEntityMixin, Follow):
     """Diaspora contact.
 
     Note we don't implement 'sharing' at the moment so just send it as the same as 'following'.
@@ -86,7 +85,7 @@ class DiasporaContact(HandleMixin, TargetHandleMixin, DiasporaEntityMixin, Follo
         return element
 
 
-class DiasporaProfile(GUIDMixin, DiasporaEntityMixin, Profile):
+class DiasporaProfile(DiasporaEntityMixin, Profile):
     """Diaspora profile."""
     _tag_name = "profile"
 
@@ -110,7 +109,7 @@ class DiasporaProfile(GUIDMixin, DiasporaEntityMixin, Profile):
         return element
 
 
-class DiasporaRetraction(HandleMixin, TargetGUIDMixin, DiasporaEntityMixin, Retraction):
+class DiasporaRetraction(DiasporaEntityMixin, Retraction):
     """Diaspora Retraction."""
     _tag_name = "retraction"
     mapped = {
@@ -146,7 +145,7 @@ class DiasporaRetraction(HandleMixin, TargetGUIDMixin, DiasporaEntityMixin, Retr
         return value
 
 
-class DiasporaReshare(GUIDMixin, HandleMixin, TargetGUIDMixin, TargetHandleMixin, DiasporaEntityMixin, Share):
+class DiasporaReshare(DiasporaEntityMixin, Share):
     """Diaspora Reshare."""
     _tag_name = "reshare"
 

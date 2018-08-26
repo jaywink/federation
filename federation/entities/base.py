@@ -96,7 +96,6 @@ class Profile(CreatedAtMixin, OptionalRawContentMixin, PublicMixin):
     public_key = ""
     tag_list = None
     url = ""
-    handle = ""
 
     _allowed_children = (Image,)
 

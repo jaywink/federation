@@ -200,7 +200,6 @@ def parse_profile_from_hcard(hcard: str, handle: str):
         public=True if _get_element_text_or_none(doc, ".searchable") == "true" else False,
         id=generate_diaspora_profile_id(handle, _get_element_text_or_none(doc, ".uid")),
         public_key=_get_element_text_or_none(doc, ".key"),
-        handle=handle,
     )
     return profile
 

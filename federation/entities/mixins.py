@@ -3,6 +3,7 @@ import importlib
 import warnings
 
 
+# TODO someday, rewrite entities as dataclasses or attr's
 class BaseEntity:
     _allowed_children = ()
     # If we have a receiver for a private payload, store receiving actor id here
@@ -15,6 +16,8 @@ class BaseEntity:
     base_url = ""
     id = ""
     actor_id = ""
+    handle = ""
+    guid = ""
     signature = ""
 
     def __init__(self, *args, **kwargs):
@@ -118,6 +121,8 @@ class PublicMixin(BaseEntity):
 
 class TargetIDMixin(BaseEntity):
     target_id = ""
+    target_handle = ""
+    target_guid = ""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
