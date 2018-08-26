@@ -3,6 +3,7 @@ from unittest.mock import patch, Mock
 
 from django.test import RequestFactory
 
+from federation.entities.base import Profile
 from federation.hostmeta.django import rfc3033_webfinger_view
 from federation.hostmeta.django.generators import nodeinfo2_view
 from federation.utils.django import get_function_from_config
@@ -47,6 +48,53 @@ class TestRFC3033WebfingerView:
         assert response.status_code == 404
 
     def test_rendered_webfinger_returned(self):
+        request = RequestFactory().get("/.well-known/webfinger?resource=acct:foobar@example.com")
+        response = rfc3033_webfinger_view(request)
+        assert response.status_code == 200
+        assert response['Content-Type'] == "application/jrd+json"
+        assert json.loads(response.content.decode("utf-8")) == {
+            "subject": "acct:foobar@example.com",
+            "links": [
+                {
+                    "rel": "http://microformats.org/profile/hcard",
+                    "type": "text/html",
+                    "href": "https://example.com/hcard/users/1234",
+                },
+                {
+                    "rel": "http://joindiaspora.com/seed_location",
+                    "type": "text/html",
+                    "href": "https://example.com",
+                },
+                {
+                    "rel": "http://webfinger.net/rel/profile-page",
+                    "type": "text/html",
+                    "href": "https://example.com/profile/1234/",
+                },
+                {
+                    "rel": "salmon",
+                    "href": "https://example.com/receive/users/1234",
+                },
+                {
+                    "rel": "http://schemas.google.com/g/2010#updates-from",
+                    "type": "application/atom+xml",
+                    "href": "https://example.com/profile/1234/atom.xml",
+                },
+                {
+                    "rel": "http://ostatus.org/schema/1.0/subscribe",
+                    "template": "https://example.com/search?q={uri}",
+                },
+            ],
+        }
+
+    @patch("federation.hostmeta.django.generators.get_function_from_config", autospec=True)
+    def test_rendered_webfinger_returned__non_diaspora_id(self, mock_get_config):
+        mock_get_config.return_value = Mock(return_value=Profile(
+            url="https://example.com/profile/1234/",
+            atom_url="https://example.com/profile/1234/atom.xml",
+            handle="foobar@example.com",
+            guid="1234",
+            id="https://example.com/profile/1234",
+        ))
         request = RequestFactory().get("/.well-known/webfinger?resource=acct:foobar@example.com")
         response = rfc3033_webfinger_view(request)
         assert response.status_code == 200

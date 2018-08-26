@@ -3,6 +3,7 @@ import logging
 from django.http import HttpResponseBadRequest, JsonResponse, HttpResponseNotFound
 
 from federation.hostmeta.generators import RFC3033Webfinger, generate_nodeinfo2_document
+from federation.utils.diaspora import generate_diaspora_profile_id
 from federation.utils.django import get_configuration, get_function_from_config
 from federation.utils.text import get_path_from_url
 
@@ -38,12 +39,14 @@ def rfc3033_webfinger_view(request, *args, **kwargs):
         logger.warning("rfc3033_webfinger_view - Failed to get profile by handle %s: %s", handle, exc)
         return HttpResponseNotFound()
 
-    # TODO: remove this hotfix that is made to fix webfinger for diaspora in activitypub branch
     profile = profile.as_protocol("diaspora")
+    id = profile.id
+    if not id.startswith('diaspora://') and profile.handle and profile.guid:
+        id = generate_diaspora_profile_id(profile.handle, profile.guid)
 
     config = get_configuration()
     webfinger = RFC3033Webfinger(
-        id=profile.id,
+        id=id,
         base_url=config.get('base_url'),
         profile_path=get_path_from_url(profile.url),
         hcard_path=config.get('hcard_path'),
