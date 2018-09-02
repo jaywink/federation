@@ -91,8 +91,8 @@ class TestEntitiesExtractMentions:
         diasporapost.raw_content = 'yeye @{Jason Robinson 🐍🍻; jaywink@jasonrobinson.me} foobar ' \
                                    '@{bar; foo@example.com}'
         assert diasporapost.extract_mentions() == {
-            'diaspora://jaywink@jasonrobinson.me/profile/',
-            'diaspora://foo@example.com/profile/',
+            'jaywink@jasonrobinson.me',
+            'foo@example.com',
         }
 
 
@@ -116,9 +116,12 @@ class TestDiasporaRelayableMixin:
         entity = DiasporaComment(
             raw_content="raw_content",
             created_at="created_at",
-            actor_id="diaspora://handle/profile/1234",
-            id="diaspora://handle/comment/guid",
-            target_id="diaspora://target_handle/status_message/target_guid",
+            actor_id="handle",
+            handle="handle",
+            id="guid",
+            guid="guid",
+            target_id="target_guid",
+            target_guid="target_guid",
         )
         entity.sign(get_dummy_private_key())
         assert entity.signature == "OWvW/Yxw4uCnx0WDn0n5/B4uhyZ8Pr6h3FZaw8J7PCXyPluOfYXFoHO21bykP8c2aVnuJNHe+lmeAkUC" \
@@ -129,9 +132,12 @@ class TestDiasporaRelayableMixin:
 
     def test_signing_like_works(self):
         entity = DiasporaLike(
-            actor_id="diaspora://handle/profile/1234",
-            id="diaspora://handle/like/guid",
-            target_id="diaspora://target_handle/status_message/target_guid",
+            actor_id="handle",
+            handle="handle",
+            id="guid",
+            guid="guid",
+            target_id="target_guid",
+            target_guid="target_guid",
         )
         entity.sign(get_dummy_private_key())
         assert entity.signature == "apkcOn6marHfo0rHiOnQq+qqspxxWOJNklQKQjoJUHmXDNRnBp8aPoLKqVOznsTEpEIhM1p5/8mPilgY" \

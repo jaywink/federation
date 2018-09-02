@@ -58,14 +58,13 @@ class TestHandleSend:
     def test_calls_handle_create_payload(self, mock_send, diasporapost):
         key = get_dummy_private_key()
         recipients = [
-            ("diaspora://foo@127.0.0.1/profile/xyz", key.publickey()),
-            ("diaspora://foo@localhost/profile/abc", None),
-            "diaspora://foo@example.net/profile/zzz",
-            "diaspora://qwer@example.net/profile/qwerty",  # Same host twice to ensure one delivery only per host
-                                                           # for public payloads
+            ("foo@127.0.0.1", key.publickey(), "xyz"),
+            ("foo@localhost", None),
+            "foo@example.net",
+            "qwer@example.net",  # Same host twice to ensure one delivery only per host for public payloads
         ]
         mock_author = Mock(
-            private_key=key, id="diaspora://foo@example.com/profile/", handle="foo@example.com",
+            private_key=key, id="foo@example.com", handle="foo@example.com",
         )
         handle_send(diasporapost, mock_author, recipients)
 

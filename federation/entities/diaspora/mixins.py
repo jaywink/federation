@@ -14,21 +14,21 @@ class DiasporaEntityMixin:
     outbound_doc = None
 
     def __init__(self, *args, **kwargs):
-        handle = kwargs.get('handle')
-        guid = kwargs.get('guid')
-        id = kwargs.get('id', '')
-        actor_id = kwargs.get('actor_id', '')
-        if not handle and not guid:
-            if id.startswith('diaspora://'):
-                kwargs['handle'], _type, kwargs['guid'] = parse_diaspora_uri(id)
-            elif actor_id.startswith('diaspora://'):
-                kwargs['handle'], _type, kwargs['guid'] = parse_diaspora_uri(actor_id)
-
-        target_handle = kwargs.get('target_handle')
-        target_guid = kwargs.get('target_guid')
-        target_id = kwargs.get('target_id', '')
-        if not target_handle and not target_guid and target_id.startswith('diaspora://'):
-            kwargs['target_handle'], _type, kwargs['target_guid'] = parse_diaspora_uri(target_id)
+        # handle = kwargs.get('handle')
+        # guid = kwargs.get('guid')
+        # id = kwargs.get('id', '')
+        # actor_id = kwargs.get('actor_id', '')
+        # if not handle and not guid:
+        #     if id.startswith('diaspora://'):
+        #         kwargs['handle'], _type, kwargs['guid'] = parse_diaspora_uri(id)
+        #     elif actor_id.startswith('diaspora://'):
+        #         kwargs['handle'], _type, kwargs['guid'] = parse_diaspora_uri(actor_id)
+        #
+        # target_handle = kwargs.get('target_handle')
+        # target_guid = kwargs.get('target_guid')
+        # target_id = kwargs.get('target_id', '')
+        # if not target_handle and not target_guid and target_id.startswith('diaspora://'):
+        #     kwargs['target_handle'], _type, kwargs['target_guid'] = parse_diaspora_uri(target_id)
 
         super().__init__(*args, **kwargs)
 
@@ -44,7 +44,7 @@ class DiasporaEntityMixin:
         if not mentions:
             return set()
         mentions = {s.split(';')[1].strip(' }') for s in mentions}
-        mentions = {generate_diaspora_profile_id(s) for s in mentions}
+        mentions = {s for s in mentions}
         return mentions
 
     def to_string(self) -> str:

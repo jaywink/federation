@@ -13,8 +13,7 @@ from federation.entities.diaspora.mixins import DiasporaRelayableMixin
 from federation.entities.mixins import BaseEntity
 from federation.protocols.diaspora.signatures import get_element_child_info
 from federation.types import UserType
-from federation.utils.diaspora import retrieve_and_parse_profile, generate_diaspora_profile_id, generate_diaspora_id, \
-    parse_profile_diaspora_id
+from federation.utils.diaspora import retrieve_and_parse_profile
 
 logger = logging.getLogger("federation")
 
@@ -92,7 +91,6 @@ def element_to_objects(
     if not cls:
         return []
 
-    sender_handle, _sender_guid = parse_profile_diaspora_id(sender)
     attrs = xml_children_as_dict(element)
     transformed = transform_attributes(attrs, cls)
     if hasattr(cls, "fill_extra_attributes"):
@@ -116,7 +114,7 @@ def element_to_objects(
                 entity._sender_key = profile.public_key
     else:
         # If not relayable, ensure handles match
-        if not check_sender_and_entity_handle_match(sender_handle, entity.handle):
+        if not check_sender_and_entity_handle_match(sender, entity.handle):
             return []
     try:
         entity.validate()
@@ -174,25 +172,20 @@ def transform_attributes(attrs, cls):
             if cls == DiasporaProfile:
                 # Diaspora Profile XML message contains no GUID. We need the guid. Fetch it.
                 profile = retrieve_and_parse_profile(value)
-                transformed["id"] = profile.id
+                transformed['id'] = value
                 transformed["guid"] = profile.guid
             else:
-                transformed["actor_id"] = generate_diaspora_profile_id(value, attrs.get('guid'))
-                transformed["guid"] = attrs.get('guid')
+                transformed["actor_id"] = value
             transformed["handle"] = value
         elif key == 'guid':
             if cls != DiasporaProfile:
-                transformed["id"] = generate_diaspora_id(attrs.get('author'), cls._tag_name, value)
+                transformed["id"] = value
                 transformed["guid"] = value
-        elif key == "recipient":
-            transformed["target_id"] = generate_diaspora_profile_id(value)
-        elif key == "root_author":
-            transformed["target_id"] = generate_diaspora_id(value, cls._tag_name, attrs.get('root_guid'))
-        elif key == "parent_guid":
-            transformed["target_id"] = generate_diaspora_id("", cls._tag_name, value)
-            transformed["target_guid"] = value
-        elif key == "target_guid":
-            transformed["target_id"] = generate_diaspora_id(attrs.get("author"), cls._tag_name, value)
+        elif key in ("root_author", "recipient"):
+            transformed["target_id"] = value
+            transformed["target_handle"] = value
+        elif key in ("target_guid", "root_guid", "parent_guid"):
+            transformed["target_id"] = value
             transformed["target_guid"] = value
         elif key in ("first_name", "last_name"):
             values = [attrs.get('first_name'), attrs.get('last_name')]

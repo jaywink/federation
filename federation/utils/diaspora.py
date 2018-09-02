@@ -1,7 +1,7 @@
 import json
 import logging
 import xml
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Callable
 from urllib.parse import quote
 
 from lxml import html
@@ -198,23 +198,25 @@ def parse_profile_from_hcard(hcard: str, handle: str):
             "large": _get_element_attr_or_none(doc, ".entity_photo .photo", "src"),
         },
         public=True if _get_element_text_or_none(doc, ".searchable") == "true" else False,
-        id=generate_diaspora_profile_id(handle, _get_element_text_or_none(doc, ".uid")),
+        id=handle,
+        handle=handle,
+        guid=_get_element_text_or_none(doc, ".uid"),
         public_key=_get_element_text_or_none(doc, ".key"),
     )
     return profile
 
 
-def retrieve_and_parse_content(id, sender_key_fetcher=None):
+def retrieve_and_parse_content(
+        guid: str, handle: str, entity_type: str, sender_key_fetcher: Callable[[str], str]=None,
+):
     """Retrieve remote content and return an Entity class instance.
 
     This is basically the inverse of receiving an entity. Instead, we fetch it, then call "handle_receive".
 
-    :param id: Diaspora URI scheme format ID.
     :param sender_key_fetcher: Function to use to fetch sender public key. If not given, network will be used
         to fetch the profile and the key. Function must take handle as only parameter and return a public key.
     :returns: Entity object instance or ``None``
     """
-    handle, entity_type, guid = parse_diaspora_uri(id)
     _username, domain = handle.split("@")
     url = get_fetch_content_endpoint(domain, entity_type, guid)
     document, status_code, error = fetch_document(url)
@@ -222,12 +224,12 @@ def retrieve_and_parse_content(id, sender_key_fetcher=None):
         _sender, _protocol, entities = handle_receive(document, sender_key_fetcher=sender_key_fetcher)
         if len(entities) > 1:
             logger.warning("retrieve_and_parse_content - more than one entity parsed from remote even though we"
-                           "expected only one! ID %s", id)
+                           "expected only one! ID %s", guid)
         if entities:
             return entities[0]
         return
     elif status_code == 404:
-        logger.warning("retrieve_and_parse_content - remote content %s not found", id)
+        logger.warning("retrieve_and_parse_content - remote content %s not found", guid)
         return
     if error:
         raise error
@@ -264,15 +266,13 @@ def get_fetch_content_endpoint(domain, entity_type, guid):
     return "https://%s/fetch/%s/%s" % (domain, entity_type, guid)
 
 
-def get_public_endpoint(id):
+def get_public_endpoint(id: str) -> str:
     """Get remote endpoint for delivering public payloads."""
-    handle, _entity_type, _guid = parse_diaspora_uri(id)
-    _username, domain = handle.split("@")
+    _username, domain = id.split("@")
     return "https://%s/receive/public" % domain
 
 
-def get_private_endpoint(id):
+def get_private_endpoint(id: str, guid: str) -> str:
     """Get remote endpoint for delivering private payloads."""
-    handle, guid = parse_profile_diaspora_id(id)
-    _username, domain = handle.split("@")
+    _username, domain = id.split("@")
     return "https://%s/receive/users/%s" % (domain, guid)

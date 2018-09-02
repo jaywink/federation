@@ -21,17 +21,22 @@ def diasporacomment():
     return DiasporaComment(
         raw_content="raw_content",
         signature="signature",
-        id="diaspora://alice@example.com/comment/guid",
-        actor_id="diaspora://alice@example.com/profile/guid",
-        target_id="diaspora://bob@example.org/status_message/target_guid",
+        id="guid",
+        guid="guid",
+        actor_id="alice@example.com",
+        handle="alice@example.com",
+        target_id="target_guid",
+        target_guid="target_guid",
     )
 
 
 @pytest.fixture
 def diasporacontact():
     return DiasporaContact(
-        actor_id="diaspora://alice@example.com/contact/guid",
-        target_id="diaspora://bob@example.org/profile/target_guid",
+        actor_id="alice@example.com",
+        handle="alice@example.com",
+        target_id="bob@example.org",
+        target_handle="bob@example.org",
         following=True,
     )
 
@@ -39,9 +44,12 @@ def diasporacontact():
 @pytest.fixture
 def diasporalike():
     return DiasporaLike(
-        id="diaspora://alice@example.com/like/guid",
-        actor_id="diaspora://alice@example.com/profile/guid",
-        target_id="diaspora://bob@example.org/status_message/target_guid",
+        id="guid",
+        guid="guid",
+        actor_id="alice@example.com",
+        handle="alice@example.com",
+        target_id="target_guid",
+        target_guid="target_guid",
         signature="signature",
     )
 
@@ -52,8 +60,10 @@ def diasporapost():
         raw_content="raw_content",
         public=True,
         provider_display_name="Socialhome",
-        id="diaspora://alice@example.com/status_message/guid",
-        actor_id="diaspora://alice@example.com/profile/guid",
+        id="guid",
+        guid="guid",
+        actor_id="alice@example.com",
+        handle="alice@example.com",
     )
 
 
@@ -64,8 +74,9 @@ def diasporaprofile():
         tag_list=["socialfederation", "federation"], image_urls={
             "large": "urllarge", "medium": "urlmedium", "small": "urlsmall"
         },
-        id="diaspora://alice@example.com/profile/guid",
+        id="alice@example.com",
         handle="alice@example.com",
+        guid="guid",
     )
 
 
@@ -78,7 +89,9 @@ def diasporareshare():
 @pytest.fixture
 def diasporaretraction():
     return DiasporaRetraction(
-        actor_id="diaspora://alice@example.com/profile/guid",
-        target_id="diaspora://alice@example.com/status_message/target_guid",
+        actor_id="alice@example.com",
+        handle="alice@example.com",
+        target_id="target_guid",
+        target_guid="target_guid",
         entity_type="Post",
     )

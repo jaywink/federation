@@ -147,23 +147,25 @@ class TestRetrieveAndParseContent:
     @patch("federation.utils.diaspora.fetch_document", return_value=(None, 404, None))
     @patch("federation.utils.diaspora.get_fetch_content_endpoint", return_value="https://example.com/fetch/spam/eggs")
     def test_calls_fetch_document(self, mock_get, mock_fetch):
-        retrieve_and_parse_content("diaspora://user@example.com/spam/eggs")
+        retrieve_and_parse_content(guid="eggs", handle="user@example.com", entity_type="spam")
         mock_fetch.assert_called_once_with("https://example.com/fetch/spam/eggs")
 
     @patch("federation.utils.diaspora.fetch_document", return_value=(None, 404, None))
     @patch("federation.utils.diaspora.get_fetch_content_endpoint")
     def test_calls_get_fetch_content_endpoint(self, mock_get, mock_fetch):
-        retrieve_and_parse_content("diaspora://user@example.com/spam/eggs")
+        retrieve_and_parse_content(guid="eggs", handle="user@example.com", entity_type="spam")
         mock_get.assert_called_once_with("example.com", "spam", "eggs")
         mock_get.reset_mock()
-        retrieve_and_parse_content("diaspora://user@example.com/spam/eggs@spam")
+        retrieve_and_parse_content(guid="eggs@spam", handle="user@example.com", entity_type="spam")
         mock_get.assert_called_once_with("example.com", "spam", "eggs@spam")
 
     @patch("federation.utils.diaspora.fetch_document", return_value=(DIASPORA_PUBLIC_PAYLOAD, 200, None))
     @patch("federation.utils.diaspora.get_fetch_content_endpoint", return_value="https://example.com/fetch/spam/eggs")
     @patch("federation.utils.diaspora.handle_receive", return_value=("sender", "protocol", ["entity"]))
     def test_calls_handle_receive(self, mock_handle, mock_get, mock_fetch):
-        entity = retrieve_and_parse_content("diaspora://user@example.com/spam/eggs", sender_key_fetcher=sum)
+        entity = retrieve_and_parse_content(
+            guid="eggs", handle="user@example.com", entity_type="spam", sender_key_fetcher=sum,
+        )
         mock_handle.assert_called_once_with(DIASPORA_PUBLIC_PAYLOAD, sender_key_fetcher=sum)
         assert entity == "entity"
 
@@ -171,12 +173,12 @@ class TestRetrieveAndParseContent:
     @patch("federation.utils.diaspora.get_fetch_content_endpoint", return_value="https://example.com/fetch/spam/eggs")
     def test_raises_on_fetch_error(self, mock_get, mock_fetch):
         with pytest.raises(Exception):
-            retrieve_and_parse_content("diaspora://user@example.com/spam/eggs")
+            retrieve_and_parse_content(guid="eggs", handle="user@example.com", entity_type="spam")
 
     @patch("federation.utils.diaspora.fetch_document", return_value=(None, 404, None))
     @patch("federation.utils.diaspora.get_fetch_content_endpoint", return_value="https://example.com/fetch/spam/eggs")
     def test_returns_on_404(self, mock_get, mock_fetch):
-        result = retrieve_and_parse_content("diaspora://user@example.com/spam/eggs")
+        result = retrieve_and_parse_content(guid="eggs", handle="user@example.com", entity_type="spam")
         assert not result
 
 
@@ -306,15 +308,11 @@ class TestRetrieveAndParseProfile:
 
 class TestGetPublicEndpoint:
     def test_correct_endpoint(self):
-        endpoint = get_public_endpoint("diaspora://foobar@example.com/profile/123456")
+        endpoint = get_public_endpoint("foobar@example.com")
         assert endpoint == "https://example.com/receive/public"
 
 
 class TestGetPrivateEndpoint:
     def test_correct_endpoint(self):
-        endpoint = get_private_endpoint("diaspora://foobar@example.com/profile/123456")
+        endpoint = get_private_endpoint("foobar@example.com", guid="123456")
         assert endpoint == "https://example.com/receive/users/123456"
-
-    def test_raises_value_error_for_non_profile_id(self):
-        with pytest.raises(ValueError):
-            get_private_endpoint("diaspora://foobar@example.com/comment/123456")

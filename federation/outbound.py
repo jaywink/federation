@@ -41,7 +41,7 @@ def handle_create_payload(
 def handle_send(
         entity: BaseEntity,
         author_user: UserType,
-        recipients: List[Union[Tuple[str, RsaKey], str]]=None,
+        recipients: List[Union[Tuple[str, RsaKey], Tuple[str, RsaKey, str], str]]=None,
         parent_user: UserType=None,
 ) -> None:
     """Send an entity to remote servers.
@@ -54,15 +54,19 @@ def handle_send(
     :arg entity: Entity object to send. Can be a base entity or a protocol specific one.
     :arg author_user: User authoring the object.
     :arg recipients: A list of recipients to delivery to. Each recipient is a tuple
-                     containing at minimum the "id", optionally "public key" for private deliveries.
+                     containing at minimum the "id".
+                     For private deliveries, optionally "public key" (all protocols) and "guid" (diaspora
+                     protocol) are required.
                      Instead of a tuple, for public deliveries the "id" as str is also ok.
-                     If public key is provided, Diaspora protocol delivery will be made as an encrypted
+                     If public key and guid are provided, Diaspora protocol delivery will be made as an encrypted
                      private delivery.
                      For example
                      [
-                         ("diaspora://user@domain.tld/profile/zyx", <RSAPublicKey object>),
-                         ("diaspora://user@domain2.tld/profile/xyz", None),
-                         "diaspora://user@domain3.tld/profile/xyz",
+                         ("user@domain.tld", <RSAPublicKey object>, '1234-5678-0123-4567'),
+                         ("user@domain2.tld", None, None),
+                         "user@domain3.tld",
+                         "https://domain4.tld/sharedinbox/",
+                         ("https://domain4.tld/sharedinbox/", <RSAPublicKey object>),
                      ]
     :arg parent_user: (Optional) User object of the parent object, if there is one. This must be given for the
                       Diaspora protocol if a parent object exists, so that a proper ``parent_author_signature`` can
@@ -89,7 +93,8 @@ def handle_send(
                 logger.error("handle_send - failed to generate private payload for %s: %s", id, ex)
                 continue
             # TODO get_private_endpoint should be imported per protocol
-            url = get_private_endpoint(id)
+            guid = recipient[2] if len(recipient) > 2 else None
+            url = get_private_endpoint(id, guid=guid)
             payloads.append({
                 "urls": {url}, "payload": payload, "content_type": "application/json",
             })
