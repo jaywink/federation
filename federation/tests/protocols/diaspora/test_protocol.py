@@ -48,7 +48,7 @@ class TestDiasporaProtocol(DiasporaTestBase):
         protocol.get_message_content = self.mock_get_message_content
         sender, content = protocol.receive(DIASPORA_PUBLIC_PAYLOAD, user, mock_get_contact_key,
                                            skip_author_verification=True)
-        assert sender == "diaspora://foobar@example.com/profile/"
+        assert sender == "foobar@example.com"
         assert content == "<content />"
 
     @patch("federation.protocols.diaspora.protocol.fetch_public_key", autospec=True)

@@ -2,7 +2,6 @@ import json
 import re
 from copy import deepcopy
 
-from federation.utils.diaspora import generate_diaspora_profile_id
 from federation.utils.network import fetch_document
 
 WEEKLY_USERS_HALFYEAR_MULTIPLIER = 10.34
@@ -134,7 +133,7 @@ def parse_nodeinfo_document(doc, host):
     result['features'] = doc.get('metadata', {})
     admin_handle = doc.get('metadata', {}).get('adminAccount', None)
     if admin_handle:
-        result['organization']['account'] = generate_diaspora_profile_id("%s@%s" % (admin_handle, host))
+        result['organization']['account'] = f"{admin_handle}@{host}"
     return result
 
 

@@ -12,7 +12,7 @@ from federation.exceptions import EncryptedMessageError, NoSenderKeyFoundError
 from federation.protocols.diaspora.encrypted import EncryptedPayload
 from federation.protocols.diaspora.magic_envelope import MagicEnvelope
 from federation.types import UserType
-from federation.utils.diaspora import fetch_public_key, generate_diaspora_profile_id
+from federation.utils.diaspora import fetch_public_key
 from federation.utils.text import decode_if_bytes, encode_if_text
 
 logger = logging.getLogger("federation")
@@ -83,11 +83,10 @@ class Protocol:
         self.content = self.get_message_content()
         # Get sender handle
         self.sender_handle = self.get_sender()
-        self.sender_id = generate_diaspora_profile_id(self.sender_handle)
         # Verify the message is from who it claims to be
         if not skip_author_verification:
             self.verify_signature()
-        return self.sender_id, self.content
+        return self.sender_handle, self.content
 
     def _get_user_key(self, user):
         if not getattr(self.user, "private_key", None):
@@ -115,7 +114,7 @@ class Protocol:
         author did actually generate this message.
         """
         if self.get_contact_key:
-            sender_key = self.get_contact_key(self.sender_id)
+            sender_key = self.get_contact_key(self.sender_handle)
         else:
             sender_key = fetch_public_key(self.sender_handle)
         if not sender_key:

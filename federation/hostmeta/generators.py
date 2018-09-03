@@ -346,8 +346,11 @@ class RFC3033Webfinger:
     :param atom_path: (Optional) atom feed path
     :returns: dict
     """
-    def __init__(self, id, base_url, profile_path, hcard_path="/hcard/users/", atom_path=None, search_path=None):
-        self.handle, self.guid = parse_profile_diaspora_id(id)
+    def __init__(
+            self, handle, guid, base_url, profile_path, hcard_path="/hcard/users/", atom_path=None, search_path=None,
+    ):
+        self.handle = handle
+        self.guid = guid
         self.base_url = base_url
         self.hcard_path = hcard_path
         self.profile_path = profile_path

@@ -6,7 +6,6 @@ from federation.entities.diaspora.utils import add_element_to_doc
 from federation.entities.utils import get_base_attributes
 from federation.exceptions import SignatureVerificationError
 from federation.protocols.diaspora.signatures import verify_relayable_signature, create_relayable_signature
-from federation.utils.diaspora import generate_diaspora_profile_id, parse_diaspora_uri
 
 
 class DiasporaEntityMixin:
