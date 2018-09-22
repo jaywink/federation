@@ -9,6 +9,7 @@ from xrd import XRD
 
 from federation.inbound import handle_receive
 from federation.utils.network import fetch_document
+from federation.utils.text import validate_handle
 
 logger = logging.getLogger("federation")
 
@@ -217,6 +218,8 @@ def retrieve_and_parse_content(
         to fetch the profile and the key. Function must take handle as only parameter and return a public key.
     :returns: Entity object instance or ``None``
     """
+    if not validate_handle(handle):
+        return
     _username, domain = handle.split("@")
     url = get_fetch_content_endpoint(domain, entity_type, guid)
     document, status_code, error = fetch_document(url)

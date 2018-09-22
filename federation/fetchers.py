@@ -3,7 +3,6 @@ import logging
 from typing import Optional, Callable
 
 from federation.entities.base import Profile
-from federation.utils.diaspora import parse_profile_diaspora_id
 
 logger = logging.getLogger("federation")
 
