@@ -12,25 +12,6 @@ class DiasporaEntityMixin:
     # Normally outbound document is generated from entity. Store one here if at some point we already have a doc
     outbound_doc = None
 
-    def __init__(self, *args, **kwargs):
-        # handle = kwargs.get('handle')
-        # guid = kwargs.get('guid')
-        # id = kwargs.get('id', '')
-        # actor_id = kwargs.get('actor_id', '')
-        # if not handle and not guid:
-        #     if id.startswith('diaspora://'):
-        #         kwargs['handle'], _type, kwargs['guid'] = parse_diaspora_uri(id)
-        #     elif actor_id.startswith('diaspora://'):
-        #         kwargs['handle'], _type, kwargs['guid'] = parse_diaspora_uri(actor_id)
-        #
-        # target_handle = kwargs.get('target_handle')
-        # target_guid = kwargs.get('target_guid')
-        # target_id = kwargs.get('target_id', '')
-        # if not target_handle and not target_guid and target_id.startswith('diaspora://'):
-        #     kwargs['target_handle'], _type, kwargs['target_guid'] = parse_diaspora_uri(target_id)
-
-        super().__init__(*args, **kwargs)
-
     def extract_mentions(self):
         """
         Extract mentions from an entity with ``raw_content``.
