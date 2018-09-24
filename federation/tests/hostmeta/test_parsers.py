@@ -85,7 +85,7 @@ class TestParseNodeInfoDocument:
         result = parse_nodeinfo_document(json.loads(NODEINFO_10_DOC), 'iliketoast.net')
         assert result == {
             'organization': {
-                'account': 'diaspora://podmin@iliketoast.net/profile/',
+                'account': 'podmin@iliketoast.net',
                 'contact': '',
                 'name': '',
             },
@@ -124,7 +124,7 @@ class TestParseNodeInfoDocument:
         result = parse_nodeinfo_document(json.loads(NODEINFO_20_DOC), 'iliketoast.net')
         assert result == {
             'organization': {
-                'account': 'diaspora://podmin@iliketoast.net/profile/',
+                'account': 'podmin@iliketoast.net',
                 'contact': '',
                 'name': '',
             },

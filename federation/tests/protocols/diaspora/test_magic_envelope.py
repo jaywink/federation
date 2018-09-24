@@ -20,17 +20,6 @@ class TestMagicEnvelope:
         doc = env.build()
         assert isinstance(doc, _Element)
 
-    def test_create_payload_wrapped(self):
-        env = MagicEnvelope(
-            message="<status_message><foo>bar</foo></status_message>",
-            private_key="key",
-            author_handle="foobar@example.com",
-            wrap_payload=True,
-        )
-        payload = env.create_payload()
-        assert payload == "PFhNTD48cG9zdD48c3RhdHVzX21lc3NhZ2U-PGZvbz5iYXI8L2Zvbz48L3N0YXR1c19tZXNzYWdlPjwvcG9zdD4" \
-                          "8L1hNTD4="
-
     def test_create_payload(self):
         env = MagicEnvelope(
             message="<status_message><foo>bar</foo></status_message>",

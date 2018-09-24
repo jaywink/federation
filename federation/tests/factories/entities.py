@@ -2,23 +2,42 @@ from random import shuffle
 import factory
 from factory import fuzzy
 
-from federation.entities.base import Post, Profile, Share
+from federation.entities.base import Post, Profile, Share, Retraction, Image, Follow
 from federation.entities.diaspora.entities import DiasporaPost
 
 
-class GUIDMixinFactory(factory.Factory):
-    guid = fuzzy.FuzzyText(length=32)
+class ActorIDMixinFactory(factory.Factory):
+    actor_id = factory.Faker('uri')
 
 
-class HandleMixinFactory(factory.Factory):
-    handle = fuzzy.FuzzyText(length=8, suffix="@example.com")
+class EntityTypeMixinFactory(factory.Factory):
+    entity_type = 'Post'
+
+
+class IDMixinFactory(factory.Factory):
+    id = factory.Faker('uri')
+
+
+class PublicMixinFactory(factory.Factory):
+    public = factory.Faker("pybool")
+
+
+class TargetIDMixinFactory(factory.Factory):
+    target_id = factory.Faker('uri')
 
 
 class RawContentMixinFactory(factory.Factory):
     raw_content = fuzzy.FuzzyText(length=300)
 
 
-class PostFactory(GUIDMixinFactory, HandleMixinFactory, RawContentMixinFactory):
+class FollowFactory(ActorIDMixinFactory, TargetIDMixinFactory):
+    class Meta:
+        model = Follow
+
+    following = factory.Faker("pybool")
+
+
+class PostFactory(ActorIDMixinFactory, IDMixinFactory, RawContentMixinFactory, factory.Factory):
     class Meta:
         model = Post
 
@@ -40,7 +59,15 @@ class DiasporaPostFactory(PostFactory):
         model = DiasporaPost
 
 
-class ProfileFactory(GUIDMixinFactory, HandleMixinFactory, RawContentMixinFactory):
+class ImageFactory(ActorIDMixinFactory, IDMixinFactory, PublicMixinFactory, factory.Factory):
+    class Meta:
+        model = Image
+
+    remote_path = factory.Faker('uri')
+    remote_name = factory.Faker('file_path', extension='jpg')
+
+
+class ProfileFactory(IDMixinFactory, RawContentMixinFactory, factory.Factory):
     class Meta:
         model = Profile
 
@@ -48,13 +75,15 @@ class ProfileFactory(GUIDMixinFactory, HandleMixinFactory, RawContentMixinFactor
     public_key = fuzzy.FuzzyText(length=300)
 
 
-class ShareFactory(GUIDMixinFactory, HandleMixinFactory):
+class RetractionFactory(ActorIDMixinFactory, EntityTypeMixinFactory, TargetIDMixinFactory, factory.Factory):
+    class Meta:
+        model = Retraction
+
+
+class ShareFactory(ActorIDMixinFactory, EntityTypeMixinFactory, IDMixinFactory, PublicMixinFactory,
+                   TargetIDMixinFactory, factory.Factory):
     class Meta:
         model = Share
 
-    target_guid = factory.Faker("uuid4")
-    entity_type = "Post"
     raw_content = ""
-    public = factory.Faker("pybool")
     provider_display_name = ""
-    target_handle = factory.Faker("safe_email")

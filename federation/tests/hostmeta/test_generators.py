@@ -226,8 +226,9 @@ class TestNodeInfoGenerator:
 class TestRFC3033Webfinger:
     def test_rfc3033_webfinger__all_properties(self):
         webfinger = RFC3033Webfinger(
-            "diaspora://foobar@example.com/profile/1234",
-            "https://example.com",
+            handle="foobar@example.com",
+            guid="1234",
+            base_url="https://example.com",
             profile_path="/profile/1234/",
             hcard_path="/hcard/path/",
             atom_path="/profile/1234/atom.xml",
@@ -269,8 +270,9 @@ class TestRFC3033Webfinger:
 
     def test_rfc3033_webfinger__minimal(self):
         webfinger = RFC3033Webfinger(
-            "diaspora://foobar@example.com/profile/1234",
-            "https://example.com",
+            handle="foobar@example.com",
+            guid="1234",
+            base_url="https://example.com",
             profile_path="/profile/1234/",
         ).render()
         assert webfinger == {

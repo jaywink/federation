@@ -1,9 +1,11 @@
-from federation.utils.diaspora import generate_diaspora_profile_id
+from federation.entities.base import Profile
 
 
-def get_profile_by_handle(handle):
-    return {
-        "id": generate_diaspora_profile_id(handle, "1234"),
-        "profile_path": "/profile/1234/",
-        "atom_path": "/profile/1234/atom.xml",
-    }
+def get_profile(handle=None, request=None):
+    return Profile(
+        url=f"https://example.com/profile/1234/",
+        atom_url=f"https://example.com/profile/1234/atom.xml",
+        id=f"diaspora://{handle}/profile/1234",
+        handle=handle,
+        guid="1234",
+    )

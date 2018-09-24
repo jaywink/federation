@@ -1,4 +1,5 @@
 import re
+from urllib.parse import urlparse
 
 
 def decode_if_bytes(text):
@@ -13,6 +14,14 @@ def encode_if_text(text):
         return bytes(text, encoding="utf-8")
     except TypeError:
         return text
+
+
+def get_path_from_url(url: str) -> str:
+    """
+    Return only the path part of an URL.
+    """
+    parsed = urlparse(url)
+    return parsed.path
 
 
 def validate_handle(handle):

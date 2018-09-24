@@ -33,7 +33,7 @@ class MagicEnvelope:
         "me": NAMESPACE,
     }
 
-    def __init__(self, message=None, private_key=None, author_handle=None, wrap_payload=False, payload=None,
+    def __init__(self, message=None, private_key=None, author_handle=None, payload=None,
                  public_key=None, sender_key_fetcher=None, verify=False, doc=None):
         """
         All parameters are optional. Some are required for signing, some for opening.
@@ -41,8 +41,6 @@ class MagicEnvelope:
         :param message: Message string. Required to create a MagicEnvelope document.
         :param private_key: Private key RSA object.
         :param author_handle: Author signing the Magic Envelope, owns the private key.
-        :param wrap_payload: - Boolean, whether to wrap the message in <XML><post></post></XML>.
-            This is part of the legacy Diaspora protocol which will be removed in the future. (default False)
         :param payload: Magic Envelope payload as str or bytes.
         :param public_key: Author public key in str format.
         :param sender_key_fetcher: Function to use to fetch sender public key, if public key not given. Will fall back
@@ -54,7 +52,6 @@ class MagicEnvelope:
         self._message = message
         self.private_key = private_key
         self.author_handle = author_handle
-        self.wrap_payload = wrap_payload
         self.payload = payload
         self.public_key = public_key
         self.sender_key_fetcher = sender_key_fetcher
@@ -110,11 +107,6 @@ class MagicEnvelope:
             str
         """
         doc = etree.fromstring(self.message)
-        if self.wrap_payload:
-            wrap = etree.Element("XML")
-            post = etree.SubElement(wrap, "post")
-            post.append(doc)
-            doc = wrap
         self.payload = etree.tostring(doc, encoding="utf-8")
         self.payload = urlsafe_b64encode(self.payload).decode("ascii")
         return self.payload

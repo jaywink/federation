@@ -5,33 +5,30 @@ from unittest.mock import patch, Mock
 import pytest
 
 from federation.entities.base import (
-    Comment, Post, Reaction, Relationship, Profile, Retraction, Image,
+    Comment, Post, Reaction, Relationship, Profile, Retraction,
     Follow, Share)
 from federation.entities.diaspora.entities import (
-    DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest,
-    DiasporaProfile, DiasporaRetraction, DiasporaContact, DiasporaReshare)
+    DiasporaPost, DiasporaComment, DiasporaLike,
+    DiasporaProfile, DiasporaRetraction, DiasporaContact, DiasporaReshare, DiasporaImage)
 from federation.entities.diaspora.mappers import (
     message_to_objects, get_outbound_entity, check_sender_and_entity_handle_match)
 from federation.tests.fixtures.payloads import (
     DIASPORA_POST_SIMPLE, DIASPORA_POST_COMMENT, DIASPORA_POST_LIKE,
-    DIASPORA_REQUEST, DIASPORA_PROFILE, DIASPORA_POST_INVALID, DIASPORA_RETRACTION,
-    DIASPORA_POST_WITH_PHOTOS, DIASPORA_POST_LEGACY_TIMESTAMP, DIASPORA_POST_LEGACY, DIASPORA_CONTACT,
-    DIASPORA_LEGACY_REQUEST_RETRACTION, DIASPORA_POST_WITH_PHOTOS_2, DIASPORA_PROFILE_EMPTY_TAGS, DIASPORA_RESHARE,
-    DIASPORA_RESHARE_WITH_EXTRA_PROPERTIES, DIASPORA_RESHARE_LEGACY, DIASPORA_POST_SIMPLE_WITH_MENTION,
+    DIASPORA_PROFILE, DIASPORA_POST_INVALID, DIASPORA_RETRACTION,
+    DIASPORA_POST_WITH_PHOTOS, DIASPORA_CONTACT,
+    DIASPORA_PROFILE_EMPTY_TAGS, DIASPORA_RESHARE,
+    DIASPORA_RESHARE_WITH_EXTRA_PROPERTIES, DIASPORA_POST_SIMPLE_WITH_MENTION,
     DIASPORA_PROFILE_FIRST_NAME_ONLY)
-
-
-def mock_fill(attributes):
-    attributes["guid"] = "guidguidguidguidguid"
-    return attributes
 
 
 class TestDiasporaEntityMappersReceive:
     def test_message_to_objects_mentions_are_extracted(self):
-        entities = message_to_objects(DIASPORA_POST_SIMPLE_WITH_MENTION, "alice@alice.diaspora.example.org")
+        entities = message_to_objects(
+            DIASPORA_POST_SIMPLE_WITH_MENTION, "alice@alice.diaspora.example.org"
+        )
         assert len(entities) == 1
         post = entities[0]
-        assert post._mentions == {'diaspora://jaywink@jasonrobinson.me/profile/'}
+        assert post._mentions == {'jaywink@jasonrobinson.me'}
 
     def test_message_to_objects_simple_post(self):
         entities = message_to_objects(DIASPORA_POST_SIMPLE, "alice@alice.diaspora.example.org")
@@ -46,32 +43,13 @@ class TestDiasporaEntityMappersReceive:
         assert post.created_at == datetime(2011, 7, 20, 1, 36, 7)
         assert post.provider_display_name == "Socialhome"
 
-    def test_message_to_objects_post_legacy(self):
-        # This is the previous XML schema used before renewal of protocol
-        entities = message_to_objects(DIASPORA_POST_LEGACY, "alice@alice.diaspora.example.org")
-        assert len(entities) == 1
-        post = entities[0]
-        assert isinstance(post, DiasporaPost)
-        assert isinstance(post, Post)
-        assert post.raw_content == "((status message))"
-        assert post.guid == "((guidguidguidguidguidguidguid))"
-        assert post.handle == "alice@alice.diaspora.example.org"
-        assert post.public is False
-        assert post.created_at == datetime(2011, 7, 20, 1, 36, 7)
-        assert post.provider_display_name == "Socialhome"
-
-    def test_message_to_objects_legact_timestamp(self):
-        entities = message_to_objects(DIASPORA_POST_LEGACY_TIMESTAMP, "alice@alice.diaspora.example.org")
-        post = entities[0]
-        assert post.created_at == datetime(2011, 7, 20, 1, 36, 7)
-
     def test_message_to_objects_post_with_photos(self):
         entities = message_to_objects(DIASPORA_POST_WITH_PHOTOS, "alice@alice.diaspora.example.org")
         assert len(entities) == 1
         post = entities[0]
         assert isinstance(post, DiasporaPost)
         photo = post._children[0]
-        assert isinstance(photo, Image)
+        assert isinstance(photo, DiasporaImage)
         assert photo.remote_path == "https://alice.diaspora.example.org/uploads/images/"
         assert photo.remote_name == "1234.jpg"
         assert photo.raw_content == ""
@@ -83,13 +61,6 @@ class TestDiasporaEntityMappersReceive:
         assert photo.handle == "alice@alice.diaspora.example.org"
         assert photo.public == False
         assert photo.created_at == datetime(2011, 7, 20, 1, 36, 7)
-
-        entities = message_to_objects(DIASPORA_POST_WITH_PHOTOS_2, "xxxxxxxxxxxxxxx@diasp.org")
-        assert len(entities) == 1
-        post = entities[0]
-        assert isinstance(post, DiasporaPost)
-        photo = post._children[0]
-        assert isinstance(photo, Image)
 
     @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
     def test_message_to_objects_comment(self, mock_validate):
@@ -112,7 +83,9 @@ class TestDiasporaEntityMappersReceive:
 
     @patch("federation.entities.diaspora.mappers.DiasporaLike._validate_signatures")
     def test_message_to_objects_like(self, mock_validate):
-        entities = message_to_objects(DIASPORA_POST_LIKE, "alice@alice.diaspora.example.org", sender_key_fetcher=Mock())
+        entities = message_to_objects(
+            DIASPORA_POST_LIKE, "alice@alice.diaspora.example.org", sender_key_fetcher=Mock()
+        )
         assert len(entities) == 1
         like = entities[0]
         assert isinstance(like, DiasporaLike)
@@ -128,24 +101,10 @@ class TestDiasporaEntityMappersReceive:
         ]
         mock_validate.assert_called_once_with()
 
-    def test_message_to_objects_request(self):
-        entities = message_to_objects(DIASPORA_REQUEST, "bob@example.com")
-        assert len(entities) == 2
-        sharing = entities[0]
-        assert isinstance(sharing, DiasporaRequest)
-        assert isinstance(sharing, Relationship)
-        following = entities[1]
-        assert not isinstance(following, DiasporaRequest)
-        assert isinstance(following, Relationship)
-        assert sharing.handle == "bob@example.com"
-        assert following.handle == "bob@example.com"
-        assert sharing.target_handle == "alice@alice.diaspora.example.org"
-        assert following.target_handle == "alice@alice.diaspora.example.org"
-        assert sharing.relationship == "sharing"
-        assert following.relationship == "following"
-
-    @patch("federation.entities.diaspora.entities.DiasporaProfile.fill_extra_attributes", new=mock_fill)
-    def test_message_to_objects_profile(self):
+    @patch("federation.entities.diaspora.mappers.retrieve_and_parse_profile", return_value=Mock(
+        id="diaspora://bob@example.com/profile/guidguidguidguidguid",
+    ))
+    def test_message_to_objects_profile(self, mock_parse):
         entities = message_to_objects(DIASPORA_PROFILE, "bob@example.com")
         assert len(entities) == 1
         profile = entities[0]
@@ -163,37 +122,40 @@ class TestDiasporaEntityMappersReceive:
         assert profile.nsfw == False
         assert profile.tag_list == ["socialfederation", "federation"]
 
-    @patch("federation.entities.diaspora.entities.DiasporaProfile.fill_extra_attributes", new=mock_fill)
-    def test_message_to_objects_profile__first_name_only(self):
+    @patch("federation.entities.diaspora.mappers.retrieve_and_parse_profile", return_value=Mock(
+        id="diaspora://bob@example.com/profile/guidguidguidguidguid",
+    ))
+    def test_message_to_objects_profile__first_name_only(self, mock_parse):
         entities = message_to_objects(DIASPORA_PROFILE_FIRST_NAME_ONLY, "bob@example.com")
         assert len(entities) == 1
         profile = entities[0]
         assert profile.name == "Bob"
 
-    @patch("federation.entities.diaspora.entities.DiasporaProfile.fill_extra_attributes", new=mock_fill)
-    def test_message_to_objects_profile_survives_empty_tag_string(self):
+    @patch("federation.entities.diaspora.mappers.retrieve_and_parse_profile", return_value=Mock(
+        id="diaspora://bob@example.com/profile/guidguidguidguidguid",
+    ))
+    def test_message_to_objects_profile_survives_empty_tag_string(self, mock_parse):
         entities = message_to_objects(DIASPORA_PROFILE_EMPTY_TAGS, "bob@example.com")
         assert len(entities) == 1
+
+    def test_message_to_objects_receiving_actor_id_is_saved(self):
+        # noinspection PyTypeChecker
+        entities = message_to_objects(
+            DIASPORA_POST_SIMPLE,
+            "alice@alice.diaspora.example.org",
+            user=Mock(id="bob@example.com")
+        )
+        entity = entities[0]
+        assert entity._receiving_actor_id == "bob@example.com"
 
     def test_message_to_objects_retraction(self):
         entities = message_to_objects(DIASPORA_RETRACTION, "bob@example.com")
         assert len(entities) == 1
         entity = entities[0]
-        assert isinstance(entity, Retraction)
+        assert isinstance(entity, DiasporaRetraction)
         assert entity.handle == "bob@example.com"
         assert entity.target_guid == "x" * 16
         assert entity.entity_type == "Post"
-
-    def test_message_to_objects_retraction_legacy_request(self):
-        entities = message_to_objects(DIASPORA_LEGACY_REQUEST_RETRACTION, "jaywink@iliketoast.net",
-                                      user=Mock(guid="swfeuihiwehuifhiwheiuf"))
-        assert len(entities) == 1
-        entity = entities[0]
-        assert isinstance(entity, Retraction)
-        assert entity.handle == "jaywink@iliketoast.net"
-        assert entity.target_guid == "7ed1555bc6ae03db"
-        assert entity.entity_type == "Profile"
-        assert entity._receiving_guid == "swfeuihiwehuifhiwheiuf"
 
     def test_message_to_objects_contact(self):
         entities = message_to_objects(DIASPORA_CONTACT, "alice@example.com")
@@ -217,19 +179,6 @@ class TestDiasporaEntityMappersReceive:
         assert entity.public is True
         assert entity.entity_type == "Post"
         assert entity.raw_content == ""
-
-    def test_message_to_objects_reshare_legacy(self):
-        entities = message_to_objects(DIASPORA_RESHARE_LEGACY, "alice@example.org")
-        assert len(entities) == 1
-        entity = entities[0]
-        assert isinstance(entity, DiasporaReshare)
-        assert entity.handle == "alice@example.org"
-        assert entity.guid == "a0b53e5029f6013487753131731751e9"
-        assert entity.provider_display_name == ""
-        assert entity.target_handle == "bob@example.com"
-        assert entity.target_guid == "a0b53bc029f6013487753131731751e9"
-        assert entity.public is False
-        assert entity.entity_type == "Post"
 
     def test_message_to_objects_reshare_extra_properties(self):
         entities = message_to_objects(DIASPORA_RESHARE_WITH_EXTRA_PROPERTIES, "alice@example.org")
@@ -260,7 +209,9 @@ class TestDiasporaEntityMappersReceive:
     def test_element_to_objects_calls_sender_key_fetcher(self, mock_validate):
         mock_fetcher = Mock()
         message_to_objects(DIASPORA_POST_COMMENT, "alice@alice.diaspora.example.org", mock_fetcher)
-        mock_fetcher.assert_called_once_with("alice@alice.diaspora.example.org")
+        mock_fetcher.assert_called_once_with(
+            "alice@alice.diaspora.example.org",
+        )
 
     @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
     @patch("federation.entities.diaspora.mappers.retrieve_and_parse_profile")
@@ -286,8 +237,6 @@ class TestGetOutboundEntity:
         assert get_outbound_entity(entity, private_key) == entity
         entity = DiasporaComment()
         assert get_outbound_entity(entity, private_key) == entity
-        entity = DiasporaRequest()
-        assert get_outbound_entity(entity, private_key) == entity
         entity = DiasporaProfile()
         assert get_outbound_entity(entity, private_key) == entity
         entity = DiasporaContact()
@@ -307,11 +256,6 @@ class TestGetOutboundEntity:
         entity = Reaction(reaction="like")
         assert isinstance(get_outbound_entity(entity, private_key), DiasporaLike)
 
-    def test_relationship_of_sharing_or_following_is_converted_to_diasporarequest(self, private_key):
-        entity = Relationship(relationship="sharing")
-        assert isinstance(get_outbound_entity(entity, private_key), DiasporaRequest)
-        entity = Relationship(relationship="following")
-        assert isinstance(get_outbound_entity(entity, private_key), DiasporaRequest)
 
     def test_profile_is_converted_to_diasporaprofile(self, private_key):
         entity = Profile()

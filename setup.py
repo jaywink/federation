@@ -27,6 +27,7 @@ setup(
     packages=find_packages(),
     license="BSD 3-clause",
     install_requires=[
+        "attrs",
         "cssselect>=0.9.2",
         "dirty-validators>=0.3.0",
         "lxml>=3.4.0",

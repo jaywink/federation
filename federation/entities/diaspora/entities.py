@@ -1,124 +1,9 @@
-import importlib
-import re
-
 from lxml import etree
 
 from federation.entities.base import (
-    Comment, Post, Reaction, Relationship, Profile, Retraction, BaseEntity, Follow, Share, Image,
-)
-from federation.entities.diaspora.utils import format_dt, struct_to_xml, get_base_attributes, add_element_to_doc
-from federation.exceptions import SignatureVerificationError
-from federation.protocols.diaspora.signatures import verify_relayable_signature, create_relayable_signature
-from federation.utils.diaspora import retrieve_and_parse_profile, generate_diaspora_profile_id
-
-CLASS_TO_TAG_MAPPING = {
-    Comment: "comment",
-    Follow: "contact",
-    Image: "photo",
-    Post: "status_message",
-    Profile: "profile",
-    Reaction: "like",
-    Relationship: "request",
-    Retraction: "retraction",
-    Share: "reshare",
-}
-
-
-class DiasporaEntityMixin(BaseEntity):
-    # Normally outbound document is generated from entity. Store one here if at some point we already have a doc
-    outbound_doc = None
-
-    def extract_mentions(self):
-        """
-        Extract mentions from an entity with ``raw_content``.
-
-        :return: set
-        """
-        if not hasattr(self, "raw_content"):
-            return set()
-        mentions = re.findall(r'@{[^;]+; [\w.-]+@[^}]+}', self.raw_content)
-        if not mentions:
-            return set()
-        mentions = {s.split(';')[1].strip(' }') for s in mentions}
-        mentions = {generate_diaspora_profile_id(s) for s in mentions}
-        return mentions
-
-    @property
-    def id(self):
-        """Diaspora URI scheme format ID.
-
-        Only available for entities that own a handle and a guid.
-        """
-        try:
-            # noinspection PyUnresolvedReferences
-            return "diaspora://%s/%s/%s" % (self.handle, self._tag_name, self.guid)
-        except AttributeError:
-            return None
-
-    # noinspection PyUnresolvedReferences
-    @property
-    def target_id(self):
-        """Diaspora URI scheme format target ID.
-
-        Only available for entities that own a target_handle, target_guid and entity_type.
-        """
-        try:
-            cls_module = importlib.import_module("federation.entities.base")
-            cls = getattr(cls_module, self.entity_type)
-            return "diaspora://%s/%s/%s" % (self.target_handle, CLASS_TO_TAG_MAPPING[cls], self.target_guid)
-        except (AttributeError, ImportError, KeyError):
-            return None
-
-    def to_xml(self):
-        """Override in subclasses."""
-        raise NotImplementedError
-
-    @classmethod
-    def from_base(cls, entity):
-        return cls(**get_base_attributes(entity))
-
-    @staticmethod
-    def fill_extra_attributes(attributes):
-        """Implement in subclasses to fill extra attributes when an XML is transformed to an object.
-
-        This is called just before initializing the entity.
-
-        Args:
-            attributes (dict) - Already transformed attributes that will be passed to entity create.
-
-        Returns:
-            Must return the attributes dictionary, possibly with changed or additional values.
-        """
-        return attributes
-
-
-class DiasporaRelayableMixin(DiasporaEntityMixin):
-    _xml_tags = []
-    parent_signature = ""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._required += ["signature"]
-
-    def _validate_signatures(self):
-        super()._validate_signatures()
-        if not self._sender_key:
-            raise SignatureVerificationError("Cannot verify entity signature - no sender key available")
-        source_doc = etree.fromstring(self._source_object)
-        if not verify_relayable_signature(self._sender_key, source_doc, self.signature):
-            raise SignatureVerificationError("Signature verification failed.")
-
-    def sign(self, private_key):
-        self.signature = create_relayable_signature(private_key, self.to_xml())
-
-    def sign_with_parent(self, private_key):
-        if self._source_object:
-            doc = etree.fromstring(self._source_object)
-        else:
-            doc = self.to_xml()
-        self.parent_signature = create_relayable_signature(private_key, doc)
-        add_element_to_doc(doc, "parent_author_signature", self.parent_signature)
-        self.outbound_doc = doc
+    Comment, Post, Reaction, Profile, Retraction, Follow, Share, Image)
+from federation.entities.diaspora.mixins import DiasporaEntityMixin, DiasporaRelayableMixin
+from federation.entities.diaspora.utils import format_dt, struct_to_xml
 
 
 class DiasporaComment(DiasporaRelayableMixin, Comment):
@@ -137,6 +22,10 @@ class DiasporaComment(DiasporaRelayableMixin, Comment):
             {"created_at": format_dt(self.created_at)},
         ])
         return element
+
+
+class DiasporaImage(DiasporaEntityMixin, Image):
+    _tag_name = "photo"
 
 
 class DiasporaPost(DiasporaEntityMixin, Post):
@@ -173,21 +62,6 @@ class DiasporaLike(DiasporaRelayableMixin, Reaction):
             {"parent_author_signature": self.parent_signature},
             {"positive": "true"},
             {"author": self.handle},
-        ])
-        return element
-
-
-class DiasporaRequest(DiasporaEntityMixin, Relationship):
-    """Diaspora legacy request."""
-    _tag_name = "request"
-    relationship = "sharing"
-
-    def to_xml(self):
-        """Convert to XML message."""
-        element = etree.Element(self._tag_name)
-        struct_to_xml(element, [
-            {"sender_handle": self.handle},
-            {"recipient_handle": self.target_handle},
         ])
         return element
 
@@ -233,15 +107,6 @@ class DiasporaProfile(DiasporaEntityMixin, Profile):
             {"tag_string": " ".join(["#%s" % tag for tag in self.tag_list])},
         ])
         return element
-
-    @staticmethod
-    def fill_extra_attributes(attributes):
-        """Diaspora Profile XML message contains no GUID. We need the guid. Fetch it."""
-        if not attributes.get("handle"):
-            raise ValueError("Can't fill GUID for profile creation since there is no handle! Attrs: %s" % attributes)
-        profile = retrieve_and_parse_profile(attributes.get("handle"))
-        attributes["guid"] = profile.guid
-        return attributes
 
 
 class DiasporaRetraction(DiasporaEntityMixin, Retraction):

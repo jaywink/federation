@@ -1,24 +1,27 @@
 import logging
 from datetime import datetime
+from typing import Callable, List
 
 from lxml import etree
 
-from federation.entities.base import Comment, Follow, Image, Post, Profile, Reaction, Relationship, Retraction, Share
+from federation.entities.base import Comment, Follow, Post, Profile, Reaction, Retraction, Share
 from federation.entities.diaspora.entities import (
     DiasporaComment, DiasporaContact, DiasporaLike, DiasporaPost,
-    DiasporaProfile, DiasporaRelayableMixin, DiasporaRequest, DiasporaReshare, DiasporaRetraction,
-)
+    DiasporaProfile, DiasporaReshare, DiasporaRetraction,
+    DiasporaImage)
+from federation.entities.diaspora.mixins import DiasporaRelayableMixin
+from federation.entities.mixins import BaseEntity
 from federation.protocols.diaspora.signatures import get_element_child_info
+from federation.types import UserType
 from federation.utils.diaspora import retrieve_and_parse_profile
 
 logger = logging.getLogger("federation")
 
 MAPPINGS = {
     "status_message": DiasporaPost,
-    "photo": Image,
     "comment": DiasporaComment,
+    "photo": DiasporaImage,
     "like": DiasporaLike,
-    "request": DiasporaRequest,
     "profile": DiasporaProfile,
     "retraction": DiasporaRetraction,
     "contact": DiasporaContact,
@@ -69,16 +72,18 @@ def check_sender_and_entity_handle_match(sender_handle, entity_handle):
     return True
 
 
-def element_to_objects(element, sender, sender_key_fetcher=None, user=None):
+def element_to_objects(
+        element: etree.ElementTree, sender: str, sender_key_fetcher:Callable[[str], str]=None, user: UserType =None,
+) -> List:
     """Transform an Element to a list of entities recursively.
 
-    Possible child entities are added to each entity `_children` list.
+    Possible child entities are added to each entity ``_children`` list.
 
     :param tree: Element
-    :param sender: Payload sender handle
+    :param sender: Payload sender id
     :param sender_key_fetcher: Function to fetch sender public key. If not given, key will always be fetched
         over network. The function should take sender handle as the only parameter.
-    :param user: Optional receiving user object. If given, should have a `handle`.
+    :param user: Optional receiving user object. If given, should have an ``id``.
     :returns: list of entities
     """
     entities = []
@@ -95,14 +100,14 @@ def element_to_objects(element, sender, sender_key_fetcher=None, user=None):
     entity._source_protocol = "diaspora"
     # Save element object to entity for possible later use
     entity._source_object = etree.tostring(element)
-    # Save receiving guid to object
-    if user and hasattr(user, "guid"):
-        entity._receiving_guid = user.guid
+    # Save receiving id to object
+    if user:
+        entity._receiving_actor_id = user.id
     if issubclass(cls, DiasporaRelayableMixin):
         # If relayable, fetch sender key for validation
         entity._xml_tags = get_element_child_info(element, "tag")
         if sender_key_fetcher:
-            entity._sender_key = sender_key_fetcher(entity.handle)
+            entity._sender_key = sender_key_fetcher(entity.actor_id)
         else:
             profile = retrieve_and_parse_profile(entity.handle)
             if profile:
@@ -123,23 +128,20 @@ def element_to_objects(element, sender, sender_key_fetcher=None, user=None):
     entity._mentions = entity.extract_mentions()
     # Do child elements
     for child in element:
-        entity._children.extend(element_to_objects(child, sender))
+        entity._children.extend(element_to_objects(child, sender, user=user))
     # Add to entities list
     entities.append(entity)
-    if cls == DiasporaRequest:
-        # We support sharing/following separately, so also generate base Relationship for the following part
-        transformed.update({"relationship": "following"})
-        relationship = Relationship(**transformed)
-        entities.append(relationship)
     return entities
 
 
-def message_to_objects(message, sender, sender_key_fetcher=None, user=None):
+def message_to_objects(
+        message: str, sender: str, sender_key_fetcher:Callable[[str], str]=None, user: UserType =None,
+) -> List:
     """Takes in a message extracted by a protocol and maps it to entities.
 
     :param message: XML payload
     :type message: str
-    :param sender: Payload sender handle
+    :param sender: Payload sender id
     :type message: str
     :param sender_key_fetcher: Function to fetch sender public key. If not given, key will always be fetched
         over network. The function should take sender handle as the only parameter.
@@ -147,14 +149,8 @@ def message_to_objects(message, sender, sender_key_fetcher=None, user=None):
     :returns: list of entities
     """
     doc = etree.fromstring(message)
-    # Future Diaspora protocol version contains the element at top level
     if doc.tag in TAGS:
         return element_to_objects(doc, sender, sender_key_fetcher, user)
-    # Legacy Diaspora protocol wraps the element in <XML><post></post></XML>, so find the right element
-    for tag in TAGS:
-        element = doc.find(".//%s" % tag)
-        if element is not None:
-            return element_to_objects(element, sender, sender_key_fetcher, user)
     return []
 
 
@@ -170,13 +166,26 @@ def transform_attributes(attrs, cls):
     for key, value in attrs.items():
         if value is None:
             value = ""
-        if key in ["raw_message", "text"]:
+        if key == "text":
             transformed["raw_content"] = value
-        elif key in ["diaspora_handle", "sender_handle", "author"]:
+        elif key == "author":
+            if cls == DiasporaProfile:
+                # Diaspora Profile XML message contains no GUID. We need the guid. Fetch it.
+                profile = retrieve_and_parse_profile(value)
+                transformed['id'] = value
+                transformed["guid"] = profile.guid
+            else:
+                transformed["actor_id"] = value
             transformed["handle"] = value
-        elif key in ["recipient_handle", "recipient", "root_author", "root_diaspora_id"]:
+        elif key == 'guid':
+            if cls != DiasporaProfile:
+                transformed["id"] = value
+                transformed["guid"] = value
+        elif key in ("root_author", "recipient"):
+            transformed["target_id"] = value
             transformed["target_handle"] = value
-        elif key in ["parent_guid", "post_guid", "root_guid"]:
+        elif key in ("target_guid", "root_guid", "parent_guid"):
+            transformed["target_id"] = value
             transformed["target_guid"] = value
         elif key in ("first_name", "last_name"):
             values = [attrs.get('first_name'), attrs.get('last_name')]
@@ -201,7 +210,7 @@ def transform_attributes(attrs, cls):
             transformed["raw_content"] = value
         elif key == "searchable":
             transformed["public"] = True if value == "true" else False
-        elif key in ["target_type", "type"] and cls == DiasporaRetraction:
+        elif key in ["target_type"] and cls == DiasporaRetraction:
             transformed["entity_type"] = DiasporaRetraction.entity_type_from_remote(value)
         elif key == "remote_photo_path":
             transformed["remote_path"] = value
@@ -215,12 +224,7 @@ def transform_attributes(attrs, cls):
         elif key in BOOLEAN_KEYS:
             transformed[key] = True if value == "true" else False
         elif key in DATETIME_KEYS:
-            try:
-                # New style timestamps since in protocol 0.1.6
-                transformed[key] = datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
-            except ValueError:
-                # Legacy style timestamps
-                transformed[key] = datetime.strptime(value, "%Y-%m-%d %H:%M:%S %Z")
+            transformed[key] = datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
         elif key in INTEGER_KEYS:
             transformed[key] = int(value)
         else:
@@ -228,7 +232,7 @@ def transform_attributes(attrs, cls):
     return transformed
 
 
-def get_outbound_entity(entity, private_key):
+def get_outbound_entity(entity:BaseEntity, private_key:str):
     """Get the correct outbound entity for this protocol.
 
     We might have to look at entity values to decide the correct outbound entity.
@@ -245,7 +249,7 @@ def get_outbound_entity(entity, private_key):
         return entity
     outbound = None
     cls = entity.__class__
-    if cls in [DiasporaPost, DiasporaRequest, DiasporaComment, DiasporaLike, DiasporaProfile, DiasporaRetraction,
+    if cls in [DiasporaPost, DiasporaImage, DiasporaComment, DiasporaLike, DiasporaProfile, DiasporaRetraction,
                DiasporaContact, DiasporaReshare]:
         # Already fine
         outbound = entity
@@ -256,10 +260,6 @@ def get_outbound_entity(entity, private_key):
     elif cls == Reaction:
         if entity.reaction == "like":
             outbound = DiasporaLike.from_base(entity)
-    elif cls == Relationship:
-        if entity.relationship in ["sharing", "following"]:
-            # Unfortunately we must send out in both cases since in Diaspora they are the same thing
-            outbound = DiasporaRequest.from_base(entity)
     elif cls == Follow:
         outbound = DiasporaContact.from_base(entity)
     elif cls == Profile:

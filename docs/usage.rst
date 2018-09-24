@@ -116,18 +116,13 @@ Some settings need to be set in Django settings. An example is below:
 
     FEDERATION = {
         "base_url": "https://myserver.domain.tld,
-        "get_profile_function": "myproject.utils.get_profile_by_handle",
+        "get_profile_function": "myproject.utils.get_profile",
         "nodeinfo2_function": "myproject.utils.get_nodeinfo2_data",
         "search_path": "/search/?q=",
     }
 
 * ``base_url`` is the base URL of the server, ie protocol://domain.tld.
-* ``profile_id_function`` should be the full path to a function that given a handle will return a dictionary with information that will be used to generate the webfinger document. The dict should contain the following elements:
-
-  * ``id`` - Diaspora URI format ID.
-  * ``profile_path`` - profile path for generating an absolute URL to the profile page of the user.
-  * ``atom_path`` - (optional) atom feed path for the profile
-
+* ``get_profile_function`` should be the full path to a function that will return a dictionary with profile information. The function should take the following parameters: ``handle``, ``guid`` and ``request``. It should look up a profile with one or more of the provided parameters. It should return a ``Profile`` entity.
 * ``nodeinfo2_function`` (optional) function that returns data for generating a `NodeInfo2 document <https://github.com/jaywink/nodeinfo2>`_. Once configured the path ``/.well-known/x-nodeinfo2`` will automatically generate a NodeInfo2 document. The function should return a ``dict`` corresponding to the NodeInfo2 schema, with the following minimum items:
 
 ::

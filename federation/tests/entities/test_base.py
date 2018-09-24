@@ -2,10 +2,10 @@ from unittest.mock import Mock
 
 import pytest
 
-from federation.entities.base import (
-    BaseEntity, Relationship, Profile, RawContentMixin, GUIDMixin, HandleMixin, PublicMixin, Image, Retraction,
-    Follow, TargetHandleMixin)
-from federation.tests.factories.entities import TaggedPostFactory, PostFactory, ShareFactory
+from federation.entities.base import Relationship, Profile, Image
+from federation.entities.mixins import PublicMixin, RawContentMixin, BaseEntity
+from federation.tests.factories.entities import TaggedPostFactory, PostFactory, ShareFactory, RetractionFactory, \
+    ImageFactory, FollowFactory
 
 
 class TestPostEntityTags:
@@ -46,33 +46,6 @@ class TestBaseEntityCallsValidateMethods:
         post._children = [profile]
         with pytest.raises(ValueError):
             post._validate_children()
-
-
-class TestGUIDMixinValidate:
-    def test_validate_guid_raises_on_low_length(self):
-        guid = GUIDMixin(guid="x"*15)
-        with pytest.raises(ValueError):
-            guid.validate()
-        guid = GUIDMixin(guid="x" * 16)
-        guid.validate()
-
-
-class TestHandleMixinValidate:
-    def test_validate_handle_raises_on_invalid_format(self):
-        handle = HandleMixin(handle="foobar")
-        with pytest.raises(ValueError):
-            handle.validate()
-        handle = HandleMixin(handle="foobar@example.com")
-        handle.validate()
-
-
-class TestTargetHandleMixinValidate:
-    def test_validate_target_handle_raises_on_invalid_format(self):
-        handle = TargetHandleMixin(target_handle="foobar")
-        with pytest.raises(ValueError):
-            handle.validate()
-        handle = TargetHandleMixin(target_handle="foobar@example.com")
-        handle.validate()
 
 
 class TestPublicMixinValidate:
@@ -127,54 +100,19 @@ class TestProfileEntity:
 
 class TestImageEntity:
     def test_instance_creation(self):
-        entity = Image(
-            guid="x"*16, handle="foo@example.com", public=False, remote_path="foobar", remote_name="barfoo"
-        )
+        entity = ImageFactory()
         entity.validate()
-
-    def test_required_fields(self):
-        entity = Image(
-            guid="x" * 16, handle="foo@example.com", public=False, remote_name="barfoo"
-        )
-        with pytest.raises(ValueError):
-            entity.validate()
-        entity = Image(
-            guid="x" * 16, handle="foo@example.com", public=False, remote_path="foobar"
-        )
-        with pytest.raises(ValueError):
-            entity.validate()
 
 
 class TestRetractionEntity:
     def test_instance_creation(self):
-        entity = Retraction(
-            handle="foo@example.com", target_guid="x"*16, entity_type="Post"
-        )
+        entity = RetractionFactory()
         entity.validate()
-
-    def test_required_validates(self):
-        entity = Retraction(
-            handle="fooexample.com", target_guid="x" * 16, entity_type="Post"
-        )
-        with pytest.raises(ValueError):
-            entity.validate()
-        entity = Retraction(
-            handle="foo@example.com", target_guid="x" * 15, entity_type="Post"
-        )
-        with pytest.raises(ValueError):
-            entity.validate()
-        entity = Retraction(
-            handle="foo@example.com", target_guid="x" * 16, entity_type="Foo"
-        )
-        with pytest.raises(ValueError):
-            entity.validate()
 
 
 class TestFollowEntity:
     def test_instance_creation(self):
-        entity = Follow(
-            handle="foo@example.com", target_handle="bar@example.org", following=True
-        )
+        entity = FollowFactory()
         entity.validate()
 
 

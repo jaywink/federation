@@ -1,31 +1,3 @@
-ENCRYPTED_LEGACY_DIASPORA_PAYLOAD = """<?xml version='1.0'?>
-            <diaspora xmlns="https://joindiaspora.com/protocol" xmlns:me="http://salmon-protocol.org/ns/magic-env">
-                <encrypted_header>{encrypted_header}</encrypted_header>
-                <me:env>
-                    <me:data type='application/xml'>{data}</me:data>
-                    <me:encoding>base64url</me:encoding>
-                    <me:alg>RSA-SHA256</me:alg>
-                    <me:sig>{signature}</me:sig>
-                </me:env>
-            </diaspora>
-        """
-
-
-UNENCRYPTED_LEGACY_DIASPORA_PAYLOAD = """<?xml version='1.0'?>
-            <diaspora xmlns="https://joindiaspora.com/protocol" xmlns:me="http://salmon-protocol.org/ns/magic-env">
-                <header>
-                    <author_id>bob@example.com</author_id>
-                </header>
-                <me:env>
-                    <me:data type='application/xml'>{data}</me:data>
-                    <me:encoding>base64url</me:encoding>
-                    <me:alg>RSA-SHA256</me:alg>
-                    <me:sig>{signature}</me:sig>
-                </me:env>
-            </diaspora>
-        """
-
-
 DIASPORA_PUBLIC_PAYLOAD = """<?xml version='1.0' encoding='UTF-8'?>
 <me:env xmlns:me="http://salmon-protocol.org/ns/magic-env">
     <me:encoding>base64url</me:encoding>
@@ -38,28 +10,11 @@ DIASPORA_PUBLIC_PAYLOAD = """<?xml version='1.0' encoding='UTF-8'?>
 </me:env>
 """
 
-
 DIASPORA_ENCRYPTED_PAYLOAD = """{
   "aes_key": "...",
   "encrypted_magic_envelope": "..."
 }
 """
-
-
-DIASPORA_POST_LEGACY = """<XML>
-      <post>
-        <status_message>
-          <raw_message>((status message))</raw_message>
-          <guid>((guidguidguidguidguidguidguid))</guid>
-          <diaspora_handle>alice@alice.diaspora.example.org</diaspora_handle>
-          <public>false</public>
-          <created_at>2011-07-20T01:36:07Z</created_at>
-          <provider_display_name>Socialhome</provider_display_name>
-        </status_message>
-      </post>
-    </XML>
-"""
-
 
 DIASPORA_POST_SIMPLE = """
     <status_message>
@@ -72,7 +27,6 @@ DIASPORA_POST_SIMPLE = """
     </status_message>
 """
 
-
 DIASPORA_POST_SIMPLE_WITH_MENTION = """
     <status_message>
       <text>((status message)) @{Jason Robinson 🐍🍻; jaywink@jasonrobinson.me}</text>
@@ -83,19 +37,6 @@ DIASPORA_POST_SIMPLE_WITH_MENTION = """
       <provider_display_name>Socialhome</provider_display_name>
     </status_message>
 """
-
-
-DIASPORA_POST_LEGACY_TIMESTAMP = """
-    <status_message>
-      <text>((status message))</text>
-      <guid>((guidguidguidguidguidguidguid))</guid>
-      <author>alice@alice.diaspora.example.org</author>
-      <public>false</public>
-      <created_at>2011-07-20 01:36:07 UTC</created_at>
-      <provider_display_name>Socialhome</provider_display_name>
-    </status_message>
-"""
-
 
 DIASPORA_POST_WITH_PHOTOS = """
     <status_message>
@@ -119,31 +60,6 @@ DIASPORA_POST_WITH_PHOTOS = """
       </photo>
     </status_message>
 """
-
-
-DIASPORA_POST_WITH_PHOTOS_2 = """
-    <status_message>
-        <diaspora_handle>xxxxxxxxxxxxxxx@diasp.org</diaspora_handle>
-        <guid>fewhefihefifhwihfwehfwehfiuwehfiuwhif</guid>
-        <created_at>2017-06-10T14:41:47Z</created_at>
-        <provider_display_name>mobile</provider_display_name>
-        <raw_message>#foo #bar (fewfefewfwfewfwe)</raw_message>
-        <photo>
-            <guid>fjwjewiofjoiwjfiowefewew</guid>
-            <diaspora_handle>xxxxxxxxxxxxxxx@diasp.org</diaspora_handle>
-            <public>true</public>
-            <created_at>2017-06-10T14:41:28Z</created_at>
-            <remote_photo_path>https://diasp.org/uploads/images/</remote_photo_path>
-            <remote_photo_name>fewhuwehiufhuiefhuiwee.jpg</remote_photo_name>
-            <text/>
-            <status_message_guid>fewhefihefifhwihfwehfwehfiuwehfiuwhif</status_message_guid>
-            <height>4032</height>
-            <width>3024</width>
-        </photo>
-        <public>true</public>
-    </status_message>
-"""
-
 
 DIASPORA_POST_INVALID = """
     <status_message>
@@ -176,13 +92,6 @@ DIASPORA_POST_LIKE = """
       <author>alice@alice.diaspora.example.org</author>
       <author_signature>((signature))</author_signature>
     </like>
-"""
-
-DIASPORA_REQUEST = """
-    <request>
-      <author>bob@example.com</author>
-      <recipient>alice@alice.diaspora.example.org</recipient>
-    </request>
 """
 
 DIASPORA_PROFILE = """
@@ -244,14 +153,6 @@ DIASPORA_RETRACTION = """
     </retraction>
 """
 
-DIASPORA_LEGACY_REQUEST_RETRACTION = """
-    <retraction>
-        <diaspora_handle>jaywink@iliketoast.net</diaspora_handle>
-        <post_guid>7ed1555bc6ae03db</post_guid>
-        <type>Person</type>
-    </retraction>
-"""
-
 DIASPORA_CONTACT = """
     <contact>
         <author>alice@example.com</author>
@@ -269,18 +170,6 @@ DIASPORA_RESHARE = """
         <root_author>bob@example.com</root_author>
         <root_guid>a0b53bc029f6013487753131731751e9</root_guid>
         <text></text>
-    </reshare>
-"""
-
-DIASPORA_RESHARE_LEGACY = """
-    <reshare>
-        <diaspora_handle>alice@example.org</diaspora_handle>
-        <guid>a0b53e5029f6013487753131731751e9</guid>
-        <created_at>2016-07-12T00:36:42Z</created_at>
-        <provider_display_name/>
-        <root_diaspora_id>bob@example.com</root_diaspora_id>
-        <root_guid>a0b53bc029f6013487753131731751e9</root_guid>
-        <public>false</public>
     </reshare>
 """
 

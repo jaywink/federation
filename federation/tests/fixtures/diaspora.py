@@ -1,14 +1,14 @@
 import pytest
 
 from federation.entities.diaspora.entities import (
-    DiasporaPost, DiasporaComment, DiasporaLike, DiasporaRequest, DiasporaProfile, DiasporaRetraction,
+    DiasporaPost, DiasporaComment, DiasporaLike, DiasporaProfile, DiasporaRetraction,
     DiasporaContact, DiasporaReshare,
 )
 from federation.tests.factories.entities import ShareFactory
 from federation.tests.fixtures.payloads import DIASPORA_PUBLIC_PAYLOAD
 
 __all__ = ("diasporacomment", "diasporacontact", "diasporalike", "diasporapost", "diasporaprofile",
-           "diasporareshare", "diasporarequest", "diasporaretraction", "diaspora_public_payload")
+           "diasporareshare", "diasporaretraction", "diaspora_public_payload")
 
 
 @pytest.fixture
@@ -19,36 +19,64 @@ def diaspora_public_payload():
 @pytest.fixture
 def diasporacomment():
     return DiasporaComment(
-        raw_content="raw_content", guid="guid", target_guid="target_guid", handle="handle",
-        signature="signature"
+        raw_content="raw_content",
+        signature="signature",
+        id="guid",
+        guid="guid",
+        actor_id="alice@example.com",
+        handle="alice@example.com",
+        target_id="target_guid",
+        target_guid="target_guid",
     )
 
 
 @pytest.fixture
 def diasporacontact():
-    return DiasporaContact(handle="alice@example.com", target_handle="bob@example.org", following=True)
+    return DiasporaContact(
+        actor_id="alice@example.com",
+        handle="alice@example.com",
+        target_id="bob@example.org",
+        target_handle="bob@example.org",
+        following=True,
+    )
 
 
 @pytest.fixture
 def diasporalike():
-    return DiasporaLike(guid="guid", target_guid="target_guid", handle="handle", signature="signature")
+    return DiasporaLike(
+        id="guid",
+        guid="guid",
+        actor_id="alice@example.com",
+        handle="alice@example.com",
+        target_id="target_guid",
+        target_guid="target_guid",
+        signature="signature",
+    )
 
 
 @pytest.fixture
 def diasporapost():
     return DiasporaPost(
-        raw_content="raw_content", guid="guid", handle="handle", public=True,
-        provider_display_name="Socialhome"
+        raw_content="raw_content",
+        public=True,
+        provider_display_name="Socialhome",
+        id="guid",
+        guid="guid",
+        actor_id="alice@example.com",
+        handle="alice@example.com",
     )
 
 
 @pytest.fixture
 def diasporaprofile():
     return DiasporaProfile(
-        handle="bob@example.com", raw_content="foobar", name="Bob Bobertson", public=True,
+        raw_content="foobar", name="Bob Bobertson", public=True,
         tag_list=["socialfederation", "federation"], image_urls={
             "large": "urllarge", "medium": "urlmedium", "small": "urlsmall"
-        }
+        },
+        id="alice@example.com",
+        handle="alice@example.com",
+        guid="guid",
     )
 
 
@@ -59,10 +87,11 @@ def diasporareshare():
 
 
 @pytest.fixture
-def diasporarequest():
-    return DiasporaRequest(handle="bob@example.com", target_handle="alice@example.com", relationship="following")
-
-
-@pytest.fixture
 def diasporaretraction():
-    return DiasporaRetraction(handle="bob@example.com", target_guid="x" * 16, entity_type="Post")
+    return DiasporaRetraction(
+        actor_id="alice@example.com",
+        handle="alice@example.com",
+        target_id="target_guid",
+        target_guid="target_guid",
+        entity_type="Post",
+    )
