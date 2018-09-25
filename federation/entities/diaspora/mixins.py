@@ -3,12 +3,13 @@ import re
 from lxml import etree
 
 from federation.entities.diaspora.utils import add_element_to_doc
+from federation.entities.mixins import BaseEntity
 from federation.entities.utils import get_base_attributes
 from federation.exceptions import SignatureVerificationError
 from federation.protocols.diaspora.signatures import verify_relayable_signature, create_relayable_signature
 
 
-class DiasporaEntityMixin:
+class DiasporaEntityMixin(BaseEntity):
     # Normally outbound document is generated from entity. Store one here if at some point we already have a doc
     outbound_doc = None
 
