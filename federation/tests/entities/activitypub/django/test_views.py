@@ -1,0 +1,37 @@
+import json
+from unittest.mock import Mock
+
+from django.test import RequestFactory
+
+from federation.entities.activitypub.django.views import activitypub_object_view
+from federation.entities.activitypub.entities import ActivitypubProfile
+
+
+class TestActivityPubObjectView:
+    def test_renders_as2(self):
+        entity = ActivitypubProfile(
+            raw_content="foobar", name="Bob Bobértson", public=True,
+            tag_list=["socialfederation", "federation"], image_urls={
+                "large": "urllarge", "medium": "urlmedium", "small": "urlsmall"
+            },
+            id="https://127.0.0.1",
+        )
+        # TODO test with real content type, but also json
+        request = RequestFactory().get("/", CONTENT_TYPE='application/json')
+        response = activitypub_object_view(
+            request=request,
+            fetch_function=lambda x: entity,
+            fallback_view=lambda x: Mock,
+        )
+        assert response.status_code == 200
+        content = json.loads(response.content)
+        assert content['name'] == 'Bob Bobértson'
+        # TODO verify content type
+
+    def test_falls_back_if_not_right_content_type(self):
+        # TODO
+        pass
+
+    def test_falls_back_to_fallback_view(self):
+        # TODO
+        pass

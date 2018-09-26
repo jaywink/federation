@@ -8,5 +8,8 @@ class ActivityType(Enum):
 
 
 class ActorType(Enum):
-    NOTE = "Note"
     PERSON = "Person"
+
+
+class ObjectType(Enum):
+    NOTE = "Note"

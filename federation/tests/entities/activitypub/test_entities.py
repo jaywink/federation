@@ -1,12 +1,10 @@
-from unittest import skip
-
 from federation.entities.activitypub.constants import CONTEXTS_DEFAULT
 from federation.entities.activitypub.entities import ActivitypubProfile
 
 
-@skip
 class TestEntitiesConvertToAS2:
     def test_profile_to_as2(self):
+        # TODO expand
         entity = ActivitypubProfile(
             handle="bob@example.com", raw_content="foobar", name="Bob Bobertson", public=True,
             tag_list=["socialfederation", "federation"], image_urls={

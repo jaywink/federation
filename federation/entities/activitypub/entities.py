@@ -4,6 +4,7 @@ from federation.entities.activitypub.constants import CONTEXTS_DEFAULT
 from federation.entities.activitypub.enums import ActorType
 from federation.entities.activitypub.mixins import ActivitypubEntityMixin
 from federation.entities.base import Profile
+from federation.utils.text import with_slash
 
 
 class ActivitypubProfile(ActivitypubEntityMixin, Profile):
@@ -18,8 +19,8 @@ class ActivitypubProfile(ActivitypubEntityMixin, Profile):
             "name": self.name,
             "url": self.url,
             "id": self.id,
-            "inbox": f"{self.id}inbox/",  # TODO add slash if none at end
-            "outbox": f"{self.id}outbox/",  # TODO add slash if none at end
+            "inbox": f"{with_slash(self.id)}inbox/",
+            "outbox": f"{with_slash(self.id)}outbox/",
             "manuallyApprovesFollowers": False,
             "publicKey": {
                 "id": f"{self.id}#main-key",
@@ -27,7 +28,7 @@ class ActivitypubProfile(ActivitypubEntityMixin, Profile):
                 "publicKeyPem": self.public_key,
             },
             "endpoints": {
-                "sharedInbox": f"{self.base_url}/ap/inbox/",
+                "sharedInbox": f"{with_slash(self.base_url)}ap/inbox/",  # TODO just get from config
             },
         }
         if self.username:
