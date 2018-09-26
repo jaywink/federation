@@ -30,3 +30,9 @@ def validate_handle(handle):
     https://diaspora.github.io/diaspora_federation/federation/types.html#diaspora-id
     """
     return re.match(r"[a-z0-9\-_.]+@[^@/]+\.[^@/]+", handle, flags=re.IGNORECASE) is not None
+
+
+def with_slash(url):
+    if url.endswith('/'):
+        return url
+    return f"{url}/"
