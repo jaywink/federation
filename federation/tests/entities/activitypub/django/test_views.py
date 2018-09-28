@@ -1,10 +1,15 @@
 import json
-from unittest.mock import Mock
 
+from django.http import HttpResponse
 from django.test import RequestFactory
 
 from federation.entities.activitypub.django.views import activitypub_object_view
 from federation.entities.activitypub.entities import ActivitypubProfile
+
+
+@activitypub_object_view
+def dummy_view(request, *args, **kwargs):
+    return HttpResponse("foo")
 
 
 class TestActivityPubObjectView:
@@ -18,11 +23,8 @@ class TestActivityPubObjectView:
         )
         # TODO test with real content type, but also json
         request = RequestFactory().get("/", CONTENT_TYPE='application/json')
-        response = activitypub_object_view(
-            request=request,
-            fetch_function=lambda x: entity,
-            fallback_view=lambda x: Mock,
-        )
+        response = dummy_view(request)(request=request)
+
         assert response.status_code == 200
         content = json.loads(response.content)
         assert content['name'] == 'Bob Bobértson'

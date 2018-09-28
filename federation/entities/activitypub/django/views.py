@@ -1,21 +1,28 @@
-from typing import Callable
+from functools import wraps
 
-from django.http import HttpRequest, Http404, JsonResponse
+from django.http import Http404, JsonResponse
+
+from federation.utils.django import get_function_from_config
 
 
-def activitypub_object_view(request: HttpRequest, fetch_function: Callable, fallback_view=None):
-    # TODO implement as view decorator instead?
+def activitypub_object_view(request, *args, **kwargs):
     """
-    Generic ActivityPub object view.
+    Generic ActivityPub object view decorator.
 
     Takes an ID and fetches it using the provided function. Renders the ActivityPub object
-    in JSON if the object is found. Falls back to fallback view, if given, if the content
+    in JSON if the object is found. Falls back to decorated view, if the content
     type doesn't match.
     """
-    if request.content_type != 'application/json':
-        return fallback_view.as_view(request=request)
-    obj = fetch_function(request.build_absolute_uri())
-    if not obj:
-        raise Http404
+    def decorator(func):
+        @wraps(func)
+        def inner(request, *args, **kwargs):
+            if request.content_type != 'application/json':
+                return func(request, *args, **kwargs)
+            get_object_function = get_function_from_config('get_object_function')
+            obj = get_object_function(request.build_absolute_uri())
+            if not obj:
+                raise Http404
 
-    return JsonResponse(obj.to_as2())
+            return JsonResponse(obj.to_as2())
+        return inner
+    return decorator
