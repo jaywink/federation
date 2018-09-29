@@ -1,10 +1,12 @@
 import json
 
+import pytest
 from django.http import HttpResponse
 from django.test import RequestFactory
+from django.utils.decorators import method_decorator
+from django.views import View
 
 from federation.entities.activitypub.django.views import activitypub_object_view
-from federation.entities.activitypub.entities import ActivitypubProfile
 
 
 @activitypub_object_view
@@ -12,21 +14,43 @@ def dummy_view(request, *args, **kwargs):
     return HttpResponse("foo")
 
 
+@method_decorator(activitypub_object_view, name='get')
+class DummyView(View):
+    def get(self, request, *args, **kwargs):
+        return HttpResponse("foo")
+
+
 class TestActivityPubObjectView:
-    def test_renders_as2(self):
-        # TODO test with real content type, but also json
-        request = RequestFactory().get("/", CONTENT_TYPE='application/json')
-        response = dummy_view(request)(request=request)
+    @pytest.mark.parametrize('content_type', ('application/activity+json', 'application/json'))
+    def test_renders_as2(self, content_type):
+        request = RequestFactory().get("/", CONTENT_TYPE=content_type)
+        response = dummy_view(request=request)
 
         assert response.status_code == 200
         content = json.loads(response.content)
         assert content['name'] == 'Bob Bobértson'
-        # TODO verify content type
+        assert response['Content-Type'] == 'application/activity+json'
+
+    @pytest.mark.parametrize('content_type', ('application/activity+json', 'application/json'))
+    def test_renders_as2__cbv(self, content_type):
+        request = RequestFactory().get("/", CONTENT_TYPE=content_type)
+        view = DummyView.as_view()
+        response = view(request=request)
+
+        assert response.status_code == 200
+        content = json.loads(response.content)
+        assert content['name'] == 'Bob Bobértson'
+        assert response['Content-Type'] == 'application/activity+json'
 
     def test_falls_back_if_not_right_content_type(self):
-        # TODO
-        pass
+        request = RequestFactory().get("/")
+        response = dummy_view(request=request)
 
-    def test_falls_back_to_fallback_view(self):
-        # TODO
-        pass
+        assert response.content == b'foo'
+
+    def test_falls_back_if_not_right_content_type__cbv(self):
+        request = RequestFactory().get("/")
+        view = DummyView.as_view()
+        response = view(request=request)
+
+        assert response.content == b'foo'
