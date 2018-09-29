@@ -14,13 +14,6 @@ def dummy_view(request, *args, **kwargs):
 
 class TestActivityPubObjectView:
     def test_renders_as2(self):
-        entity = ActivitypubProfile(
-            raw_content="foobar", name="Bob Bobértson", public=True,
-            tag_list=["socialfederation", "federation"], image_urls={
-                "large": "urllarge", "medium": "urlmedium", "small": "urlsmall"
-            },
-            id="https://127.0.0.1",
-        )
         # TODO test with real content type, but also json
         request = RequestFactory().get("/", CONTENT_TYPE='application/json')
         response = dummy_view(request)(request=request)

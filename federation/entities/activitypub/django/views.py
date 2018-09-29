@@ -23,6 +23,7 @@ def activitypub_object_view(request, *args, **kwargs):
             if not obj:
                 raise Http404
 
-            return JsonResponse(obj.to_as2())
+            as2_obj = obj.as_protocol('activitypub')
+            return JsonResponse(as2_obj.to_as2())
         return inner
     return decorator
