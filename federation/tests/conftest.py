@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import pytest
 
 # noinspection PyUnresolvedReferences
-from federation.tests.fixtures.diaspora import *
+from federation.tests.fixtures.entities import *
 from federation.tests.fixtures.keys import get_dummy_private_key
 
 
