@@ -24,6 +24,7 @@ class TestActivityPubObjectView:
     @pytest.mark.parametrize('content_type', (
             'application/json', 'application/activity+json', 'application/ld+json',
             'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
+            'application/activity+json, application/ld+json',
     ))
     def test_renders_as2(self, content_type):
         request = RequestFactory().get("/", HTTP_ACCEPT=content_type)
@@ -37,6 +38,7 @@ class TestActivityPubObjectView:
     @pytest.mark.parametrize('content_type', (
             'application/json', 'application/activity+json', 'application/ld+json',
             'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
+            'application/activity+json, application/ld+json',
     ))
     def test_renders_as2__cbv(self, content_type):
         request = RequestFactory().get("/", HTTP_ACCEPT=content_type)

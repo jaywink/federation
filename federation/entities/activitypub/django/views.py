@@ -12,11 +12,17 @@ def activitypub_object_view(func):
     type doesn't match.
     """
     def inner(request, *args, **kwargs):
-        if request.META.get('HTTP_ACCEPT') not in (
-                'application/json', 'application/activity+json', 'application/ld+json',
-                'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
+        fallback = True
+        accept = request.META.get('HTTP_ACCEPT', '')
+        for content_type in (
+            'application/json', 'application/activity+json', 'application/ld+json',
         ):
+            if accept.find(content_type) > -1:
+                fallback = False
+                break
+        if fallback:
             return func(request, *args, **kwargs)
+
         get_object_function = get_function_from_config('get_object_function')
         obj = get_object_function(request.build_absolute_uri())
         if not obj:
