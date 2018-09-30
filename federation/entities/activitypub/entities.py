@@ -45,21 +45,23 @@ class ActivitypubProfile(ActivitypubEntityMixin, Profile):
                 CONTEXT_LD_SIGNATURES,
                 CONTEXT_MANUALLY_APPROVES_FOLLOWERS,
             ],
-            "type": self._type,
-            "name": self.name,
-            "url": self.url,
+            "endpoints": {
+                "sharedInbox": f"{with_slash(self.base_url)}ap/inbox/",  # TODO just get from config
+            },
+            "followers": f"{with_slash(self.id)}followers/",
+            "following": f"{with_slash(self.id)}following/",
             "id": self.id,
             "inbox": f"{with_slash(self.id)}inbox/",
-            "outbox": f"{with_slash(self.id)}outbox/",
             "manuallyApprovesFollowers": False,
+            "name": self.name,
+            "outbox": f"{with_slash(self.id)}outbox/",
             "publicKey": {
                 "id": f"{self.id}#main-key",
                 "owner": self.id,
                 "publicKeyPem": self.public_key,
             },
-            "endpoints": {
-                "sharedInbox": f"{with_slash(self.base_url)}ap/inbox/",  # TODO just get from config
-            },
+            "type": self._type,
+            "url": self.url,
         }
         if self.username:
             as2['preferredUsername'] = self.username
