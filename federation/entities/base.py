@@ -13,6 +13,7 @@ class Image(PublicMixin, OptionalRawContentMixin, CreatedAtMixin):
     linked_guid = ""
     height = 0
     width = 0
+    url = ""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -22,6 +23,7 @@ class Image(PublicMixin, OptionalRawContentMixin, CreatedAtMixin):
 class Comment(RawContentMixin, ParticipationMixin, CreatedAtMixin):
     """Represents a comment, linked to another object."""
     participation = "comment"
+    url = ""
 
     _allowed_children = (Image,)
 
@@ -40,6 +42,7 @@ class Follow(CreatedAtMixin, TargetIDMixin):
 class Post(RawContentMixin, PublicMixin, CreatedAtMixin, ProviderDisplayNameMixin):
     """Reflects a post, status message, etc, which will be composed from the message or to the message."""
     location = ""
+    url = ""
 
     _allowed_children = (Image,)
 
