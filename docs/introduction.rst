@@ -1,7 +1,7 @@
 Introduction
 ============
 
-The aim of *federation* is to provide and abstract multiple social web protocols like Diaspora in one package. This way applications can be built to (almost) transparently support many protocols without the app builder having to know everything about those protocols.
+The aim of *federation* is to provide and abstract multiple social web protocols like Diaspora and ActivityPub in one package. This way applications can be built to (almost) transparently support many protocols without the app builder having to know everything about those protocols.
 
 While the library does aim to provide an easy way to implement protocols like Diaspora into your application, it will not be a one to one mirror image of said protocols. The idea is to present one unified collection of entities and high level methods to the application to use. Since protocols can support different feature sets or have different ideas on even simple entities like status messages, it would be impossible to model the core entities according to a single protocol.
 
@@ -10,7 +10,7 @@ While the library does aim to provide an easy way to implement protocols like Di
 Status
 ------
 
-Currently the library supports a part of the Diaspora protocol with remaining parts being constantly added. See the `Diaspora <http://federation.readthedocs.io/en/latest/protocols.html#diaspora>`_ protocol page for support status.
+Currently two protocols are being focused on. Diaspora is considered in relatively stable status with most of the protocol implemented. ActivityPub support is work in progress.
 
 The code base is well tested and in use in several projects. Backward incompatible changes will however be made at this stage still, however those will be clearly documented in changelog entries.
 
@@ -40,5 +40,5 @@ License
 Author
 ......
 
-Jason Robinson / `jasonrobinson.me <https://jasonrobinson.me>`_ / `GitHub <https://github.com/jaywink>`_ / `GitLab <https://git.feneas.org/jaywink>`_
+Jason Robinson / `jasonrobinson.me <https://jasonrobinson.me>`_ / `GitLab <https://git.feneas.org/jaywink>`_ / `GitHub <https://github.com/jaywink>`_
 

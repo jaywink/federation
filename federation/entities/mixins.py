@@ -1,24 +1,30 @@
 import datetime
 import importlib
 import warnings
+from typing import Optional
+
+from federation.entities.activitypub.enums import ActivityType
 
 
 # TODO someday, rewrite entities as dataclasses or attr's
 class BaseEntity:
-    _allowed_children = ()
+    _allowed_children: tuple = ()
     # If we have a receiver for a private payload, store receiving actor id here
-    _receiving_actor_id = ""
-    _source_protocol = ""
+    _receiving_actor_id: str = ""
+    _source_protocol: str = ""
     # Contains the original object from payload as a string
-    _source_object = None
-    _sender_key = ""
+    _source_object: str = None
+    _sender_key: str = ""
+    # ActivityType
+    activity: ActivityType = None
+    activity_id: str = ""
+    actor_id: str = ""
     # Server base url
-    base_url = ""
-    id = ""
-    actor_id = ""
-    handle = ""
-    guid = ""
-    signature = ""
+    base_url: str = ""
+    guid: str = ""
+    handle: str = ""
+    id: str = ""
+    signature: str = ""
 
     def __init__(self, *args, **kwargs):
         self._required = ["id", "actor_id"]
@@ -109,6 +115,14 @@ class BaseEntity:
     def sign_with_parent(self, private_key):
         """Implement in subclasses if needed."""
         pass
+
+    @property
+    def username(self) -> Optional[str]:
+        if self.handle:
+            username_part = self.handle.rsplit('@', 1)
+            if username_part:
+                # Strip any remaining '@' if this is a Mastodon style handle
+                return username_part[0].strip('@')
 
 
 class PublicMixin(BaseEntity):

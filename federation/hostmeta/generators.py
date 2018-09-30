@@ -8,8 +8,6 @@ from jsonschema import validate
 from jsonschema.exceptions import ValidationError
 from xrd import XRD, Link, Element
 
-from federation.utils.diaspora import parse_profile_diaspora_id
-
 
 def generate_host_meta(template=None, *args, **kwargs):
     """Generate a host-meta XRD document.
@@ -333,13 +331,15 @@ def get_nodeinfo_well_known_document(url, document_path=None):
     }
 
 
-class RFC3033Webfinger:
+class RFC7033Webfinger:
     """
-    RFC 3033 webfinger - see https://diaspora.github.io/diaspora_federation/discovery/webfinger.html
+    RFC 7033 webfinger - see https://tools.ietf.org/html/rfc7033
 
     A Django view is also available, see the child ``django`` module for view and url configuration.
 
-    :param id: Diaspora ID in URI format
+    :param id: Profile ActivityPub ID in URL format
+    :param handle: Profile Diaspora handle
+    :param guid: Profile Diaspora guid
     :param base_url: The base URL of the server (protocol://domain.tld)
     :param profile_path: Profile path for the user (for example `/profile/johndoe/`)
     :param hcard_path: (Optional) hCard path, defaults to ``/hcard/users/``.
@@ -347,8 +347,10 @@ class RFC3033Webfinger:
     :returns: dict
     """
     def __init__(
-            self, handle, guid, base_url, profile_path, hcard_path="/hcard/users/", atom_path=None, search_path=None,
+            self, id: str, handle: str, guid: str, base_url: str, profile_path: str, hcard_path: str="/hcard/users/",
+            atom_path: str=None, search_path: str=None,
     ):
+        self.id = id
         self.handle = handle
         self.guid = guid
         self.base_url = base_url
@@ -360,6 +362,10 @@ class RFC3033Webfinger:
     def render(self):
         webfinger = {
             "subject": "acct:%s" % self.handle,
+            "aliases": [
+                f"{self.base_url}{self.profile_path}",
+                self.id,
+            ],
             "links": [
                 {
                     "rel": "http://microformats.org/profile/hcard",
@@ -379,6 +385,11 @@ class RFC3033Webfinger:
                 {
                     "rel": "salmon",
                     "href": "%s/receive/users/%s" % (self.base_url, self.guid),
+                },
+                {
+                    "rel": "self",
+                    "href": self.id,
+                    "type": "application/activity+json",
                 },
             ],
         }

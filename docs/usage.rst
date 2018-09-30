@@ -62,7 +62,7 @@ Generator classes
 .. autoclass:: federation.hostmeta.generators.DiasporaWebFinger
 .. autoclass:: federation.hostmeta.generators.DiasporaHCard
 .. autoclass:: federation.hostmeta.generators.NodeInfo
-.. autoclass:: federation.hostmeta.generators.RFC3033Webfinger
+.. autoclass:: federation.hostmeta.generators.RFC7033Webfinger
 .. autoclass:: federation.hostmeta.generators.SocialRelayWellKnown
 
 Fetchers
@@ -98,7 +98,8 @@ Some ready provided views and URL configuration exist for Django.
 
 Note! Django is not part of the normal requirements for this library. It must be installed separately.
 
-.. autofunction:: federation.hostmeta.django.generators.rfc3033_webfinger_view
+.. autofunction:: federation.entities.activitypub.django.views.activitypub_object_view
+.. autofunction:: federation.hostmeta.django.generators.rfc7033_webfinger_view
 .. autofunction:: federation.hostmeta.django.generators.nodeinfo2_view
 
 Configuration
@@ -116,13 +117,15 @@ Some settings need to be set in Django settings. An example is below:
 
     FEDERATION = {
         "base_url": "https://myserver.domain.tld,
+        "get_object_function": "myproject.utils.get_object",
         "get_profile_function": "myproject.utils.get_profile",
         "nodeinfo2_function": "myproject.utils.get_nodeinfo2_data",
         "search_path": "/search/?q=",
     }
 
 * ``base_url`` is the base URL of the server, ie protocol://domain.tld.
-* ``get_profile_function`` should be the full path to a function that will return a dictionary with profile information. The function should take the following parameters: ``handle``, ``guid`` and ``request``. It should look up a profile with one or more of the provided parameters. It should return a ``Profile`` entity.
+* ``get_object_function`` should be the full path to a function that will return the object matching the ActivityPub ID that is passed to this function. Needed for the ``activitypub_object_view`` decorator.
+* ``get_profile_function`` should be the full path to a function that should return a ``Profile`` entity. The function should take the following parameters: ``handle``, ``guid`` and ``request``. It should look up a profile with one or more of the provided parameters.
 * ``nodeinfo2_function`` (optional) function that returns data for generating a `NodeInfo2 document <https://github.com/jaywink/nodeinfo2>`_. Once configured the path ``/.well-known/x-nodeinfo2`` will automatically generate a NodeInfo2 document. The function should return a ``dict`` corresponding to the NodeInfo2 schema, with the following minimum items:
 
 ::
@@ -140,7 +143,7 @@ Some settings need to be set in Django settings. An example is below:
 Protocols
 ---------
 
-The code for opening and creating protocol messages lives under each protocol module in ``federation.protocols``. Currently Diaspora protocol is the only protocol supported.
+The code for opening and creating protocol messages lives under each protocol module in ``federation.protocols``.
 
 Each protocol defines a ``protocol.Protocol`` class under it's own module. This is expected to contain certain methods that are used by the higher level functions that are called on incoming messages and when sending outbound messages. Everything that is needed to transform an entity into a message payload and vice versa should be here.
 
