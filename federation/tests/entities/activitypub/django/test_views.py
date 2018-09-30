@@ -21,9 +21,12 @@ class DummyView(View):
 
 
 class TestActivityPubObjectView:
-    @pytest.mark.parametrize('content_type', ('application/activity+json', 'application/json'))
+    @pytest.mark.parametrize('content_type', (
+            'application/json', 'application/activity+json', 'application/ld+json',
+            'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
+    ))
     def test_renders_as2(self, content_type):
-        request = RequestFactory().get("/", CONTENT_TYPE=content_type)
+        request = RequestFactory().get("/", HTTP_ACCEPT=content_type)
         response = dummy_view(request=request)
 
         assert response.status_code == 200
@@ -31,9 +34,12 @@ class TestActivityPubObjectView:
         assert content['name'] == 'Bob Bobértson'
         assert response['Content-Type'] == 'application/activity+json'
 
-    @pytest.mark.parametrize('content_type', ('application/activity+json', 'application/json'))
+    @pytest.mark.parametrize('content_type', (
+            'application/json', 'application/activity+json', 'application/ld+json',
+            'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
+    ))
     def test_renders_as2__cbv(self, content_type):
-        request = RequestFactory().get("/", CONTENT_TYPE=content_type)
+        request = RequestFactory().get("/", HTTP_ACCEPT=content_type)
         view = DummyView.as_view()
         response = view(request=request)
 
