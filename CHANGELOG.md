@@ -6,6 +6,14 @@
 
 * Work has started on ActivityPub support 🎉
 
+* Base entities `Post`, `Comment` and `Image` now accept an `url` parameter. This will be used when serializing the entities to AS2 for ActivityPub.
+
+* RFC7033 webfinger generator now has compatibility to platforms using it with ActivityPub. It now lists `aliases` pointing to the ActivityPub entity ID and profile URL. Also there is a `rel=self` to point to the `application/activity+json` AS2 document location.
+
+* Added a Django view decorator that makes any Profile or Post view ActivityPub compatible. Right now basic AS2 serialization is supported when the view is called using the supported content types in the Accept header. If the content types are not in the header, the view will render normally.
+
+  A new configuration item `get_object_function` must be given in the Django `FEDERATION` configuration dictionary. It should contain the Python path to a function that takes an ActivityPub ID and returns an object matching the ID or `None`.
+
 ### Changed
 
 * **Backwards incompatible.** Lowest compatible Python version is now 3.6.
@@ -20,6 +28,8 @@
   * NodeInfo2 parser now returns the admin user in `handle` format instead of a Diaspora format URL.
   * The high level inbound and outbound functions `inbound.handle_receive`, `outbound.handle_send` parameter `user` must now receive a `UserType` compatible object. This must have the attributes `id` and `private_key`. If Diaspora support is required then also `handle` and `guid` should exist. The type can be found as a class in `types.UserType`.
   * The outbound function `outbound.handle_send` parameter `recipients` structure has changed. It must now for Diaspora contain either a `handle` (public delivery) or tuple of `handle, RSAPublicKey, guid` for private delivery. For AP delivery either `url ID` for public delivery or tuple of `url ID, RSAPublicKey` for private delivery.
+  
+* **Backwards incompatible.** Generator `RFC3033Webfinger` and the related `rfc3033_webfinger_view` have been renamed to `RFC7033Webfinger` and `rfc7033_webfinger_view` to reflect the right RFC number.
 
 ### Removed
 
