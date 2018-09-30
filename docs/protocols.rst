@@ -1,22 +1,25 @@
 Protocols
 =========
 
+Currently two protocols are being focused on. Diaspora is considered in relatively stable status with most of the protocol implemented. ActivityPub support is work in progress.
+
+For example implementations in real life projects check :ref:`example-projects`.
+
 .. _diaspora:
 
 Diaspora
 --------
 
-Currently the library supports a part of the protocol with remaining parts being constantly added.
+This library only supports the `current renewed version <http://diaspora.github.io/diaspora_federation/>`_ of the protocol. Compatibility for the legacy version was dropped in version 0.18.0.
 
-Note! Diaspora project is currently rewriting parts of the protocol. This library aims to support the `new version <http://diaspora.github.io/diaspora_federation/>`_. When possible, compatibility will be kept with the current and legacy versions but this is not the main objective.
+The feature set supported is the following:
 
-The feature set supported by this release is approximately the following:
-
-* WebFinger, hCard and other discovery documents
+* Webfinger, hCard and other discovery documents
 * NodeInfo 1.0 documents
 * Social-Relay documents
 * Magic envelopes, signatures and other transport method related necessities
 * Entities as follows:
+
    * Comment
    * Like
    * Photo
@@ -26,6 +29,15 @@ The feature set supported by this release is approximately the following:
    * Contact
    * Reshare
 
-Implementation unfortunately currently requires knowledge of how Diaspora discovery works as the implementer has to implement all the necessary views correctly (even though this library provides document generators). However, the magic envelope, signature and entity building is all abstracted inside the library.
+.. _activitypub:
 
-For example implementations in real life projects check :ref:`example-projects`.
+ActivityPub
+-----------
+
+Features currently supported:
+
+* Webfinger
+* Entities as follows:
+
+   * Profile
+   * Post

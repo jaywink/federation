@@ -34,8 +34,6 @@ Built documentation is available at ``docs/_build/html/index.html``.
 Contact for help
 ----------------
 
-Easiest via FreeNode IRC, channel ``#python-federation`` (`webchat here <http://webchat.freenode.net?channels=%23python-federation&uio=d4>`_).
-
-There is also a `Gitter chat <https://gitter.im/python-federation/Lobby>`_ available.
+Easiest via Matrix on channel ``#socialhome:matrix.org``.
 
 You can also ask questions or give feedback via issues.
