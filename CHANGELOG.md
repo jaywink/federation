@@ -16,7 +16,7 @@
   * The `id` and possible `target_id` are now either URL format identifiers (ActivityPub) or a handle or GUID (Diaspora, depending on entity). Additionally a new `actor_id` has been added which for ActivityPub is an URL and for Diaspora a handle. Note, Diaspora entities always have also the `guid`, `handle`, `target_guid` and `target_handle` as before v0.15.0, depending on the entity. When creating Diaspora entities, you must pass these in for sending to work.
   * The high level `fetchers.retrieve_remote_content` signature has changed. It now expects an `id` for fetching from AP protocol and `handle`, `guid` and `entity_type` to fetch from Diaspora. Additionally a `sender_key_fetcher` can be passed in as before to optimize public key fetching using a callable.
   * The high level `fetchers.retrieve_remote_profile` signature has changed. It now expects an `id` for fetching from AP protocol and `handle` for fetching from Diaspora. Additionally a `sender_key_fetcher` can be passed in as before to optimize public key fetching using a callable.
-  * The generator class `RFC3033Webfinger` now expects instead of an `id` the `handle` and `guid` of the profile.
+  * The generator class `RFC7033Webfinger` now expects instead of an `id` the `handle` and `guid` of the profile.
   * NodeInfo2 parser now returns the admin user in `handle` format instead of a Diaspora format URL.
   * The high level inbound and outbound functions `inbound.handle_receive`, `outbound.handle_send` parameter `user` must now receive a `UserType` compatible object. This must have the attributes `id` and `private_key`. If Diaspora support is required then also `handle` and `guid` should exist. The type can be found as a class in `types.UserType`.
   * The outbound function `outbound.handle_send` parameter `recipients` structure has changed. It must now for Diaspora contain either a `handle` (public delivery) or tuple of `handle, RSAPublicKey, guid` for private delivery. For AP delivery either `url ID` for public delivery or tuple of `url ID, RSAPublicKey` for private delivery.
@@ -41,7 +41,7 @@
 
   JSON encrypted payload encryption and decryption is handled by the Diaspora `EncryptedPayload` class.
   
-* Add RFC3033 webfinger generator ([related issue](https://github.com/jaywink/federation/issues/108))
+* Add RFC7033 webfinger generator ([related issue](https://github.com/jaywink/federation/issues/108))
 
   Also provided is a Django view and url configuration for easy addition into Django projects. Django is not a hard dependency of this library, usage of the Django view obviously requires installing Django itself. For configuration details see documentation.
 

@@ -4,7 +4,7 @@ import pytest
 
 from federation.hostmeta.generators import (
     generate_host_meta, generate_legacy_webfinger, generate_hcard,
-    SocialRelayWellKnown, NodeInfo, get_nodeinfo_well_known_document, RFC3033Webfinger,
+    SocialRelayWellKnown, NodeInfo, get_nodeinfo_well_known_document, RFC7033Webfinger,
     generate_nodeinfo2_document)
 from federation.tests.fixtures.payloads import DIASPORA_HOSTMETA, DIASPORA_WEBFINGER
 
@@ -223,9 +223,10 @@ class TestNodeInfoGenerator:
         assert wellknown["links"][0]["href"] == "https://example.com/nodeinfo/1.0"
 
 
-class TestRFC3033Webfinger:
-    def test_rfc3033_webfinger__all_properties(self):
-        webfinger = RFC3033Webfinger(
+class TestRFC7033Webfinger:
+    def test_rfc7033_webfinger__all_properties(self):
+        webfinger = RFC7033Webfinger(
+            id="https://example.com/p/1234/",
             handle="foobar@example.com",
             guid="1234",
             base_url="https://example.com",
@@ -236,6 +237,10 @@ class TestRFC3033Webfinger:
         ).render()
         assert webfinger == {
             "subject": "acct:foobar@example.com",
+            "aliases": [
+                "https://example.com/profile/1234/",
+                "https://example.com/p/1234/",
+            ],
             "links": [
                 {
                     "rel": "http://microformats.org/profile/hcard",
@@ -257,6 +262,11 @@ class TestRFC3033Webfinger:
                     "href": "https://example.com/receive/users/1234",
                 },
                 {
+                    "rel": "self",
+                    "href": "https://example.com/p/1234/",
+                    "type": "application/activity+json",
+                },
+                {
                     "rel": "http://schemas.google.com/g/2010#updates-from",
                     "type": "application/atom+xml",
                     "href": "https://example.com/profile/1234/atom.xml",
@@ -268,8 +278,9 @@ class TestRFC3033Webfinger:
             ],
         }
 
-    def test_rfc3033_webfinger__minimal(self):
-        webfinger = RFC3033Webfinger(
+    def test_rfc7033_webfinger__minimal(self):
+        webfinger = RFC7033Webfinger(
+            id="https://example.com/p/1234/",
             handle="foobar@example.com",
             guid="1234",
             base_url="https://example.com",
@@ -277,6 +288,10 @@ class TestRFC3033Webfinger:
         ).render()
         assert webfinger == {
             "subject": "acct:foobar@example.com",
+            "aliases": [
+                "https://example.com/profile/1234/",
+                "https://example.com/p/1234/",
+            ],
             "links": [
                 {
                     "rel": "http://microformats.org/profile/hcard",
@@ -296,6 +311,11 @@ class TestRFC3033Webfinger:
                 {
                     "rel": "salmon",
                     "href": "https://example.com/receive/users/1234",
+                },
+                {
+                    "rel": "self",
+                    "href": "https://example.com/p/1234/",
+                    "type": "application/activity+json",
                 },
             ],
         }

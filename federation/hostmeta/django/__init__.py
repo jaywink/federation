@@ -1,1 +1,1 @@
-from .generators import rfc3033_webfinger_view
+from .generators import rfc7033_webfinger_view

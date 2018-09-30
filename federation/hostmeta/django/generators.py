@@ -2,7 +2,7 @@ import logging
 
 from django.http import HttpResponseBadRequest, JsonResponse, HttpResponseNotFound
 
-from federation.hostmeta.generators import RFC3033Webfinger, generate_nodeinfo2_document
+from federation.hostmeta.generators import RFC7033Webfinger, generate_nodeinfo2_document
 from federation.utils.django import get_configuration, get_function_from_config
 from federation.utils.text import get_path_from_url
 
@@ -19,9 +19,9 @@ def nodeinfo2_view(request, *args, **kwargs):
     return JsonResponse(generate_nodeinfo2_document(**nodeinfo2))
 
 
-def rfc3033_webfinger_view(request, *args, **kwargs):
+def rfc7033_webfinger_view(request, *args, **kwargs):
     """
-    Django view to generate an RFC3033 webfinger.
+    Django view to generate an RFC7033 webfinger.
     """
     resource = request.GET.get("resource")
     if not resource:
@@ -35,13 +35,12 @@ def rfc3033_webfinger_view(request, *args, **kwargs):
     try:
         profile = profile_func(handle=handle, request=request)
     except Exception as exc:
-        logger.warning("rfc3033_webfinger_view - Failed to get profile by handle %s: %s", handle, exc)
+        logger.warning("rfc7033_webfinger_view - Failed to get profile by handle %s: %s", handle, exc)
         return HttpResponseNotFound()
 
-    profile = profile.as_protocol("diaspora")
-
     config = get_configuration()
-    webfinger = RFC3033Webfinger(
+    webfinger = RFC7033Webfinger(
+        id=profile.id,
         handle=profile.handle,
         guid=profile.guid,
         base_url=config.get('base_url'),

@@ -62,7 +62,7 @@ Generator classes
 .. autoclass:: federation.hostmeta.generators.DiasporaWebFinger
 .. autoclass:: federation.hostmeta.generators.DiasporaHCard
 .. autoclass:: federation.hostmeta.generators.NodeInfo
-.. autoclass:: federation.hostmeta.generators.RFC3033Webfinger
+.. autoclass:: federation.hostmeta.generators.RFC7033Webfinger
 .. autoclass:: federation.hostmeta.generators.SocialRelayWellKnown
 
 Fetchers
@@ -98,7 +98,7 @@ Some ready provided views and URL configuration exist for Django.
 
 Note! Django is not part of the normal requirements for this library. It must be installed separately.
 
-.. autofunction:: federation.hostmeta.django.generators.rfc3033_webfinger_view
+.. autofunction:: federation.hostmeta.django.generators.rfc7033_webfinger_view
 .. autofunction:: federation.hostmeta.django.generators.nodeinfo2_view
 
 Configuration
