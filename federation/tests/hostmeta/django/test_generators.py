@@ -29,6 +29,17 @@ class TestNodeInfo2View:
 
 
 class TestRFC7033WebfingerView:
+    @patch("federation.hostmeta.django.generators.get_function_from_config")
+    def test_handle_lowercased(self, mock_get_func):
+        mock_get_profile = Mock(side_effect=Exception)
+        mock_get_func.return_value = mock_get_profile
+        request = RequestFactory().get("/.well-known/webfinger?resource=acct:Foobar@example.com")
+        try:
+            rfc7033_webfinger_view(request)
+        except Exception:
+            pass
+        mock_get_profile.assert_called_once_with(handle='foobar@example.com', request=request)
+
     def test_no_resource_returns_bad_request(self):
         request = RequestFactory().get("/.well-known/webfinger")
         response = rfc7033_webfinger_view(request)
