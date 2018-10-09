@@ -139,7 +139,7 @@ Some settings need to be set in Django settings. An example is below:
     }
     openRegistrations
 
-* ``process_payload_function`` (optional) function that takes in a federation payload and processes it. It should return ``True`` if successful (or placed in queue for processing later) or ``False`` in case of any errors.
+* ``process_payload_function`` (optional) function that takes in a federation payload and request object. It should return ``True`` if successful (or placed in queue for processing later) or ``False`` in case of any errors.
 * ``search_path`` (optional) site search path which ends in a parameter for search input, for example "/search?q="
 
 Protocols

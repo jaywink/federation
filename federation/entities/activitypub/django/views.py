@@ -38,8 +38,7 @@ def activitypub_object_view(func):
 
         def post(request, *args, **kwargs):
             process_payload_function = get_function_from_config('process_payload_function')
-            payload = json.loads(request.body)
-            result = process_payload_function(payload)
+            result = process_payload_function(request.body, request)
             if result:
                 return JsonResponse({}, content_type='application/json', status=202)
             else:
