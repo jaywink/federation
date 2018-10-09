@@ -14,7 +14,7 @@
 
   When used, a few extra settings must be given in the Django `FEDERATION` configuration dictionary.
    * `get_object_function` should contain the Python path to a function that takes an ActivityPub ID and returns an object matching the ID or `None`.
-   * `process_payload_function` should contain the Python path to a function that takes in a federation payload and request object. It should return `True` if successful (or placed in queue for processing later) or `False` in case of any errors.
+   * `process_payload_function` should contain the Python path to a function that takes in a request object. It should return `True` if successful (or placed in queue for processing later) or `False` in case of any errors.
 
 ### Changed
 

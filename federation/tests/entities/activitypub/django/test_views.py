@@ -47,7 +47,7 @@ class TestActivityPubObjectView:
         response = dummy_view(request=request)
 
         assert response.status_code == 202
-        mock_func.assert_called_once_with(b'{"foo": "bar"}', request)
+        mock_func.assert_called_once_with(request)
 
     @patch("federation.entities.activitypub.django.views.get_function_from_config")
     def test_receives_messages_to_inbox__cbv(self, mock_get_config):
@@ -58,7 +58,7 @@ class TestActivityPubObjectView:
         response = view(request=request)
 
         assert response.status_code == 202
-        mock_func.assert_called_once_with(b'{"foo": "bar"}', request)
+        mock_func.assert_called_once_with(request)
 
     @pytest.mark.parametrize('content_type', (
             'application/json', 'application/activity+json', 'application/ld+json',
