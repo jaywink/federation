@@ -120,6 +120,7 @@ Some settings need to be set in Django settings. An example is below:
         "get_object_function": "myproject.utils.get_object",
         "get_profile_function": "myproject.utils.get_profile",
         "nodeinfo2_function": "myproject.utils.get_nodeinfo2_data",
+        "process_payload_function": "myproject.utils.process_payload",
         "search_path": "/search/?q=",
     }
 
@@ -138,6 +139,7 @@ Some settings need to be set in Django settings. An example is below:
     }
     openRegistrations
 
+* ``process_payload_function`` (optional) function that takes in a federation payload and processes it. It should return ``True`` if successful (or placed in queue for processing later) or ``False`` in case of any errors.
 * ``search_path`` (optional) site search path which ends in a parameter for search input, for example "/search?q="
 
 Protocols
