@@ -1,6 +1,4 @@
-import json
-
-from django.http import Http404, JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponse, HttpResponseNotFound
 
 from federation.utils.django import get_function_from_config
 
@@ -29,9 +27,9 @@ def activitypub_object_view(func):
                 return func(request, *args, **kwargs)
 
             get_object_function = get_function_from_config('get_object_function')
-            obj = get_object_function(request.build_absolute_uri())
+            obj = get_object_function(request)
             if not obj:
-                raise Http404
+                return HttpResponseNotFound()
 
             as2_obj = obj.as_protocol('activitypub')
             return JsonResponse(as2_obj.to_as2(), content_type='application/activity+json')

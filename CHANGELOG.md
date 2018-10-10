@@ -13,7 +13,7 @@
 * Added a Django view decorator that makes any Profile or Post view ActivityPub compatible. Right now basic AS2 serialization is supported when the view is called using the supported content types in the Accept header. If the content types are not in the header, the view will render normally.
 
   When used, a few extra settings must be given in the Django `FEDERATION` configuration dictionary.
-   * `get_object_function` should contain the Python path to a function that takes an ActivityPub ID and returns an object matching the ID or `None`.
+   * `get_object_function` should contain the Python path to a function that takes a request object and returns an object matching the ActivityPub ID for the request or `None`.
    * `process_payload_function` should contain the Python path to a function that takes in a request object. It should return `True` if successful (or placed in queue for processing later) or `False` in case of any errors.
 
 ### Changed

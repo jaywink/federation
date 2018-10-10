@@ -9,8 +9,10 @@ def get_configuration():
     Combine defaults with the Django configuration.
     """
     configuration = {
+        "get_object_function": None,
         "hcard_path": "/hcard/users/",
         "nodeinfo2_function": None,
+        "process_payload_function": None,
         "search_path": None,
     }
     configuration.update(settings.FEDERATION)

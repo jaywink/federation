@@ -125,7 +125,7 @@ Some settings need to be set in Django settings. An example is below:
     }
 
 * ``base_url`` is the base URL of the server, ie protocol://domain.tld.
-* ``get_object_function`` should be the full path to a function that will return the object matching the ActivityPub ID that is passed to this function. Needed for the ``activitypub_object_view`` decorator.
+* ``get_object_function`` should be the full path to a function that will return the object matching the ActivityPub ID for the request object passed to this function.
 * ``get_profile_function`` should be the full path to a function that should return a ``Profile`` entity. The function should take the following parameters: ``handle``, ``guid`` and ``request``. It should look up a profile with one or more of the provided parameters.
 * ``nodeinfo2_function`` (optional) function that returns data for generating a `NodeInfo2 document <https://github.com/jaywink/nodeinfo2>`_. Once configured the path ``/.well-known/x-nodeinfo2`` will automatically generate a NodeInfo2 document. The function should return a ``dict`` corresponding to the NodeInfo2 schema, with the following minimum items:
 

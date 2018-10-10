@@ -18,3 +18,7 @@ def get_object_function(object_id):
 
 def get_profile(handle=None, request=None):
     return dummy_profile()
+
+
+def process_payload(request):
+    return True
