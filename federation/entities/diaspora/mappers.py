@@ -87,7 +87,7 @@ def element_to_objects(
     :returns: list of entities
     """
     entities = []
-    cls = MAPPINGS.get(element.tag, None)
+    cls = MAPPINGS.get(element.tag)
     if not cls:
         return []
 
