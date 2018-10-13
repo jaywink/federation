@@ -50,6 +50,7 @@ def transform_attribute(key, value, cls):
             return transform_attributes(value, cls)
         else:
             return {"target_id": value}
+    return {}
 
 
 def transform_attributes(payload, cls):
