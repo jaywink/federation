@@ -3,10 +3,24 @@ from typing import Dict
 from federation.entities.activitypub.constants import (
     CONTEXTS_DEFAULT, CONTEXT_MANUALLY_APPROVES_FOLLOWERS, CONTEXT_SENSITIVE, CONTEXT_HASHTAG,
     CONTEXT_LD_SIGNATURES)
-from federation.entities.activitypub.enums import ActorType, ObjectType
+from federation.entities.activitypub.enums import ActorType, ObjectType, ActivityType
 from federation.entities.activitypub.mixins import ActivitypubEntityMixin
-from federation.entities.base import Profile, Post
+from federation.entities.base import Profile, Post, Follow
 from federation.utils.text import with_slash
+
+
+class ActivitypubFollow(ActivitypubEntityMixin, Follow):
+    _type = ActivityType.FOLLOW.value
+
+    def to_as2(self) -> Dict:
+        as2 = {
+            "@context": CONTEXTS_DEFAULT,
+            "id": self.activity_id,
+            "type": self._type,
+            "actor": self.actor_id,
+            "object": self.target_id,
+        }
+        return as2
 
 
 class ActivitypubPost(ActivitypubEntityMixin, Post):

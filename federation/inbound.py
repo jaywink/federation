@@ -8,6 +8,7 @@ from federation.types import UserType
 logger = logging.getLogger("federation")
 
 PROTOCOLS = (
+    "activitypub",
     "diaspora",
 )
 
