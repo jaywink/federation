@@ -4,6 +4,8 @@ from typing import Union, Callable, Tuple
 from federation.types import UserType
 from federation.utils.text import decode_if_bytes
 
+PROTOCOL_NAME = "activitypub"
+
 
 def identify_payload(payload: Union[str, bytes]) -> bool:
     """
