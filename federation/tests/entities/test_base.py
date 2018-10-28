@@ -18,16 +18,6 @@ class TestPostEntityTags:
         assert post.tags == set()
 
 
-class TestBaseEntity:
-    def test_username(self):
-        entity = Profile(handle='foobar@localhost.local')
-        assert entity.username == 'foobar'
-        entity = Profile(handle='@foobar@localhost.local')
-        assert entity.username == 'foobar'
-        entity = Profile()
-        assert entity.username is None
-
-
 class TestBaseEntityCallsValidateMethods:
     def test_entity_calls_attribute_validate_method(self):
         post = PostFactory()
