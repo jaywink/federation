@@ -28,17 +28,11 @@ def retrieve_remote_content(
     )
 
 
-def retrieve_remote_profile(id: str, handle: str=None) -> Optional[Profile]:
+def retrieve_remote_profile(id: str) -> Optional[Profile]:
     """High level retrieve profile method.
 
-    Retrieve the profile from a remote location, using either the given protocol or by checking each
-    protocol until a user can be constructed from the remote documents.
-
-    Currently, due to no other protocols supported, always use the Diaspora protocol.
+    Retrieve the profile from a remote location, using protocol based on the given ID.
     """
-    # TODO add support for AP
     protocol_name = "diaspora"
-    if not handle:
-        handle = id
     utils = importlib.import_module("federation.utils.%s" % protocol_name)
-    return utils.retrieve_and_parse_profile(handle.lower())
+    return utils.retrieve_and_parse_profile(id.lower())
