@@ -5,6 +5,7 @@ from federation.types import UserType
 
 MAPPINGS = {
     "Follow": ActivitypubFollow,
+    "Person": ActivitypubProfile,
 }
 
 
@@ -45,11 +46,27 @@ def transform_attribute(key, value, cls):
             return {"activity_id": value}
     elif key == "actor":
         return {"actor_id": value}
+    elif key == "icon":
+        # TODO maybe we should ditch these size constants and instead have a more flexible dict for images
+        # so based on protocol there would either be one url or many by size name
+        return {"image_urls": {
+            "small": value,
+            "medium": value,
+            "large": value,
+        }}
+    elif key == "name":
+        return {"name": value}
     elif key == "object":
         if isinstance(value, dict):
             return transform_attributes(value, cls)
         else:
             return {"target_id": value}
+    elif key == "preferredUsername":
+        return {"username": value}
+    elif key == "publicKey":
+        return {"public_key": value.get('publicKeyPem', '')}
+    elif key == "url":
+        return {"url": value}
     return {}
 
 

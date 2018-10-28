@@ -1,10 +1,13 @@
 import json
 import logging
 import re
-from typing import Union, Callable, Tuple, Optional, Any
+from typing import Union, Callable, Tuple
 
+from federation.entities.activitypub.enums import ActorType
 from federation.types import UserType
 from federation.utils.text import decode_if_bytes
+
+logger = logging.getLogger('federation')
 
 PROTOCOL_NAME = "activitypub"
 
@@ -30,8 +33,14 @@ def identify_payload(payload: Union[str, bytes]) -> bool:
 
 
 class Protocol:
+    def extract_actor(self):
+        if self.payload.get('type') in ActorType.values():
+            self.actor = self.payload.get('id')
+        else:
+            self.actor = self.payload.get('actor')
+
     def receive(self, payload: str, user: UserType=None, sender_key_fetcher: Callable[[str], str]=None,
-            skip_author_verification: bool=False) -> Tuple[str, str]:
+            skip_author_verification: bool=False) -> Tuple[str, dict]:
         """
         Receive a payload.
 
@@ -40,10 +49,11 @@ class Protocol:
         self.user = user
         self.get_contact_key = sender_key_fetcher
         self.payload = json.loads(decode_if_bytes(payload))
+        self.extract_actor()
         # Verify the message is from who it claims to be
         if not skip_author_verification:
             self.verify_signature()
-        return self.payload["actor"], self.payload
+        return self.actor, self.payload
 
     def verify_signature(self):
         # TODO implement
