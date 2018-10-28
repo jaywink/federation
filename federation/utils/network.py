@@ -35,7 +35,7 @@ def fetch_country_by_ip(ip):
     return data.get('response', {}).get('country_code', '')
 
 
-def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=True):
+def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=True, extra_headers=None):
     """Helper method to fetch remote document.
 
     Must be given either the ``url`` or ``host``.
@@ -56,6 +56,8 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
     logger.debug("fetch_document: url=%s, host=%s, path=%s, timeout=%s, raise_ssl_errors=%s",
                  url, host, path, timeout, raise_ssl_errors)
     headers = {'user-agent': USER_AGENT}
+    if extra_headers:
+        headers.update(extra_headers)
     if url:
         # Use url since it was given
         logger.debug("fetch_document: trying %s", url)
