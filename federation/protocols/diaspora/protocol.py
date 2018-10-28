@@ -13,13 +13,20 @@ from federation.protocols.diaspora.encrypted import EncryptedPayload
 from federation.protocols.diaspora.magic_envelope import MagicEnvelope
 from federation.types import UserType
 from federation.utils.diaspora import fetch_public_key
-from federation.utils.text import decode_if_bytes, encode_if_text
+from federation.utils.text import decode_if_bytes, encode_if_text, validate_handle
 
 logger = logging.getLogger("federation")
 
 PROTOCOL_NAME = "diaspora"
 PROTOCOL_NS = "https://joindiaspora.com/protocol"
 MAGIC_ENV_TAG = "{http://salmon-protocol.org/ns/magic-env}env"
+
+
+def identify_id(id: str) -> bool:
+    """
+    Try to identify if this ID is a Diaspora ID.
+    """
+    return validate_handle(id)
 
 
 def identify_payload(payload):

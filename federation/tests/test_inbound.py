@@ -8,7 +8,7 @@ from federation.protocols.diaspora.protocol import Protocol
 from federation.tests.fixtures.payloads import DIASPORA_PUBLIC_PAYLOAD
 
 
-class TestHandleReceiveProtocolIdentification():
+class TestHandleReceiveProtocolIdentification:
     def test_handle_receive_routes_to_identified_protocol(self):
         payload = DIASPORA_PUBLIC_PAYLOAD
         with patch.object(

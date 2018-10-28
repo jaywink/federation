@@ -2,15 +2,10 @@ import importlib
 import logging
 from typing import Tuple, List, Callable
 
-from federation.exceptions import NoSuitableProtocolFoundError
+from federation import identify_protocol_by_payload
 from federation.types import UserType
 
 logger = logging.getLogger("federation")
-
-PROTOCOLS = (
-    "activitypub",
-    "diaspora",
-)
 
 
 def handle_receive(
@@ -36,24 +31,15 @@ def handle_receive(
     :arg sender_key_fetcher: Function that accepts sender handle and returns public key (optional)
     :arg skip_author_verification: Don't verify sender (test purposes, false default)
     :returns: Tuple of sender id, protocol name and list of entity objects
-    :raises NoSuitableProtocolFound: When no protocol was identified to pass message to
     """
     logger.debug("handle_receive: processing payload: %s", payload)
-    found_protocol = None
-    for protocol_name in PROTOCOLS:
-        protocol = importlib.import_module("federation.protocols.%s.protocol" % protocol_name)
-        if protocol.identify_payload(payload):
-            found_protocol = protocol
-            break
+    found_protocol = identify_protocol_by_payload(payload)
 
-    if found_protocol:
-        logger.debug("handle_receive: using protocol %s", found_protocol.PROTOCOL_NAME)
-        protocol = found_protocol.Protocol()
-        sender, message = protocol.receive(
-            payload, user, sender_key_fetcher, skip_author_verification=skip_author_verification)
-        logger.debug("handle_receive: sender %s, message %s", sender, message)
-    else:
-        raise NoSuitableProtocolFoundError()
+    logger.debug("handle_receive: using protocol %s", found_protocol.PROTOCOL_NAME)
+    protocol = found_protocol.Protocol()
+    sender, message = protocol.receive(
+        payload, user, sender_key_fetcher, skip_author_verification=skip_author_verification)
+    logger.debug("handle_receive: sender %s, message %s", sender, message)
 
     mappers = importlib.import_module("federation.entities.%s.mappers" % found_protocol.PROTOCOL_NAME)
     entities = mappers.message_to_objects(message, sender, sender_key_fetcher, user)
