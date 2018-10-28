@@ -2,6 +2,7 @@ import importlib
 import logging
 from typing import Optional, Callable
 
+from federation import identify_protocol_by_id
 from federation.entities.base import Profile
 
 logger = logging.getLogger("federation")
@@ -33,6 +34,6 @@ def retrieve_remote_profile(id: str) -> Optional[Profile]:
 
     Retrieve the profile from a remote location, using protocol based on the given ID.
     """
-    protocol_name = "diaspora"
-    utils = importlib.import_module("federation.utils.%s" % protocol_name)
-    return utils.retrieve_and_parse_profile(id.lower())
+    protocol = identify_protocol_by_id(id)
+    utils = importlib.import_module(f"federation.utils.{protocol.PROTOCOL_NAME}")
+    return utils.retrieve_and_parse_profile(id)

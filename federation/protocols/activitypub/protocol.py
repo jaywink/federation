@@ -1,10 +1,19 @@
 import json
-from typing import Union, Callable, Tuple
+import logging
+import re
+from typing import Union, Callable, Tuple, Optional, Any
 
 from federation.types import UserType
 from federation.utils.text import decode_if_bytes
 
 PROTOCOL_NAME = "activitypub"
+
+
+def identify_id(id: str) -> bool:
+    """
+    Try to identify whether this is an ActivityPub ID.
+    """
+    return re.match(r'^https?://', id, flags=re.IGNORECASE) is not None
 
 
 def identify_payload(payload: Union[str, bytes]) -> bool:
