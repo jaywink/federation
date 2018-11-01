@@ -143,7 +143,7 @@ def parse_nodeinfo2_document(doc, host):
     result['platform'] = doc.get('server', {}).get('software', 'unknown').lower()
     result['version'] = doc.get('server', {}).get('version', '') or ''
     # Ensure baseUrl is reported as the host we called
-    base_url = doc.get('server', {}).get('baseUrl', '')
+    base_url = doc.get('server', {}).get('baseUrl', '').rstrip('/')
     cleaned_base_url = re.sub(r'https?://', '', base_url)
     if cleaned_base_url.startswith(host):
         result['host'] = cleaned_base_url

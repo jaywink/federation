@@ -69,7 +69,7 @@ NODEINFO2_10_DOC = """
 {
   "version": "1.0",
   "server": {
-    "baseUrl": "https://example.com",
+    "baseUrl": "https://example.com/",
     "name": "Example server",
     "software": "example",
     "version": "0.5.0"
