@@ -17,6 +17,16 @@ MASTODON_DOC = """
                      "fields": []}}
 """
 
+MASTODON_DOC_NULL_CONTACT = """
+{"uri": "mastodon.local", "title": "Mastodon",
+ "description": "This page describes the mastodon.local",
+ "email": "", "version": "2.4.0", "urls": {"streaming_api": "wss://mastodon.local"},
+ "stats": {"user_count": 159726, "status_count": 6059606, "domain_count": 4703},
+ "thumbnail": "https://files.mastodon.local/site_uploads/files/000/000/001/original/file.jpeg",
+ "languages": ["en"],
+ "contact_account": null}
+"""
+
 MASTODON_RC_DOC = """
 {"uri": "mastodon.local", "title": "Mastodon",
  "description": "This page describes the mastodon.local",

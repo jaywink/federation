@@ -71,9 +71,13 @@ def parse_mastodon_document(doc, host):
     # TODO figure out what to do with posts vs comments vs statuses
     #result['activity']['users']['local_posts'] = int_or_none(doc.get('stats', {}).get('status_count'))
 
-    result['organization']['account'] = doc.get('contact_account', {}).get('url', '')
+    if "contact_account" in doc and doc.get('contact_account') is not None:
+        contact_account = doc.get('contact_account', {})
+    else:
+        contact_account = {}
+    result['organization']['account'] = contact_account.get('url', '')
     result['organization']['contact'] = doc.get('email', '')
-    result['organization']['name'] = doc.get('contact_account', {}).get('display_name', '')
+    result['organization']['name'] = contact_account.get('display_name', '')
 
     activity_doc, _status_code, _error = fetch_document(host=host, path='/api/v1/instance/activity')
     if activity_doc:
