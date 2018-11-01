@@ -6,7 +6,7 @@ from federation.hostmeta.parsers import (
     parse_mastodon_document)
 from federation.tests.fixtures.hostmeta import (
     NODEINFO2_10_DOC, NODEINFO_10_DOC, NODEINFO_20_DOC, STATISTICS_JSON_DOC, MASTODON_DOC, MASTODON_ACTIVITY_DOC,
-    MASTODON_RC_DOC)
+    MASTODON_RC_DOC, MASTODON_DOC_NULL_CONTACT)
 
 
 class TestIntOrNone:
@@ -24,6 +24,38 @@ class TestParseMastodonDocument:
                 'account': 'https://mastodon.local/@Admin',
                 'contact': 'hello@mastodon.local',
                 'name': 'Admin dude',
+            },
+            'host': 'example.com',
+            'name': 'Mastodon',
+            'open_signups': False,
+            'protocols': ["ostatus", "activitypub"],
+            'relay': False,
+            'server_meta': {},
+            'services': [],
+            'platform': 'mastodon',
+            'version': '2.4.0',
+            'features': {},
+            'activity': {
+                'users': {
+                    'total': 159726,
+                    'half_year': 90774,
+                    'monthly': 27829,
+                    'weekly': 8779,
+                },
+                'local_posts': None,
+                'local_comments': None,
+            },
+        }
+
+    @patch('federation.hostmeta.parsers.fetch_document')
+    def test_parse_mastodon_document__null_contact_account(self, mock_fetch):
+        mock_fetch.return_value = MASTODON_ACTIVITY_DOC, 200, None
+        result = parse_mastodon_document(json.loads(MASTODON_DOC_NULL_CONTACT), 'example.com')
+        assert result == {
+            'organization': {
+                'account': '',
+                'contact': '',
+                'name': '',
             },
             'host': 'example.com',
             'name': 'Mastodon',

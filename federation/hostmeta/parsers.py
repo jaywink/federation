@@ -71,9 +71,13 @@ def parse_mastodon_document(doc, host):
     # TODO figure out what to do with posts vs comments vs statuses
     #result['activity']['users']['local_posts'] = int_or_none(doc.get('stats', {}).get('status_count'))
 
-    result['organization']['account'] = doc.get('contact_account', {}).get('url', '')
+    if "contact_account" in doc and doc.get('contact_account') is not None:
+        contact_account = doc.get('contact_account', {})
+    else:
+        contact_account = {}
+    result['organization']['account'] = contact_account.get('url', '')
     result['organization']['contact'] = doc.get('email', '')
-    result['organization']['name'] = doc.get('contact_account', {}).get('display_name', '')
+    result['organization']['name'] = contact_account.get('display_name', '')
 
     activity_doc, _status_code, _error = fetch_document(host=host, path='/api/v1/instance/activity')
     if activity_doc:
@@ -143,7 +147,7 @@ def parse_nodeinfo2_document(doc, host):
     result['platform'] = doc.get('server', {}).get('software', 'unknown').lower()
     result['version'] = doc.get('server', {}).get('version', '') or ''
     # Ensure baseUrl is reported as the host we called
-    base_url = doc.get('server', {}).get('baseUrl', '')
+    base_url = doc.get('server', {}).get('baseUrl', '').rstrip('/')
     cleaned_base_url = re.sub(r'https?://', '', base_url)
     if cleaned_base_url.startswith(host):
         result['host'] = cleaned_base_url
