@@ -1,6 +1,7 @@
 import json
 import re
 from copy import deepcopy
+from typing import Dict
 
 from federation.utils.network import fetch_document
 
@@ -103,6 +104,16 @@ def parse_mastodon_document(doc, host):
                     result['activity']['users']['total'],
                 )
 
+    return result
+
+
+def parse_matrix_document(doc: Dict, host: str) -> Dict:
+    result = deepcopy(defaults)
+    result['host'] = host
+    result['name'] = host
+    result['protocols'] = ['matrix']
+    result['platform'] = f'matrix|{doc["server"]["name"].lower()}'
+    result['version'] = doc["server"]["version"]
 
     return result
 

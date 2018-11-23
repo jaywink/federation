@@ -1,7 +1,9 @@
 import json
+from typing import Dict, Optional
 
 from federation.hostmeta.parsers import (
-    parse_nodeinfo_document, parse_nodeinfo2_document, parse_statisticsjson_document, parse_mastodon_document)
+    parse_nodeinfo_document, parse_nodeinfo2_document, parse_statisticsjson_document, parse_mastodon_document,
+    parse_matrix_document)
 from federation.utils.network import fetch_document
 
 HIGHEST_SUPPORTED_NODEINFO_VERSION = 2.0
@@ -16,6 +18,17 @@ def fetch_mastodon_document(host):
     except json.JSONDecodeError:
         return
     return parse_mastodon_document(doc, host)
+
+
+def fetch_matrix_document(host: str) -> Optional[Dict]:
+    doc, status_code, error = fetch_document(host=host, path='/_matrix/federation/v1/version')
+    if not doc:
+        return
+    try:
+        doc = json.loads(doc)
+    except json.JSONDecodeError:
+        return
+    return parse_matrix_document(doc, host)
 
 
 def fetch_nodeinfo_document(host):
