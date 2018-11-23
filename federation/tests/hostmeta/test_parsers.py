@@ -3,10 +3,10 @@ from unittest.mock import patch
 
 from federation.hostmeta.parsers import (
     parse_nodeinfo_document, parse_nodeinfo2_document, parse_statisticsjson_document, int_or_none,
-    parse_mastodon_document)
+    parse_mastodon_document, parse_matrix_document)
 from federation.tests.fixtures.hostmeta import (
     NODEINFO2_10_DOC, NODEINFO_10_DOC, NODEINFO_20_DOC, STATISTICS_JSON_DOC, MASTODON_DOC, MASTODON_ACTIVITY_DOC,
-    MASTODON_RC_DOC, MASTODON_DOC_NULL_CONTACT)
+    MASTODON_RC_DOC, MASTODON_DOC_NULL_CONTACT, MATRIX_SYNAPSE_DOC)
 
 
 class TestIntOrNone:
@@ -105,6 +105,38 @@ class TestParseMastodonDocument:
                     'half_year': 90774,
                     'monthly': 27829,
                     'weekly': 8779,
+                },
+                'local_posts': None,
+                'local_comments': None,
+            },
+        }
+
+
+class TestParseMatrixDocument:
+    def test_parse_matrix_document(self):
+        result = parse_matrix_document(json.loads(MATRIX_SYNAPSE_DOC), 'feneas.org')
+        assert result == {
+            'organization': {
+                'account': '',
+                'contact': '',
+                'name': '',
+            },
+            'host': 'feneas.org',
+            'name': 'feneas.org',
+            'open_signups': False,
+            'protocols': ['matrix'],
+            'relay': '',
+            'server_meta': {},
+            'services': [],
+            'platform': 'matrix|synapse',
+            'version': '0.33.8',
+            'features': {},
+            'activity': {
+                'users': {
+                    'total': None,
+                    'half_year': None,
+                    'monthly': None,
+                    'weekly': None,
                 },
                 'local_posts': None,
                 'local_comments': None,

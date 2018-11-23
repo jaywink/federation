@@ -2,7 +2,8 @@ import json
 from unittest.mock import patch
 
 from federation.hostmeta.fetchers import (
-    fetch_nodeinfo_document, fetch_nodeinfo2_document, fetch_statisticsjson_document, fetch_mastodon_document)
+    fetch_nodeinfo_document, fetch_nodeinfo2_document, fetch_statisticsjson_document, fetch_mastodon_document,
+    fetch_matrix_document)
 from federation.tests.fixtures.hostmeta import NODEINFO_WELL_KNOWN_BUGGY, NODEINFO_WELL_KNOWN_BUGGY_2
 
 
@@ -14,6 +15,17 @@ class TestFetchMastodonDocument:
         args, kwargs = mock_fetch.call_args
         assert kwargs['host'] == 'example.com'
         assert kwargs['path'] == '/api/v1/instance'
+        mock_parse.assert_called_once_with({"foo": "bar"}, 'example.com')
+
+
+class TestFetchMatrixDocument:
+    @patch("federation.hostmeta.fetchers.fetch_document", return_value=('{"foo": "bar"}', 200, None), autospec=True)
+    @patch("federation.hostmeta.fetchers.parse_matrix_document", autospec=True)
+    def test_makes_right_calls(self, mock_parse, mock_fetch):
+        fetch_matrix_document('example.com')
+        args, kwargs = mock_fetch.call_args
+        assert kwargs['host'] == 'example.com'
+        assert kwargs['path'] == '/_matrix/federation/v1/version'
         mock_parse.assert_called_once_with({"foo": "bar"}, 'example.com')
 
 

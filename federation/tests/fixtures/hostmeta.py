@@ -53,6 +53,10 @@ MASTODON_ACTIVITY_DOC = """
     ]
 """
 
+MATRIX_SYNAPSE_DOC = """
+    {"server": {"name": "Synapse", "version": "0.33.8"}}
+"""
+
 NODEINFO_10_DOC = '{"version":"1.0","software":{"name":"diaspora","version":"0.7.4.0-pd0313756"},"protocols":' \
                   '{"inbound":["diaspora"],"outbound":["diaspora"]},"services":{"inbound":[],"outbound":["twi' \
                   'tter","tumblr"]},"openRegistrations":true,"usage":{"users":{"total":348,"activeHalfyear":1' \
