@@ -6,7 +6,7 @@ from federation.hostmeta.parsers import (
     parse_mastodon_document, parse_matrix_document)
 from federation.tests.fixtures.hostmeta import (
     NODEINFO2_10_DOC, NODEINFO_10_DOC, NODEINFO_20_DOC, STATISTICS_JSON_DOC, MASTODON_DOC, MASTODON_ACTIVITY_DOC,
-    MASTODON_RC_DOC, MASTODON_DOC_NULL_CONTACT, MATRIX_SYNAPSE_DOC)
+    MASTODON_RC_DOC, MASTODON_DOC_NULL_CONTACT, MATRIX_SYNAPSE_DOC, PLEROMA_MASTODON_API_DOC)
 
 
 class TestIntOrNone:
@@ -15,6 +15,11 @@ class TestIntOrNone:
 
 
 class TestParseMastodonDocument:
+    @patch('federation.hostmeta.fetchers.fetch_nodeinfo_document', autospec=True)
+    def test_calls_nodeinfo_fetcher_if_pleroma(self, mock_fetch):
+        parse_mastodon_document(json.loads(PLEROMA_MASTODON_API_DOC), 'example.com')
+        mock_fetch.assert_called_once_with('example.com')
+
     @patch('federation.hostmeta.parsers.fetch_document')
     def test_parse_mastodon_document(self, mock_fetch):
         mock_fetch.return_value = MASTODON_ACTIVITY_DOC, 200, None

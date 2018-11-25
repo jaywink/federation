@@ -52,6 +52,13 @@ def int_or_none(value):
 
 
 def parse_mastodon_document(doc, host):
+    # Check first this is not actually Pleroma. It supports NodeInfo but also has the
+    # Mastodon API route
+    if doc.get('version', '').find('Pleroma') > -1:
+        # Use NodeInfo instead, otherwise this is logged as Mastodon
+        from federation.hostmeta.fetchers import fetch_nodeinfo_document
+        return fetch_nodeinfo_document(host)
+
     result = deepcopy(defaults)
     result['host'] = host
     result['name'] = doc.get('title', host)

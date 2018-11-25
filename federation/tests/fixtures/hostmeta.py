@@ -113,5 +113,9 @@ NODEINFO2_10_DOC = """
 }
 """
 
+PLEROMA_MASTODON_API_DOC = """
+{"description":"A Pleroma instance, an alternative fediverse server","email":"foobar@pleroma.local","max_toot_chars":5000,"stats":{"domain_count":5,"status_count":127,"user_count":11},"thumbnail":"https://kemo.one/instance/thumbnail.jpeg","title":"Pleromaa","uri":"https://pleroma.local","urls":{"streaming_api":"wss://pleroma.local"},"version":"2.3.3 (compatible; Pleroma 0.9.0 ffa552f1a41c530a7eff25d27cf0a82e710067b6)"}
+"""
+
 STATISTICS_JSON_DOC = '{"name":"diaspora*","network":"Diaspora","version":"0.5.7.0-p56ebcc76","registrations_open"' \
                       ':true,"services":[],"twitter":false,"tumblr":false,"facebook":false,"wordpress":false}'
