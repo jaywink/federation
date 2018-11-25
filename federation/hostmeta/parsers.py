@@ -73,8 +73,7 @@ def parse_mastodon_document(doc, host):
     result['relay'] = False
 
     result['activity']['users']['total'] = int_or_none(doc.get('stats', {}).get('user_count'))
-    # TODO figure out what to do with posts vs comments vs statuses
-    #result['activity']['users']['local_posts'] = int_or_none(doc.get('stats', {}).get('status_count'))
+    result['activity']['local_posts'] = int_or_none(doc.get('stats', {}).get('status_count'))
 
     if "contact_account" in doc and doc.get('contact_account') is not None:
         contact_account = doc.get('contact_account', {})
