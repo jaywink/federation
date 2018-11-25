@@ -57,9 +57,13 @@ def parse_mastodon_document(doc, host):
     result['name'] = doc.get('title', host)
     result['platform'] = 'mastodon'
     result['version'] = doc.get('version', '')
-    # TODO parse about page
-    # https://github.com/TheKinrar/mastodon-instances/blob/master/tasks/update_instances.js#L508
-    # result['open_signups']
+
+    # Awkward parsing of signups from about page
+    # TODO remove if fixed, issue logged: https://github.com/tootsuite/mastodon/issues/9350
+    about_doc, _status_code, _error = fetch_document(host=host, path='/about')
+    if about_doc:
+        result['open_signups'] = about_doc.find("<div class='closed-registrations-message'>") == -1
+
     version = re.sub(r'[^0-9.]', '', doc.get('version', ''))
     version = [int(part) for part in version.split('.')]
     if version >= [1, 6, 0]:
