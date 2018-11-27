@@ -118,7 +118,8 @@ class TestParseMastodonDocument:
 
 
 class TestParseMatrixDocument:
-    def test_parse_matrix_document(self):
+    @patch('federation.hostmeta.parsers.send_document', autospec=True, return_value=(403, None))
+    def test_parse_matrix_document__signups_closed(self, mock_send):
         result = parse_matrix_document(json.loads(MATRIX_SYNAPSE_DOC), 'feneas.org')
         assert result == {
             'organization': {
@@ -129,6 +130,37 @@ class TestParseMatrixDocument:
             'host': 'feneas.org',
             'name': 'feneas.org',
             'open_signups': False,
+            'protocols': ['matrix'],
+            'relay': '',
+            'server_meta': {},
+            'services': [],
+            'platform': 'matrix|synapse',
+            'version': '0.33.8',
+            'features': {},
+            'activity': {
+                'users': {
+                    'total': None,
+                    'half_year': None,
+                    'monthly': None,
+                    'weekly': None,
+                },
+                'local_posts': None,
+                'local_comments': None,
+            },
+        }
+
+    @patch('federation.hostmeta.parsers.send_document', autospec=True, return_value=(401, None))
+    def test_parse_matrix_document__signups_open(self, mock_send):
+        result = parse_matrix_document(json.loads(MATRIX_SYNAPSE_DOC), 'feneas.org')
+        assert result == {
+            'organization': {
+                'account': '',
+                'contact': '',
+                'name': '',
+            },
+            'host': 'feneas.org',
+            'name': 'feneas.org',
+            'open_signups': True,
             'protocols': ['matrix'],
             'relay': '',
             'server_meta': {},

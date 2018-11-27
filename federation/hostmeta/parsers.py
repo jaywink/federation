@@ -3,7 +3,7 @@ import re
 from copy import deepcopy
 from typing import Dict
 
-from federation.utils.network import fetch_document
+from federation.utils.network import fetch_document, send_document
 
 WEEKLY_USERS_HALFYEAR_MULTIPLIER = 10.34
 WEEKLY_USERS_MONTHLY_MULTIPLIER = 3.17
@@ -124,6 +124,16 @@ def parse_matrix_document(doc: Dict, host: str) -> Dict:
     result['protocols'] = ['matrix']
     result['platform'] = f'matrix|{doc["server"]["name"].lower()}'
     result['version'] = doc["server"]["version"]
+
+    # Get signups status by posting to register endpoint and analyzing the status code coming back
+    status_code, _error = send_document(
+        f'https://{host}/_matrix/client/r0/register',
+        data=json.dumps({'auth': {}}),
+    )
+    if status_code == 401:
+        result['open_signups'] = True
+    elif status_code == 403:
+        result['open_signups'] = False
 
     return result
 
