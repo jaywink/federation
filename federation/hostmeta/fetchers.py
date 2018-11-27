@@ -1,9 +1,11 @@
 import json
 from typing import Dict, Optional
 
+import requests
+
 from federation.hostmeta.parsers import (
     parse_nodeinfo_document, parse_nodeinfo2_document, parse_statisticsjson_document, parse_mastodon_document,
-    parse_matrix_document)
+    parse_matrix_document, parse_misskey_document)
 from federation.utils.network import fetch_document
 
 HIGHEST_SUPPORTED_NODEINFO_VERSION = 2.0
@@ -29,6 +31,15 @@ def fetch_matrix_document(host: str) -> Optional[Dict]:
     except json.JSONDecodeError:
         return
     return parse_matrix_document(doc, host)
+
+
+def fetch_misskey_document(host: str, mastodon_document: Dict=None) -> Optional[Dict]:
+    try:
+        response = requests.post(f'https://{host}/api/meta')  # ¯\_(ツ)_/¯
+    except Exception:
+        return
+    if response.status_code == 200:
+        return parse_misskey_document(response.json(), host, mastodon_document=mastodon_document)
 
 
 def fetch_nodeinfo_document(host):

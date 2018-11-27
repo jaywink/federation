@@ -52,12 +52,15 @@ def int_or_none(value):
 
 
 def parse_mastodon_document(doc, host):
-    # Check first this is not actually Pleroma. It supports NodeInfo but also has the
-    # Mastodon API route
+    # Check first this is not actually Pleroma or Misskey
     if doc.get('version', '').find('Pleroma') > -1:
         # Use NodeInfo instead, otherwise this is logged as Mastodon
         from federation.hostmeta.fetchers import fetch_nodeinfo_document
         return fetch_nodeinfo_document(host)
+    elif doc.get('version', '').find('misskey') > -1:
+        # Use Misskey instead, otherwise this is logged as Mastodon
+        from federation.hostmeta.fetchers import fetch_misskey_document
+        return fetch_misskey_document(host, mastodon_document=doc)
 
     result = deepcopy(defaults)
     result['host'] = host
@@ -134,6 +137,49 @@ def parse_matrix_document(doc: Dict, host: str) -> Dict:
         result['open_signups'] = True
     elif status_code == 403:
         result['open_signups'] = False
+
+    return result
+
+
+def parse_misskey_document(doc: Dict, host: str, mastodon_document: Dict=None) -> Dict:
+    result = deepcopy(defaults)
+    result['host'] = host
+
+    result['organization']['name'] = doc.get('maintainer', {}).get('name', '')
+    result['organization']['contact'] = doc.get('maintainer', {}).get('email', '')
+
+    result['name'] = doc.get('name', host)
+    result['open_signups'] = doc.get('features', {}).get('registration', False)
+    result['protocols'] = ['activitypub']
+
+    if doc.get('features', {}).get('twitter', False):
+        result['services'].append('twitter')
+    if doc.get('features', {}).get('github', False):
+        result['services'].append('github')
+    if doc.get('features', {}).get('discord', False):
+        result['services'].append('discord')
+
+    result['platform'] = 'misskey'
+    result['version'] = doc.get('version', '')
+    result['features'] = doc.get('features', {})
+
+    if not mastodon_document:
+        # Fetch also Mastodon API doc to get some counts...
+        api_doc, _status_code, _error = fetch_document(host=host, path='/api/v1/instance')
+        if api_doc:
+            try:
+                mastodon_document = json.loads(api_doc)
+            except json.JSONDecodeError:
+                pass
+    if mastodon_document:
+        result['activity']['users']['total'] = int_or_none(mastodon_document.get('stats', {}).get('user_count'))
+        result['activity']['local_posts'] = int_or_none(mastodon_document.get('stats', {}).get('status_count'))
+
+        if "contact_account" in mastodon_document and mastodon_document.get('contact_account') is not None:
+            contact_account = mastodon_document.get('contact_account', {})
+        else:
+            contact_account = {}
+        result['organization']['account'] = contact_account.get('url', '')
 
     return result
 
