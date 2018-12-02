@@ -38,8 +38,12 @@ def fetch_misskey_document(host: str, mastodon_document: Dict=None) -> Optional[
         response = requests.post(f'https://{host}/api/meta')  # ¯\_(ツ)_/¯
     except Exception:
         return
+    try:
+        doc = response.json()
+    except json.JSONDecodeError:
+        return
     if response.status_code == 200:
-        return parse_misskey_document(response.json(), host, mastodon_document=mastodon_document)
+        return parse_misskey_document(doc, host, mastodon_document=mastodon_document)
 
 
 def fetch_nodeinfo_document(host):
