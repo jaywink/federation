@@ -8,4 +8,6 @@ FEDERATION = {
     "get_profile_function": "federation.tests.django.utils.get_profile",
     "process_payload_function": "federation.tests.django.utils.process_payload",
     "search_path": "/search?q=",
+    # TODO remove once AP support is more ready
+    "activitypub": True,
 }
