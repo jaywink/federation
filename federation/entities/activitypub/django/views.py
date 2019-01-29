@@ -1,6 +1,6 @@
 from django.http import JsonResponse, HttpResponse, HttpResponseNotFound
 
-from federation.utils.django import get_function_from_config
+from federation.utils.django import get_function_from_config, get_configuration
 
 
 def activitypub_object_view(func):
@@ -15,6 +15,11 @@ def activitypub_object_view(func):
     def inner(request, *args, **kwargs):
 
         def get(request, *args, **kwargs):
+            # TODO remove once AP support is more ready
+            config = get_configuration()
+            if not config.get("activitypub"):
+                return func(request, *args, **kwargs)
+
             fallback = True
             accept = request.META.get('HTTP_ACCEPT', '')
             for content_type in (
