@@ -16,6 +16,8 @@
    * `get_object_function` should contain the Python path to a function that takes a request object and returns an object matching the ActivityPub ID for the request or `None`.
    * `process_payload_function` should contain the Python path to a function that takes in a request object. It should return `True` if successful (or placed in queue for processing later) or `False` in case of any errors.
 
+* Added network utility `network.fetch_host_ip` to fetch IP by hostname.
+
 ### Changed
 
 * **Backwards incompatible.** Lowest compatible Python version is now 3.6.

@@ -1,5 +1,6 @@
 import logging
 import socket
+from typing import Tuple
 
 import requests
 from ipdata import ipdata
@@ -95,13 +96,24 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
         return None, None, ex
 
 
-def fetch_host_ip_and_country(host):
+def fetch_host_ip(host: str) -> str:
     """
-    Fetch ip and country by host
+    Fetch ip by host
     """
     try:
         ip = socket.gethostbyname(host)
     except socket.gaierror:
+        return ''
+
+    return ip
+
+
+def fetch_host_ip_and_country(host: str) -> Tuple:
+    """
+    Fetch ip and country by host
+    """
+    ip = fetch_host_ip(host)
+    if not host:
         return '', ''
 
     country = fetch_country_by_ip(ip)

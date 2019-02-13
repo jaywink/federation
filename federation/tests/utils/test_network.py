@@ -5,7 +5,7 @@ from requests import HTTPError
 from requests.exceptions import SSLError, RequestException
 
 from federation.utils.network import (
-    fetch_document, USER_AGENT, send_document, fetch_country_by_ip, fetch_host_ip_and_country)
+    fetch_document, USER_AGENT, send_document, fetch_country_by_ip, fetch_host_ip_and_country, fetch_host_ip)
 
 
 @patch('federation.utils.network.ipdata', autospec=True)
@@ -98,10 +98,18 @@ class TestFetchDocument:
         assert exc.__class__ == RequestException
 
 
-class TestHostIpAndCountry:
+class TestFetchHostIp:
     @patch('federation.utils.network.socket.gethostbyname', autospec=True, return_value='127.0.0.1')
+    def test_calls(self, mock_get_ip):
+        result = fetch_host_ip('domain.local')
+        assert result == '127.0.0.1'
+        mock_get_ip.assert_called_once_with('domain.local')
+
+
+class TestFetchHostIpAndCountry:
     @patch('federation.utils.network.fetch_country_by_ip', autospec=True, return_value='FI')
-    def test_calls(self, mock_fetch_country, mock_get_ip):
+    @patch('federation.utils.network.fetch_host_ip', autospec=True, return_value='127.0.0.1')
+    def test_calls(self, mock_get_ip, mock_fetch_country):
         result = fetch_host_ip_and_country('domain.local')
         assert result == ('127.0.0.1', 'FI')
         mock_get_ip.assert_called_once_with('domain.local')
