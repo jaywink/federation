@@ -21,6 +21,13 @@ class TestFetchCountryByIp:
 class TestFetchDocument:
     call_args = {"timeout": 10, "headers": {'user-agent': USER_AGENT}}
 
+    @patch("federation.utils.network.requests.get", autospec=True, return_value=Mock(status_code=200, text="foo"))
+    def test_extra_headers(self, mock_get):
+        fetch_document("https://example.com/foo", extra_headers={'accept': 'application/activity+json'})
+        mock_get.assert_called_once_with('https://example.com/foo', headers={
+            'user-agent': USER_AGENT, 'accept': 'application/activity+json',
+        })
+
     def test_raises_without_url_and_host(self):
         with pytest.raises(ValueError):
             fetch_document()

@@ -1,6 +1,14 @@
 import json
 
-from federation.protocols.activitypub.protocol import identify_payload
+from federation.protocols.activitypub.protocol import identify_payload, identify_id
+
+
+def test_identify_id():
+    assert identify_id('foobar') is False
+    assert identify_id('foobar@example.com') is False
+    assert identify_id('foobar@example.com:8000') is False
+    assert identify_id('http://foobar@example.com') is True
+    assert identify_id('https://foobar@example.com') is True
 
 
 class TestIdentifyPayload:

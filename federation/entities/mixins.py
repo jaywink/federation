@@ -1,7 +1,6 @@
 import datetime
 import importlib
 import warnings
-from typing import Optional
 
 from federation.entities.activitypub.enums import ActivityType
 
@@ -115,14 +114,6 @@ class BaseEntity:
     def sign_with_parent(self, private_key):
         """Implement in subclasses if needed."""
         pass
-
-    @property
-    def username(self) -> Optional[str]:
-        if self.handle:
-            username_part = self.handle.rsplit('@', 1)
-            if username_part:
-                # Strip any remaining '@' if this is a Mastodon style handle
-                return username_part[0].strip('@')
 
 
 class PublicMixin(BaseEntity):
