@@ -18,6 +18,10 @@
 
 * Added network utility `network.fetch_host_ip` to fetch IP by hostname.
 
+* Inbound helper utility `handle_receive` now also supports ActivityPub payloads. Protocol will be identified by looking at the payload contents.
+
+* Fetcher helper utility `retrieve_remote_profile` now also supports fetching ActivityPub profiles. Response will be a serialized protocol specific profile entity.
+
 ### Changed
 
 * **Backwards incompatible.** Lowest compatible Python version is now 3.6.
@@ -34,6 +38,10 @@
   * The outbound function `outbound.handle_send` parameter `recipients` structure has changed. It must now for Diaspora contain either a `handle` (public delivery) or tuple of `handle, RSAPublicKey, guid` for private delivery. For AP delivery either `url ID` for public delivery or tuple of `url ID, RSAPublicKey` for private delivery.
   
 * **Backwards incompatible.** Generator `RFC3033Webfinger` and the related `rfc3033_webfinger_view` have been renamed to `RFC7033Webfinger` and `rfc7033_webfinger_view` to reflect the right RFC number.
+
+* Network helper utility `fetch_document` can now also take a dictionary of `headers`. They will be passed to the underlying `requests` method call as is.
+
+* **Backwards incompatible.** * Fetcher helper utility `retrieve_remote_profile` parameter `handle` has been removed. Pass in the Diaspora protocol handle as the first parameter to fetch a Diaspora remote profile.
 
 ### Removed
 
