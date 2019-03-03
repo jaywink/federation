@@ -11,7 +11,7 @@ from federation.entities.mixins import BaseEntity
 from federation.exceptions import EncryptedMessageError, NoSenderKeyFoundError
 from federation.protocols.diaspora.encrypted import EncryptedPayload
 from federation.protocols.diaspora.magic_envelope import MagicEnvelope
-from federation.types import UserType
+from federation.types import UserType, RequestType
 from federation.utils.diaspora import fetch_public_key
 from federation.utils.text import decode_if_bytes, encode_if_text, validate_handle
 
@@ -29,21 +29,22 @@ def identify_id(id: str) -> bool:
     return validate_handle(id)
 
 
-def identify_payload(payload):
-    """Try to identify whether this is a Diaspora payload.
+# noinspection PyBroadException
+def identify_request(request: RequestType):
+    """Try to identify whether this is a Diaspora request.
 
     Try first public message. Then private message. The check if this is a legacy payload.
     """
     # Private encrypted JSON payload
     try:
-        data = json.loads(decode_if_bytes(payload))
+        data = json.loads(decode_if_bytes(request.body))
         if "encrypted_magic_envelope" in data:
             return True
     except Exception:
         pass
     # Public XML payload
     try:
-        xml = etree.fromstring(encode_if_text(payload))
+        xml = etree.fromstring(encode_if_text(request.body))
         if xml.tag == MAGIC_ENV_TAG:
             return True
     except Exception:
@@ -56,9 +57,15 @@ class Protocol:
 
     Original legacy implementation mostly taken from Pyaspora (https://github.com/lukeross/pyaspora).
     """
+    content = None
+    doc = None
+    get_contact_key = None
+    user = None
+    sender_handle = None
+
     def get_json_payload_magic_envelope(self, payload):
         """Encrypted JSON payload"""
-        private_key = self._get_user_key(self.user)
+        private_key = self._get_user_key()
         return EncryptedPayload.decrypt(payload=payload, private_key=private_key)
 
     def store_magic_envelope_doc(self, payload):
@@ -75,17 +82,18 @@ class Protocol:
             logger.debug("diaspora.protocol.store_magic_envelope_doc: json payload: %s", json_payload)
             self.doc = self.get_json_payload_magic_envelope(json_payload)
 
-    def receive(self,
-                payload: str,
-                user: UserType=None,
-                sender_key_fetcher: Callable[[str], str]=None,
-                skip_author_verification: bool=False) -> Tuple[str, str]:
+    def receive(
+            self,
+            request: RequestType,
+            user: UserType = None,
+            sender_key_fetcher: Callable[[str], str] = None,
+            skip_author_verification: bool = False) -> Tuple[str, str]:
         """Receive a payload.
 
         For testing purposes, `skip_author_verification` can be passed. Authorship will not be verified."""
         self.user = user
         self.get_contact_key = sender_key_fetcher
-        self.store_magic_envelope_doc(payload)
+        self.store_magic_envelope_doc(request.body)
         # Open payload and get actual message
         self.content = self.get_message_content()
         # Get sender handle
@@ -95,7 +103,7 @@ class Protocol:
             self.verify_signature()
         return self.sender_handle, self.content
 
-    def _get_user_key(self, user):
+    def _get_user_key(self):
         if not getattr(self.user, "private_key", None):
             raise EncryptedMessageError("Cannot decrypt private message without user key")
         return self.user.private_key
