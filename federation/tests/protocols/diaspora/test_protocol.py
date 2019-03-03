@@ -6,9 +6,10 @@ import pytest
 from federation.entities.diaspora.entities import DiasporaPost
 from federation.entities.diaspora.mappers import get_outbound_entity
 from federation.exceptions import NoSenderKeyFoundError, SignatureVerificationError
-from federation.protocols.diaspora.protocol import Protocol, identify_payload
+from federation.protocols.diaspora.protocol import Protocol, identify_request
 from federation.tests.fixtures.keys import PUBKEY, get_dummy_private_key
 from federation.tests.fixtures.payloads import DIASPORA_PUBLIC_PAYLOAD, DIASPORA_ENCRYPTED_PAYLOAD
+from federation.types import RequestType
 
 
 class MockUser:
@@ -46,7 +47,7 @@ class TestDiasporaProtocol(DiasporaTestBase):
         protocol = self.init_protocol()
         user = self.get_mock_user()
         protocol.get_message_content = self.mock_get_message_content
-        sender, content = protocol.receive(DIASPORA_PUBLIC_PAYLOAD, user, mock_get_contact_key,
+        sender, content = protocol.receive(RequestType(body=DIASPORA_PUBLIC_PAYLOAD), user, mock_get_contact_key,
                                            skip_author_verification=True)
         assert sender == "foobar@example.com"
         assert content == "<content />"
@@ -56,7 +57,7 @@ class TestDiasporaProtocol(DiasporaTestBase):
         protocol = self.init_protocol()
         user = self.get_mock_user()
         with pytest.raises(NoSenderKeyFoundError):
-            protocol.receive(DIASPORA_PUBLIC_PAYLOAD, user, mock_not_found_get_contact_key)
+            protocol.receive(RequestType(body=DIASPORA_PUBLIC_PAYLOAD), user, mock_not_found_get_contact_key)
         assert not mock_fetch.called
 
     @patch("federation.protocols.diaspora.protocol.fetch_public_key", autospec=True, return_value=None)
@@ -64,7 +65,7 @@ class TestDiasporaProtocol(DiasporaTestBase):
         protocol = self.init_protocol()
         user = self.get_mock_user()
         with pytest.raises(NoSenderKeyFoundError):
-            protocol.receive(DIASPORA_PUBLIC_PAYLOAD, user)
+            protocol.receive(RequestType(body=DIASPORA_PUBLIC_PAYLOAD), user)
         mock_fetch.assert_called_once_with("foobar@example.com")
 
     @patch("federation.protocols.diaspora.protocol.MagicEnvelope", autospec=True)
@@ -72,7 +73,7 @@ class TestDiasporaProtocol(DiasporaTestBase):
     def test_receive_creates_and_verifies_magic_envelope_instance(self, mock_fetch, mock_env):
         protocol = self.init_protocol()
         user = self.get_mock_user()
-        protocol.receive(DIASPORA_PUBLIC_PAYLOAD, user)
+        protocol.receive(RequestType(body=DIASPORA_PUBLIC_PAYLOAD), user)
         mock_env.assert_called_once_with(doc=protocol.doc, public_key="key", verify=True)
 
     @patch("federation.protocols.diaspora.protocol.fetch_public_key", autospec=True)
@@ -81,7 +82,7 @@ class TestDiasporaProtocol(DiasporaTestBase):
         protocol = self.init_protocol()
         user = self.get_mock_user()
         with pytest.raises(SignatureVerificationError):
-            protocol.receive(DIASPORA_PUBLIC_PAYLOAD, user)
+            protocol.receive(RequestType(body=DIASPORA_PUBLIC_PAYLOAD), user)
 
     def test_get_message_content(self):
         protocol = self.init_protocol()
@@ -90,14 +91,14 @@ class TestDiasporaProtocol(DiasporaTestBase):
         assert body == b"<status_message><foo>bar</foo></status_message>"
 
     def test_identify_payload_with_diaspora_public_payload(self):
-        assert identify_payload(DIASPORA_PUBLIC_PAYLOAD) == True
-        assert identify_payload(bytes(DIASPORA_PUBLIC_PAYLOAD, encoding="utf-8")) == True
+        assert identify_request(RequestType(body=DIASPORA_PUBLIC_PAYLOAD)) is True
+        assert identify_request(RequestType(body=bytes(DIASPORA_PUBLIC_PAYLOAD, encoding="utf-8"))) is True
 
     def test_identify_payload_with_diaspora_encrypted_payload(self):
-        assert identify_payload(DIASPORA_ENCRYPTED_PAYLOAD) == True
+        assert identify_request(RequestType(body=DIASPORA_ENCRYPTED_PAYLOAD)) is True
 
     def test_identify_payload_with_other_payload(self):
-        assert identify_payload("foobar not a diaspora protocol") == False
+        assert identify_request(RequestType(body="foobar not a diaspora protocol")) is False
 
     @patch("federation.protocols.diaspora.protocol.MagicEnvelope")
     def test_build_send_does_right_calls(self, mock_me):
