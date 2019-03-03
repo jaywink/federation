@@ -33,6 +33,7 @@
   * The high level inbound and outbound functions `inbound.handle_receive`, `outbound.handle_send` parameter `user` must now receive a `UserType` compatible object. This must have the attributes `id` and `private_key`. If Diaspora support is required then also `handle` and `guid` should exist. The type can be found as a class in `types.UserType`.
   * The high level inbound function `inbound.handle_receive` first parameter has been changed to `request` which must be a `RequestType` compatible object. This must have the attribute `body` which corrresponds to the old `payload` parameter. For ActivityPub inbound requests the object must also contain `headers`, `method` and `url`.
   * The outbound function `outbound.handle_send` parameter `recipients` structure has changed. It must now for Diaspora contain either a `handle` (public delivery) or tuple of `handle, RSAPublicKey, guid` for private delivery. For AP delivery either `url ID` for public delivery or tuple of `url ID, RSAPublicKey` for private delivery.
+  * The outbound function `outbound.handle_create_payload` now requires an extra third parameter for the protocol to use. This function should rarely need to be called directly - use `handle_send` instead which can handle both ActivityPub and Diaspora protocols.
   
 * **Backwards incompatible.** Generator `RFC3033Webfinger` and the related `rfc3033_webfinger_view` have been renamed to `RFC7033Webfinger` and `rfc7033_webfinger_view` to reflect the right RFC number.
 

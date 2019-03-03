@@ -1,36 +1,43 @@
+import importlib
 import json
 import logging
 from typing import List, Tuple, Union
 
 from Crypto.PublicKey.RSA import RsaKey
 
-from federation.entities.diaspora.mappers import get_outbound_entity
 from federation.entities.mixins import BaseEntity
-from federation.protocols.diaspora.protocol import Protocol
 from federation.types import UserType
 from federation.utils.diaspora import get_public_endpoint, get_private_endpoint
 from federation.utils.network import send_document
+from federation.utils.protocols import identify_recipient_protocol
 
 logger = logging.getLogger("federation")
 
 
 def handle_create_payload(
-        entity:BaseEntity, author_user:UserType, to_user_key:RsaKey=None, parent_user:UserType=None) -> str:
-    """Create a payload with the correct protocol.
+        entity: BaseEntity,
+        author_user: UserType,
+        protocol_name: str,
+        to_user_key: RsaKey = None,
+        parent_user: UserType = None,
+) -> str:
+    """Create a payload with the given protocol.
 
     Any given user arguments must have ``private_key`` and ``handle`` attributes.
 
     :arg entity: Entity object to send. Can be a base entity or a protocol specific one.
     :arg author_user: User authoring the object.
+    :arg protocol_name: Protocol to create payload for.
     :arg to_user_key: Public key of user private payload is being sent to, required for private payloads.
     :arg parent_user: (Optional) User object of the parent object, if there is one. This must be given for the
                       Diaspora protocol if a parent object exists, so that a proper ``parent_author_signature`` can
                       be generated. If given, the payload will be sent as this user.
     :returns: Built payload message (str)
     """
-    # Just use Diaspora protocol for now
-    protocol = Protocol()
-    outbound_entity = get_outbound_entity(entity, author_user.private_key)
+    mappers = importlib.import_module(f"federation.entities.{protocol_name}.mappers")
+    protocol = importlib.import_module(f"federation.protocols.{protocol_name}.protocol")
+    protocol = protocol.Protocol()
+    outbound_entity = mappers.get_outbound_entity(entity, author_user.private_key)
     if parent_user:
         outbound_entity.sign_with_parent(parent_user.private_key)
     send_as_user = parent_user if parent_user else author_user
@@ -41,8 +48,8 @@ def handle_create_payload(
 def handle_send(
         entity: BaseEntity,
         author_user: UserType,
-        recipients: List[Union[Tuple[str, RsaKey], Tuple[str, RsaKey, str], str]]=None,
-        parent_user: UserType=None,
+        recipients: List[Union[Tuple[str, RsaKey], Tuple[str, RsaKey, str], str]] = None,
+        parent_user: UserType = None,
 ) -> None:
     """Send an entity to remote servers.
 
@@ -74,6 +81,10 @@ def handle_send(
     """
     payloads = []
     public_payloads = {
+        "activitypub": {
+            "payload": None,
+            "urls": set(),
+        },
         "diaspora": {
             "payload": None,
             "urls": set(),
@@ -84,30 +95,52 @@ def handle_send(
     for recipient in recipients:
         id = recipient[0] if isinstance(recipient, tuple) else recipient
         public_key = recipient[1] if isinstance(recipient, tuple) and len(recipient) > 1 else None
+        recipient_protocol = identify_recipient_protocol(id)
         if public_key:
             # Private payload
-            try:
-                payload = handle_create_payload(entity, author_user, to_user_key=public_key, parent_user=parent_user)
-                payload = json.dumps(payload)
-            except Exception as ex:
-                logger.error("handle_send - failed to generate private payload for %s: %s", id, ex)
-                continue
-            # TODO get_private_endpoint should be imported per protocol
-            guid = recipient[2] if len(recipient) > 2 else None
-            url = get_private_endpoint(id, guid=guid)
-            payloads.append({
-                "urls": {url}, "payload": payload, "content_type": "application/json",
-            })
+            if recipient_protocol == 'activitypub':
+                try:
+                    payload = handle_create_payload(
+                        entity, author_user, "activitypub", to_user_key=public_key, parent_user=parent_user,
+                    )
+                    payload = json.dumps(payload)
+                except Exception as ex:
+                    logger.error("handle_send - failed to generate private payload for %s: %s", id, ex)
+                    continue
+                payloads.append({
+                    "urls": {id}, "payload": payload, "content_type": "application/activity+json",
+                })
+            elif recipient_protocol == 'diaspora':
+                try:
+                    payload = handle_create_payload(
+                        entity, author_user, "diaspora", to_user_key=public_key, parent_user=parent_user,
+                    )
+                    payload = json.dumps(payload)
+                except Exception as ex:
+                    logger.error("handle_send - failed to generate private payload for %s: %s", id, ex)
+                    continue
+                guid = recipient[2] if len(recipient) > 2 else None
+                url = get_private_endpoint(id, guid=guid)
+                payloads.append({
+                    "urls": {url}, "payload": payload, "content_type": "application/json",
+                })
         else:
-            if not public_payloads["diaspora"]["payload"]:
-                public_payloads["diaspora"]["payload"] = handle_create_payload(
-                    entity, author_user, parent_user=parent_user,
+            if not public_payloads[recipient_protocol]["payload"]:
+                public_payloads[recipient_protocol]["payload"] = handle_create_payload(
+                    entity, author_user, recipient_protocol, parent_user=parent_user,
                 )
-            # TODO get_public_endpoint should be imported per protocol
-            url = get_public_endpoint(id)
-            public_payloads["diaspora"]["urls"].add(url)
+            if recipient_protocol == 'activitypub':
+                public_payloads["activitypub"]["urls"].add(id)
+            elif recipient_protocol == 'diaspora':
+                url = get_public_endpoint(id)
+                public_payloads["diaspora"]["urls"].add(url)
 
     # Add public payload
+    if public_payloads["activitypub"]["payload"]:
+        payloads.append({
+            "urls": public_payloads["activitypub"]["urls"], "payload": public_payloads["activitypub"]["payload"],
+            "content_type": "application/activity+json",
+        })
     if public_payloads["diaspora"]["payload"]:
         payloads.append({
             "urls": public_payloads["diaspora"]["urls"], "payload": public_payloads["diaspora"]["payload"],

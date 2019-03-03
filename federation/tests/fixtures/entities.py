@@ -3,6 +3,7 @@ import uuid
 import pytest
 
 from federation.entities.activitypub.entities import ActivitypubPost
+from federation.entities.base import Profile
 from federation.entities.diaspora.entities import (
     DiasporaPost, DiasporaComment, DiasporaLike, DiasporaProfile, DiasporaRetraction,
     DiasporaContact, DiasporaReshare,
@@ -10,8 +11,18 @@ from federation.entities.diaspora.entities import (
 from federation.tests.factories.entities import ShareFactory
 from federation.tests.fixtures.payloads import DIASPORA_PUBLIC_PAYLOAD
 
-__all__ = ("diasporacomment", "diasporacontact", "diasporalike", "diasporapost", "diasporaprofile",
-           "diasporareshare", "diasporaretraction", "diaspora_public_payload", "activitypubpost")
+
+@pytest.fixture
+def profile():
+    return Profile(
+        raw_content="foobar", name="Bob Bobertson", public=True,
+        tag_list=["socialfederation", "federation"], image_urls={
+            "large": "urllarge", "medium": "urlmedium", "small": "urlsmall"
+        },
+        id="https://example.com/alice",
+        handle="alice@example.com",
+        guid="guid",
+    )
 
 
 @pytest.fixture

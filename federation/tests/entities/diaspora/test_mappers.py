@@ -102,7 +102,7 @@ class TestDiasporaEntityMappersReceive:
         mock_validate.assert_called_once_with()
 
     @patch("federation.entities.diaspora.mappers.retrieve_and_parse_profile", return_value=Mock(
-        id="diaspora://bob@example.com/profile/guidguidguidguidguid",
+        id="bob@example.com",
     ))
     def test_message_to_objects_profile(self, mock_parse):
         entities = message_to_objects(DIASPORA_PROFILE, "bob@example.com")
@@ -123,7 +123,7 @@ class TestDiasporaEntityMappersReceive:
         assert profile.tag_list == ["socialfederation", "federation"]
 
     @patch("federation.entities.diaspora.mappers.retrieve_and_parse_profile", return_value=Mock(
-        id="diaspora://bob@example.com/profile/guidguidguidguidguid",
+        id="bob@example.com",
     ))
     def test_message_to_objects_profile__first_name_only(self, mock_parse):
         entities = message_to_objects(DIASPORA_PROFILE_FIRST_NAME_ONLY, "bob@example.com")
@@ -132,7 +132,7 @@ class TestDiasporaEntityMappersReceive:
         assert profile.name == "Bob"
 
     @patch("federation.entities.diaspora.mappers.retrieve_and_parse_profile", return_value=Mock(
-        id="diaspora://bob@example.com/profile/guidguidguidguidguid",
+        id="bob@example.com",
     ))
     def test_message_to_objects_profile_survives_empty_tag_string(self, mock_parse):
         entities = message_to_objects(DIASPORA_PROFILE_EMPTY_TAGS, "bob@example.com")

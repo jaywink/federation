@@ -110,7 +110,7 @@ class TestDiasporaProtocol(DiasporaTestBase):
         private_key = get_dummy_private_key()
         outbound_entity = get_outbound_entity(entity, private_key)
         data = protocol.build_send(outbound_entity, from_user=Mock(
-            private_key=private_key, id="diaspora://johnny@localhost/profile/",
+            private_key=private_key, id="johnny@localhost",
             handle="johnny@localhost",
         ))
         mock_me.assert_called_once_with(
@@ -130,7 +130,7 @@ class TestDiasporaProtocol(DiasporaTestBase):
         private_key = get_dummy_private_key()
         outbound_entity = get_outbound_entity(entity, private_key)
         data = protocol.build_send(outbound_entity, to_user_key="public key", from_user=Mock(
-            private_key=private_key, id="diaspora://johnny@localhost/profile/",
+            private_key=private_key, id="johnny@localhost",
             handle="johnny@localhost",
         ))
         mock_me.assert_called_once_with(
@@ -148,10 +148,12 @@ class TestDiasporaProtocol(DiasporaTestBase):
         outbound_doc = etree.fromstring("<xml>foo</xml>")
         entity = Mock(outbound_doc=outbound_doc)
         from_user = Mock(
-            id="diaspora://foobar/profile/", private_key="barfoo", handle="foobar",
+            id="foobar@domain.tld", private_key="barfoo", handle="foobar@domain.tld",
         )
         protocol.build_send(entity, from_user)
-        mock_me.assert_called_once_with(b"<xml>foo</xml>", private_key=from_user.private_key, author_handle="foobar")
+        mock_me.assert_called_once_with(
+            b"<xml>foo</xml>", private_key=from_user.private_key, author_handle="foobar@domain.tld",
+        )
 
     @patch("federation.protocols.diaspora.protocol.EncryptedPayload.decrypt")
     def test_get_json_payload_magic_envelope(self, mock_decrypt):

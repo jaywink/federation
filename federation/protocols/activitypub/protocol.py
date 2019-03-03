@@ -1,9 +1,13 @@
 import json
 import logging
 import re
-from typing import Callable, Tuple
+from typing import Callable, Tuple, Union, Dict
+
+from Crypto.PublicKey.RSA import RsaKey
 
 from federation.entities.activitypub.enums import ActorType
+from federation.entities.mixins import BaseEntity
+from federation.protocols.activitypub.signing import verify_request_signature
 from federation.types import UserType, RequestType
 from federation.utils.text import decode_if_bytes
 
@@ -40,6 +44,22 @@ class Protocol:
     request = None
     user = None
 
+    def build_send(self, entity: BaseEntity, from_user: UserType, to_user_key: RsaKey = None) -> Union[str, Dict]:
+        """
+        Build POST data for sending out to remotes.
+
+        :param entity: The outbound ready entity for this protocol.
+        :param from_user: The user sending this payload. Must have ``private_key`` and ``id`` properties.
+        :param to_user_key: (Optional) Public key of user we're sending a private payload to.
+        :returns: dict or string depending on if private or public payload.
+        """
+        if hasattr(entity, "outbound_doc") and entity.outbound_doc is not None:
+            # Use pregenerated outbound document
+            rendered = entity.outbound_doc
+        else:
+            rendered = entity.to_as2()
+        return rendered
+
     def extract_actor(self):
         if self.payload.get('type') in ActorType.values():
             self.actor = self.payload.get('id')
@@ -68,5 +88,5 @@ class Protocol:
         return self.actor, self.payload
 
     def verify_signature(self):
-        # TODO implement
-        pass
+        # Verify the HTTP signature
+        verify_request_signature(self.request, self.get_contact_key(self.actor))

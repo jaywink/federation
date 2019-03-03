@@ -36,7 +36,9 @@ setup(
         "pycryptodome>=3.4.10",
         "python-dateutil>=2.4.0",
         "python-xrd>=0.1",
+        "pytz",
         "requests>=2.8.0",
+        "requests-http-signature-jaywink>=0.1.0.dev0",
     ],
     include_package_data=True,
     classifiers=[
