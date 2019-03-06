@@ -1,7 +1,7 @@
 import json
 import logging
 import xml
-from typing import Tuple, Optional, Callable
+from typing import Callable
 from urllib.parse import quote
 
 from lxml import html
@@ -134,51 +134,6 @@ def _get_element_attr_or_none(document, selector, attribute):
     if element:
         return element[0].get(attribute)
     return None
-
-
-def parse_diaspora_uri(uri: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
-    """Parse Diaspora URI scheme string.
-
-    See: https://diaspora.github.io/diaspora_federation/federation/diaspora_scheme.html
-
-    :return: tuple of (handle, entity_type, guid) or ``None``.
-    """
-    if not uri.startswith("diaspora://"):
-        return None, None, None
-    try:
-        handle, entity_type, guid = uri.replace("diaspora://", "").rsplit("/", maxsplit=2)
-    except ValueError:
-        return None, None, None
-    return handle, entity_type, guid
-
-
-def parse_profile_diaspora_id(id: str) -> Tuple[str, str]:
-    """
-    Parse profile handle and guid from diaspora ID.
-    """
-    handle, entity_type, guid = parse_diaspora_uri(id)
-    if entity_type != "profile":
-        raise ValueError(
-            "Invalid entity type %s to generate private remote endpoint for delivery. Must be 'profile'." % entity_type
-        )
-    return handle, guid
-
-
-def generate_diaspora_id(handle: str, entity_type: str, guid:str=None) -> str:
-    """
-    Generate a Diaspora ID from handle, type and guid.
-    """
-    return f"diaspora://{handle}/{entity_type}/{guid or ''}"
-
-
-def generate_diaspora_profile_id(handle: str, guid:str=None) -> str:
-    """
-    Generate a Diaspora profile ID from handle and guid.
-
-    Sometimes we don't know the guid if we just have a handle, but still we want to store it
-    in URI format.
-    """
-    return generate_diaspora_id(handle, "profile", guid=guid)
 
 
 def parse_profile_from_hcard(hcard: str, handle: str):

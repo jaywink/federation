@@ -148,7 +148,7 @@ class TestDiasporaRelayableMixin:
 
     @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
     def test_sign_with_parent(self, mock_validate):
-        entities = message_to_objects(DIASPORA_POST_COMMENT, "diaspora://alice@alice.diaspora.example.org/profile/",
+        entities = message_to_objects(DIASPORA_POST_COMMENT, "alice@alice.diaspora.example.org",
                                       sender_key_fetcher=Mock())
         entity = entities[0]
         entity.sign_with_parent(get_dummy_private_key())

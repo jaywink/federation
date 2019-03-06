@@ -10,9 +10,8 @@ from federation.tests.fixtures.payloads import DIASPORA_PUBLIC_PAYLOAD, DIASPORA
 from federation.utils.diaspora import (
     retrieve_diaspora_hcard, retrieve_diaspora_host_meta, _get_element_text_or_none,
     _get_element_attr_or_none, parse_profile_from_hcard, retrieve_and_parse_profile, retrieve_and_parse_content,
-    get_fetch_content_endpoint, fetch_public_key, parse_diaspora_uri,
-    retrieve_and_parse_diaspora_webfinger, parse_diaspora_webfinger, get_public_endpoint, get_private_endpoint,
-    parse_profile_diaspora_id, generate_diaspora_profile_id)
+    get_fetch_content_endpoint, fetch_public_key,
+    retrieve_and_parse_diaspora_webfinger, parse_diaspora_webfinger, get_public_endpoint, get_private_endpoint)
 
 
 class TestParseDiasporaWebfinger:
@@ -40,25 +39,6 @@ def test_fetch_public_key(mock_retrieve):
 def test_get_fetch_content_endpoint():
     assert get_fetch_content_endpoint("example.com", "status_message", "1234") == \
            "https://example.com/fetch/status_message/1234"
-
-
-def test_parse_diaspora_uri():
-    assert parse_diaspora_uri("diaspora://user@example.com/spam/eggs") == ("user@example.com", "spam", "eggs")
-    assert parse_diaspora_uri("diaspora://user@example.com/spam/") == ("user@example.com", "spam", "")
-    assert parse_diaspora_uri("diaspora://user@example.com/spam/eggs@spam") == ("user@example.com", "spam", "eggs@spam")
-    assert parse_diaspora_uri("https://user@example.com/spam/eggs") == (None, None, None)
-    assert parse_diaspora_uri("spam and eggs") == (None, None, None)
-
-
-def test_parse_profile_diaspora_id():
-    assert parse_profile_diaspora_id("diaspora://foobar@example.com/profile/1234") == ("foobar@example.com", "1234")
-    with pytest.raises(ValueError):
-        assert parse_profile_diaspora_id("diaspora://foobar@example.com/like/1234")
-
-
-def test_generate_diaspora_profile_id():
-    assert generate_diaspora_profile_id("foobar@example.com", "1234") == "diaspora://foobar@example.com/profile/1234"
-    assert generate_diaspora_profile_id("foobar@example.com") == "diaspora://foobar@example.com/profile/"
 
 
 class TestRetrieveDiasporaHCard:
