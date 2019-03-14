@@ -52,6 +52,7 @@ class ActivitypubPost(ActivitypubEntityMixin, Post):
 
 class ActivitypubProfile(ActivitypubEntityMixin, Profile):
     _type = ActorType.PERSON.value
+    public = True
 
     def to_as2(self) -> Dict:
         as2 = {

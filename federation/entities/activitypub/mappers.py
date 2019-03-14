@@ -90,11 +90,18 @@ def transform_attribute(key, value, cls):
     elif key == "icon":
         # TODO maybe we should ditch these size constants and instead have a more flexible dict for images
         # so based on protocol there would either be one url or many by size name
-        return {"image_urls": {
-            "small": value,
-            "medium": value,
-            "large": value,
-        }}
+        if isinstance(value, dict):
+            return {"image_urls": {
+                "small": value['url'],
+                "medium": value['url'],
+                "large": value['url'],
+            }}
+        else:
+            return {"image_urls": {
+                "small": value,
+                "medium": value,
+                "large": value,
+            }}
     elif key == "name":
         return {"name": value}
     elif key == "object":
@@ -106,6 +113,8 @@ def transform_attribute(key, value, cls):
         return {"username": value}
     elif key == "publicKey":
         return {"public_key": value.get('publicKeyPem', '')}
+    elif key == "summary":
+        return {"raw_content": value}
     elif key == "url":
         return {"url": value}
     return {}

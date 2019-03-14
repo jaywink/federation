@@ -2,7 +2,7 @@ import pytest
 
 from federation.entities.activitypub.entities import ActivitypubFollow
 from federation.entities.activitypub.mappers import message_to_objects
-from federation.tests.fixtures.payloads import ACTIVITYPUB_FOLLOW
+from federation.tests.fixtures.payloads import ACTIVITYPUB_FOLLOW, ACTIVITYPUB_PROFILE
 
 
 class TestActivitypubEntityMappersReceive:
@@ -97,24 +97,35 @@ class TestActivitypubEntityMappersReceive:
         ]
         mock_validate.assert_called_once_with()
 
-    @pytest.mark.skip
-    def test_message_to_objects_profile(self, mock_parse):
-        entities = message_to_objects(DIASPORA_PROFILE, "bob@example.com")
+    def test_message_to_objects_profile(self):
+        entities = message_to_objects(ACTIVITYPUB_PROFILE, "http://example.com/1234")
         assert len(entities) == 1
         profile = entities[0]
-        assert profile.handle == "bob@example.com"
-        assert profile.name == "Bob Bobertson"
+        assert profile.id == "https://diaspodon.fr/users/jaywink"
+        assert profile.handle == ""
+        assert profile.name == "Jason Robinson"
         assert profile.image_urls == {
-            "large": "https://example.com/uploads/images/thumb_large_c833747578b5.jpg",
-            "medium": "https://example.com/uploads/images/thumb_medium_c8b1aab04f3.jpg",
-            "small": "https://example.com/uploads/images/thumb_small_c8b147578b5.jpg",
+            "large": "https://diaspodon.fr/system/accounts/avatars/000/033/155/original/pnc__picked_media_be51984c-4"
+                     "3e9-4266-9b9a-b74a61ae4167.jpg?1538505110",
+            "medium": "https://diaspodon.fr/system/accounts/avatars/000/033/155/original/pnc__picked_media_be51984c-4"
+                      "3e9-4266-9b9a-b74a61ae4167.jpg?1538505110",
+            "small": "https://diaspodon.fr/system/accounts/avatars/000/033/155/original/pnc__picked_media_be51984c-4"
+                     "3e9-4266-9b9a-b74a61ae4167.jpg?1538505110",
         }
         assert profile.gender == ""
-        assert profile.raw_content == "A cool bio"
-        assert profile.location == "Helsinki"
-        assert profile.public == True
-        assert profile.nsfw == False
-        assert profile.tag_list == ["socialfederation", "federation"]
+        assert profile.raw_content == "<p>Temp account while implementing AP for Socialhome.</p><p><a href=\"" \
+                                      "https://jasonrobinson.me\" rel=\"nofollow noopener\" target=\"_blank\">" \
+                                      "<span class=\"invisible\">https://</span><span class=\"\">jasonrobinson." \
+                                      "me</span><span class=\"invisible\"></span></a> / <a href=\"https://social" \
+                                      "home.network\" rel=\"nofollow noopener\" target=\"_blank\"><span class=\"i" \
+                                      "nvisible\">https://</span><span class=\"\">socialhome.network</span><span c" \
+                                      "lass=\"invisible\"></span></a> / <a href=\"https://feneas.org\" rel=\"nofoll" \
+                                      "ow noopener\" target=\"_blank\"><span class=\"invisible\">https://</span><spa" \
+                                      "n class=\"\">feneas.org</span><span class=\"invisible\"></span></a></p>"
+        assert profile.location == ""
+        assert profile.public is True
+        assert profile.nsfw is False
+        assert profile.tag_list == []
 
     @pytest.mark.skip
     def test_message_to_objects_receiving_actor_id_is_saved(self):
