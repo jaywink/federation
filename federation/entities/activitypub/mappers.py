@@ -68,7 +68,7 @@ def get_outbound_entity(entity: BaseEntity, private_key: str):
 
 
 def message_to_objects(
-        message: Dict, sender: str, sender_key_fetcher:Callable[[str], str]=None, user: UserType =None,
+        message: Dict, sender: str, sender_key_fetcher: Callable[[str], str] = None, user: UserType = None,
 ) -> List:
     """
     Takes in a message extracted by a protocol and maps it to entities.
