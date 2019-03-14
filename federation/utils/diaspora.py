@@ -176,7 +176,7 @@ def retrieve_and_parse_content(
     if not validate_handle(handle):
         return
     _username, domain = handle.split("@")
-    url = get_fetch_content_endpoint(domain, entity_type, guid)
+    url = get_fetch_content_endpoint(domain, entity_type.lower(), guid)
     document, status_code, error = fetch_document(url)
     if status_code == 200:
         _sender, _protocol, entities = handle_receive(document, sender_key_fetcher=sender_key_fetcher)
