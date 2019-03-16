@@ -7,6 +7,7 @@ from lxml import html
 from federation.entities.base import Profile
 from federation.hostmeta.generators import DiasporaHostMeta, generate_hcard
 from federation.tests.fixtures.payloads import DIASPORA_PUBLIC_PAYLOAD, DIASPORA_WEBFINGER_JSON, DIASPORA_WEBFINGER
+from federation.types import RequestType
 from federation.utils.diaspora import (
     retrieve_diaspora_hcard, retrieve_diaspora_host_meta, _get_element_text_or_none,
     _get_element_attr_or_none, parse_profile_from_hcard, retrieve_and_parse_profile, retrieve_and_parse_content,
@@ -146,7 +147,7 @@ class TestRetrieveAndParseContent:
         entity = retrieve_and_parse_content(
             guid="eggs", handle="user@example.com", entity_type="spam", sender_key_fetcher=sum,
         )
-        mock_handle.assert_called_once_with(DIASPORA_PUBLIC_PAYLOAD, sender_key_fetcher=sum)
+        mock_handle.assert_called_once_with(RequestType(body=DIASPORA_PUBLIC_PAYLOAD), sender_key_fetcher=sum)
         assert entity == "entity"
 
     @patch("federation.utils.diaspora.fetch_document", return_value=(None, None, Exception()))

@@ -10,6 +10,15 @@ DIASPORA_PUBLIC_PAYLOAD = """<?xml version='1.0' encoding='UTF-8'?>
 </me:env>
 """
 
+DIASPORA_RESHARE_PAYLOAD = """<?xml version="1.0" encoding="UTF-8"?>
+<me:env xmlns:me="http://salmon-protocol.org/ns/magic-env">
+  <me:data type="application/xml">PHN0YXR1c19tZXNzYWdlPgogIDxhdXRob3I-YXJ0c291bmQyQGRpYXNwLmV1PC9hdXRob3I-CiAgPGd1aWQ-NjI2NGNjNzAyOGM5MDEzNzQyODk0MDYxODYyYjhlN2I8L2d1aWQ-CiAgPGNyZWF0ZWRfYXQ-MjAxOS0wMy0xNFQyMDo1NToxMlo8L2NyZWF0ZWRfYXQ-CiAgPHB1YmxpYz50cnVlPC9wdWJsaWM-CiAgPHRleHQ-KipQbGVhc2Ugc3RheSBvZmYgdGhlIGdyYXNzIC4uLiBvcioqJiN4RDsKIVtdKGh0dHBzOi8vNjYubWVkaWEudHVtYmxyLmNvbS9kNGViMTMyMTZlZWY5ODE1ZjMzNTBhZDk1OTk5MmYxYy90dW1ibHJfcG80aXRjNzJKbjF5M3F1d25vMV81MDAuanBnKSYjeEQ7CiNzdGF5b2ZmPC90ZXh0Pgo8L3N0YXR1c19tZXNzYWdlPg==</me:data>
+  <me:encoding>base64url</me:encoding>
+  <me:alg>RSA-SHA256</me:alg>
+  <me:sig key_id="YXJ0c291bmQyQGRpYXNwLmV1">VWvuHE-HNgQGoCUqlNOEzl4qmrW3hl5qv4CwFu3-WXHeaB2ULGNDDbqO2sWE5R4TFjT-3WNLyma1QnL3dnozmnzdUT1DnL_Il2BwTTEUa3qHl1qaepikPWF_VKDTez-NJUzQCOFGENZcBSTfBy7yP0dErHhewaLXcXg37nCLyTN2elftE7x80BDXMZouApIMht2NvSwH91tIRw474Tuce2316JtVEdGhiGgzZ5iIF7BycUKw4Redxdc2RPvgJNWWqvgO6jYyc7rgzRtj1a_K7gA30Y280k6DkwNut8tCcUqU1FCN5AWT2S_vF8DIG3MWEBtqs7lDxDcjKBcQsXS9IY9sSwKr7kfT6wh6weHr2EbBv9ZPtbEL3_PY_orGLoz7MeJrO9bY2K59SptAs66esNJaqtQvlnbYXB8i6xLLWsTBc9t9WEx1EsBzLN5gak58evUoQVtVXQZ2kdR_rYR0U1dhVDWihL2fc_x7dkR2W8QTZKXPbdQwfday6msSOqQLWQ7NzJTh5djvkapY6Clu-ka_mMi7Avm0bzK5bEoGVUQidRM6Gq_e6hoPvq5J3-0SyAacQvP1sa9XEMHhvdumlnFPuwrcLHRb2utWlUS2L5BjXSlOt-k-HhSXFi5ClxFJL_-LqPeMOgCS07ogfeN_ZHfwNTMDdToVkBPi11sM0PY=</me:sig>
+</me:env>
+"""
+
 DIASPORA_ENCRYPTED_PAYLOAD = """{
   "aes_key": "...",
   "encrypted_magic_envelope": "..."

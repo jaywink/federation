@@ -8,7 +8,8 @@ from federation.entities.diaspora.mappers import get_outbound_entity
 from federation.exceptions import NoSenderKeyFoundError, SignatureVerificationError
 from federation.protocols.diaspora.protocol import Protocol, identify_request
 from federation.tests.fixtures.keys import PUBKEY, get_dummy_private_key
-from federation.tests.fixtures.payloads import DIASPORA_PUBLIC_PAYLOAD, DIASPORA_ENCRYPTED_PAYLOAD
+from federation.tests.fixtures.payloads import DIASPORA_PUBLIC_PAYLOAD, DIASPORA_ENCRYPTED_PAYLOAD, \
+    DIASPORA_RESHARE_PAYLOAD
 from federation.types import RequestType
 
 
@@ -99,6 +100,9 @@ class TestDiasporaProtocol(DiasporaTestBase):
 
     def test_identify_payload_with_other_payload(self):
         assert identify_request(RequestType(body="foobar not a diaspora protocol")) is False
+
+    def test_identify_payload_with_reshare(self):
+        assert identify_request(RequestType(body=DIASPORA_RESHARE_PAYLOAD)) is True
 
     @patch("federation.protocols.diaspora.protocol.MagicEnvelope")
     def test_build_send_does_right_calls(self, mock_me):
