@@ -12,7 +12,7 @@ from requests_http_signature import HTTPSignatureHeaderAuth
 
 from federation.types import RequestType
 from federation.utils.network import parse_http_date
-from federation.utils.text import decode_if_bytes
+from federation.utils.text import decode_if_bytes, encode_if_text
 
 logger = logging.getLogger("federation")
 
@@ -34,7 +34,7 @@ def verify_request_signature(request: RequestType, public_key: Union[str, bytes]
     """
     Verify HTTP signature in request against a public key.
     """
-    key = decode_if_bytes(public_key)
+    key = encode_if_text(public_key)
     date_header = request.headers.get("Date")
     if not date_header:
         raise ValueError("Rquest Date header is missing")
