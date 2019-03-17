@@ -8,24 +8,25 @@ import logging
 from typing import Union
 
 import pytz
+from Crypto.PublicKey.RSA import RsaKey
 from requests_http_signature import HTTPSignatureHeaderAuth
 
 from federation.types import RequestType
 from federation.utils.network import parse_http_date
-from federation.utils.text import decode_if_bytes, encode_if_text
+from federation.utils.text import encode_if_text
 
 logger = logging.getLogger("federation")
 
 
-def get_http_authentication(private_key: Union[str, bytes], private_key_id: str) -> HTTPSignatureHeaderAuth:
+def get_http_authentication(private_key: RsaKey, private_key_id: str) -> HTTPSignatureHeaderAuth:
     """
     Get HTTP signature authentication for a request.
     """
-    key = decode_if_bytes(private_key)
+    key = private_key.exportKey()
     return HTTPSignatureHeaderAuth(
         headers=["(request-target)", "user-agent", "host", "date"],
         algorithm="rsa-sha256",
-        key=key.encode("utf-8"),
+        key=key,
         key_id=private_key_id,
     )
 
