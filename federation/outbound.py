@@ -114,7 +114,8 @@ def handle_send(
                     continue
                 payloads.append({
                     "auth": get_http_authentication(author_user.private_key, f"{author_user.id}#main-key"),
-                    "payload": payload, "content_type": "application/activity+json",
+                    "payload": payload,
+                    "content_type": 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
                     "urls": {id},
                 })
             elif recipient_protocol == 'diaspora':
@@ -148,7 +149,7 @@ def handle_send(
             "auth": get_http_authentication(author_user.private_key, f"{author_user.id}#main-key"),
             "urls": public_payloads["activitypub"]["urls"],
             "payload": public_payloads["activitypub"]["payload"],
-            "content_type": "application/activity+json",
+            "content_type": 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
         })
     if public_payloads["diaspora"]["payload"]:
         payloads.append({
