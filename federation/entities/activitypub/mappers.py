@@ -1,4 +1,4 @@
-from typing import List, Callable, Dict
+from typing import List, Callable, Dict, Union
 
 from federation.entities.activitypub.entities import ActivitypubFollow, ActivitypubProfile, ActivitypubAccept
 from federation.entities.base import Follow, Profile, Accept
@@ -85,51 +85,59 @@ def message_to_objects(
     return element_to_objects(message, sender, sender_key_fetcher, user)
 
 
-def transform_attribute(key, value, cls):
+def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dict, cls) -> None:
     if value is None:
         value = ""
     if key == "id":
         if cls == ActivitypubProfile:
-            return {"id": value}
+            transformed["id"] = value
         else:
-            return {"activity_id": value}
+            transformed["activity_id"] = value
     elif key == "actor":
-        return {"actor_id": value}
+        transformed["actor_id"] = value
+    elif key == "inboxes" and isinstance(value, dict):
+        if "inboxes" not in transformed:
+            transformed["inboxes"] = {"private": None, "public": None}
+        transformed["endpoints"]["public"] = value.get("sharedInbox")
     elif key == "icon":
         # TODO maybe we should ditch these size constants and instead have a more flexible dict for images
         # so based on protocol there would either be one url or many by size name
         if isinstance(value, dict):
-            return {"image_urls": {
+            transformed["image_urls"] = {
                 "small": value['url'],
                 "medium": value['url'],
                 "large": value['url'],
-            }}
+            }
         else:
-            return {"image_urls": {
+            transformed["image_urls"] = {
                 "small": value,
                 "medium": value,
                 "large": value,
-            }}
+            }
+    elif key == "inbox":
+        if "inboxes" not in transformed:
+            transformed["inboxes"] = {"private": None, "public": None}
+        transformed["inboxes"]["private"] = value
     elif key == "name":
-        return {"name": value}
+        transformed["name"] = value
     elif key == "object":
         if isinstance(value, dict):
-            return transform_attributes(value, cls)
+            transform_attributes(value, cls, transformed)
         else:
-            return {"target_id": value}
+            transformed["target_id"] = value
     elif key == "preferredUsername":
-        return {"username": value}
+        transformed["username"] = value
     elif key == "publicKey":
-        return {"public_key": value.get('publicKeyPem', '')}
+        transformed["public_key"] = value.get('publicKeyPem', '')
     elif key == "summary":
-        return {"raw_content": value}
+        transformed["raw_content"] = value
     elif key == "url":
-        return {"url": value}
-    return {}
+        transformed["url"] = value
 
 
-def transform_attributes(payload, cls):
-    transformed = {}
+def transform_attributes(payload: Dict, cls, transformed: Dict = None) -> Dict:
+    if not transformed:
+        transformed = {}
     for key, value in payload.items():
-        transformed.update(transform_attribute(key, value, cls))
+        transform_attribute(key, value, transformed, cls)
     return transformed

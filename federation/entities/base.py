@@ -1,3 +1,5 @@
+from typing import Dict
+
 from dirty_validators.basic import Email
 
 from federation.entities.mixins import (
@@ -105,12 +107,17 @@ class Profile(CreatedAtMixin, OptionalRawContentMixin, PublicMixin):
     tag_list = None
     url = ""
     username = ""
+    inboxes: Dict = None
 
     _allowed_children = (Image,)
 
     def __init__(self, *args, **kwargs):
         self.image_urls = {
             "small": "", "medium": "", "large": ""
+        }
+        self.inboxes = {
+            "private": None,
+            "public": None,
         }
         self.tag_list = []
         super().__init__(*args, **kwargs)

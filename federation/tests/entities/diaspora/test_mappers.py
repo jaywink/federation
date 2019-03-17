@@ -237,7 +237,7 @@ class TestGetOutboundEntity:
         assert get_outbound_entity(entity, private_key) == entity
         entity = DiasporaComment()
         assert get_outbound_entity(entity, private_key) == entity
-        entity = DiasporaProfile()
+        entity = DiasporaProfile(handle="foobar@example.com", guid="1234")
         assert get_outbound_entity(entity, private_key) == entity
         entity = DiasporaContact()
         assert get_outbound_entity(entity, private_key) == entity
@@ -258,7 +258,7 @@ class TestGetOutboundEntity:
 
 
     def test_profile_is_converted_to_diasporaprofile(self, private_key):
-        entity = Profile()
+        entity = Profile(handle="foobar@example.com", guid="1234")
         assert isinstance(get_outbound_entity(entity, private_key), DiasporaProfile)
 
     def test_other_reaction_raises(self, private_key):

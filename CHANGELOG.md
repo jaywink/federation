@@ -18,6 +18,10 @@
 
 * Added network utility `network.fetch_host_ip` to fetch IP by hostname.
 
+* Entities of type `Profile` now have a dictionary of `inboxes`, with two elements, `private` and `public`. These should be URL's indicating where to send payloads for the recipient.
+
+  ActivityPub profiles will parse these values from incoming profile documents. Diaspora entities will default to the inboxes in the specification.
+
 ### Changed
 
 * **Backwards incompatible.** Lowest compatible Python version is now 3.6.

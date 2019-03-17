@@ -43,7 +43,9 @@ class TestHandleSend:
         # Ensure second call is a private activitypub payload
         args, kwargs = mock_send.call_args_list[1]
         assert args[0] == "https://127.0.0.1/foobar"
-        assert kwargs['headers'] == {'Content-Type': 'application/activity+json'}
+        assert kwargs['headers'] == {
+            'Content-Type': 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
+        }
 
         # Ensure public payloads and recipients, one per unique host
         args1, kwargs1 = mock_send.call_args_list[2]
@@ -57,6 +59,8 @@ class TestHandleSend:
         }
         assert args2[1].startswith("<me:env xmlns:me=")
         assert args3[1].startswith("<me:env xmlns:me=")
-        assert kwargs1['headers'] == {'Content-Type': 'application/activity+json'}
+        assert kwargs1['headers'] == {
+            'Content-Type': 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
+        }
         assert kwargs2['headers'] == {'Content-Type': 'application/magic-envelope+xml'}
         assert kwargs3['headers'] == {'Content-Type': 'application/magic-envelope+xml'}

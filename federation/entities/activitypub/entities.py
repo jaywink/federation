@@ -107,12 +107,12 @@ class ActivitypubProfile(ActivitypubEntityMixin, Profile):
                 CONTEXT_MANUALLY_APPROVES_FOLLOWERS,
             ],
             "endpoints": {
-                "sharedInbox": f"{with_slash(self.base_url)}ap/inbox/",  # TODO just get from config
+                "sharedInbox": self.inboxes["public"],
             },
             "followers": f"{with_slash(self.id)}followers/",
             "following": f"{with_slash(self.id)}following/",
             "id": self.id,
-            "inbox": f"{with_slash(self.id)}inbox/",
+            "inbox": self.inboxes["private"],
             "manuallyApprovesFollowers": False,
             "name": self.name,
             "outbox": f"{with_slash(self.id)}outbox/",
