@@ -108,7 +108,7 @@ def handle_send(
                         entity, author_user, "activitypub", to_user_key=public_key, parent_user=parent_user,
                     )
                     payload["to"] = id
-                    payload = json.dumps(payload)
+                    payload = json.dumps(payload).encode("utf-8")
                 except Exception as ex:
                     logger.error("handle_send - failed to generate private payload for %s: %s", id, ex)
                     continue
