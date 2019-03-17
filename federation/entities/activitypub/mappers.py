@@ -1,11 +1,12 @@
 from typing import List, Callable, Dict
 
-from federation.entities.activitypub.entities import ActivitypubFollow, ActivitypubProfile
-from federation.entities.base import Follow, Profile
+from federation.entities.activitypub.entities import ActivitypubFollow, ActivitypubProfile, ActivitypubAccept
+from federation.entities.base import Follow, Profile, Accept
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType
 
 MAPPINGS = {
+    "Accept": ActivitypubAccept,
     "Follow": ActivitypubFollow,
     "Person": ActivitypubProfile,
 }
@@ -33,7 +34,7 @@ def element_to_objects(
     return entities
 
 
-def get_outbound_entity(entity: BaseEntity, private_key: str):
+def get_outbound_entity(entity: BaseEntity, private_key):
     """Get the correct outbound entity for this protocol.
 
     We might have to look at entity values to decide the correct outbound entity.
@@ -51,9 +52,11 @@ def get_outbound_entity(entity: BaseEntity, private_key: str):
         return entity
     outbound = None
     cls = entity.__class__
-    if cls in [ActivitypubFollow, ActivitypubProfile]:
+    if cls in [ActivitypubAccept, ActivitypubFollow, ActivitypubProfile]:
         # Already fine
         outbound = entity
+    elif cls == Accept:
+        outbound = ActivitypubAccept.from_base(entity)
     elif cls == Follow:
         outbound = ActivitypubFollow.from_base(entity)
     elif cls == Profile:
