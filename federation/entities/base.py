@@ -5,6 +5,11 @@ from federation.entities.mixins import (
     EntityTypeMixin, ProviderDisplayNameMixin)
 
 
+class Accept(CreatedAtMixin, TargetIDMixin):
+    """An acceptance message for some target."""
+    pass
+
+
 class Image(PublicMixin, OptionalRawContentMixin, CreatedAtMixin):
     """Reflects a single image, possibly linked to another object."""
     remote_path = ""

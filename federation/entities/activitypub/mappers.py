@@ -23,7 +23,12 @@ def element_to_objects(
         return []
 
     transformed = transform_attributes(payload, cls)
-    entities.append(cls(**transformed))
+    entity = cls(**transformed)
+
+    if hasattr(entity, "post_receive"):
+        entity.post_receive(transformed)
+
+    entities.append(entity)
 
     return entities
 
