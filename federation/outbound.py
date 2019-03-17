@@ -6,6 +6,7 @@ from typing import List, Tuple, Union
 from Crypto.PublicKey.RSA import RsaKey
 
 from federation.entities.mixins import BaseEntity
+from federation.protocols.activitypub.signing import get_http_authentication
 from federation.types import UserType
 from federation.utils.diaspora import get_public_endpoint, get_private_endpoint
 from federation.utils.network import send_document
@@ -82,10 +83,12 @@ def handle_send(
     payloads = []
     public_payloads = {
         "activitypub": {
+            "auth": None,
             "payload": None,
             "urls": set(),
         },
         "diaspora": {
+            "auth": None,
             "payload": None,
             "urls": set(),
         },
@@ -108,7 +111,9 @@ def handle_send(
                     logger.error("handle_send - failed to generate private payload for %s: %s", id, ex)
                     continue
                 payloads.append({
-                    "urls": {id}, "payload": payload, "content_type": "application/activity+json",
+                    "auth": get_http_authentication(author_user.private_key, f"{author_user.id}#main-key"),
+                    "payload": payload, "content_type": "application/activity+json",
+                    "urls": {id},
                 })
             elif recipient_protocol == 'diaspora':
                 try:
@@ -122,7 +127,7 @@ def handle_send(
                 guid = recipient[2] if len(recipient) > 2 else None
                 url = get_private_endpoint(id, guid=guid)
                 payloads.append({
-                    "urls": {url}, "payload": payload, "content_type": "application/json",
+                    "urls": {url}, "payload": payload, "content_type": "application/json", "auth": None,
                 })
         else:
             if not public_payloads[recipient_protocol]["payload"]:
@@ -138,13 +143,15 @@ def handle_send(
     # Add public payload
     if public_payloads["activitypub"]["payload"]:
         payloads.append({
-            "urls": public_payloads["activitypub"]["urls"], "payload": public_payloads["activitypub"]["payload"],
+            "auth": get_http_authentication(author_user.private_key, f"{author_user.id}#main-key"),
+            "urls": public_payloads["activitypub"]["urls"],
+            "payload": public_payloads["activitypub"]["payload"],
             "content_type": "application/activity+json",
         })
     if public_payloads["diaspora"]["payload"]:
         payloads.append({
             "urls": public_payloads["diaspora"]["urls"], "payload": public_payloads["diaspora"]["payload"],
-            "content_type": "application/magic-envelope+xml",
+            "content_type": "application/magic-envelope+xml", "auth": None,
         })
 
     logger.debug("handle_send - %s", payloads)
@@ -153,6 +160,11 @@ def handle_send(
     for payload in payloads:
         for url in payload["urls"]:
             try:
-                send_document(url, payload["payload"], headers={"Content-Type": payload["content_type"]})
+                send_document(
+                    url,
+                    payload["payload"],
+                    auth=payload["auth"],
+                    headers={"Content-Type": payload["content_type"]},
+                )
             except Exception as ex:
                 logger.error("handle_send - failed to send payload to %s: %s, payload: %s", url, ex, payload["payload"])
