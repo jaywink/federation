@@ -98,7 +98,8 @@ def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dic
     elif key == "inboxes" and isinstance(value, dict):
         if "inboxes" not in transformed:
             transformed["inboxes"] = {"private": None, "public": None}
-        transformed["endpoints"]["public"] = value.get("sharedInbox")
+        if value.get('sharedInbox'):
+            transformed["endpoints"]["public"] = value.get("sharedInbox")
     elif key == "icon":
         # TODO maybe we should ditch these size constants and instead have a more flexible dict for images
         # so based on protocol there would either be one url or many by size name
@@ -118,6 +119,8 @@ def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dic
         if "inboxes" not in transformed:
             transformed["inboxes"] = {"private": None, "public": None}
         transformed["inboxes"]["private"] = value
+        if not transformed["inboxes"]["public"]:
+            transformed["inboxes"]["public"] = value
     elif key == "name":
         transformed["name"] = value
     elif key == "object":
