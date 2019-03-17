@@ -99,13 +99,15 @@ def handle_send(
         id = recipient[0] if isinstance(recipient, tuple) else recipient
         public_key = recipient[1] if isinstance(recipient, tuple) and len(recipient) > 1 else None
         recipient_protocol = identify_recipient_protocol(id)
-        if public_key:
+        # TODO for now send all AP payloads as "private" ie one per url
+        if public_key or recipient_protocol == "activitypub":
             # Private payload
             if recipient_protocol == 'activitypub':
                 try:
                     payload = handle_create_payload(
                         entity, author_user, "activitypub", to_user_key=public_key, parent_user=parent_user,
                     )
+                    payload["to"] = id
                     payload = json.dumps(payload)
                 except Exception as ex:
                     logger.error("handle_send - failed to generate private payload for %s: %s", id, ex)
