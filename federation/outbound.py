@@ -1,16 +1,15 @@
 import importlib
 import json
 import logging
-from typing import List, Tuple, Union
+from typing import List, Dict
 
 from Crypto.PublicKey.RSA import RsaKey
+from iteration_utilities import unique_everseen
 
 from federation.entities.mixins import BaseEntity
 from federation.protocols.activitypub.signing import get_http_authentication
 from federation.types import UserType
-from federation.utils.diaspora import get_public_endpoint, get_private_endpoint
 from federation.utils.network import send_document
-from federation.utils.protocols import identify_recipient_protocol
 
 logger = logging.getLogger("federation")
 
@@ -49,32 +48,56 @@ def handle_create_payload(
 def handle_send(
         entity: BaseEntity,
         author_user: UserType,
-        recipients: List[Union[Tuple[str, RsaKey], Tuple[str, RsaKey, str], str]] = None,
+        recipients: List[Dict],
         parent_user: UserType = None,
 ) -> None:
     """Send an entity to remote servers.
 
-    Using this we will build a list of payloads per protocol, after resolving any that need to be guessed or
-    looked up over the network. After that, each recipient will get the generated protocol payload delivered.
+    Using this we will build a list of payloads per protocol. After that, each recipient will get the generated
+    protocol payload delivered. Delivery to the same endpoint will only be done once so it's ok to include
+    the same endpoint as a receiver multiple times.
 
-    Any given user arguments must have ``private_key`` and ``id`` attributes.
+    Any given user arguments must have ``private_key`` and ``fid`` attributes.
 
     :arg entity: Entity object to send. Can be a base entity or a protocol specific one.
     :arg author_user: User authoring the object.
-    :arg recipients: A list of recipients to delivery to. Each recipient is a tuple
-                     containing at minimum the "id".
-                     For private deliveries, optionally "public key" (all protocols) and "guid" (diaspora
-                     protocol) are required.
-                     Instead of a tuple, for public deliveries the "id" as str is also ok.
-                     If public key and guid are provided, Diaspora protocol delivery will be made as an encrypted
-                     private delivery.
+    :arg recipients: A list of recipients to delivery to. Each recipient is a dict
+                     containing at minimum the "fid", "public" and "protocol" keys.
+
+                     For ActivityPub and Diaspora payloads, "fid" should be an URL of the endpoint to deliver to.
+
+                     The "protocol" should be a protocol name that is known for this recipient.
+
+                     The "public" value should be a boolean to indicate whether the payload should be flagged as a
+                     public payload.
+
+                     TODO: support guessing the protocol over networks? Would need caching of results
+
+                     For private deliveries to Diaspora protocol recipients, "public_key" is also required.
+
                      For example
                      [
-                         ("user@domain.tld", <RSAPublicKey object>, '1234-5678-0123-4567'),
-                         ("user@domain2.tld", None, None),
-                         "user@domain3.tld",
-                         "https://domain4.tld/sharedinbox/",
-                         ("https://domain4.tld/sharedinbox/", <RSAPublicKey object>),
+                        {
+                            "fid": "https://domain.tld/receive/users/1234-5678-0123-4567",
+                            "protocol": "diaspora",
+                            "public": False,
+                            "public_key": <RSAPublicKey object>,
+                        },
+                        {
+                            "fid": "https://domain2.tld/receive/public",
+                            "protocol": "diaspora",
+                            "public": True,
+                        },
+                        {
+                            "fid": "https://domain4.tld/sharedinbox/",
+                            "protocol": "activitypub",
+                            "public": True,
+                        },
+                        {
+                            "fid": "https://domain4.tld/profiles/jill",
+                            "protocol": "activitypub",
+                            "public": False,
+                        },
                      ]
     :arg parent_user: (Optional) User object of the parent object, if there is one. This must be given for the
                       Diaspora protocol if a parent object exists, so that a proper ``parent_author_signature`` can
@@ -94,63 +117,60 @@ def handle_send(
         },
     }
 
+    # Flatten to unique recipients
+    unique_recipients = unique_everseen(recipients)
+
     # Generate payloads and collect urls
-    for recipient in recipients:
-        id = recipient[0] if isinstance(recipient, tuple) else recipient
-        public_key = recipient[1] if isinstance(recipient, tuple) and len(recipient) > 1 else None
-        recipient_protocol = identify_recipient_protocol(id)
-        # TODO for now send all AP payloads as "private" ie one per url
-        if public_key or recipient_protocol == "activitypub":
-            # Private payload
-            if recipient_protocol == 'activitypub':
-                try:
-                    payload = handle_create_payload(
-                        entity, author_user, "activitypub", to_user_key=public_key, parent_user=parent_user,
+    for recipient in unique_recipients:
+        fid = recipient["fid"]
+        public_key = recipient.get("public_key")
+        protocol = recipient["protocol"]
+        public = recipient["public"]
+
+        if protocol == "activitypub":
+            try:
+                payload = handle_create_payload(entity, author_user, protocol, parent_user=parent_user)
+                if public:
+                    payload["to"] = "https://www.w3.org/ns/activitystreams#Public"
+                else:
+                    payload["to"] = fid
+                payload = json.dumps(payload).encode("utf-8")
+            except Exception as ex:
+                logger.error("handle_send - failed to generate private payload for %s: %s", fid, ex)
+                continue
+            payloads.append({
+                "auth": get_http_authentication(author_user.private_key, f"{author_user.id}#main-key"),
+                "payload": payload,
+                "content_type": 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
+                "urls": {fid},
+            })
+        elif protocol == "diaspora":
+            if public:
+                if public_key:
+                    raise ValueError("handle_send - Diaspora recipient cannot be public and use encrypted delivery")
+                if not public_payloads[protocol]["payload"]:
+                    public_payloads[protocol]["payload"] = handle_create_payload(
+                        entity, author_user, protocol, parent_user=parent_user,
                     )
-                    payload["to"] = id
-                    payload = json.dumps(payload).encode("utf-8")
-                except Exception as ex:
-                    logger.error("handle_send - failed to generate private payload for %s: %s", id, ex)
-                    continue
-                payloads.append({
-                    "auth": get_http_authentication(author_user.private_key, f"{author_user.id}#main-key"),
-                    "payload": payload,
-                    "content_type": 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
-                    "urls": {id},
-                })
-            elif recipient_protocol == 'diaspora':
+                public_payloads["diaspora"]["urls"].add(fid)
+            else:
+                if not public_key:
+                    raise ValueError("handle_send - Diaspora recipient cannot be private without a public key for "
+                                     "encrypted delivery")
+                # Private payload
                 try:
                     payload = handle_create_payload(
                         entity, author_user, "diaspora", to_user_key=public_key, parent_user=parent_user,
                     )
                     payload = json.dumps(payload)
                 except Exception as ex:
-                    logger.error("handle_send - failed to generate private payload for %s: %s", id, ex)
+                    logger.error("handle_send - failed to generate private payload for %s: %s", fid, ex)
                     continue
-                guid = recipient[2] if len(recipient) > 2 else None
-                url = get_private_endpoint(id, guid=guid)
                 payloads.append({
-                    "urls": {url}, "payload": payload, "content_type": "application/json", "auth": None,
+                    "urls": {fid}, "payload": payload, "content_type": "application/json", "auth": None,
                 })
-        else:
-            if not public_payloads[recipient_protocol]["payload"]:
-                public_payloads[recipient_protocol]["payload"] = handle_create_payload(
-                    entity, author_user, recipient_protocol, parent_user=parent_user,
-                )
-            if recipient_protocol == 'activitypub':
-                public_payloads["activitypub"]["urls"].add(id)
-            elif recipient_protocol == 'diaspora':
-                url = get_public_endpoint(id)
-                public_payloads["diaspora"]["urls"].add(url)
 
-    # Add public payload
-    if public_payloads["activitypub"]["payload"]:
-        payloads.append({
-            "auth": get_http_authentication(author_user.private_key, f"{author_user.id}#main-key"),
-            "urls": public_payloads["activitypub"]["urls"],
-            "payload": public_payloads["activitypub"]["payload"],
-            "content_type": 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
-        })
+    # Add public diaspora payload
     if public_payloads["diaspora"]["payload"]:
         payloads.append({
             "urls": public_payloads["diaspora"]["urls"], "payload": public_payloads["diaspora"]["payload"],

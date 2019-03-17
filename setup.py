@@ -33,6 +33,7 @@ setup(
         "dirty-validators>=0.3.0",
         "lxml>=3.4.0",
         "ipdata>=2.6",
+        "iteration_utilities",
         "jsonschema>=2.0.0",
         "pycryptodome>=3.4.10",
         "python-dateutil>=2.4.0",

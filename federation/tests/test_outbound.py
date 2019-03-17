@@ -1,8 +1,11 @@
 from unittest.mock import Mock, patch
 
+import pytest
+
 from federation.entities.diaspora.entities import DiasporaPost
 from federation.outbound import handle_create_payload, handle_send
 from federation.tests.fixtures.keys import get_dummy_private_key
+from federation.utils.text import encode_if_text
 
 
 class TestHandleCreatePayloadBuildsAPayload:
@@ -21,12 +24,26 @@ class TestHandleSend:
     def test_calls_handle_create_payload(self, mock_send, profile):
         key = get_dummy_private_key()
         recipients = [
-            ("foo@127.0.0.1", key.publickey(), "xyz"),
-            ("https://127.0.0.1/foobar", key.publickey()),
-            ("foo@example.com", None),
-            "foo@example.net",
-            "qwer@example.net",  # Same host twice to ensure one delivery only per host for public payloads
-            "https://example.net/foobar",  # On the same host there is an AP actor
+            {
+                "fid": "https://127.0.0.1/receive/users/1234", "public_key": key.publickey(), "public": False,
+                "protocol": "diaspora",
+            },
+            {
+                "fid": "https://example.com/receive/public", "public": True, "protocol": "diaspora",
+            },
+            {
+                "fid": "https://example.net/receive/public", "public": True, "protocol": "diaspora",
+            },
+            # Same twice to ensure one delivery only per unique
+            {
+                "fid": "https://example.net/receive/public", "public": True, "protocol": "diaspora",
+            },
+            {
+                "fid": "https://example.net/foobar", "public": False, "protocol": "activitypub",
+            },
+            {
+                "fid": "https://example.net/inbox", "public": True, "protocol": "activitypub",
+            }
         ]
         mock_author = Mock(
             private_key=key, id="foo@example.com", handle="foo@example.com",
@@ -35,32 +52,40 @@ class TestHandleSend:
 
         # Ensure first call is a private diaspora payload
         args, kwargs = mock_send.call_args_list[0]
-        assert args[0] == "https://127.0.0.1/receive/users/xyz"
+        assert args[0] == "https://127.0.0.1/receive/users/1234"
         assert "aes_key" in args[1]
         assert "encrypted_magic_envelope" in args[1]
         assert kwargs['headers'] == {'Content-Type': 'application/json'}
 
         # Ensure second call is a private activitypub payload
         args, kwargs = mock_send.call_args_list[1]
-        assert args[0] == "https://127.0.0.1/foobar"
+        assert args[0] == "https://example.net/foobar"
         assert kwargs['headers'] == {
             'Content-Type': 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
         }
+        assert encode_if_text("https://www.w3.org/ns/activitystreams#Public") not in args[1]
 
-        # Ensure public payloads and recipients, one per unique host
-        args1, kwargs1 = mock_send.call_args_list[2]
-        args2, kwargs2 = mock_send.call_args_list[3]
-        args3, kwargs3 = mock_send.call_args_list[4]
-        public_endpoints = {args1[0], args2[0], args3[0]}
+        # Ensure third call is a public activitypub payload
+        args, kwargs = mock_send.call_args_list[2]
+        assert args[0] == "https://example.net/inbox"
+        assert kwargs['headers'] == {
+            'Content-Type': 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
+        }
+        assert encode_if_text("https://www.w3.org/ns/activitystreams#Public") in args[1]
+
+        # Ensure diaspora public payloads and recipients, one per unique host
+        args3, kwargs3 = mock_send.call_args_list[3]
+        args4, kwargs4 = mock_send.call_args_list[4]
+        public_endpoints = {args3[0], args4[0]}
         assert public_endpoints == {
             "https://example.net/receive/public",
             "https://example.com/receive/public",
-            "https://example.net/foobar",
         }
-        assert args2[1].startswith("<me:env xmlns:me=")
         assert args3[1].startswith("<me:env xmlns:me=")
-        assert kwargs1['headers'] == {
-            'Content-Type': 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
-        }
-        assert kwargs2['headers'] == {'Content-Type': 'application/magic-envelope+xml'}
+        assert args4[1].startswith("<me:env xmlns:me=")
         assert kwargs3['headers'] == {'Content-Type': 'application/magic-envelope+xml'}
+        assert kwargs4['headers'] == {'Content-Type': 'application/magic-envelope+xml'}
+
+        with pytest.raises(IndexError):
+            # noinspection PyStatementEffect
+            mock_send.call_args_list[5]
