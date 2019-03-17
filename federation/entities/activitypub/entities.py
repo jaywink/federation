@@ -32,10 +32,11 @@ class ActivitypubAccept(ActivitypubEntityMixin, Accept):
 class ActivitypubFollow(ActivitypubEntityMixin, Follow):
     _type = ActivityType.FOLLOW.value
 
-    def post_receive(self, attributes: Dict) -> None:
+    def post_receive(self) -> None:
         """
         Post receive hook - send back follow ack.
         """
+        from federation.utils.activitypub import retrieve_and_parse_profile  # Circulars
         try:
             from federation.utils.django import get_function_from_config
         except ImportError:
@@ -54,11 +55,18 @@ class ActivitypubFollow(ActivitypubEntityMixin, Follow):
             target_id=self.activity_id,
         )
         try:
+            profile = retrieve_and_parse_profile(self.actor_id)
+        except Exception:
+            profile = None
+        if not profile:
+            logger.warning("ActivitypubFollow.post_receive - Failed to fetch remote profile for sending back Accept")
+            return
+        try:
             handle_send(
                 accept,
                 UserType(id=self.target_id, private_key=key),
                 recipients=[{
-                    "fid": self.actor_id,
+                    "fid": profile.inboxes["private"],
                     "protocol": "activitypub",
                     "public": False,
                 }],

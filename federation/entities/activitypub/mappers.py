@@ -12,9 +12,7 @@ MAPPINGS = {
 }
 
 
-def element_to_objects(
-        payload: Dict, sender: str, sender_key_fetcher:Callable[[str], str]=None, user: UserType =None,
-) -> List:
+def element_to_objects(payload: Dict) -> List:
     """
     Transform an Element to a list of entities recursively.
     """
@@ -27,7 +25,7 @@ def element_to_objects(
     entity = cls(**transformed)
 
     if hasattr(entity, "post_receive"):
-        entity.post_receive(transformed)
+        entity.post_receive()
 
     entities.append(entity)
 
@@ -82,7 +80,7 @@ def message_to_objects(
     Takes in a message extracted by a protocol and maps it to entities.
     """
     # We only really expect one element here for ActivityPub.
-    return element_to_objects(message, sender, sender_key_fetcher, user)
+    return element_to_objects(message)
 
 
 def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dict, cls) -> None:
@@ -125,7 +123,12 @@ def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dic
         transformed["name"] = value
     elif key == "object":
         if isinstance(value, dict):
-            transform_attributes(value, cls, transformed)
+            if cls in (ActivitypubAccept, ActivitypubFollow):
+                transformed["target_id"] = value.get("id")
+            else:
+                # TODO possibly we need something else here based on class
+                # currently there is risk of overwriting some properties
+                transform_attributes(value, cls, transformed)
         else:
             transformed["target_id"] = value
     elif key == "preferredUsername":
