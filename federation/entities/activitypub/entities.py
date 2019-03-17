@@ -54,7 +54,15 @@ class ActivitypubFollow(ActivitypubEntityMixin, Follow):
             target_id=self.activity_id,
         )
         try:
-            handle_send(accept, UserType(id=self.target_id, private_key=key), recipients=[self.actor_id])
+            handle_send(
+                accept,
+                UserType(id=self.target_id, private_key=key),
+                recipients=[{
+                    "fid": self.actor_id,
+                    "protocol": "activitypub",
+                    "public": False,
+                }],
+            )
         except Exception:
             logger.exception("ActivitypubFollow.post_receive - Failed to send Accept back")
 
