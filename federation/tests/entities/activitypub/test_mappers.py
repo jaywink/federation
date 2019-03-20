@@ -1,11 +1,19 @@
+from unittest.mock import patch
+
 import pytest
 
-from federation.entities.activitypub.entities import ActivitypubFollow
-from federation.entities.activitypub.mappers import message_to_objects
+from federation.entities.activitypub.entities import ActivitypubFollow, ActivitypubAccept, ActivitypubProfile
+from federation.entities.activitypub.mappers import message_to_objects, get_outbound_entity
+from federation.entities.base import Accept, Follow, Profile
 from federation.tests.fixtures.payloads import ACTIVITYPUB_FOLLOW, ACTIVITYPUB_PROFILE
 
 
 class TestActivitypubEntityMappersReceive:
+    @patch.object(ActivitypubFollow, "post_receive", autospec=True)
+    def test_message_to_objects__calls_post_receive_hook(self, mock_post_receive):
+        message_to_objects(ACTIVITYPUB_FOLLOW, "https://example.com/actor")
+        assert mock_post_receive.called
+
     def test_message_to_objects__follow(self):
         entities = message_to_objects(ACTIVITYPUB_FOLLOW, "https://example.com/actor")
         assert len(entities) == 1
@@ -214,73 +222,23 @@ class TestActivitypubEntityMappersReceive:
         assert not entities
 
 
-@pytest.mark.skip
 class TestGetOutboundEntity:
     def test_already_fine_entities_are_returned_as_is(self, private_key):
-        entity = DiasporaPost()
+        entity = ActivitypubAccept()
         assert get_outbound_entity(entity, private_key) == entity
-        entity = DiasporaLike()
+        entity = ActivitypubFollow()
         assert get_outbound_entity(entity, private_key) == entity
-        entity = DiasporaComment()
-        assert get_outbound_entity(entity, private_key) == entity
-        entity = DiasporaProfile()
-        assert get_outbound_entity(entity, private_key) == entity
-        entity = DiasporaContact()
-        assert get_outbound_entity(entity, private_key) == entity
-        entity = DiasporaReshare()
+        entity = ActivitypubProfile()
         assert get_outbound_entity(entity, private_key) == entity
 
-    def test_post_is_converted_to_diasporapost(self, private_key):
-        entity = Post()
-        assert isinstance(get_outbound_entity(entity, private_key), DiasporaPost)
+    def test_accept_is_converted_to_activitypubaccept(self, private_key):
+        entity = Accept()
+        assert isinstance(get_outbound_entity(entity, private_key), ActivitypubAccept)
 
-    def test_comment_is_converted_to_diasporacomment(self, private_key):
-        entity = Comment()
-        assert isinstance(get_outbound_entity(entity, private_key), DiasporaComment)
-
-    def test_reaction_of_like_is_converted_to_diasporalike(self, private_key):
-        entity = Reaction(reaction="like")
-        assert isinstance(get_outbound_entity(entity, private_key), DiasporaLike)
-
-
-    def test_profile_is_converted_to_diasporaprofile(self, private_key):
-        entity = Profile()
-        assert isinstance(get_outbound_entity(entity, private_key), DiasporaProfile)
-
-    def test_other_reaction_raises(self, private_key):
-        entity = Reaction(reaction="foo")
-        with pytest.raises(ValueError):
-            get_outbound_entity(entity, private_key)
-
-    def test_other_relation_raises(self, private_key):
-        entity = Relationship(relationship="foo")
-        with pytest.raises(ValueError):
-            get_outbound_entity(entity, private_key)
-
-    def test_retraction_is_converted_to_diasporaretraction(self, private_key):
-        entity = Retraction()
-        assert isinstance(get_outbound_entity(entity, private_key), DiasporaRetraction)
-
-    def test_follow_is_converted_to_diasporacontact(self, private_key):
+    def test_follow_is_converted_to_activitypubfollow(self, private_key):
         entity = Follow()
-        assert isinstance(get_outbound_entity(entity, private_key), DiasporaContact)
+        assert isinstance(get_outbound_entity(entity, private_key), ActivitypubFollow)
 
-    def test_share_is_converted_to_diasporareshare(self, private_key):
-        entity = Share()
-        assert isinstance(get_outbound_entity(entity, private_key), DiasporaReshare)
-
-    def test_signs_relayable_if_no_signature(self, private_key):
-        entity = DiasporaComment()
-        outbound = get_outbound_entity(entity, private_key)
-        assert outbound.signature != ""
-
-    def test_returns_entity_if_outbound_doc_on_entity(self, private_key):
-        entity = Comment()
-        entity.outbound_doc = "foobar"
-        assert get_outbound_entity(entity, private_key) == entity
-
-
-@pytest.mark.skip
-def test_check_sender_and_entity_handle_match():
-    assert not check_sender_and_entity_handle_match("foo", "bar")
-    assert check_sender_and_entity_handle_match("foo", "foo")
+    def test_profile_is_converted_to_activitypubprofile(self, private_key):
+        entity = Profile()
+        assert isinstance(get_outbound_entity(entity, private_key), ActivitypubProfile)
