@@ -2,13 +2,15 @@ import uuid
 
 import pytest
 
-from federation.entities.activitypub.entities import ActivitypubPost, ActivitypubAccept, ActivitypubFollow
+from federation.entities.activitypub.entities import (
+    ActivitypubPost, ActivitypubAccept, ActivitypubFollow, ActivitypubProfile)
 from federation.entities.base import Profile
 from federation.entities.diaspora.entities import (
     DiasporaPost, DiasporaComment, DiasporaLike, DiasporaProfile, DiasporaRetraction,
     DiasporaContact, DiasporaReshare,
 )
 from federation.tests.factories.entities import ShareFactory
+from federation.tests.fixtures.keys import PUBKEY
 from federation.tests.fixtures.payloads import DIASPORA_PUBLIC_PAYLOAD
 
 
@@ -31,6 +33,34 @@ def activitypubfollow():
 
 
 @pytest.fixture
+def activitypubpost():
+    post_uuid = uuid.uuid4()
+    profile_uuid = uuid.uuid4()
+    return ActivitypubPost(
+        raw_content="raw_content",
+        public=True,
+        provider_display_name="Socialhome",
+        id=f"http://127.0.0.1:8000/post/{post_uuid}/",
+        guid=post_uuid,
+        actor_id=f"http://127.0.0.1:8000/profile/{profile_uuid}/",
+        handle="alice@example.com",
+    )
+
+
+@pytest.fixture
+def activitypubprofile():
+    return ActivitypubProfile(
+        id="https://example.com/bob", raw_content="foobar", name="Bob Bobertson", public=True,
+        tag_list=["socialfederation", "federation"], image_urls={
+            "large": "urllarge", "medium": "urlmedium", "small": "urlsmall"
+        }, inboxes={
+            "private": "https://example.com/bob/private",
+            "public": "https://example.com/public",
+        }, public_key=PUBKEY, url="https://example.com/bob-bobertson"
+    )
+
+
+@pytest.fixture
 def profile():
     return Profile(
         raw_content="foobar", name="Bob Bobertson", public=True,
@@ -41,9 +71,9 @@ def profile():
         handle="alice@example.com",
         guid="guid",
         inboxes={
-            "private": "https://example.com/private",
+            "private": "https://example.com/bob/private",
             "public": "https://example.com/public",
-        }
+        }, public_key=PUBKEY,
     )
 
 
@@ -89,20 +119,6 @@ def diasporalike():
         signature="signature",
     )
 
-
-@pytest.fixture
-def activitypubpost():
-    post_uuid = uuid.uuid4()
-    profile_uuid = uuid.uuid4()
-    return ActivitypubPost(
-        raw_content="raw_content",
-        public=True,
-        provider_display_name="Socialhome",
-        id=f"http://127.0.0.1:8000/post/{post_uuid}/",
-        guid=post_uuid,
-        actor_id=f"http://127.0.0.1:8000/profile/{profile_uuid}/",
-        handle="alice@example.com",
-    )
 
 @pytest.fixture
 def diasporapost():

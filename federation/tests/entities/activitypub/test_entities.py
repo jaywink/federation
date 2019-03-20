@@ -4,7 +4,8 @@ from Crypto.PublicKey.RSA import RsaKey
 
 from federation.entities.activitypub.constants import (
     CONTEXTS_DEFAULT, CONTEXT_MANUALLY_APPROVES_FOLLOWERS, CONTEXT_LD_SIGNATURES, CONTEXT_HASHTAG, CONTEXT_SENSITIVE)
-from federation.entities.activitypub.entities import ActivitypubProfile, ActivitypubAccept
+from federation.entities.activitypub.entities import ActivitypubAccept
+from federation.tests.fixtures.keys import PUBKEY
 from federation.types import UserType
 
 
@@ -28,20 +29,33 @@ class TestEntitiesConvertToAS2:
         ]
         assert result.get('type') == 'Note'
 
-    def test_profile_to_as2(self):
-        # TODO expand
-        entity = ActivitypubProfile(
-            handle="bob@example.com", raw_content="foobar", name="Bob Bobertson", public=True,
-            tag_list=["socialfederation", "federation"], image_urls={
-                "large": "urllarge", "medium": "urlmedium", "small": "urlsmall"
-            }
-        )
-        result = entity.to_as2()
-        assert result.get('@context') == CONTEXTS_DEFAULT + [
-            CONTEXT_LD_SIGNATURES,
-            CONTEXT_MANUALLY_APPROVES_FOLLOWERS,
-        ]
-        assert result.get('type') == 'Person'
+    def test_profile_to_as2(self, activitypubprofile):
+        result = activitypubprofile.to_as2()
+        assert result == {
+            "@context": CONTEXTS_DEFAULT + [
+                CONTEXT_LD_SIGNATURES,
+                CONTEXT_MANUALLY_APPROVES_FOLLOWERS,
+            ],
+            "endpoints": {
+                "sharedInbox": "https://example.com/public",
+            },
+            "followers": "https://example.com/bob/followers/",
+            "following": "https://example.com/bob/following/",
+            "id": "https://example.com/bob",
+            "inbox": "https://example.com/bob/private",
+            "manuallyApprovesFollowers": False,
+            "name": "Bob Bobertson",
+            "outbox": "https://example.com/bob/outbox/",
+            "publicKey": {
+                "id": "https://example.com/bob#main-key",
+                "owner": "https://example.com/bob",
+                "publicKeyPem": PUBKEY,
+            },
+            "type": "Person",
+            "url": "https://example.com/bob-bobertson",
+            "summary": "foobar",
+            "icon": "urllarge",
+        }
 
 
 class TestEntitiesPostReceive:
@@ -61,7 +75,7 @@ class TestEntitiesPostReceive:
         assert args[1].id == "https://example.com/profile"
         assert isinstance(args[1].private_key, RsaKey)
         assert kwargs['recipients'] == [{
-            "fid": "https://example.com/private",
+            "fid": "https://example.com/bob/private",
             "protocol": "activitypub",
             "public": False,
         }]
