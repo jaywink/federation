@@ -4,6 +4,7 @@ import pytest
 
 # noinspection PyUnresolvedReferences
 from federation.tests.fixtures.entities import *
+from federation.tests.fixtures.types import *
 from federation.tests.fixtures.keys import get_dummy_private_key
 
 

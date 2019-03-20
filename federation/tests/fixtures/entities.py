@@ -2,7 +2,7 @@ import uuid
 
 import pytest
 
-from federation.entities.activitypub.entities import ActivitypubPost, ActivitypubAccept
+from federation.entities.activitypub.entities import ActivitypubPost, ActivitypubAccept, ActivitypubFollow
 from federation.entities.base import Profile
 from federation.entities.diaspora.entities import (
     DiasporaPost, DiasporaComment, DiasporaLike, DiasporaProfile, DiasporaRetraction,
@@ -22,6 +22,15 @@ def activitypubaccept():
 
 
 @pytest.fixture
+def activitypubfollow():
+    return ActivitypubFollow(
+        activity_id="https://localhost/follow",
+        actor_id="https://localhost/profile",
+        target_id="https://example.com/profile",
+    )
+
+
+@pytest.fixture
 def profile():
     return Profile(
         raw_content="foobar", name="Bob Bobertson", public=True,
@@ -31,6 +40,10 @@ def profile():
         id="https://example.com/alice",
         handle="alice@example.com",
         guid="guid",
+        inboxes={
+            "private": "https://example.com/private",
+            "public": "https://example.com/public",
+        }
     )
 
 
