@@ -2,7 +2,7 @@ import uuid
 
 import pytest
 
-from federation.entities.activitypub.entities import ActivitypubPost
+from federation.entities.activitypub.entities import ActivitypubPost, ActivitypubAccept
 from federation.entities.base import Profile
 from federation.entities.diaspora.entities import (
     DiasporaPost, DiasporaComment, DiasporaLike, DiasporaProfile, DiasporaRetraction,
@@ -10,6 +10,15 @@ from federation.entities.diaspora.entities import (
 )
 from federation.tests.factories.entities import ShareFactory
 from federation.tests.fixtures.payloads import DIASPORA_PUBLIC_PAYLOAD
+
+
+@pytest.fixture
+def activitypubaccept():
+    return ActivitypubAccept(
+        activity_id="https://localhost/accept",
+        actor_id="https://localhost/profile",
+        target_id="https://example.com/follow/1234",
+    )
 
 
 @pytest.fixture

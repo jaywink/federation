@@ -4,6 +4,16 @@ from federation.entities.activitypub.entities import ActivitypubProfile
 
 
 class TestEntitiesConvertToAS2:
+    def test_accept_to_as2(self, activitypubaccept):
+        result = activitypubaccept.to_as2()
+        assert result == {
+            "@context": CONTEXTS_DEFAULT,
+            "id": "https://localhost/accept",
+            "type": "Accept",
+            "actor": "https://localhost/profile",
+            "object": "https://example.com/follow/1234",
+        }
+
     def test_post_to_as2(self, activitypubpost):
         # TODO expand
         result = activitypubpost.to_as2()
