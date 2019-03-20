@@ -9,7 +9,11 @@ from federation.entities.mixins import (
 
 class Accept(CreatedAtMixin, TargetIDMixin):
     """An acceptance message for some target."""
-    pass
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # ID not required for accept
+        self._required.remove('id')
 
 
 class Image(PublicMixin, OptionalRawContentMixin, CreatedAtMixin):

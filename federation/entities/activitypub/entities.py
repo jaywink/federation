@@ -6,7 +6,7 @@ from federation.entities.activitypub.constants import (
     CONTEXTS_DEFAULT, CONTEXT_MANUALLY_APPROVES_FOLLOWERS, CONTEXT_SENSITIVE, CONTEXT_HASHTAG,
     CONTEXT_LD_SIGNATURES)
 from federation.entities.activitypub.enums import ActorType, ObjectType, ActivityType
-from federation.entities.activitypub.mixins import ActivitypubEntityMixin
+from federation.entities.activitypub.mixins import ActivitypubObjectMixin, ActivitypubActorMixin
 from federation.entities.base import Profile, Post, Follow, Accept
 from federation.outbound import handle_send
 from federation.types import UserType
@@ -15,7 +15,7 @@ from federation.utils.text import with_slash
 logger = logging.getLogger("federation")
 
 
-class ActivitypubAccept(ActivitypubEntityMixin, Accept):
+class ActivitypubAccept(ActivitypubObjectMixin, Accept):
     _type = ActivityType.ACCEPT.value
 
     def to_as2(self) -> Dict:
@@ -29,7 +29,7 @@ class ActivitypubAccept(ActivitypubEntityMixin, Accept):
         return as2
 
 
-class ActivitypubFollow(ActivitypubEntityMixin, Follow):
+class ActivitypubFollow(ActivitypubObjectMixin, Follow):
     _type = ActivityType.FOLLOW.value
 
     def post_receive(self) -> None:
@@ -85,7 +85,7 @@ class ActivitypubFollow(ActivitypubEntityMixin, Follow):
         return as2
 
 
-class ActivitypubPost(ActivitypubEntityMixin, Post):
+class ActivitypubPost(ActivitypubObjectMixin, Post):
     _type = ObjectType.NOTE.value
 
     def to_as2(self) -> Dict:
@@ -112,7 +112,7 @@ class ActivitypubPost(ActivitypubEntityMixin, Post):
         return as2
 
 
-class ActivitypubProfile(ActivitypubEntityMixin, Profile):
+class ActivitypubProfile(ActivitypubActorMixin, Profile):
     _type = ActorType.PERSON.value
     public = True
 
