@@ -3,7 +3,7 @@ from federation.tests.fixtures.keys import get_dummy_private_key
 
 
 def test_signing_request():
-    key = get_dummy_private_key().exportKey()
+    key = get_dummy_private_key()
     auth = get_http_authentication(key, "dummy_key_id")
     assert auth.algorithm == 'rsa-sha256'
     assert auth.headers == [
@@ -12,6 +12,6 @@ def test_signing_request():
         'host',
         'date',
     ]
-    assert auth.key == key
+    assert auth.key == key.exportKey()
     assert auth.key_id == 'dummy_key_id'
 

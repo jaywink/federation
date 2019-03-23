@@ -19,6 +19,7 @@ def get_configuration():
     }
     configuration.update(settings.FEDERATION)
     if not all([
+        "get_private_key_function" in configuration,
         "get_profile_function" in configuration,
         "base_url" in configuration,
     ]):

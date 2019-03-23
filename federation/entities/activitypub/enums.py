@@ -8,6 +8,7 @@ class EnumBase(Enum):
 
 
 class ActivityType(EnumBase):
+    ACCEPT = "Accept"
     CREATE = "Create"
     DELETE = "Delete"
     FOLLOW = "Follow"

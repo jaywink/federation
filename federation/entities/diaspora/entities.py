@@ -4,6 +4,7 @@ from federation.entities.base import (
     Comment, Post, Reaction, Profile, Retraction, Follow, Share, Image)
 from federation.entities.diaspora.mixins import DiasporaEntityMixin, DiasporaRelayableMixin
 from federation.entities.diaspora.utils import format_dt, struct_to_xml
+from federation.utils.diaspora import get_private_endpoint, get_public_endpoint
 
 
 class DiasporaComment(DiasporaRelayableMixin, Comment):
@@ -88,6 +89,13 @@ class DiasporaContact(DiasporaEntityMixin, Follow):
 class DiasporaProfile(DiasporaEntityMixin, Profile):
     """Diaspora profile."""
     _tag_name = "profile"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.inboxes = {
+            "private": get_private_endpoint(self.handle, self.guid),
+            "public": get_public_endpoint(self.handle),
+        }
 
     def to_xml(self):
         """Convert to XML message."""

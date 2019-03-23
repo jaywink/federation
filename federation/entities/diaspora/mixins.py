@@ -1,5 +1,6 @@
 import re
 
+from Crypto.PublicKey import RSA
 from lxml import etree
 
 from federation.entities.diaspora.utils import add_element_to_doc
@@ -73,7 +74,7 @@ class DiasporaRelayableMixin(DiasporaEntityMixin):
         if not verify_relayable_signature(self._sender_key, source_doc, self.signature):
             raise SignatureVerificationError("Signature verification failed.")
 
-    def sign(self, private_key):
+    def sign(self, private_key: RSA) -> None:
         self.signature = create_relayable_signature(private_key, self.to_xml())
 
     def sign_with_parent(self, private_key):

@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 from typing import Callable, List
 
+from Crypto.PublicKey.RSA import RsaKey
 from lxml import etree
 
 from federation.entities.base import Comment, Follow, Post, Profile, Reaction, Retraction, Share
@@ -232,7 +233,7 @@ def transform_attributes(attrs, cls):
     return transformed
 
 
-def get_outbound_entity(entity: BaseEntity, private_key: str):
+def get_outbound_entity(entity: BaseEntity, private_key: RsaKey):
     """Get the correct outbound entity for this protocol.
 
     We might have to look at entity values to decide the correct outbound entity.
@@ -241,7 +242,7 @@ def get_outbound_entity(entity: BaseEntity, private_key: str):
     Private key of author is needed to be passed for signing the outbound entity.
 
     :arg entity: An entity instance which can be of a base or protocol entity class.
-    :arg private_key: Private key of sender in str format
+    :arg private_key: Private key of sender as an RSA object
     :returns: Protocol specific entity class instance.
     :raises ValueError: If conversion cannot be done.
     """

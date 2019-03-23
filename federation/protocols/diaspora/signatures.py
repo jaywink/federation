@@ -2,6 +2,7 @@ from base64 import b64decode, b64encode
 
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
+from Crypto.PublicKey.RSA import RsaKey
 from Crypto.Signature import PKCS1_v1_5
 
 
@@ -36,7 +37,7 @@ def verify_relayable_signature(public_key, doc, signature):
     return cipher.verify(sig_hash, b64decode(signature))
 
 
-def create_relayable_signature(private_key, doc):
+def create_relayable_signature(private_key: RsaKey, doc):
     sig_hash = _create_signature_hash(doc)
     cipher = PKCS1_v1_5.new(private_key)
     return b64encode(cipher.sign(sig_hash)).decode("ascii")

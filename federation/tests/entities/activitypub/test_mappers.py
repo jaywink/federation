@@ -1,11 +1,19 @@
+from unittest.mock import patch
+
 import pytest
 
-from federation.entities.activitypub.entities import ActivitypubFollow
-from federation.entities.activitypub.mappers import message_to_objects
-from federation.tests.fixtures.payloads import ACTIVITYPUB_FOLLOW
+from federation.entities.activitypub.entities import ActivitypubFollow, ActivitypubAccept, ActivitypubProfile
+from federation.entities.activitypub.mappers import message_to_objects, get_outbound_entity
+from federation.entities.base import Accept, Follow, Profile
+from federation.tests.fixtures.payloads import ACTIVITYPUB_FOLLOW, ACTIVITYPUB_PROFILE
 
 
 class TestActivitypubEntityMappersReceive:
+    @patch.object(ActivitypubFollow, "post_receive", autospec=True)
+    def test_message_to_objects__calls_post_receive_hook(self, mock_post_receive):
+        message_to_objects(ACTIVITYPUB_FOLLOW, "https://example.com/actor")
+        assert mock_post_receive.called
+
     def test_message_to_objects__follow(self):
         entities = message_to_objects(ACTIVITYPUB_FOLLOW, "https://example.com/actor")
         assert len(entities) == 1
@@ -97,24 +105,35 @@ class TestActivitypubEntityMappersReceive:
         ]
         mock_validate.assert_called_once_with()
 
-    @pytest.mark.skip
-    def test_message_to_objects_profile(self, mock_parse):
-        entities = message_to_objects(DIASPORA_PROFILE, "bob@example.com")
+    def test_message_to_objects_profile(self):
+        entities = message_to_objects(ACTIVITYPUB_PROFILE, "http://example.com/1234")
         assert len(entities) == 1
         profile = entities[0]
-        assert profile.handle == "bob@example.com"
-        assert profile.name == "Bob Bobertson"
+        assert profile.id == "https://diaspodon.fr/users/jaywink"
+        assert profile.handle == ""
+        assert profile.name == "Jason Robinson"
         assert profile.image_urls == {
-            "large": "https://example.com/uploads/images/thumb_large_c833747578b5.jpg",
-            "medium": "https://example.com/uploads/images/thumb_medium_c8b1aab04f3.jpg",
-            "small": "https://example.com/uploads/images/thumb_small_c8b147578b5.jpg",
+            "large": "https://diaspodon.fr/system/accounts/avatars/000/033/155/original/pnc__picked_media_be51984c-4"
+                     "3e9-4266-9b9a-b74a61ae4167.jpg?1538505110",
+            "medium": "https://diaspodon.fr/system/accounts/avatars/000/033/155/original/pnc__picked_media_be51984c-4"
+                      "3e9-4266-9b9a-b74a61ae4167.jpg?1538505110",
+            "small": "https://diaspodon.fr/system/accounts/avatars/000/033/155/original/pnc__picked_media_be51984c-4"
+                     "3e9-4266-9b9a-b74a61ae4167.jpg?1538505110",
         }
         assert profile.gender == ""
-        assert profile.raw_content == "A cool bio"
-        assert profile.location == "Helsinki"
-        assert profile.public == True
-        assert profile.nsfw == False
-        assert profile.tag_list == ["socialfederation", "federation"]
+        assert profile.raw_content == "<p>Temp account while implementing AP for Socialhome.</p><p><a href=\"" \
+                                      "https://jasonrobinson.me\" rel=\"nofollow noopener\" target=\"_blank\">" \
+                                      "<span class=\"invisible\">https://</span><span class=\"\">jasonrobinson." \
+                                      "me</span><span class=\"invisible\"></span></a> / <a href=\"https://social" \
+                                      "home.network\" rel=\"nofollow noopener\" target=\"_blank\"><span class=\"i" \
+                                      "nvisible\">https://</span><span class=\"\">socialhome.network</span><span c" \
+                                      "lass=\"invisible\"></span></a> / <a href=\"https://feneas.org\" rel=\"nofoll" \
+                                      "ow noopener\" target=\"_blank\"><span class=\"invisible\">https://</span><spa" \
+                                      "n class=\"\">feneas.org</span><span class=\"invisible\"></span></a></p>"
+        assert profile.location == ""
+        assert profile.public is True
+        assert profile.nsfw is False
+        assert profile.tag_list == []
 
     @pytest.mark.skip
     def test_message_to_objects_receiving_actor_id_is_saved(self):
@@ -203,73 +222,23 @@ class TestActivitypubEntityMappersReceive:
         assert not entities
 
 
-@pytest.mark.skip
 class TestGetOutboundEntity:
     def test_already_fine_entities_are_returned_as_is(self, private_key):
-        entity = DiasporaPost()
+        entity = ActivitypubAccept()
         assert get_outbound_entity(entity, private_key) == entity
-        entity = DiasporaLike()
+        entity = ActivitypubFollow()
         assert get_outbound_entity(entity, private_key) == entity
-        entity = DiasporaComment()
-        assert get_outbound_entity(entity, private_key) == entity
-        entity = DiasporaProfile()
-        assert get_outbound_entity(entity, private_key) == entity
-        entity = DiasporaContact()
-        assert get_outbound_entity(entity, private_key) == entity
-        entity = DiasporaReshare()
+        entity = ActivitypubProfile()
         assert get_outbound_entity(entity, private_key) == entity
 
-    def test_post_is_converted_to_diasporapost(self, private_key):
-        entity = Post()
-        assert isinstance(get_outbound_entity(entity, private_key), DiasporaPost)
+    def test_accept_is_converted_to_activitypubaccept(self, private_key):
+        entity = Accept()
+        assert isinstance(get_outbound_entity(entity, private_key), ActivitypubAccept)
 
-    def test_comment_is_converted_to_diasporacomment(self, private_key):
-        entity = Comment()
-        assert isinstance(get_outbound_entity(entity, private_key), DiasporaComment)
-
-    def test_reaction_of_like_is_converted_to_diasporalike(self, private_key):
-        entity = Reaction(reaction="like")
-        assert isinstance(get_outbound_entity(entity, private_key), DiasporaLike)
-
-
-    def test_profile_is_converted_to_diasporaprofile(self, private_key):
-        entity = Profile()
-        assert isinstance(get_outbound_entity(entity, private_key), DiasporaProfile)
-
-    def test_other_reaction_raises(self, private_key):
-        entity = Reaction(reaction="foo")
-        with pytest.raises(ValueError):
-            get_outbound_entity(entity, private_key)
-
-    def test_other_relation_raises(self, private_key):
-        entity = Relationship(relationship="foo")
-        with pytest.raises(ValueError):
-            get_outbound_entity(entity, private_key)
-
-    def test_retraction_is_converted_to_diasporaretraction(self, private_key):
-        entity = Retraction()
-        assert isinstance(get_outbound_entity(entity, private_key), DiasporaRetraction)
-
-    def test_follow_is_converted_to_diasporacontact(self, private_key):
+    def test_follow_is_converted_to_activitypubfollow(self, private_key):
         entity = Follow()
-        assert isinstance(get_outbound_entity(entity, private_key), DiasporaContact)
+        assert isinstance(get_outbound_entity(entity, private_key), ActivitypubFollow)
 
-    def test_share_is_converted_to_diasporareshare(self, private_key):
-        entity = Share()
-        assert isinstance(get_outbound_entity(entity, private_key), DiasporaReshare)
-
-    def test_signs_relayable_if_no_signature(self, private_key):
-        entity = DiasporaComment()
-        outbound = get_outbound_entity(entity, private_key)
-        assert outbound.signature != ""
-
-    def test_returns_entity_if_outbound_doc_on_entity(self, private_key):
-        entity = Comment()
-        entity.outbound_doc = "foobar"
-        assert get_outbound_entity(entity, private_key) == entity
-
-
-@pytest.mark.skip
-def test_check_sender_and_entity_handle_match():
-    assert not check_sender_and_entity_handle_match("foo", "bar")
-    assert check_sender_and_entity_handle_match("foo", "foo")
+    def test_profile_is_converted_to_activitypubprofile(self, private_key):
+        entity = Profile()
+        assert isinstance(get_outbound_entity(entity, private_key), ActivitypubProfile)

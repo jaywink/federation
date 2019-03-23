@@ -1,19 +1,18 @@
-from typing import List, Callable, Dict
+from typing import List, Callable, Dict, Union
 
-from federation.entities.activitypub.entities import ActivitypubFollow, ActivitypubProfile
-from federation.entities.base import Follow, Profile
+from federation.entities.activitypub.entities import ActivitypubFollow, ActivitypubProfile, ActivitypubAccept
+from federation.entities.base import Follow, Profile, Accept
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType
 
 MAPPINGS = {
+    "Accept": ActivitypubAccept,
     "Follow": ActivitypubFollow,
     "Person": ActivitypubProfile,
 }
 
 
-def element_to_objects(
-        payload: Dict, sender: str, sender_key_fetcher:Callable[[str], str]=None, user: UserType =None,
-) -> List:
+def element_to_objects(payload: Dict) -> List:
     """
     Transform an Element to a list of entities recursively.
     """
@@ -23,12 +22,17 @@ def element_to_objects(
         return []
 
     transformed = transform_attributes(payload, cls)
-    entities.append(cls(**transformed))
+    entity = cls(**transformed)
+
+    if hasattr(entity, "post_receive"):
+        entity.post_receive()
+
+    entities.append(entity)
 
     return entities
 
 
-def get_outbound_entity(entity: BaseEntity, private_key: str):
+def get_outbound_entity(entity: BaseEntity, private_key):
     """Get the correct outbound entity for this protocol.
 
     We might have to look at entity values to decide the correct outbound entity.
@@ -46,9 +50,11 @@ def get_outbound_entity(entity: BaseEntity, private_key: str):
         return entity
     outbound = None
     cls = entity.__class__
-    if cls in [ActivitypubFollow, ActivitypubProfile]:
+    if cls in [ActivitypubAccept, ActivitypubFollow, ActivitypubProfile]:
         # Already fine
         outbound = entity
+    elif cls == Accept:
+        outbound = ActivitypubAccept.from_base(entity)
     elif cls == Follow:
         outbound = ActivitypubFollow.from_base(entity)
     elif cls == Profile:
@@ -68,51 +74,76 @@ def get_outbound_entity(entity: BaseEntity, private_key: str):
 
 
 def message_to_objects(
-        message: Dict, sender: str, sender_key_fetcher:Callable[[str], str]=None, user: UserType =None,
+        message: Dict, sender: str, sender_key_fetcher: Callable[[str], str] = None, user: UserType = None,
 ) -> List:
     """
     Takes in a message extracted by a protocol and maps it to entities.
     """
     # We only really expect one element here for ActivityPub.
-    return element_to_objects(message, sender, sender_key_fetcher, user)
+    return element_to_objects(message)
 
 
-def transform_attribute(key, value, cls):
+def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dict, cls) -> None:
     if value is None:
         value = ""
     if key == "id":
         if cls == ActivitypubProfile:
-            return {"id": value}
+            transformed["id"] = value
         else:
-            return {"activity_id": value}
+            transformed["activity_id"] = value
     elif key == "actor":
-        return {"actor_id": value}
+        transformed["actor_id"] = value
+    elif key == "inboxes" and isinstance(value, dict):
+        if "inboxes" not in transformed:
+            transformed["inboxes"] = {"private": None, "public": None}
+        if value.get('sharedInbox'):
+            transformed["endpoints"]["public"] = value.get("sharedInbox")
     elif key == "icon":
         # TODO maybe we should ditch these size constants and instead have a more flexible dict for images
         # so based on protocol there would either be one url or many by size name
-        return {"image_urls": {
-            "small": value,
-            "medium": value,
-            "large": value,
-        }}
+        if isinstance(value, dict):
+            transformed["image_urls"] = {
+                "small": value['url'],
+                "medium": value['url'],
+                "large": value['url'],
+            }
+        else:
+            transformed["image_urls"] = {
+                "small": value,
+                "medium": value,
+                "large": value,
+            }
+    elif key == "inbox":
+        if "inboxes" not in transformed:
+            transformed["inboxes"] = {"private": None, "public": None}
+        transformed["inboxes"]["private"] = value
+        if not transformed["inboxes"]["public"]:
+            transformed["inboxes"]["public"] = value
     elif key == "name":
-        return {"name": value}
+        transformed["name"] = value
     elif key == "object":
         if isinstance(value, dict):
-            return transform_attributes(value, cls)
+            if cls in (ActivitypubAccept, ActivitypubFollow):
+                transformed["target_id"] = value.get("id")
+            else:
+                # TODO possibly we need something else here based on class
+                # currently there is risk of overwriting some properties
+                transform_attributes(value, cls, transformed)
         else:
-            return {"target_id": value}
+            transformed["target_id"] = value
     elif key == "preferredUsername":
-        return {"username": value}
+        transformed["username"] = value
     elif key == "publicKey":
-        return {"public_key": value.get('publicKeyPem', '')}
+        transformed["public_key"] = value.get('publicKeyPem', '')
+    elif key == "summary":
+        transformed["raw_content"] = value
     elif key == "url":
-        return {"url": value}
-    return {}
+        transformed["url"] = value
 
 
-def transform_attributes(payload, cls):
-    transformed = {}
+def transform_attributes(payload: Dict, cls, transformed: Dict = None) -> Dict:
+    if not transformed:
+        transformed = {}
     for key, value in payload.items():
-        transformed.update(transform_attribute(key, value, cls))
+        transform_attribute(key, value, transformed, cls)
     return transformed
