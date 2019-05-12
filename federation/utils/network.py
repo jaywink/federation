@@ -30,7 +30,7 @@ def fetch_country_by_ip(ip):
 
     See: https://ipdata.co/docs.html#python-library
     """
-    iplookup = ipdata.ipdata()
+    iplookup = ipdata.IPData()
     data = iplookup.lookup(ip)
     if data.get('status') != 200:
         return ''

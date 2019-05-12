@@ -12,7 +12,7 @@ from federation.utils.network import (
 class TestFetchCountryByIp:
     def test_calls_ip_api_endpoint(self, mock_ipdata):
         mock_lookup = Mock(lookup=Mock(return_value={'status': 200, 'response': {'country_code': 'DE'}}))
-        mock_ipdata.ipdata.return_value = mock_lookup
+        mock_ipdata.IPData.return_value = mock_lookup
         country = fetch_country_by_ip('127.0.0.1')
         mock_lookup.lookup.assert_called_once_with('127.0.0.1')
         assert country == 'DE'
