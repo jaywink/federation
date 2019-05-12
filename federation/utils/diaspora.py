@@ -154,11 +154,13 @@ def parse_profile_from_hcard(hcard: str, handle: str):
             "medium": _get_element_attr_or_none(doc, ".entity_photo_medium .photo", "src"),
             "large": _get_element_attr_or_none(doc, ".entity_photo .photo", "src"),
         },
-        public=True if _get_element_text_or_none(doc, ".searchable") == "true" else False,
+        public=True,
         id=handle,
         handle=handle,
         guid=_get_element_text_or_none(doc, ".uid"),
         public_key=_get_element_text_or_none(doc, ".key"),
+        username=handle.split('@')[0],
+        _source_protocol="diaspora",
     )
     return profile
 
