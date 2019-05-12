@@ -5,7 +5,7 @@ import pytest
 from federation.entities.activitypub.entities import ActivitypubFollow, ActivitypubAccept, ActivitypubProfile
 from federation.entities.activitypub.mappers import message_to_objects, get_outbound_entity
 from federation.entities.base import Accept, Follow, Profile
-from federation.tests.fixtures.payloads import ACTIVITYPUB_FOLLOW, ACTIVITYPUB_PROFILE
+from federation.tests.fixtures.payloads import ACTIVITYPUB_FOLLOW, ACTIVITYPUB_PROFILE, ACTIVITYPUB_PROFILE_INVALID
 
 
 class TestActivitypubEntityMappersReceive:
@@ -180,31 +180,20 @@ class TestActivitypubEntityMappersReceive:
         assert entity.raw_content == "Important note here"
         assert entity.entity_type == "Comment"
 
-    @pytest.mark.skip
+    @patch("federation.entities.activitypub.mappers.logger.error")
     def test_invalid_entity_logs_an_error(self, mock_logger):
-        entities = message_to_objects(DIASPORA_POST_INVALID, "alice@alice.diaspora.example.org")
+        entities = message_to_objects(ACTIVITYPUB_PROFILE_INVALID, "http://example.com/1234")
         assert len(entities) == 0
         assert mock_logger.called
 
-    @pytest.mark.skip
     def test_adds_source_protocol_to_entity(self):
-        entities = message_to_objects(DIASPORA_POST_SIMPLE, "alice@alice.diaspora.example.org")
-        assert entities[0]._source_protocol == "diaspora"
+        entities = message_to_objects(ACTIVITYPUB_PROFILE, "http://example.com/1234")
+        assert entities[0]._source_protocol == "activitypub"
 
-    @pytest.mark.skip
-    def test_source_object(self, mock_validate):
-        entities = message_to_objects(DIASPORA_POST_COMMENT, "alice@alice.diaspora.example.org",
-                                      sender_key_fetcher=Mock())
+    def test_source_object(self):
+        entities = message_to_objects(ACTIVITYPUB_PROFILE, "http://example.com/1234")
         entity = entities[0]
-        assert entity._source_object == etree.tostring(etree.fromstring(DIASPORA_POST_COMMENT))
-
-    @pytest.mark.skip
-    def test_element_to_objects_calls_sender_key_fetcher(self, mock_validate):
-        mock_fetcher = Mock()
-        message_to_objects(DIASPORA_POST_COMMENT, "alice@alice.diaspora.example.org", mock_fetcher)
-        mock_fetcher.assert_called_once_with(
-            "alice@alice.diaspora.example.org",
-        )
+        assert entity._source_object == ACTIVITYPUB_PROFILE
 
     @pytest.mark.skip
     def test_element_to_objects_calls_retrieve_remote_profile(self, mock_retrieve, mock_validate):

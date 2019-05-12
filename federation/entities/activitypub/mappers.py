@@ -1,9 +1,13 @@
+import logging
 from typing import List, Callable, Dict, Union
 
 from federation.entities.activitypub.entities import ActivitypubFollow, ActivitypubProfile, ActivitypubAccept
 from federation.entities.base import Follow, Profile, Accept
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType
+
+logger = logging.getLogger("federation")
+
 
 MAPPINGS = {
     "Accept": ActivitypubAccept,
@@ -23,9 +27,23 @@ def element_to_objects(payload: Dict) -> List:
 
     transformed = transform_attributes(payload, cls)
     entity = cls(**transformed)
+    # Add protocol name
+    entity._source_protocol = "activitypub"
+    # Save element object to entity for possible later use
+    entity._source_object = payload
 
     if hasattr(entity, "post_receive"):
         entity.post_receive()
+
+    try:
+        entity.validate()
+    except ValueError as ex:
+        logger.error("Failed to validate entity %s: %s", entity, ex, extra={
+            "transformed": transformed,
+        })
+        return []
+    # Extract mentions
+    entity._mentions = entity.extract_mentions()
 
     entities.append(entity)
 

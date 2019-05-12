@@ -83,3 +83,19 @@ ACTIVITYPUB_PROFILE = {
     "url": "https://diaspodon.fr/system/accounts/headers/000/033/155/original/45ae49a08ecc5f27.png?1537060098"
   }
 }
+
+ACTIVITYPUB_PROFILE_INVALID = {
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://w3id.org/security/v1",
+  ],
+  "id": None,
+  "type": "Person",
+  "name": "Jason Robinson",
+  "url": "https://diaspodon.fr/@jaywink",
+  "publicKey": {
+    "id": "https://diaspodon.fr/users/jaywink#main-key",
+    "owner": "https://diaspodon.fr/users/jaywink",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwVbaT5wvaZobfIB044ai\nhJg/XooEn2jSTnTY1K4mPmhdqYUmszpdXKp64OwA+f3SBuIUIkLAYUSB9Fu19zh+\nzOsoGI5gvA32DHY1vaqdKnT9gt3jKS5AdQ3bl0t9f4pPkO2I5YtQOWV1FvBcwPXG\nB0dIqj0fTqNK37FmyybrRD6uhjySddklN9gNsULTqYVDa0QSXVswTIW2jQudnNlp\nnEf3SfjlK9J8eKPF3hFK3PNXBTTZ4NydBSL3cVBinU0cFg8lUJOK8RI4qaetrVoQ\neKd7gCTSQ7RZh8kmkYmdlweb+ZtORT6Y5ZsotR8jwhAOFAqCt36B5+LX2UIw68Pk\nOwIDAQAB\n-----END PUBLIC KEY-----\n"
+  },
+}
