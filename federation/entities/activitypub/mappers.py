@@ -111,11 +111,11 @@ def message_to_objects(
     return element_to_objects(message)
 
 
-def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dict, cls) -> None:
+def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dict, cls, is_object: bool) -> None:
     if value is None:
         value = ""
     if key == "id":
-        if cls == ActivitypubProfile:
+        if is_object or cls == ActivitypubProfile:
             transformed["id"] = value
         else:
             transformed["activity_id"] = value
@@ -154,9 +154,7 @@ def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dic
             if cls in (ActivitypubAccept, ActivitypubFollow):
                 transformed["target_id"] = value.get("id")
             else:
-                # TODO possibly we need something else here based on class
-                # currently there is risk of overwriting some properties
-                transform_attributes(value, cls, transformed)
+                transform_attributes(value, cls, transformed, is_object=True)
         else:
             transformed["target_id"] = value
     elif key == "preferredUsername":
@@ -169,9 +167,9 @@ def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dic
         transformed["url"] = value
 
 
-def transform_attributes(payload: Dict, cls, transformed: Dict = None) -> Dict:
+def transform_attributes(payload: Dict, cls, transformed: Dict = None, is_object: bool = False) -> Dict:
     if not transformed:
         transformed = {}
     for key, value in payload.items():
-        transform_attribute(key, value, transformed, cls)
+        transform_attribute(key, value, transformed, cls, is_object)
     return transformed

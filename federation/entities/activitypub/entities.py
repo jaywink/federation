@@ -96,7 +96,7 @@ class ActivitypubPost(ActivitypubObjectMixin, Post):
                 CONTEXT_SENSITIVE,
             ],
             "type": self.activity.value,
-            "id": self.activity_id or f"{self.id}#{self.activity.value.lower()}-{uuid.uuid4()}",
+            "id": self.activity_id,
             "actor": self.actor_id,
             "object": {
                 "id": self.id,
