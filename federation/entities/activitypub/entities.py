@@ -89,25 +89,28 @@ class ActivitypubPost(ActivitypubObjectMixin, Post):
     _type = ObjectType.NOTE.value
 
     def to_as2(self) -> Dict:
-        # TODO add in sending phase:
-        # - to
-        # - cc
-        # - bcc
         as2 = {
             "@context": CONTEXTS_DEFAULT + [
                 CONTEXT_HASHTAG,
+                CONTEXT_LD_SIGNATURES,
                 CONTEXT_SENSITIVE,
             ],
-            "attributedTo": self.actor_id,
-            "content": self.raw_content,  # TODO render to html, add source markdown
-            "id": self.id,
-            "inReplyTo": None,
+            "type": self.activity.value,
+            "id": self.activity_id or f"{self.id}#{self.activity.value.lower()}-{uuid.uuid4()}",
+            "actor": self.actor_id,
+            "object": {
+                "id": self.id,
+                "type": self._type,
+                "attributedTo": self.actor_id,
+                "content": self.raw_content,  # TODO render to html, add source markdown
+                "published": self.created_at.isoformat(),
+                "inReplyTo": None,
+                "sensitive": True if "nsfw" in self.tags else False,
+                "summary": None,  # TODO Short text? First sentence? First line?
+                "tag": [],  # TODO add tags
+                "url": self.url,
+            },
             "published": self.created_at.isoformat(),
-            "sensitive": True if "nsfw" in self.tags else False,
-            "summary": None,  # TODO Short text? First sentence? First line?
-            "tag": [],  # TODO add tags
-            "type": self._type,
-            "url": self.url,
         }
         return as2
 

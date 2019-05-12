@@ -1,6 +1,7 @@
 import uuid
 
 import pytest
+from freezegun import freeze_time
 
 from federation.entities.activitypub.entities import (
     ActivitypubPost, ActivitypubAccept, ActivitypubFollow, ActivitypubProfile)
@@ -34,17 +35,15 @@ def activitypubfollow():
 
 @pytest.fixture
 def activitypubpost():
-    post_uuid = uuid.uuid4()
-    profile_uuid = uuid.uuid4()
-    return ActivitypubPost(
-        raw_content="raw_content",
-        public=True,
-        provider_display_name="Socialhome",
-        id=f"http://127.0.0.1:8000/post/{post_uuid}/",
-        guid=post_uuid,
-        actor_id=f"http://127.0.0.1:8000/profile/{profile_uuid}/",
-        handle="alice@example.com",
-    )
+    with freeze_time("2019-04-27"):
+        return ActivitypubPost(
+            raw_content="raw_content",
+            public=True,
+            provider_display_name="Socialhome",
+            id=f"http://127.0.0.1:8000/post/123456/",
+            activity_id=f"http://127.0.0.1:8000/post/123456/#create",
+            actor_id=f"http://127.0.0.1:8000/profile/123456/",
+        )
 
 
 @pytest.fixture

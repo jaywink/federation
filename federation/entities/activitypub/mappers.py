@@ -1,8 +1,9 @@
 import logging
 from typing import List, Callable, Dict, Union
 
-from federation.entities.activitypub.entities import ActivitypubFollow, ActivitypubProfile, ActivitypubAccept
-from federation.entities.base import Follow, Profile, Accept
+from federation.entities.activitypub.entities import (
+    ActivitypubFollow, ActivitypubProfile, ActivitypubAccept, ActivitypubPost)
+from federation.entities.base import Follow, Profile, Accept, Post
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType
 
@@ -11,7 +12,10 @@ logger = logging.getLogger("federation")
 
 MAPPINGS = {
     "Accept": ActivitypubAccept,
+    "Article": ActivitypubPost,
     "Follow": ActivitypubFollow,
+    "Note": ActivitypubPost,
+    "Page": ActivitypubPost,
     "Person": ActivitypubProfile,
 }
 
@@ -68,13 +72,15 @@ def get_outbound_entity(entity: BaseEntity, private_key):
         return entity
     outbound = None
     cls = entity.__class__
-    if cls in [ActivitypubAccept, ActivitypubFollow, ActivitypubProfile]:
+    if cls in [ActivitypubAccept, ActivitypubFollow, ActivitypubProfile, ActivitypubPost]:
         # Already fine
         outbound = entity
     elif cls == Accept:
         outbound = ActivitypubAccept.from_base(entity)
     elif cls == Follow:
         outbound = ActivitypubFollow.from_base(entity)
+    elif cls == Post:
+        outbound = ActivitypubPost.from_base(entity)
     elif cls == Profile:
         outbound = ActivitypubProfile.from_base(entity)
     if not outbound:
