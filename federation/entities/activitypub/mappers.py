@@ -25,7 +25,11 @@ def element_to_objects(payload: Dict) -> List:
     Transform an Element to a list of entities recursively.
     """
     entities = []
-    cls = MAPPINGS.get(payload.get('type'))
+    if isinstance(payload.get('object'), dict) and payload["object"].get('type'):
+        as2_type = payload["object"]["type"]
+    else:
+        as2_type = payload.get('type')
+    cls = MAPPINGS.get(as2_type)
     if not cls:
         return []
 
