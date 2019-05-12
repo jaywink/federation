@@ -26,7 +26,11 @@ def element_to_objects(payload: Dict) -> List:
     """
     entities = []
     if isinstance(payload.get('object'), dict) and payload["object"].get('type'):
-        as2_type = payload["object"]["type"]
+        if payload["object"].get("inReplyTo"):
+            # TODO this should be comment
+            as2_type = ActivitypubPost
+        else:
+            as2_type = payload["object"]["type"]
     else:
         as2_type = payload.get('type')
     cls = MAPPINGS.get(as2_type)
@@ -121,6 +125,8 @@ def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dic
             transformed["activity_id"] = value
     elif key == "actor":
         transformed["actor_id"] = value
+    elif key == "content":
+        transformed["raw_content"] = value
     elif key == "inboxes" and isinstance(value, dict):
         if "inboxes" not in transformed:
             transformed["inboxes"] = {"private": None, "public": None}
@@ -161,7 +167,7 @@ def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dic
         transformed["username"] = value
     elif key == "publicKey":
         transformed["public_key"] = value.get('publicKeyPem', '')
-    elif key == "summary":
+    elif key == "summary" and cls == ActivitypubProfile:
         transformed["raw_content"] = value
     elif key == "url":
         transformed["url"] = value
