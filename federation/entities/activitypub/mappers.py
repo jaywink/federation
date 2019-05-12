@@ -1,6 +1,7 @@
 import logging
 from typing import List, Callable, Dict, Union
 
+from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
 from federation.entities.activitypub.entities import (
     ActivitypubFollow, ActivitypubProfile, ActivitypubAccept, ActivitypubPost)
 from federation.entities.base import Follow, Profile, Accept, Post
@@ -169,6 +170,9 @@ def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dic
         transformed["public_key"] = value.get('publicKeyPem', '')
     elif key == "summary" and cls == ActivitypubProfile:
         transformed["raw_content"] = value
+    elif key in ("to", "cc"):
+        if isinstance(value, list) and NAMESPACE_PUBLIC in value:
+            transformed["public"] = True
     elif key == "url":
         transformed["url"] = value
 

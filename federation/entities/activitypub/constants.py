@@ -7,3 +7,5 @@ CONTEXT_SENSITIVE = {"sensitive": "as:sensitive"}
 CONTEXTS_DEFAULT = [
     CONTEXT_ACTIVITYSTREAMS,
 ]
+
+NAMESPACE_PUBLIC = "https://www.w3.org/ns/activitystreams#Public"

@@ -6,6 +6,7 @@ from typing import List, Dict
 from Crypto.PublicKey.RSA import RsaKey
 from iteration_utilities import unique_everseen
 
+from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
 from federation.entities.mixins import BaseEntity
 from federation.protocols.activitypub.signing import get_http_authentication
 from federation.types import UserType
@@ -131,7 +132,7 @@ def handle_send(
             try:
                 payload = handle_create_payload(entity, author_user, protocol, parent_user=parent_user)
                 if public:
-                    payload["to"] = "https://www.w3.org/ns/activitystreams#Public"
+                    payload["to"] = NAMESPACE_PUBLIC
                 else:
                     payload["to"] = fid
                 payload = json.dumps(payload).encode("utf-8")
