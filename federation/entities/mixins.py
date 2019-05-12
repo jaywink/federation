@@ -36,6 +36,9 @@ class BaseEntity:
                 warnings.warn("%s.__init__ got parameter %s which this class does not support - ignoring." % (
                     self.__class__.__name__, key
                 ))
+        if not self.activity:
+            # Fill a default activity if not given and type of entity class has one
+            self.activity = getattr(self, "_default_activity", None)
 
     def as_protocol(self, protocol):
         entities = importlib.import_module(f"federation.entities.{protocol}.entities")
