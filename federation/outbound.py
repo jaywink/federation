@@ -132,7 +132,9 @@ def handle_send(
             try:
                 payload = handle_create_payload(entity, author_user, protocol, parent_user=parent_user)
                 if public:
-                    payload["to"] = NAMESPACE_PUBLIC
+                    payload["to"] = [
+                        NAMESPACE_PUBLIC,
+                    ]
                 else:
                     payload["to"] = fid
                 payload = json.dumps(payload).encode("utf-8")
