@@ -25,24 +25,29 @@ class TestHandleSend:
         key = get_dummy_private_key()
         recipients = [
             {
-                "fid": "https://127.0.0.1/receive/users/1234", "public_key": key.publickey(), "public": False,
-                "protocol": "diaspora",
+                "endpoint": "https://127.0.0.1/receive/users/1234", "public_key": key.publickey(), "public": False,
+                "protocol": "diaspora", "fid": "",
             },
             {
-                "fid": "https://example.com/receive/public", "public": True, "protocol": "diaspora",
+                "endpoint": "https://example.com/receive/public", "public": True, "protocol": "diaspora",
+                "fid": "",
             },
             {
-                "fid": "https://example.net/receive/public", "public": True, "protocol": "diaspora",
+                "endpoint": "https://example.net/receive/public", "public": True, "protocol": "diaspora",
+                "fid": "",
             },
             # Same twice to ensure one delivery only per unique
             {
-                "fid": "https://example.net/receive/public", "public": True, "protocol": "diaspora",
+                "endpoint": "https://example.net/receive/public", "public": True, "protocol": "diaspora",
+                "fid": "",
             },
             {
-                "fid": "https://example.net/foobar", "public": False, "protocol": "activitypub",
+                "endpoint": "https://example.net/foobar/inbox", "fid": "https://example.net/foobar", "public": False,
+                "protocol": "activitypub",
             },
             {
-                "fid": "https://example.net/inbox", "public": True, "protocol": "activitypub",
+                "endpoint": "https://example.net/inbox", "fid": "https://example.net/foobar", "public": True,
+                "protocol": "activitypub",
             }
         ]
         mock_author = Mock(
@@ -59,7 +64,7 @@ class TestHandleSend:
 
         # Ensure second call is a private activitypub payload
         args, kwargs = mock_send.call_args_list[1]
-        assert args[0] == "https://example.net/foobar"
+        assert args[0] == "https://example.net/foobar/inbox"
         assert kwargs['headers'] == {
             'Content-Type': 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
         }
