@@ -1,7 +1,7 @@
 import importlib
 import json
 import logging
-from typing import List, Dict
+from typing import List, Dict, Union
 
 from Crypto.PublicKey.RSA import RsaKey
 from iteration_utilities import unique_everseen
@@ -21,7 +21,7 @@ def handle_create_payload(
         protocol_name: str,
         to_user_key: RsaKey = None,
         parent_user: UserType = None,
-) -> str:
+) -> Union[str, dict]:
     """Create a payload with the given protocol.
 
     Any given user arguments must have ``private_key`` and ``handle`` attributes.
@@ -144,8 +144,16 @@ def handle_send(
                     payload["to"] = [
                         NAMESPACE_PUBLIC,
                     ]
+                    if isinstance(payload.get("object"), dict):
+                        payload["object"]["to"] = [
+                            NAMESPACE_PUBLIC,
+                        ]
                 else:
                     payload["to"] = fid
+                    if isinstance(payload.get("object"), dict):
+                        payload["object"]["to"] = [
+                            NAMESPACE_PUBLIC,
+                        ]
                 payload = json.dumps(payload).encode("utf-8")
             except Exception as ex:
                 logger.error("handle_send - failed to generate private payload for %s: %s", fid, ex)
