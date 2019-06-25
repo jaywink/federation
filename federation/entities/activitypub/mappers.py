@@ -1,8 +1,10 @@
 import logging
 from typing import List, Callable, Dict, Union
 
-from federation.entities.activitypub.entities import ActivitypubFollow, ActivitypubProfile, ActivitypubAccept
-from federation.entities.base import Follow, Profile, Accept
+from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
+from federation.entities.activitypub.entities import (
+    ActivitypubFollow, ActivitypubProfile, ActivitypubAccept, ActivitypubPost)
+from federation.entities.base import Follow, Profile, Accept, Post
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType
 
@@ -11,7 +13,10 @@ logger = logging.getLogger("federation")
 
 MAPPINGS = {
     "Accept": ActivitypubAccept,
+    "Article": ActivitypubPost,
     "Follow": ActivitypubFollow,
+    "Note": ActivitypubPost,
+    "Page": ActivitypubPost,
     "Person": ActivitypubProfile,
 }
 
@@ -21,7 +26,15 @@ def element_to_objects(payload: Dict) -> List:
     Transform an Element to a list of entities recursively.
     """
     entities = []
-    cls = MAPPINGS.get(payload.get('type'))
+    if isinstance(payload.get('object'), dict) and payload["object"].get('type'):
+        if payload["object"].get("inReplyTo"):
+            # TODO this should be comment
+            as2_type = ActivitypubPost
+        else:
+            as2_type = payload["object"]["type"]
+    else:
+        as2_type = payload.get('type')
+    cls = MAPPINGS.get(as2_type)
     if not cls:
         return []
 
@@ -68,13 +81,15 @@ def get_outbound_entity(entity: BaseEntity, private_key):
         return entity
     outbound = None
     cls = entity.__class__
-    if cls in [ActivitypubAccept, ActivitypubFollow, ActivitypubProfile]:
+    if cls in [ActivitypubAccept, ActivitypubFollow, ActivitypubProfile, ActivitypubPost]:
         # Already fine
         outbound = entity
     elif cls == Accept:
         outbound = ActivitypubAccept.from_base(entity)
     elif cls == Follow:
         outbound = ActivitypubFollow.from_base(entity)
+    elif cls == Post:
+        outbound = ActivitypubPost.from_base(entity)
     elif cls == Profile:
         outbound = ActivitypubProfile.from_base(entity)
     if not outbound:
@@ -101,16 +116,18 @@ def message_to_objects(
     return element_to_objects(message)
 
 
-def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dict, cls) -> None:
+def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dict, cls, is_object: bool) -> None:
     if value is None:
         value = ""
     if key == "id":
-        if cls == ActivitypubProfile:
+        if is_object or cls == ActivitypubProfile:
             transformed["id"] = value
         else:
             transformed["activity_id"] = value
     elif key == "actor":
         transformed["actor_id"] = value
+    elif key == "content":
+        transformed["raw_content"] = value
     elif key == "inboxes" and isinstance(value, dict):
         if "inboxes" not in transformed:
             transformed["inboxes"] = {"private": None, "public": None}
@@ -144,24 +161,25 @@ def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dic
             if cls in (ActivitypubAccept, ActivitypubFollow):
                 transformed["target_id"] = value.get("id")
             else:
-                # TODO possibly we need something else here based on class
-                # currently there is risk of overwriting some properties
-                transform_attributes(value, cls, transformed)
+                transform_attributes(value, cls, transformed, is_object=True)
         else:
             transformed["target_id"] = value
     elif key == "preferredUsername":
         transformed["username"] = value
     elif key == "publicKey":
         transformed["public_key"] = value.get('publicKeyPem', '')
-    elif key == "summary":
+    elif key == "summary" and cls == ActivitypubProfile:
         transformed["raw_content"] = value
+    elif key in ("to", "cc"):
+        if isinstance(value, list) and NAMESPACE_PUBLIC in value:
+            transformed["public"] = True
     elif key == "url":
         transformed["url"] = value
 
 
-def transform_attributes(payload: Dict, cls, transformed: Dict = None) -> Dict:
+def transform_attributes(payload: Dict, cls, transformed: Dict = None, is_object: bool = False) -> Dict:
     if not transformed:
         transformed = {}
     for key, value in payload.items():
-        transform_attribute(key, value, transformed, cls)
+        transform_attribute(key, value, transformed, cls, is_object)
     return transformed

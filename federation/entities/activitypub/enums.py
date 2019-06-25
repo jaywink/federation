@@ -12,6 +12,7 @@ class ActivityType(EnumBase):
     CREATE = "Create"
     DELETE = "Delete"
     FOLLOW = "Follow"
+    UNDO = "Undo"
     UPDATE = "Update"
 
 

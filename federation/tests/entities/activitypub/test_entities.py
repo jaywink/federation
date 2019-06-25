@@ -3,7 +3,7 @@ from unittest.mock import patch
 from Crypto.PublicKey.RSA import RsaKey
 
 from federation.entities.activitypub.constants import (
-    CONTEXTS_DEFAULT, CONTEXT_MANUALLY_APPROVES_FOLLOWERS, CONTEXT_LD_SIGNATURES, CONTEXT_HASHTAG, CONTEXT_SENSITIVE)
+    CONTEXTS_DEFAULT, CONTEXT_MANUALLY_APPROVES_FOLLOWERS, CONTEXT_LD_SIGNATURES)
 from federation.entities.activitypub.entities import ActivitypubAccept
 from federation.tests.fixtures.keys import PUBKEY
 from federation.types import UserType
@@ -21,13 +21,31 @@ class TestEntitiesConvertToAS2:
         }
 
     def test_post_to_as2(self, activitypubpost):
-        # TODO expand
         result = activitypubpost.to_as2()
-        assert result.get('@context') == CONTEXTS_DEFAULT + [
-            CONTEXT_HASHTAG,
-            CONTEXT_SENSITIVE,
-        ]
-        assert result.get('type') == 'Note'
+        assert result == {
+            '@context': [
+                'https://www.w3.org/ns/activitystreams',
+                {'Hashtag': 'as:Hashtag'},
+                'https://w3id.org/security/v1',
+                {'sensitive': 'as:sensitive'},
+            ],
+            'type': 'Create',
+            'id': 'http://127.0.0.1:8000/post/123456/#create',
+            'actor': 'http://127.0.0.1:8000/profile/123456/',
+            'object': {
+                'id': 'http://127.0.0.1:8000/post/123456/',
+                'type': 'Note',
+                'attributedTo': 'http://127.0.0.1:8000/profile/123456/',
+                'content': 'raw_content',
+                'published': '2019-04-27T00:00:00',
+                'inReplyTo': None,
+                'sensitive': False,
+                'summary': None,
+                'tag': [],
+                'url': '',
+            },
+            'published': '2019-04-27T00:00:00',
+        }
 
     def test_profile_to_as2(self, activitypubprofile):
         result = activitypubprofile.to_as2()

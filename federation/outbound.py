@@ -1,11 +1,12 @@
 import importlib
 import json
 import logging
-from typing import List, Dict
+from typing import List, Dict, Union
 
 from Crypto.PublicKey.RSA import RsaKey
 from iteration_utilities import unique_everseen
 
+from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
 from federation.entities.mixins import BaseEntity
 from federation.protocols.activitypub.signing import get_http_authentication
 from federation.types import UserType
@@ -20,7 +21,7 @@ def handle_create_payload(
         protocol_name: str,
         to_user_key: RsaKey = None,
         parent_user: UserType = None,
-) -> str:
+) -> Union[str, dict]:
     """Create a payload with the given protocol.
 
     Any given user arguments must have ``private_key`` and ``handle`` attributes.
@@ -62,9 +63,12 @@ def handle_send(
     :arg entity: Entity object to send. Can be a base entity or a protocol specific one.
     :arg author_user: User authoring the object.
     :arg recipients: A list of recipients to delivery to. Each recipient is a dict
-                     containing at minimum the "fid", "public" and "protocol" keys.
+                     containing at minimum the "endpoint", "fid", "public" and "protocol" keys.
 
-                     For ActivityPub and Diaspora payloads, "fid" should be an URL of the endpoint to deliver to.
+                     For ActivityPub and Diaspora payloads, "endpoint" should be an URL of the endpoint to deliver to.
+
+                     The "fid" can be empty for Diaspora payloads. For ActivityPub it should be the recipient
+                     federation ID should the delivery be non-private.
 
                      The "protocol" should be a protocol name that is known for this recipient.
 
@@ -78,22 +82,26 @@ def handle_send(
                      For example
                      [
                         {
-                            "fid": "https://domain.tld/receive/users/1234-5678-0123-4567",
+                            "endpoint": "https://domain.tld/receive/users/1234-5678-0123-4567",
+                            "fid": "",
                             "protocol": "diaspora",
                             "public": False,
                             "public_key": <RSAPublicKey object>,
                         },
                         {
-                            "fid": "https://domain2.tld/receive/public",
+                            "endpoint": "https://domain2.tld/receive/public",
+                            "fid": "",
                             "protocol": "diaspora",
                             "public": True,
                         },
                         {
-                            "fid": "https://domain4.tld/sharedinbox/",
+                            "endpoint": "https://domain4.tld/sharedinbox/",
+                            "fid": "https://domain4.tld/profiles/jack/",
                             "protocol": "activitypub",
                             "public": True,
                         },
                         {
+                            "endpoint": "https://domain4.tld/profiles/jill/inbox",
                             "fid": "https://domain4.tld/profiles/jill",
                             "protocol": "activitypub",
                             "public": False,
@@ -118,10 +126,12 @@ def handle_send(
     }
 
     # Flatten to unique recipients
+    # TODO supply a callable that empties "fid" in the case that public=True
     unique_recipients = unique_everseen(recipients)
 
     # Generate payloads and collect urls
     for recipient in unique_recipients:
+        endpoint = recipient["endpoint"]
         fid = recipient["fid"]
         public_key = recipient.get("public_key")
         protocol = recipient["protocol"]
@@ -131,9 +141,15 @@ def handle_send(
             try:
                 payload = handle_create_payload(entity, author_user, protocol, parent_user=parent_user)
                 if public:
-                    payload["to"] = "https://www.w3.org/ns/activitystreams#Public"
+                    payload["to"] = NAMESPACE_PUBLIC
+                    payload["cc"] = [fid]
+                    if isinstance(payload.get("object"), dict):
+                        payload["object"]["to"] = NAMESPACE_PUBLIC
+                        payload["object"]["cc"] = [fid]
                 else:
                     payload["to"] = fid
+                    if isinstance(payload.get("object"), dict):
+                        payload["object"]["to"] = fid
                 payload = json.dumps(payload).encode("utf-8")
             except Exception as ex:
                 logger.error("handle_send - failed to generate private payload for %s: %s", fid, ex)
@@ -142,7 +158,7 @@ def handle_send(
                 "auth": get_http_authentication(author_user.private_key, f"{author_user.id}#main-key"),
                 "payload": payload,
                 "content_type": 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
-                "urls": {fid},
+                "urls": {endpoint},
             })
         elif protocol == "diaspora":
             if public:
@@ -152,7 +168,7 @@ def handle_send(
                     public_payloads[protocol]["payload"] = handle_create_payload(
                         entity, author_user, protocol, parent_user=parent_user,
                     )
-                public_payloads["diaspora"]["urls"].add(fid)
+                public_payloads["diaspora"]["urls"].add(endpoint)
             else:
                 if not public_key:
                     raise ValueError("handle_send - Diaspora recipient cannot be private without a public key for "
@@ -167,7 +183,7 @@ def handle_send(
                     logger.error("handle_send - failed to generate private payload for %s: %s", fid, ex)
                     continue
                 payloads.append({
-                    "urls": {fid}, "payload": payload, "content_type": "application/json", "auth": None,
+                    "urls": {endpoint}, "payload": payload, "content_type": "application/json", "auth": None,
                 })
 
     # Add public diaspora payload

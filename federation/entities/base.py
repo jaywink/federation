@@ -2,6 +2,7 @@ from typing import Dict
 
 from dirty_validators.basic import Email
 
+from federation.entities.activitypub.enums import ActivityType
 from federation.entities.mixins import (
     PublicMixin, TargetIDMixin, ParticipationMixin, CreatedAtMixin, RawContentMixin, OptionalRawContentMixin,
     EntityTypeMixin, ProviderDisplayNameMixin)
@@ -26,6 +27,8 @@ class Image(PublicMixin, OptionalRawContentMixin, CreatedAtMixin):
     width = 0
     url = ""
 
+    _default_activity = ActivityType.CREATE
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._required += ["remote_path", "remote_name"]
@@ -37,6 +40,7 @@ class Comment(RawContentMixin, ParticipationMixin, CreatedAtMixin):
     url = ""
 
     _allowed_children = (Image,)
+    _default_activity = ActivityType.CREATE
 
 
 class Follow(CreatedAtMixin, TargetIDMixin):
@@ -56,6 +60,7 @@ class Post(RawContentMixin, PublicMixin, CreatedAtMixin, ProviderDisplayNameMixi
     url = ""
 
     _allowed_children = (Image,)
+    _default_activity = ActivityType.CREATE
 
 
 class Reaction(ParticipationMixin, CreatedAtMixin):
@@ -63,6 +68,7 @@ class Reaction(ParticipationMixin, CreatedAtMixin):
     participation = "reaction"
     reaction = ""
 
+    _default_activity = ActivityType.CREATE
     _reaction_valid_values = ["like"]
 
     def __init__(self, *args, **kwargs):
