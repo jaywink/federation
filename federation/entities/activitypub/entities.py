@@ -66,7 +66,8 @@ class ActivitypubFollow(ActivitypubObjectMixin, Follow):
                 accept,
                 UserType(id=self.target_id, private_key=key),
                 recipients=[{
-                    "fid": profile.inboxes["private"],
+                    "endpoint": profile.inboxes["private"],
+                    "fid": self.actor_id,
                     "protocol": "activitypub",
                     "public": False,
                 }],

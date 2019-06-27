@@ -93,7 +93,8 @@ class TestEntitiesPostReceive:
         assert args[1].id == "https://example.com/profile"
         assert isinstance(args[1].private_key, RsaKey)
         assert kwargs['recipients'] == [{
-            "fid": "https://example.com/bob/private",
+            "endpoint": "https://example.com/bob/private",
+            "fid": "https://localhost/profile",
             "protocol": "activitypub",
             "public": False,
         }]
