@@ -59,6 +59,16 @@ def activitypubprofile():
 
 
 @pytest.fixture
+def activitypubundofollow():
+    return ActivitypubFollow(
+        activity_id="https://localhost/undo",
+        actor_id="https://localhost/profile",
+        target_id="https://example.com/profile",
+        following=False,
+    )
+
+
+@pytest.fixture
 def profile():
     return Profile(
         raw_content="foobar", name="Bob Bobertson", public=True,

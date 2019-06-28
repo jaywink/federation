@@ -14,10 +14,11 @@ logger = logging.getLogger("federation")
 MAPPINGS = {
     "Accept": ActivitypubAccept,
     "Article": ActivitypubPost,
-    "Follow": ActivitypubFollow,
+    "Follow": ActivitypubFollow,  # Technically not correct, but for now we support only following profiles
     "Note": ActivitypubPost,
     "Page": ActivitypubPost,
     "Person": ActivitypubProfile,
+    "Undo": ActivitypubFollow,  # Technically not correct, but for now we support only undoing a follow of a profile
 }
 
 
@@ -158,8 +159,10 @@ def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dic
         transformed["name"] = value
     elif key == "object":
         if isinstance(value, dict):
-            if cls in (ActivitypubAccept, ActivitypubFollow):
+            if cls == ActivitypubAccept:
                 transformed["target_id"] = value.get("id")
+            elif cls == ActivitypubFollow:
+                transformed["target_id"] = value.get("object")
             else:
                 transform_attributes(value, cls, transformed, is_object=True)
         else:
@@ -173,6 +176,9 @@ def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dic
     elif key in ("to", "cc"):
         if isinstance(value, list) and NAMESPACE_PUBLIC in value:
             transformed["public"] = True
+    elif key == "type":
+        if value == "Undo":
+            transformed["following"] = False
     elif key == "url":
         transformed["url"] = value
 

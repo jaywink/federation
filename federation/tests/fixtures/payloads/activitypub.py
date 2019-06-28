@@ -7,12 +7,6 @@ ACTIVITYPUB_FOLLOW = {
   "type": "Follow",
   "actor": "https://example.com/actor",
   "object": "https://example.org/actor",
-  "signature": {
-    "type": "RsaSignature2017",
-    "creator": "https://example.com/actor#main-key",
-    "created": "2018-10-11T15:59:32Z",
-    "signatureValue": "foobar"
-  }
 }
 
 ACTIVITYPUB_PROFILE = {
@@ -97,5 +91,21 @@ ACTIVITYPUB_PROFILE_INVALID = {
     "id": "https://diaspodon.fr/users/jaywink#main-key",
     "owner": "https://diaspodon.fr/users/jaywink",
     "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwVbaT5wvaZobfIB044ai\nhJg/XooEn2jSTnTY1K4mPmhdqYUmszpdXKp64OwA+f3SBuIUIkLAYUSB9Fu19zh+\nzOsoGI5gvA32DHY1vaqdKnT9gt3jKS5AdQ3bl0t9f4pPkO2I5YtQOWV1FvBcwPXG\nB0dIqj0fTqNK37FmyybrRD6uhjySddklN9gNsULTqYVDa0QSXVswTIW2jQudnNlp\nnEf3SfjlK9J8eKPF3hFK3PNXBTTZ4NydBSL3cVBinU0cFg8lUJOK8RI4qaetrVoQ\neKd7gCTSQ7RZh8kmkYmdlweb+ZtORT6Y5ZsotR8jwhAOFAqCt36B5+LX2UIw68Pk\nOwIDAQAB\n-----END PUBLIC KEY-----\n"
+  },
+}
+
+ACTIVITYPUB_UNDO_FOLLOW = {
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://w3id.org/security/v1",
+  ],
+  "id": "https://example.com/undo",
+  "type": "Undo",
+  "actor": "https://example.com/actor",
+  "object": {
+    "id": "https://example.com/follow",
+    "type": "Follow",
+    "actor": "https://example.com/actor",
+    "object": "https://example.org/actor",
   },
 }

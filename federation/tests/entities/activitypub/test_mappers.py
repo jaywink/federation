@@ -5,7 +5,8 @@ import pytest
 from federation.entities.activitypub.entities import ActivitypubFollow, ActivitypubAccept, ActivitypubProfile
 from federation.entities.activitypub.mappers import message_to_objects, get_outbound_entity
 from federation.entities.base import Accept, Follow, Profile
-from federation.tests.fixtures.payloads import ACTIVITYPUB_FOLLOW, ACTIVITYPUB_PROFILE, ACTIVITYPUB_PROFILE_INVALID
+from federation.tests.fixtures.payloads import (
+    ACTIVITYPUB_FOLLOW, ACTIVITYPUB_PROFILE, ACTIVITYPUB_PROFILE_INVALID, ACTIVITYPUB_UNDO_FOLLOW)
 
 
 class TestActivitypubEntityMappersReceive:
@@ -22,6 +23,15 @@ class TestActivitypubEntityMappersReceive:
         assert entity.actor_id == "https://example.com/actor"
         assert entity.target_id == "https://example.org/actor"
         assert entity.following is True
+
+    def test_message_to_objects__unfollow(self):
+        entities = message_to_objects(ACTIVITYPUB_UNDO_FOLLOW, "https://example.com/actor")
+        assert len(entities) == 1
+        entity = entities[0]
+        assert isinstance(entity, ActivitypubFollow)
+        assert entity.actor_id == "https://example.com/actor"
+        assert entity.target_id == "https://example.org/actor"
+        assert entity.following is False
 
     @pytest.mark.skip
     def test_message_to_objects_mentions_are_extracted(self):
