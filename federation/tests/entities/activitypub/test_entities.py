@@ -17,7 +17,13 @@ class TestEntitiesConvertToAS2:
             "id": "https://localhost/accept",
             "type": "Accept",
             "actor": "https://localhost/profile",
-            "object": "https://example.com/follow/1234",
+            "object": {
+                "@context": CONTEXTS_DEFAULT,
+                "id": "https://localhost/follow",
+                "type": "Follow",
+                "actor": "https://localhost/profile",
+                "object": "https://example.com/profile",
+            },
         }
 
     def test_post_to_as2(self, activitypubpost):

@@ -17,6 +17,7 @@ logger = logging.getLogger("federation")
 
 class ActivitypubAccept(ActivitypubObjectMixin, Accept):
     _type = ActivityType.ACCEPT.value
+    object: Dict = None
 
     def to_as2(self) -> Dict:
         as2 = {
@@ -24,7 +25,7 @@ class ActivitypubAccept(ActivitypubObjectMixin, Accept):
             "id": self.activity_id,
             "type": self._type,
             "actor": self.actor_id,
-            "object": self.target_id,
+            "object": self.object,
         }
         return as2
 
@@ -53,6 +54,7 @@ class ActivitypubFollow(ActivitypubObjectMixin, Follow):
             activity_id=f"{self.target_id}#accept-{uuid.uuid4()}",
             actor_id=self.target_id,
             target_id=self.activity_id,
+            object=self.to_as2(),
         )
         try:
             profile = retrieve_and_parse_profile(self.actor_id)

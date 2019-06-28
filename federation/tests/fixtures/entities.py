@@ -1,5 +1,3 @@
-import uuid
-
 import pytest
 from freezegun import freeze_time
 
@@ -16,20 +14,21 @@ from federation.tests.fixtures.payloads import DIASPORA_PUBLIC_PAYLOAD
 
 
 @pytest.fixture
-def activitypubaccept():
-    return ActivitypubAccept(
-        activity_id="https://localhost/accept",
-        actor_id="https://localhost/profile",
-        target_id="https://example.com/follow/1234",
-    )
-
-
-@pytest.fixture
 def activitypubfollow():
     return ActivitypubFollow(
         activity_id="https://localhost/follow",
         actor_id="https://localhost/profile",
         target_id="https://example.com/profile",
+    )
+
+
+@pytest.fixture
+def activitypubaccept(activitypubfollow):
+    return ActivitypubAccept(
+        activity_id="https://localhost/accept",
+        actor_id="https://localhost/profile",
+        target_id="https://example.com/follow/1234",
+        object=activitypubfollow.to_as2(),
     )
 
 
