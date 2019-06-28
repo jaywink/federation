@@ -20,6 +20,32 @@ class TestEntitiesConvertToAS2:
             "object": "https://example.com/follow/1234",
         }
 
+    def test_follow_to_as2(self, activitypubfollow):
+        result = activitypubfollow.to_as2()
+        assert result == {
+            "@context": CONTEXTS_DEFAULT,
+            "id": "https://localhost/follow",
+            "type": "Follow",
+            "actor": "https://localhost/profile",
+            "object": "https://example.com/profile"
+        }
+
+    def test_follow_to_as2__undo(self, activitypubundofollow):
+        result = activitypubundofollow.to_as2()
+        result["object"]["id"] = "https://localhost/follow"  # Real object will have a random UUID postfix here
+        assert result == {
+            "@context": CONTEXTS_DEFAULT,
+            "id": "https://localhost/undo",
+            "type": "Undo",
+            "actor": "https://localhost/profile",
+            "object": {
+                "id": "https://localhost/follow",
+                "type": "Follow",
+                "actor": "https://localhost/profile",
+                "object": "https://example.com/profile",
+            }
+        }
+
     def test_post_to_as2(self, activitypubpost):
         result = activitypubpost.to_as2()
         assert result == {

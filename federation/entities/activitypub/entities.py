@@ -36,6 +36,9 @@ class ActivitypubFollow(ActivitypubObjectMixin, Follow):
         """
         Post receive hook - send back follow ack.
         """
+        if not self.following:
+            return
+
         from federation.utils.activitypub import retrieve_and_parse_profile  # Circulars
         try:
             from federation.utils.django import get_function_from_config
@@ -76,13 +79,27 @@ class ActivitypubFollow(ActivitypubObjectMixin, Follow):
             logger.exception("ActivitypubFollow.post_receive - Failed to send Accept back")
 
     def to_as2(self) -> Dict:
-        as2 = {
-            "@context": CONTEXTS_DEFAULT,
-            "id": self.activity_id,
-            "type": self._type,
-            "actor": self.actor_id,
-            "object": self.target_id,
-        }
+        if self.following:
+            as2 = {
+                "@context": CONTEXTS_DEFAULT,
+                "id": self.activity_id,
+                "type": self._type,
+                "actor": self.actor_id,
+                "object": self.target_id,
+            }
+        else:
+            as2 = {
+                "@context": CONTEXTS_DEFAULT,
+                "id": self.activity_id,
+                "type": ActivityType.UNDO.value,
+                "actor": self.actor_id,
+                "object": {
+                    "id": f"{self.actor_id}#follow-{uuid.uuid4()}",
+                    "type": self._type,
+                    "actor": self.actor_id,
+                    "object": self.target_id,
+                },
+            }
         return as2
 
 
