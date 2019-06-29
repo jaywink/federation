@@ -87,7 +87,6 @@ class TestActivitypubEntityMappersReceive:
                                       'class="u-url mention">@<span>jaywink</span></a></span> boom</p>'
         assert comment.id == "https://diaspodon.fr/users/jaywink/statuses/102356911717767237"
         assert comment.actor_id == "https://diaspodon.fr/users/jaywink"
-        assert comment.public is True
         assert comment.target_id == "https://dev.jasonrobinson.me/content/653bad70-41b3-42c9-89cb-c4ee587e68e4/"
 
     @pytest.mark.skip

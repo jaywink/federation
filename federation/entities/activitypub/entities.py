@@ -33,6 +33,36 @@ class ActivitypubAccept(ActivitypubObjectMixin, Accept):
         return as2
 
 
+class ActivitypubComment(ActivitypubObjectMixin, Comment):
+    _type = ObjectType.NOTE.value
+
+    def to_as2(self) -> Dict:
+        as2 = {
+            "@context": CONTEXTS_DEFAULT + [
+                CONTEXT_HASHTAG,
+                CONTEXT_LD_SIGNATURES,
+                CONTEXT_SENSITIVE,
+            ],
+            "type": self.activity.value,
+            "id": self.activity_id,
+            "actor": self.actor_id,
+            "object": {
+                "id": self.id,
+                "type": self._type,
+                "attributedTo": self.actor_id,
+                "content": self.raw_content,  # TODO render to html, add source markdown
+                "published": self.created_at.isoformat(),
+                "inReplyTo": self.target_id,
+                "sensitive": True if "nsfw" in self.tags else False,
+                "summary": None,  # TODO Short text? First sentence? First line?
+                "tag": [],  # TODO add tags
+                "url": self.url,
+            },
+            "published": self.created_at.isoformat(),
+        }
+        return as2
+
+
 class ActivitypubFollow(ActivitypubObjectMixin, Follow):
     _type = ActivityType.FOLLOW.value
 
@@ -135,13 +165,6 @@ class ActivitypubPost(ActivitypubObjectMixin, Post):
             },
             "published": self.created_at.isoformat(),
         }
-        return as2
-
-
-class ActivitypubComment(ActivitypubPost, Comment):
-    def to_as2(self) -> Dict:
-        as2 = super().to_as2()
-        as2["object"]["inReplyTo"] = self.target_id
         return as2
 
 
