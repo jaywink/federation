@@ -10,7 +10,7 @@ from federation.entities.activitypub.constants import (
 from federation.entities.activitypub.enums import ActorType, ObjectType, ActivityType
 from federation.entities.activitypub.mixins import ActivitypubObjectMixin, ActivitypubActorMixin
 from federation.entities.activitypub.objects import ImageObject
-from federation.entities.base import Profile, Post, Follow, Accept
+from federation.entities.base import Profile, Post, Follow, Accept, Comment
 from federation.outbound import handle_send
 from federation.types import UserType
 from federation.utils.text import with_slash
@@ -29,6 +29,36 @@ class ActivitypubAccept(ActivitypubObjectMixin, Accept):
             "type": self._type,
             "actor": self.actor_id,
             "object": self.object,
+        }
+        return as2
+
+
+class ActivitypubComment(ActivitypubObjectMixin, Comment):
+    _type = ObjectType.NOTE.value
+
+    def to_as2(self) -> Dict:
+        as2 = {
+            "@context": CONTEXTS_DEFAULT + [
+                CONTEXT_HASHTAG,
+                CONTEXT_LD_SIGNATURES,
+                CONTEXT_SENSITIVE,
+            ],
+            "type": self.activity.value,
+            "id": self.activity_id,
+            "actor": self.actor_id,
+            "object": {
+                "id": self.id,
+                "type": self._type,
+                "attributedTo": self.actor_id,
+                "content": self.raw_content,  # TODO render to html, add source markdown
+                "published": self.created_at.isoformat(),
+                "inReplyTo": self.target_id,
+                "sensitive": True if "nsfw" in self.tags else False,
+                "summary": None,  # TODO Short text? First sentence? First line?
+                "tag": [],  # TODO add tags
+                "url": self.url,
+            },
+            "published": self.created_at.isoformat(),
         }
         return as2
 
