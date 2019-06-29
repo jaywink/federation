@@ -26,6 +26,33 @@ class TestEntitiesConvertToAS2:
             },
         }
 
+    def test_comment_to_as2(self, activitypubcomment):
+        result = activitypubcomment.to_as2()
+        assert result == {
+            '@context': [
+                'https://www.w3.org/ns/activitystreams',
+                {'Hashtag': 'as:Hashtag'},
+                'https://w3id.org/security/v1',
+                {'sensitive': 'as:sensitive'},
+            ],
+            'type': 'Create',
+            'id': 'http://127.0.0.1:8000/post/123456/#create',
+            'actor': 'http://127.0.0.1:8000/profile/123456/',
+            'object': {
+                'id': 'http://127.0.0.1:8000/post/123456/',
+                'type': 'Note',
+                'attributedTo': 'http://127.0.0.1:8000/profile/123456/',
+                'content': 'raw_content',
+                'published': '2019-04-27T00:00:00',
+                'inReplyTo': 'http://127.0.0.1:8000/post/012345/',
+                'sensitive': False,
+                'summary': None,
+                'tag': [],
+                'url': '',
+            },
+            'published': '2019-04-27T00:00:00',
+        }
+
     def test_follow_to_as2(self, activitypubfollow):
         result = activitypubfollow.to_as2()
         assert result == {

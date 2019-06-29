@@ -2,7 +2,7 @@ import pytest
 from freezegun import freeze_time
 
 from federation.entities.activitypub.entities import (
-    ActivitypubPost, ActivitypubAccept, ActivitypubFollow, ActivitypubProfile)
+    ActivitypubPost, ActivitypubAccept, ActivitypubFollow, ActivitypubProfile, ActivitypubComment)
 from federation.entities.base import Profile
 from federation.entities.diaspora.entities import (
     DiasporaPost, DiasporaComment, DiasporaLike, DiasporaProfile, DiasporaRetraction,
@@ -11,6 +11,20 @@ from federation.entities.diaspora.entities import (
 from federation.tests.factories.entities import ShareFactory
 from federation.tests.fixtures.keys import PUBKEY
 from federation.tests.fixtures.payloads import DIASPORA_PUBLIC_PAYLOAD
+
+
+@pytest.fixture
+def activitypubcomment():
+    with freeze_time("2019-04-27"):
+        return ActivitypubComment(
+            raw_content="raw_content",
+            public=True,
+            provider_display_name="Socialhome",
+            id=f"http://127.0.0.1:8000/post/123456/",
+            activity_id=f"http://127.0.0.1:8000/post/123456/#create",
+            actor_id=f"http://127.0.0.1:8000/profile/123456/",
+            target_id="http://127.0.0.1:8000/post/012345/",
+        )
 
 
 @pytest.fixture

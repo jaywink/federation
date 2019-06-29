@@ -4,7 +4,7 @@ from typing import List, Callable, Dict, Union
 from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
 from federation.entities.activitypub.entities import (
     ActivitypubFollow, ActivitypubProfile, ActivitypubAccept, ActivitypubPost, ActivitypubComment)
-from federation.entities.base import Follow, Profile, Accept, Post
+from federation.entities.base import Follow, Profile, Accept, Post, Comment
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType
 
@@ -80,7 +80,7 @@ def get_outbound_entity(entity: BaseEntity, private_key):
         return entity
     outbound = None
     cls = entity.__class__
-    if cls in [ActivitypubAccept, ActivitypubFollow, ActivitypubProfile, ActivitypubPost]:
+    if cls in [ActivitypubAccept, ActivitypubFollow, ActivitypubProfile, ActivitypubPost, ActivitypubComment]:
         # Already fine
         outbound = entity
     elif cls == Accept:
@@ -91,6 +91,8 @@ def get_outbound_entity(entity: BaseEntity, private_key):
         outbound = ActivitypubPost.from_base(entity)
     elif cls == Profile:
         outbound = ActivitypubProfile.from_base(entity)
+    elif cls == Comment:
+        outbound = ActivitypubComment.from_base(entity)
     if not outbound:
         raise ValueError("Don't know how to convert this base entity to ActivityPub protocol entities.")
     # TODO LDS signing
