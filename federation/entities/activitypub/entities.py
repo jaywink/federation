@@ -2,11 +2,14 @@ import logging
 import uuid
 from typing import Dict
 
+import attr
+
 from federation.entities.activitypub.constants import (
     CONTEXTS_DEFAULT, CONTEXT_MANUALLY_APPROVES_FOLLOWERS, CONTEXT_SENSITIVE, CONTEXT_HASHTAG,
     CONTEXT_LD_SIGNATURES)
 from federation.entities.activitypub.enums import ActorType, ObjectType, ActivityType
 from federation.entities.activitypub.mixins import ActivitypubObjectMixin, ActivitypubActorMixin
+from federation.entities.activitypub.objects import ImageObject
 from federation.entities.base import Profile, Post, Follow, Accept
 from federation.outbound import handle_send
 from federation.types import UserType
@@ -168,5 +171,8 @@ class ActivitypubProfile(ActivitypubActorMixin, Profile):
         if self.raw_content:
             as2['summary'] = self.raw_content
         if self.image_urls.get('large'):
-            as2['icon'] = self.image_urls.get('large')
+            try:
+                as2['icon'] = attr.asdict(ImageObject(url=self.image_urls.get('large')))
+            except Exception as ex:
+                logger.warning("ActivitypubProfile.to_as2 - failed to set profile icon: %s", ex)
         return as2

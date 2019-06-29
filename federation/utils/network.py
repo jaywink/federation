@@ -3,7 +3,7 @@ import datetime
 import logging
 import re
 import socket
-from typing import Tuple
+from typing import Optional, Tuple
 
 import requests
 from ipdata import ipdata
@@ -16,6 +16,18 @@ from federation import __version__
 logger = logging.getLogger("federation")
 
 USER_AGENT = "python/federation/%s" % __version__
+
+
+def fetch_content_type(url: str) -> Optional[str]:
+    """
+    Fetch the HEAD of the remote url to determine the content type.
+    """
+    try:
+        response = requests.head(url, headers={'user-agent': USER_AGENT}, timeout=10)
+    except RequestException as ex:
+        logger.warning("fetch_content_type - %s when fetching url %s", ex, url)
+    else:
+        return response.headers.get('Content-Type')
 
 
 def fetch_country_by_ip(ip):

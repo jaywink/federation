@@ -79,7 +79,8 @@ class TestEntitiesConvertToAS2:
             'published': '2019-04-27T00:00:00',
         }
 
-    def test_profile_to_as2(self, activitypubprofile):
+    @patch("federation.entities.activitypub.objects.fetch_content_type", return_value="image/jpeg")
+    def test_profile_to_as2(self, mock_fetch, activitypubprofile):
         result = activitypubprofile.to_as2()
         assert result == {
             "@context": CONTEXTS_DEFAULT + [
@@ -104,7 +105,11 @@ class TestEntitiesConvertToAS2:
             "type": "Person",
             "url": "https://example.com/bob-bobertson",
             "summary": "foobar",
-            "icon": "urllarge",
+            "icon": {
+                "type": "Image",
+                "url": "urllarge",
+                "mediaType": "image/jpeg",
+            }
         }
 
 
