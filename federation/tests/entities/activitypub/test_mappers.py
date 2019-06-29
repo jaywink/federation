@@ -3,11 +3,12 @@ from unittest.mock import patch
 import pytest
 
 from federation.entities.activitypub.entities import (
-    ActivitypubFollow, ActivitypubAccept, ActivitypubProfile, ActivitypubPost)
+    ActivitypubFollow, ActivitypubAccept, ActivitypubProfile, ActivitypubPost, ActivitypubComment)
 from federation.entities.activitypub.mappers import message_to_objects, get_outbound_entity
-from federation.entities.base import Accept, Follow, Profile, Post
+from federation.entities.base import Accept, Follow, Profile, Post, Comment
 from federation.tests.fixtures.payloads import (
-    ACTIVITYPUB_FOLLOW, ACTIVITYPUB_PROFILE, ACTIVITYPUB_PROFILE_INVALID, ACTIVITYPUB_UNDO_FOLLOW, ACTIVITYPUB_POST)
+    ACTIVITYPUB_FOLLOW, ACTIVITYPUB_PROFILE, ACTIVITYPUB_PROFILE_INVALID, ACTIVITYPUB_UNDO_FOLLOW, ACTIVITYPUB_POST,
+    ACTIVITYPUB_COMMENT)
 
 
 class TestActivitypubEntityMappersReceive:
@@ -53,7 +54,8 @@ class TestActivitypubEntityMappersReceive:
                                    'class="u-url mention">@<span>jaywink</span></a></span> boom</p>'
         assert post.id == "https://diaspodon.fr/users/jaywink/statuses/102356911717767237"
         assert post.actor_id == "https://diaspodon.fr/users/jaywink"
-        assert post.public == True
+        assert post.public is True
+        assert getattr(post, "target_id", None) is None
 
     @pytest.mark.skip
     def test_message_to_objects_post_with_photos(self):
@@ -75,24 +77,18 @@ class TestActivitypubEntityMappersReceive:
         assert photo.public == False
         assert photo.created_at == datetime(2011, 7, 20, 1, 36, 7)
 
-    @pytest.mark.skip
-    def test_message_to_objects_comment(self, mock_validate):
-        entities = message_to_objects(DIASPORA_POST_COMMENT, "alice@alice.diaspora.example.org",
-                                      sender_key_fetcher=Mock())
+    def test_message_to_objects_comment(self):
+        entities = message_to_objects(ACTIVITYPUB_COMMENT, "https://diaspodon.fr/users/jaywink")
         assert len(entities) == 1
         comment = entities[0]
-        assert isinstance(comment, DiasporaComment)
+        assert isinstance(comment, ActivitypubComment)
         assert isinstance(comment, Comment)
-        assert comment.target_guid == "((parent_guidparent_guidparent_guidparent_guid))"
-        assert comment.guid == "((guidguidguidguidguidguid))"
-        assert comment.handle == "alice@alice.diaspora.example.org"
-        assert comment.participation == "comment"
-        assert comment.raw_content == "((text))"
-        assert comment.signature == "((signature))"
-        assert comment._xml_tags == [
-            "guid", "parent_guid", "text", "author",
-        ]
-        mock_validate.assert_called_once_with()
+        assert comment.raw_content == '<p><span class="h-card"><a href="https://dev.jasonrobinson.me/u/jaywink/" ' \
+                                      'class="u-url mention">@<span>jaywink</span></a></span> boom</p>'
+        assert comment.id == "https://diaspodon.fr/users/jaywink/statuses/102356911717767237"
+        assert comment.actor_id == "https://diaspodon.fr/users/jaywink"
+        assert comment.public is True
+        assert comment.target_id == "https://dev.jasonrobinson.me/content/653bad70-41b3-42c9-89cb-c4ee587e68e4/"
 
     @pytest.mark.skip
     def test_message_to_objects_like(self, mock_validate):

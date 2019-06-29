@@ -10,7 +10,7 @@ from federation.entities.activitypub.constants import (
 from federation.entities.activitypub.enums import ActorType, ObjectType, ActivityType
 from federation.entities.activitypub.mixins import ActivitypubObjectMixin, ActivitypubActorMixin
 from federation.entities.activitypub.objects import ImageObject
-from federation.entities.base import Profile, Post, Follow, Accept
+from federation.entities.base import Profile, Post, Follow, Accept, Comment
 from federation.outbound import handle_send
 from federation.types import UserType
 from federation.utils.text import with_slash
@@ -135,6 +135,13 @@ class ActivitypubPost(ActivitypubObjectMixin, Post):
             },
             "published": self.created_at.isoformat(),
         }
+        return as2
+
+
+class ActivitypubComment(ActivitypubPost, Comment):
+    def to_as2(self) -> Dict:
+        as2 = super().to_as2()
+        as2["object"]["inReplyTo"] = self.target_id
         return as2
 
 

@@ -3,7 +3,7 @@ from typing import List, Callable, Dict, Union
 
 from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
 from federation.entities.activitypub.entities import (
-    ActivitypubFollow, ActivitypubProfile, ActivitypubAccept, ActivitypubPost)
+    ActivitypubFollow, ActivitypubProfile, ActivitypubAccept, ActivitypubPost, ActivitypubComment)
 from federation.entities.base import Follow, Profile, Accept, Post
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType
@@ -28,10 +28,12 @@ def element_to_objects(payload: Dict) -> List:
     """
     entities = []
     if isinstance(payload.get('object'), dict) and payload["object"].get('type'):
-        as2_type = payload["object"]["type"]
+        if payload["object"]["type"] == "Note" and payload["object"].get("inReplyTo"):
+            cls = ActivitypubComment
+        else:
+            cls = MAPPINGS.get(payload["object"]["type"])
     else:
-        as2_type = payload.get('type')
-    cls = MAPPINGS.get(as2_type)
+        cls = MAPPINGS.get(payload.get('type'))
     if not cls:
         return []
 
@@ -151,6 +153,8 @@ def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dic
         transformed["inboxes"]["private"] = value
         if not transformed["inboxes"]["public"]:
             transformed["inboxes"]["public"] = value
+    elif key == "inReplyTo":
+        transformed["target_id"] = value
     elif key == "name":
         transformed["name"] = value
     elif key == "object":
