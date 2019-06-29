@@ -28,11 +28,7 @@ def element_to_objects(payload: Dict) -> List:
     """
     entities = []
     if isinstance(payload.get('object'), dict) and payload["object"].get('type'):
-        if payload["object"].get("inReplyTo"):
-            # TODO this should be comment
-            as2_type = ActivitypubPost
-        else:
-            as2_type = payload["object"]["type"]
+        as2_type = payload["object"]["type"]
     else:
         as2_type = payload.get('type')
     cls = MAPPINGS.get(as2_type)
