@@ -188,6 +188,9 @@ def transform_attributes(attrs, cls):
         elif key in ("target_guid", "root_guid", "parent_guid"):
             transformed["target_id"] = value
             transformed["target_guid"] = value
+        elif key == "thread_parent_guid":
+            transformed["root_target_id"] = value
+            transformed["root_target_guid"] = value
         elif key in ("first_name", "last_name"):
             values = [attrs.get('first_name'), attrs.get('last_name')]
             values = [v for v in values if v]

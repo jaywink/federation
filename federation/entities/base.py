@@ -5,7 +5,7 @@ from dirty_validators.basic import Email
 from federation.entities.activitypub.enums import ActivityType
 from federation.entities.mixins import (
     PublicMixin, TargetIDMixin, ParticipationMixin, CreatedAtMixin, RawContentMixin, OptionalRawContentMixin,
-    EntityTypeMixin, ProviderDisplayNameMixin)
+    EntityTypeMixin, ProviderDisplayNameMixin, RootTargetIDMixin)
 
 
 class Accept(CreatedAtMixin, TargetIDMixin):
@@ -34,7 +34,7 @@ class Image(PublicMixin, OptionalRawContentMixin, CreatedAtMixin):
         self._required += ["remote_path", "remote_name"]
 
 
-class Comment(RawContentMixin, ParticipationMixin, CreatedAtMixin):
+class Comment(RawContentMixin, ParticipationMixin, CreatedAtMixin, RootTargetIDMixin):
     """Represents a comment, linked to another object."""
     participation = "comment"
     url = ""

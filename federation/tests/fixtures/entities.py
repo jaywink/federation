@@ -119,6 +119,22 @@ def diasporacomment():
 
 
 @pytest.fixture
+def diasporanestedcomment():
+    return DiasporaComment(
+        raw_content="raw_content",
+        signature="signature",
+        id="guid",
+        guid="guid",
+        actor_id="alice@example.com",
+        handle="alice@example.com",
+        target_id="thread_target_guid",
+        target_guid="thread_target_guid",
+        root_target_id="target_guid",
+        root_target_guid="target_guid",
+    )
+
+
+@pytest.fixture
 def diasporacontact():
     return DiasporaContact(
         actor_id="alice@example.com",

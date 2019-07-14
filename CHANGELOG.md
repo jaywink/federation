@@ -22,6 +22,10 @@
 
   ActivityPub profiles will parse these values from incoming profile documents. Diaspora entities will default to the inboxes in the specification.
 
+* Added support for Diaspora `Comment` entity `thread_parent_guid` attribute.
+
+* Added `root_target_id` and `root_target_guid` to `Comment` base entity. This allows referring to a parent object up the hierarchy chain for threaded comments.
+
 ### Changed
 
 * **Backwards incompatible.** Lowest compatible Python version is now 3.6.

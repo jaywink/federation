@@ -18,7 +18,7 @@ from federation.tests.fixtures.payloads import (
     DIASPORA_POST_WITH_PHOTOS, DIASPORA_CONTACT,
     DIASPORA_PROFILE_EMPTY_TAGS, DIASPORA_RESHARE,
     DIASPORA_RESHARE_WITH_EXTRA_PROPERTIES, DIASPORA_POST_SIMPLE_WITH_MENTION,
-    DIASPORA_PROFILE_FIRST_NAME_ONLY)
+    DIASPORA_PROFILE_FIRST_NAME_ONLY, DIASPORA_POST_COMMENT_NESTED)
 
 
 class TestDiasporaEntityMappersReceive:
@@ -71,6 +71,7 @@ class TestDiasporaEntityMappersReceive:
         assert isinstance(comment, DiasporaComment)
         assert isinstance(comment, Comment)
         assert comment.target_guid == "((parent_guidparent_guidparent_guidparent_guid))"
+        assert comment.root_target_guid == ""
         assert comment.guid == "((guidguidguidguidguidguid))"
         assert comment.handle == "alice@alice.diaspora.example.org"
         assert comment.participation == "comment"
@@ -78,6 +79,26 @@ class TestDiasporaEntityMappersReceive:
         assert comment.signature == "((signature))"
         assert comment._xml_tags == [
             "guid", "parent_guid", "text", "author",
+        ]
+        mock_validate.assert_called_once_with()
+
+    @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
+    def test_message_to_objects_nested_comment(self, mock_validate):
+        entities = message_to_objects(DIASPORA_POST_COMMENT_NESTED, "alice@alice.diaspora.example.org",
+                                      sender_key_fetcher=Mock())
+        assert len(entities) == 1
+        comment = entities[0]
+        assert isinstance(comment, DiasporaComment)
+        assert isinstance(comment, Comment)
+        assert comment.target_guid == "((parent_guidparent_guidparent_guidparent_guid))"
+        assert comment.root_target_guid == "((threadparentguid))"
+        assert comment.guid == "((guidguidguidguidguidguid))"
+        assert comment.handle == "alice@alice.diaspora.example.org"
+        assert comment.participation == "comment"
+        assert comment.raw_content == "((text))"
+        assert comment.signature == "((signature))"
+        assert comment._xml_tags == [
+            "guid", "parent_guid", "thread_parent_guid", "text", "author",
         ]
         mock_validate.assert_called_once_with()
 

@@ -91,6 +91,18 @@ DIASPORA_POST_COMMENT = """
     </comment>
 """
 
+DIASPORA_POST_COMMENT_NESTED = """
+    <comment>
+      <guid>((guidguidguidguidguidguid))</guid>
+      <parent_guid>((parent_guidparent_guidparent_guidparent_guid))</parent_guid>
+      <thread_parent_guid>((threadparentguid))</thread_parent_guid>
+      <author_signature>((base64-encoded data))</author_signature>
+      <text>((text))</text>
+      <author>alice@alice.diaspora.example.org</author>
+      <author_signature>((signature))</author_signature>
+    </comment>
+"""
+
 DIASPORA_POST_LIKE = """
     <like>
       <parent_type>Post</parent_type>
