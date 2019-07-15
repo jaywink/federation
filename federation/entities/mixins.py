@@ -137,6 +137,12 @@ class TargetIDMixin(BaseEntity):
         self._required += ["target_id"]
 
 
+class RootTargetIDMixin(BaseEntity):
+    root_target_id = ""
+    root_target_handle = ""
+    root_target_guid = ""
+
+
 class ParticipationMixin(TargetIDMixin):
     """Reflects a participation to something."""
     participation = ""

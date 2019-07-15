@@ -27,6 +27,19 @@ class TestEntitiesConvertToXML:
         assert len(result.find("created_at").text) > 0
         result.find("created_at").text = ""  # timestamp makes testing painful
         converted = b"<comment><guid>guid</guid><parent_guid>target_guid</parent_guid>" \
+                    b"<thread_parent_guid>target_guid</thread_parent_guid>" \
+                    b"<author_signature>signature</author_signature><parent_author_signature>" \
+                    b"</parent_author_signature><text>raw_content</text><author>alice@example.com</author>" \
+                    b"<created_at></created_at></comment>"
+        assert etree.tostring(result) == converted
+
+    def test_nested_comment_to_xml(self, diasporanestedcomment):
+        result = diasporanestedcomment.to_xml()
+        assert result.tag == "comment"
+        assert len(result.find("created_at").text) > 0
+        result.find("created_at").text = ""  # timestamp makes testing painful
+        converted = b"<comment><guid>guid</guid><parent_guid>target_guid</parent_guid>" \
+                    b"<thread_parent_guid>thread_target_guid</thread_parent_guid>" \
                     b"<author_signature>signature</author_signature><parent_author_signature>" \
                     b"</parent_author_signature><text>raw_content</text><author>alice@example.com</author>" \
                     b"<created_at></created_at></comment>"
@@ -122,13 +135,15 @@ class TestDiasporaRelayableMixin:
             guid="guid",
             target_id="target_guid",
             target_guid="target_guid",
+            root_target_id="target_guid",
+            root_target_guid="target_guid",
         )
         entity.sign(get_dummy_private_key())
-        assert entity.signature == "OWvW/Yxw4uCnx0WDn0n5/B4uhyZ8Pr6h3FZaw8J7PCXyPluOfYXFoHO21bykP8c2aVnuJNHe+lmeAkUC" \
-                                   "/kHnl4yxk/jqe3uroW842OWvsyDRQ11vHxhIqNMjiepFPkZmXX3vqrYYh5FrC/tUsZrEc8hHoOIHXFR2" \
-                                   "kGD0gPV+4EEG6pbMNNZ+SBVun0hvruX8iKQVnBdc/+zUI9+T/MZmLyqTq/CvuPxDyHzQPSHi68N9rJyr" \
-                                   "4Xa1K+R33Xq8eHHxs8LVNRqzaHGeD3DX8yBu/vP9TYmZsiWlymbuGwLCa4Yfv/VS1hQZovhg6YTxV4CR" \
-                                   "v4ToGL+CAJ7UHEugRRBwDw=="
+        assert entity.signature == "XZYggFdQHOicguZ0ReVJkYiK5othHgBgAtwnSmm4NR31qeLa76Ur/i2B5Xi9dtopDlNS8EbFy+MLJ1ds" \
+                                   "ovDjPsVC1nLZrL57y0v+HtwJas6hQqNbvmEyr1q6X+0p1i93eINzt/7bxcP5uEGxy8J4ItsJzbDVLlC5" \
+                                   "3ZtIg7pmhR0ltqNqBHrgL8WDokfGKFlXqANchbD+Xeyv2COGbI78LwplVdYjHW1+jefjpYhMCxayIvMv" \
+                                   "WS8TV1hMTqUz+zSqoCHU04RgjjGW8e8vINDblQwMfEMeJ5T6OP5RiU3zCqDc3uL2zxHHh9IGC+clVuhP" \
+                                   "HTv8tHUHNLgc2vIzRtGh6w=="
 
     def test_signing_like_works(self):
         entity = DiasporaLike(

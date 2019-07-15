@@ -15,7 +15,8 @@ class DiasporaComment(DiasporaRelayableMixin, Comment):
         element = etree.Element(self._tag_name)
         struct_to_xml(element, [
             {"guid": self.guid},
-            {"parent_guid": self.target_guid},
+            {"parent_guid": self.root_target_guid or self.target_guid},
+            {"thread_parent_guid": self.target_guid},
             {"author_signature": self.signature},
             {"parent_author_signature": self.parent_signature},
             {"text": self.raw_content},
