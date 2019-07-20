@@ -3,8 +3,9 @@ from typing import List, Callable, Dict, Union
 
 from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
 from federation.entities.activitypub.entities import (
-    ActivitypubFollow, ActivitypubProfile, ActivitypubAccept, ActivitypubPost, ActivitypubComment)
-from federation.entities.base import Follow, Profile, Accept, Post, Comment
+    ActivitypubFollow, ActivitypubProfile, ActivitypubAccept, ActivitypubPost, ActivitypubComment,
+    ActivitypubRetraction)
+from federation.entities.base import Follow, Profile, Accept, Post, Comment, Retraction
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType
 
@@ -14,6 +15,7 @@ logger = logging.getLogger("federation")
 MAPPINGS = {
     "Accept": ActivitypubAccept,
     "Article": ActivitypubPost,
+    "Delete": ActivitypubRetraction,
     "Follow": ActivitypubFollow,  # Technically not correct, but for now we support only following profiles
     "Note": ActivitypubPost,
     "Page": ActivitypubPost,
@@ -27,7 +29,9 @@ def element_to_objects(payload: Dict) -> List:
     Transform an Element to a list of entities recursively.
     """
     entities = []
-    if isinstance(payload.get('object'), dict) and payload["object"].get('type'):
+    if payload.get('type') == "Delete":
+        cls = ActivitypubRetraction
+    elif isinstance(payload.get('object'), dict) and payload["object"].get('type'):
         if payload["object"]["type"] == "Note" and payload["object"].get("inReplyTo"):
             cls = ActivitypubComment
         else:
@@ -80,7 +84,10 @@ def get_outbound_entity(entity: BaseEntity, private_key):
         return entity
     outbound = None
     cls = entity.__class__
-    if cls in [ActivitypubAccept, ActivitypubFollow, ActivitypubProfile, ActivitypubPost, ActivitypubComment]:
+    if cls in [
+        ActivitypubAccept, ActivitypubFollow, ActivitypubProfile, ActivitypubPost, ActivitypubComment,
+        ActivitypubRetraction,
+    ]:
         # Already fine
         outbound = entity
     elif cls == Accept:
@@ -91,6 +98,8 @@ def get_outbound_entity(entity: BaseEntity, private_key):
         outbound = ActivitypubPost.from_base(entity)
     elif cls == Profile:
         outbound = ActivitypubProfile.from_base(entity)
+    elif cls == Retraction:
+        outbound = ActivitypubRetraction.from_base(entity)
     elif cls == Comment:
         outbound = ActivitypubComment.from_base(entity)
     if not outbound:
@@ -121,7 +130,13 @@ def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dic
     if value is None:
         value = ""
     if key == "id":
-        if is_object or cls == ActivitypubProfile:
+        if is_object:
+            if cls == ActivitypubRetraction:
+                transformed["target_id"] = value
+                transformed["entity_type"] = "Object"
+            else:
+                transformed["id"] = value
+        elif cls == ActivitypubProfile:
             transformed["id"] = value
         else:
             transformed["activity_id"] = value

@@ -3,12 +3,13 @@ from unittest.mock import patch
 import pytest
 
 from federation.entities.activitypub.entities import (
-    ActivitypubFollow, ActivitypubAccept, ActivitypubProfile, ActivitypubPost, ActivitypubComment)
+    ActivitypubFollow, ActivitypubAccept, ActivitypubProfile, ActivitypubPost, ActivitypubComment,
+    ActivitypubRetraction)
 from federation.entities.activitypub.mappers import message_to_objects, get_outbound_entity
 from federation.entities.base import Accept, Follow, Profile, Post, Comment
 from federation.tests.fixtures.payloads import (
     ACTIVITYPUB_FOLLOW, ACTIVITYPUB_PROFILE, ACTIVITYPUB_PROFILE_INVALID, ACTIVITYPUB_UNDO_FOLLOW, ACTIVITYPUB_POST,
-    ACTIVITYPUB_COMMENT)
+    ACTIVITYPUB_COMMENT, ACTIVITYPUB_RETRACTION)
 
 
 class TestActivitypubEntityMappersReceive:
@@ -150,15 +151,14 @@ class TestActivitypubEntityMappersReceive:
         entity = entities[0]
         assert entity._receiving_actor_id == "bob@example.com"
 
-    @pytest.mark.skip
     def test_message_to_objects_retraction(self):
-        entities = message_to_objects(DIASPORA_RETRACTION, "bob@example.com")
+        entities = message_to_objects(ACTIVITYPUB_RETRACTION, "https://friendica.feneas.org/profile/jaywink")
         assert len(entities) == 1
         entity = entities[0]
-        assert isinstance(entity, DiasporaRetraction)
-        assert entity.handle == "bob@example.com"
-        assert entity.target_guid == "x" * 16
-        assert entity.entity_type == "Post"
+        assert isinstance(entity, ActivitypubRetraction)
+        assert entity.actor_id == "https://friendica.feneas.org/profile/jaywink"
+        assert entity.target_id == "https://friendica.feneas.org/objects/76158462-165d-3386-aa23-ba2090614385"
+        assert entity.entity_type == "Object"
 
     @pytest.mark.skip
     def test_message_to_objects_accounce(self):

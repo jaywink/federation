@@ -49,6 +49,8 @@
 
 * Network helper utility `fetch_document` can now also take a dictionary of `headers`. They will be passed to the underlying `requests` method call as is.
 
+* `Retraction` entity can now also have an `entity_type` of `Object`. Receivers will need to find the correct object using `target_id` only. This is currently only relevant for ActivityPub where retraction messages do not refer to object type.
+
 ### Removed
 
 * **Backwards incompatible.** Support for Legacy Diaspora payloads have been removed to reduce the amount of code needed to maintain while refactoring for ActivityPub.

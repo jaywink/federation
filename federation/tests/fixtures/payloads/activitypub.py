@@ -144,6 +144,45 @@ ACTIVITYPUB_PROFILE_INVALID = {
   },
 }
 
+ACTIVITYPUB_RETRACTION = {
+    '@context': [
+        'https://www.w3.org/ns/activitystreams',
+        'https://w3id.org/security/v1',
+        {
+            'vcard': 'http://www.w3.org/2006/vcard/ns#',
+            'dfrn': 'http://purl.org/macgirvin/dfrn/1.0/',
+            'diaspora': 'https://diasporafoundation.org/ns/',
+            'litepub': 'http://litepub.social/ns#',
+            'manuallyApprovesFollowers': 'as:manuallyApprovesFollowers',
+            'sensitive': 'as:sensitive',
+            'Hashtag': 'as:Hashtag',
+            'directMessage': 'litepub:directMessage',
+        },
+    ],
+    'id': 'https://friendica.feneas.org/objects/76158462-165d-3386-aa23-ba2090614385#Delete',
+    'type': 'Delete',
+    'actor': 'https://friendica.feneas.org/profile/jaywink',
+    'published': '2019-07-20T21:24:58Z',
+    'instrument': {
+        'type': 'Service',
+        'name': "Friendica 'Dalmatian Bellflower' 2019.06-1313",
+        'url': 'https://friendica.feneas.org',
+    },
+    'to': ['https://www.w3.org/ns/activitystreams#Public'],
+    'cc': ['https://friendica.feneas.org/followers/jaywink'],
+    'object': {
+        'id': 'https://friendica.feneas.org/objects/76158462-165d-3386-aa23-ba2090614385',
+        'type': 'Tombstone',
+    },
+    'signature': {
+        'type': 'RsaSignature2017',
+        'nonce': 'de299d5c8074548d8022d31059b4735870f29ea85d78c5214a423038273c5e5c',
+        'creator': 'https://friendica.feneas.org/profile/jaywink#main-key',
+        'created': '2019-07-20T21:39:13Z',
+        'signatureValue': 'lotsoftext',
+    },
+}
+
 ACTIVITYPUB_UNDO_FOLLOW = {
   "@context": [
     "https://www.w3.org/ns/activitystreams",
