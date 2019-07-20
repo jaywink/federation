@@ -10,7 +10,7 @@ from federation.entities.activitypub.constants import (
 from federation.entities.activitypub.enums import ActorType, ObjectType, ActivityType
 from federation.entities.activitypub.mixins import ActivitypubObjectMixin, ActivitypubActorMixin
 from federation.entities.activitypub.objects import ImageObject
-from federation.entities.base import Profile, Post, Follow, Accept, Comment
+from federation.entities.base import Profile, Post, Follow, Accept, Comment, Retraction
 from federation.outbound import handle_send
 from federation.types import UserType
 from federation.utils.text import with_slash
@@ -205,4 +205,22 @@ class ActivitypubProfile(ActivitypubActorMixin, Profile):
                 as2['icon'] = attr.asdict(ImageObject(url=self.image_urls.get('large')))
             except Exception as ex:
                 logger.warning("ActivitypubProfile.to_as2 - failed to set profile icon: %s", ex)
+        return as2
+
+
+class ActivitypubRetraction(ActivitypubObjectMixin, Retraction):
+    _type = ObjectType.TOMBSTONE.value
+
+    def to_as2(self) -> Dict:
+        as2 = {
+            "@context": CONTEXTS_DEFAULT,
+            "id": self.activity_id,
+            "type": ActivityType.DELETE.value,
+            "actor": self.actor_id,
+            "object": {
+                "id": self.target_id,
+                "type": self._type,
+            },
+            "published": self.created_at.isoformat(),
+        }
         return as2

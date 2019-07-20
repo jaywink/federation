@@ -2,7 +2,8 @@ import pytest
 from freezegun import freeze_time
 
 from federation.entities.activitypub.entities import (
-    ActivitypubPost, ActivitypubAccept, ActivitypubFollow, ActivitypubProfile, ActivitypubComment)
+    ActivitypubPost, ActivitypubAccept, ActivitypubFollow, ActivitypubProfile, ActivitypubComment,
+    ActivitypubRetraction)
 from federation.entities.base import Profile
 from federation.entities.diaspora.entities import (
     DiasporaPost, DiasporaComment, DiasporaLike, DiasporaProfile, DiasporaRetraction,
@@ -70,6 +71,17 @@ def activitypubprofile():
             "public": "https://example.com/public",
         }, public_key=PUBKEY, url="https://example.com/bob-bobertson"
     )
+
+
+@pytest.fixture
+def activitypubretraction():
+    with freeze_time("2019-04-27"):
+        return ActivitypubRetraction(
+            target_id="http://127.0.0.1:8000/post/123456/",
+            activity_id="http://127.0.0.1:8000/post/123456/#delete",
+            actor_id="http://127.0.0.1:8000/profile/123456/",
+            entity_type="Post",
+        )
 
 
 @pytest.fixture

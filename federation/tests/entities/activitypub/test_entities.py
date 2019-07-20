@@ -139,6 +139,22 @@ class TestEntitiesConvertToAS2:
             }
         }
 
+    def test_retraction_to_as2(self, activitypubretraction):
+        result = activitypubretraction.to_as2()
+        assert result == {
+            '@context': [
+                'https://www.w3.org/ns/activitystreams',
+            ],
+            'type': 'Delete',
+            'id': 'http://127.0.0.1:8000/post/123456/#delete',
+            'actor': 'http://127.0.0.1:8000/profile/123456/',
+            'object': {
+                'id': 'http://127.0.0.1:8000/post/123456/',
+                'type': 'Tombstone',
+            },
+            'published': '2019-04-27T00:00:00',
+        }
+
 
 class TestEntitiesPostReceive:
     @patch("federation.utils.activitypub.retrieve_and_parse_profile", autospec=True)
