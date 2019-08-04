@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Optional, Dict, Union
 
 import attr
@@ -17,10 +18,18 @@ class RequestType:
     url: str = attr.ib(default=None)
 
 
-@attr.s
+class ReceiverVariant(Enum):
+    # Indicates this receiver is a single actor
+    ACTOR = "actor"
+    # Indicates this receiver is the followers of this actor
+    FOLLOWERS = "followers"
+
+
+@attr.s(frozen=True)
 class UserType:
     id: str = attr.ib()
     private_key: Optional[RsaKey] = attr.ib(default=None)
+    receiver_variant: Optional[ReceiverVariant] = attr.ib(default=None)
 
     # Required only if sending to Diaspora protocol platforms
     handle: Optional[str] = attr.ib(default=None)

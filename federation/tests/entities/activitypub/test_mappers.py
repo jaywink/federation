@@ -10,6 +10,7 @@ from federation.entities.base import Accept, Follow, Profile, Post, Comment
 from federation.tests.fixtures.payloads import (
     ACTIVITYPUB_FOLLOW, ACTIVITYPUB_PROFILE, ACTIVITYPUB_PROFILE_INVALID, ACTIVITYPUB_UNDO_FOLLOW, ACTIVITYPUB_POST,
     ACTIVITYPUB_COMMENT, ACTIVITYPUB_RETRACTION)
+from federation.types import UserType, ReceiverVariant
 
 
 class TestActivitypubEntityMappersReceive:
@@ -140,16 +141,23 @@ class TestActivitypubEntityMappersReceive:
         assert profile.nsfw is False
         assert profile.tag_list == []
 
-    @pytest.mark.skip
-    def test_message_to_objects_receiving_actor_id_is_saved(self):
+    def test_message_to_objects_receivers_are_saved(self):
         # noinspection PyTypeChecker
         entities = message_to_objects(
-            DIASPORA_POST_SIMPLE,
-            "alice@alice.diaspora.example.org",
-            user=Mock(id="bob@example.com")
+            ACTIVITYPUB_POST,
+            "https://diaspodon.fr/users/jaywink",
         )
         entity = entities[0]
-        assert entity._receiving_actor_id == "bob@example.com"
+        
+        assert set(entity._receivers) == {
+            UserType(
+                id='https://diaspodon.fr/users/jaywink', receiver_variant=ReceiverVariant.FOLLOWERS,
+            ),
+            UserType(
+                id='https://dev.jasonrobinson.me/p/d4574854-a5d7-42be-bfac-f70c16fcaa97/',
+                receiver_variant=ReceiverVariant.ACTOR,
+            )
+        }
 
     def test_message_to_objects_retraction(self):
         entities = message_to_objects(ACTIVITYPUB_RETRACTION, "https://friendica.feneas.org/profile/jaywink")

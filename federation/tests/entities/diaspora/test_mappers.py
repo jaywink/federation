@@ -19,6 +19,7 @@ from federation.tests.fixtures.payloads import (
     DIASPORA_PROFILE_EMPTY_TAGS, DIASPORA_RESHARE,
     DIASPORA_RESHARE_WITH_EXTRA_PROPERTIES, DIASPORA_POST_SIMPLE_WITH_MENTION,
     DIASPORA_PROFILE_FIRST_NAME_ONLY, DIASPORA_POST_COMMENT_NESTED)
+from federation.types import UserType, ReceiverVariant
 
 
 class TestDiasporaEntityMappersReceive:
@@ -159,7 +160,18 @@ class TestDiasporaEntityMappersReceive:
         entities = message_to_objects(DIASPORA_PROFILE_EMPTY_TAGS, "bob@example.com")
         assert len(entities) == 1
 
-    def test_message_to_objects_receiving_actor_id_is_saved(self):
+    def test_message_to_objects_receivers_are_saved__followers_receiver(self):
+        # noinspection PyTypeChecker
+        entities = message_to_objects(
+            DIASPORA_POST_SIMPLE,
+            "alice@alice.diaspora.example.org",
+        )
+        entity = entities[0]
+        assert entity._receivers == [UserType(
+            id="alice@alice.diaspora.example.org", receiver_variant=ReceiverVariant.FOLLOWERS,
+        )]
+
+    def test_message_to_objects_receivers_are_saved__single_receiver(self):
         # noinspection PyTypeChecker
         entities = message_to_objects(
             DIASPORA_POST_SIMPLE,
@@ -167,7 +179,7 @@ class TestDiasporaEntityMappersReceive:
             user=Mock(id="bob@example.com")
         )
         entity = entities[0]
-        assert entity._receiving_actor_id == "bob@example.com"
+        assert entity._receivers == [UserType(id="bob@example.com", receiver_variant=ReceiverVariant.ACTOR)]
 
     def test_message_to_objects_retraction(self):
         entities = message_to_objects(DIASPORA_RETRACTION, "bob@example.com")

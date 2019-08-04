@@ -1,6 +1,7 @@
 import datetime
 import importlib
 import warnings
+from typing import List, Set
 
 from federation.entities.activitypub.enums import ActivityType
 
@@ -8,8 +9,9 @@ from federation.entities.activitypub.enums import ActivityType
 # TODO someday, rewrite entities as dataclasses or attr's
 class BaseEntity:
     _allowed_children: tuple = ()
-    # If we have a receiver for a private payload, store receiving actor id here
-    _receiving_actor_id: str = ""
+    _children: List = None
+    _mentions: Set = None
+    _receivers: List = None
     _source_protocol: str = ""
     # Contains the original object from payload as a string
     _source_object: str = None
@@ -29,6 +31,7 @@ class BaseEntity:
         self._required = ["id", "actor_id"]
         self._children = []
         self._mentions = set()
+        self._receivers = []
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)

@@ -1,5 +1,5 @@
 import importlib
-from typing import Union, TYPE_CHECKING
+from typing import Union, TYPE_CHECKING, Any
 
 from federation.exceptions import NoSuitableProtocolFoundError
 
@@ -32,5 +32,5 @@ def identify_protocol_by_id(id: str):
 
 
 def identify_protocol_by_request(request):
-    # type: (RequestType) -> str
+    # type: (RequestType) -> Any
     return identify_protocol('request', request)
