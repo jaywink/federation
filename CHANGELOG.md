@@ -51,6 +51,16 @@
 
 * `Retraction` entity can now also have an `entity_type` of `Object`. Receivers will need to find the correct object using `target_id` only. This is currently only relevant for ActivityPub where retraction messages do not refer to object type.
 
+* **Backwards incompatible.** Inbound entities now have a list of receivers.
+
+  Entities processed by inbound mappers will now have a list of
+  receivers in `_receivers`. This replaces the
+  `_receiving_actor_id` which was previously set for Diaspora entities.
+
+* UserType now has a `receiver_variant` which is one of `ReceiverVariant`
+  enum. `ACTOR` means this receiver is a single actor ID.
+  `FOLLOWERS` means this is the followers of the ID in the receiver.
+
 ### Removed
 
 * **Backwards incompatible.** Support for Legacy Diaspora payloads have been removed to reduce the amount of code needed to maintain while refactoring for ActivityPub.

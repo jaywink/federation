@@ -13,7 +13,7 @@ from federation.entities.diaspora.entities import (
 from federation.entities.diaspora.mixins import DiasporaRelayableMixin
 from federation.entities.mixins import BaseEntity
 from federation.protocols.diaspora.signatures import get_element_child_info
-from federation.types import UserType
+from federation.types import UserType, ReceiverVariant
 from federation.utils.diaspora import retrieve_and_parse_profile
 
 logger = logging.getLogger("federation")
@@ -74,18 +74,14 @@ def check_sender_and_entity_handle_match(sender_handle, entity_handle):
 
 
 def element_to_objects(
-        element: etree.ElementTree, sender: str, sender_key_fetcher:Callable[[str], str]=None, user: UserType =None,
+        element: etree.ElementTree, sender: str, sender_key_fetcher: Callable[[str], str] = None, user: UserType = None,
 ) -> List:
     """Transform an Element to a list of entities recursively.
 
     Possible child entities are added to each entity ``_children`` list.
 
-    :param tree: Element
-    :param sender: Payload sender id
-    :param sender_key_fetcher: Function to fetch sender public key. If not given, key will always be fetched
-        over network. The function should take sender handle as the only parameter.
-    :param user: Optional receiving user object. If given, should have an ``id``.
-    :returns: list of entities
+    Optional parameter ``sender_key_fetcher`` can be a function to fetch sender public key.
+    If not given, key will always be fetched over the network. The function should take sender as the only parameter.
     """
     entities = []
     cls = MAPPINGS.get(element.tag)
@@ -101,9 +97,15 @@ def element_to_objects(
     entity._source_protocol = "diaspora"
     # Save element object to entity for possible later use
     entity._source_object = etree.tostring(element)
-    # Save receiving id to object
+
+    # Save receivers on the entity
     if user:
-        entity._receiving_actor_id = user.id
+        # Single receiver
+        entity._receivers = [UserType(id=user.id, receiver_variant=ReceiverVariant.ACTOR)]
+    else:
+        # Followers
+        entity._receivers = [UserType(id=sender, receiver_variant=ReceiverVariant.FOLLOWERS)]
+
     if issubclass(cls, DiasporaRelayableMixin):
         # If relayable, fetch sender key for validation
         entity._xml_tags = get_element_child_info(element, "tag")
