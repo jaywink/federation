@@ -8,9 +8,9 @@ from federation.entities.activitypub.constants import (
     CONTEXTS_DEFAULT, CONTEXT_MANUALLY_APPROVES_FOLLOWERS, CONTEXT_SENSITIVE, CONTEXT_HASHTAG,
     CONTEXT_LD_SIGNATURES)
 from federation.entities.activitypub.enums import ActorType, ObjectType, ActivityType
-from federation.entities.activitypub.mixins import ActivitypubObjectMixin, ActivitypubActorMixin
+from federation.entities.activitypub.mixins import ActivitypubObjectMixin, ActivitypubActorMixin, ActivitypubEntityMixin
 from federation.entities.activitypub.objects import ImageObject
-from federation.entities.base import Profile, Post, Follow, Accept, Comment, Retraction
+from federation.entities.base import Profile, Post, Follow, Accept, Comment, Retraction, Share
 from federation.outbound import handle_send
 from federation.types import UserType
 from federation.utils.text import with_slash
@@ -221,6 +221,21 @@ class ActivitypubRetraction(ActivitypubObjectMixin, Retraction):
                 "id": self.target_id,
                 "type": self._type,
             },
+            "published": self.created_at.isoformat(),
+        }
+        return as2
+
+
+class ActivitypubShare(ActivitypubEntityMixin, Share):
+    _type = ActivityType.ANNOUNCE.value
+
+    def to_as2(self) -> Dict:
+        as2 = {
+            "@context": CONTEXTS_DEFAULT,
+            "id": self.activity_id,
+            "type": self._type,
+            "actor": self.actor_id,
+            "object": self.target_id,
             "published": self.created_at.isoformat(),
         }
         return as2

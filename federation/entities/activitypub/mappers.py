@@ -4,8 +4,8 @@ from typing import List, Callable, Dict, Union, Optional
 from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
 from federation.entities.activitypub.entities import (
     ActivitypubFollow, ActivitypubProfile, ActivitypubAccept, ActivitypubPost, ActivitypubComment,
-    ActivitypubRetraction)
-from federation.entities.base import Follow, Profile, Accept, Post, Comment, Retraction
+    ActivitypubRetraction, ActivitypubShare)
+from federation.entities.base import Follow, Profile, Accept, Post, Comment, Retraction, Share
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType, ReceiverVariant
 
@@ -14,6 +14,7 @@ logger = logging.getLogger("federation")
 
 MAPPINGS = {
     "Accept": ActivitypubAccept,
+    "Announce": ActivitypubShare,
     "Article": ActivitypubPost,
     "Delete": ActivitypubRetraction,
     "Follow": ActivitypubFollow,  # Technically not correct, but for now we support only following profiles
@@ -131,7 +132,7 @@ def get_outbound_entity(entity: BaseEntity, private_key):
     cls = entity.__class__
     if cls in [
         ActivitypubAccept, ActivitypubFollow, ActivitypubProfile, ActivitypubPost, ActivitypubComment,
-        ActivitypubRetraction,
+        ActivitypubRetraction, ActivitypubShare,
     ]:
         # Already fine
         outbound = entity
@@ -147,6 +148,8 @@ def get_outbound_entity(entity: BaseEntity, private_key):
         outbound = ActivitypubRetraction.from_base(entity)
     elif cls == Comment:
         outbound = ActivitypubComment.from_base(entity)
+    elif cls == Share:
+        outbound = ActivitypubShare.from_base(entity)
     if not outbound:
         raise ValueError("Don't know how to convert this base entity to ActivityPub protocol entities.")
     # TODO LDS signing
@@ -181,7 +184,7 @@ def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dic
                 transformed["entity_type"] = "Object"
             else:
                 transformed["id"] = value
-        elif cls == ActivitypubProfile:
+        elif cls in (ActivitypubProfile, ActivitypubShare):
             transformed["id"] = value
         else:
             transformed["activity_id"] = value

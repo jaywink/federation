@@ -4,12 +4,12 @@ import pytest
 
 from federation.entities.activitypub.entities import (
     ActivitypubFollow, ActivitypubAccept, ActivitypubProfile, ActivitypubPost, ActivitypubComment,
-    ActivitypubRetraction)
+    ActivitypubRetraction, ActivitypubShare)
 from federation.entities.activitypub.mappers import message_to_objects, get_outbound_entity
 from federation.entities.base import Accept, Follow, Profile, Post, Comment
 from federation.tests.fixtures.payloads import (
     ACTIVITYPUB_FOLLOW, ACTIVITYPUB_PROFILE, ACTIVITYPUB_PROFILE_INVALID, ACTIVITYPUB_UNDO_FOLLOW, ACTIVITYPUB_POST,
-    ACTIVITYPUB_COMMENT, ACTIVITYPUB_RETRACTION)
+    ACTIVITYPUB_COMMENT, ACTIVITYPUB_RETRACTION, ACTIVITYPUB_SHARE)
 from federation.types import UserType, ReceiverVariant
 
 
@@ -18,6 +18,18 @@ class TestActivitypubEntityMappersReceive:
     def test_message_to_objects__calls_post_receive_hook(self, mock_post_receive):
         message_to_objects(ACTIVITYPUB_FOLLOW, "https://example.com/actor")
         assert mock_post_receive.called
+
+    def test_message_to_objects__announce(self):
+        entities = message_to_objects(ACTIVITYPUB_SHARE, "https://mastodon.social/users/jaywink")
+        assert len(entities) == 1
+        entity = entities[0]
+        assert isinstance(entity, ActivitypubShare)
+        assert entity.actor_id == "https://mastodon.social/users/jaywink"
+        assert entity.target_id == "https://mastodon.social/users/Gargron/statuses/102559779793316012"
+        assert entity.id == "https://mastodon.social/users/jaywink/statuses/102560701449465612/activity"
+        assert entity.public is True
+        assert entity.entity_type == "Post"
+        assert entity.raw_content == ""
 
     def test_message_to_objects__follow(self):
         entities = message_to_objects(ACTIVITYPUB_FOLLOW, "https://example.com/actor")
@@ -148,7 +160,7 @@ class TestActivitypubEntityMappersReceive:
             "https://diaspodon.fr/users/jaywink",
         )
         entity = entities[0]
-        
+
         assert set(entity._receivers) == {
             UserType(
                 id='https://diaspodon.fr/users/jaywink', receiver_variant=ReceiverVariant.FOLLOWERS,
@@ -167,21 +179,6 @@ class TestActivitypubEntityMappersReceive:
         assert entity.actor_id == "https://friendica.feneas.org/profile/jaywink"
         assert entity.target_id == "https://friendica.feneas.org/objects/76158462-165d-3386-aa23-ba2090614385"
         assert entity.entity_type == "Object"
-
-    @pytest.mark.skip
-    def test_message_to_objects_accounce(self):
-        entities = message_to_objects(DIASPORA_RESHARE, "alice@example.org")
-        assert len(entities) == 1
-        entity = entities[0]
-        assert isinstance(entity, DiasporaReshare)
-        assert entity.handle == "alice@example.org"
-        assert entity.guid == "a0b53e5029f6013487753131731751e9"
-        assert entity.provider_display_name == ""
-        assert entity.target_handle == "bob@example.com"
-        assert entity.target_guid == "a0b53bc029f6013487753131731751e9"
-        assert entity.public is True
-        assert entity.entity_type == "Post"
-        assert entity.raw_content == ""
 
     @pytest.mark.skip
     def test_message_to_objects_reshare_extra_properties(self):

@@ -183,6 +183,30 @@ ACTIVITYPUB_RETRACTION = {
     },
 }
 
+ACTIVITYPUB_SHARE = {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    'id': 'https://mastodon.social/users/jaywink/statuses/102560701449465612/activity',
+    'type': 'Announce',
+    'actor': 'https://mastodon.social/users/jaywink',
+    'published': '2019-08-04T20:55:09Z',
+    'to': ['https://www.w3.org/ns/activitystreams#Public'],
+    'cc': [
+        'https://mastodon.social/users/Gargron',
+        'https://mastodon.social/users/jaywink/followers',
+    ],
+    'object': 'https://mastodon.social/users/Gargron/statuses/102559779793316012',
+    'atomUri': 'https://mastodon.social/users/jaywink/statuses/102560701449465612/activity',
+    'signature': {
+        'type': 'RsaSignature2017',
+        'creator': 'https://mastodon.social/users/jaywink#main-key',
+        'created': '2019-08-04T20:55:09Z',
+        'signatureValue': 'fBW+hqP4ZslMf+1ZebqwuYAhQHvE5atsD/DLzda0eLY8xdf5XdROtoMHfVow5ZSq34w5CIPKOUUPo6aYx5bbLSd'
+                          'JqwhoKOuwbtAmq3UvUp3vsiX671Cc4AL2b7sRL2sH0XfMtl5vpVaZM4LnpzGE3py91tQPCKY+azg6XUxJKOn6Kt'
+                          'bo47LSpXZmzNacsfiiEmF48FlPojRZniz1wKNV+MIvvThIQlaahKAvPYHSF9INwMtlJpnVjc9T+9IkeSuHbNY4x'
+                          'R9huLESZc3iZQk1OPIUsbqmMYVRm1G/WEnPpQwl4rH64YNptpxq8oxvtkECcK1ulT9+XxoCFaLg7pHr9Q==',
+    },
+}
+
 ACTIVITYPUB_UNDO_FOLLOW = {
   "@context": [
     "https://www.w3.org/ns/activitystreams",

@@ -3,7 +3,7 @@ from freezegun import freeze_time
 
 from federation.entities.activitypub.entities import (
     ActivitypubPost, ActivitypubAccept, ActivitypubFollow, ActivitypubProfile, ActivitypubComment,
-    ActivitypubRetraction)
+    ActivitypubRetraction, ActivitypubShare)
 from federation.entities.base import Profile
 from federation.entities.diaspora.entities import (
     DiasporaPost, DiasporaComment, DiasporaLike, DiasporaProfile, DiasporaRetraction,
@@ -13,6 +13,15 @@ from federation.tests.factories.entities import ShareFactory
 from federation.tests.fixtures.keys import PUBKEY
 from federation.tests.fixtures.payloads import DIASPORA_PUBLIC_PAYLOAD
 
+
+@pytest.fixture
+def activitypubannounce():
+    with freeze_time("2019-08-05"):
+        return ActivitypubShare(
+            activity_id="http://127.0.0.1:8000/post/123456/#create",
+            actor_id="http://127.0.0.1:8000/profile/123456/",
+            target_id="http://127.0.0.1:8000/post/012345/",
+        )
 
 @pytest.fixture
 def activitypubcomment():
