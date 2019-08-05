@@ -8,6 +8,7 @@ from federation.entities.base import Profile
 from federation.hostmeta.generators import DiasporaHostMeta, generate_hcard
 from federation.tests.fixtures.payloads import DIASPORA_PUBLIC_PAYLOAD, DIASPORA_WEBFINGER_JSON, DIASPORA_WEBFINGER
 from federation.types import RequestType
+# noinspection PyProtectedMember
 from federation.utils.diaspora import (
     retrieve_diaspora_hcard, retrieve_diaspora_host_meta, _get_element_text_or_none,
     _get_element_attr_or_none, parse_profile_from_hcard, retrieve_and_parse_profile, retrieve_and_parse_content,
@@ -121,23 +122,23 @@ class TestRetrieveDiasporaHostMeta:
         mock_fetch.return_value = None, None, ValueError()
         document = retrieve_diaspora_host_meta("localhost")
         mock_fetch.assert_called_with(host="localhost", path="/.well-known/host-meta")
-        assert document == None
+        assert document is None
 
 
 class TestRetrieveAndParseContent:
     @patch("federation.utils.diaspora.fetch_document", return_value=(None, 404, None))
     @patch("federation.utils.diaspora.get_fetch_content_endpoint", return_value="https://example.com/fetch/spam/eggs")
     def test_calls_fetch_document(self, mock_get, mock_fetch):
-        retrieve_and_parse_content(guid="eggs", handle="user@example.com", entity_type="spam")
+        retrieve_and_parse_content(id="eggs", guid="eggs", handle="user@example.com", entity_type="spam")
         mock_fetch.assert_called_once_with("https://example.com/fetch/spam/eggs")
 
     @patch("federation.utils.diaspora.fetch_document", return_value=(None, 404, None))
     @patch("federation.utils.diaspora.get_fetch_content_endpoint")
     def test_calls_get_fetch_content_endpoint(self, mock_get, mock_fetch):
-        retrieve_and_parse_content(guid="eggs", handle="user@example.com", entity_type="spam")
+        retrieve_and_parse_content(id="eggs", guid="eggs", handle="user@example.com", entity_type="spam")
         mock_get.assert_called_once_with("example.com", "spam", "eggs")
         mock_get.reset_mock()
-        retrieve_and_parse_content(guid="eggs@spam", handle="user@example.com", entity_type="spam")
+        retrieve_and_parse_content(id="eggs", guid="eggs@spam", handle="user@example.com", entity_type="spam")
         mock_get.assert_called_once_with("example.com", "spam", "eggs@spam")
 
     @patch("federation.utils.diaspora.fetch_document", return_value=(DIASPORA_PUBLIC_PAYLOAD, 200, None))
@@ -145,7 +146,7 @@ class TestRetrieveAndParseContent:
     @patch("federation.utils.diaspora.handle_receive", return_value=("sender", "protocol", ["entity"]))
     def test_calls_handle_receive(self, mock_handle, mock_get, mock_fetch):
         entity = retrieve_and_parse_content(
-            guid="eggs", handle="user@example.com", entity_type="spam", sender_key_fetcher=sum,
+            id="eggs", guid="eggs", handle="user@example.com", entity_type="spam", sender_key_fetcher=sum,
         )
         mock_handle.assert_called_once_with(RequestType(body=DIASPORA_PUBLIC_PAYLOAD), sender_key_fetcher=sum)
         assert entity == "entity"
@@ -154,12 +155,12 @@ class TestRetrieveAndParseContent:
     @patch("federation.utils.diaspora.get_fetch_content_endpoint", return_value="https://example.com/fetch/spam/eggs")
     def test_raises_on_fetch_error(self, mock_get, mock_fetch):
         with pytest.raises(Exception):
-            retrieve_and_parse_content(guid="eggs", handle="user@example.com", entity_type="spam")
+            retrieve_and_parse_content(id="eggs", guid="eggs", handle="user@example.com", entity_type="spam")
 
     @patch("federation.utils.diaspora.fetch_document", return_value=(None, 404, None))
     @patch("federation.utils.diaspora.get_fetch_content_endpoint", return_value="https://example.com/fetch/spam/eggs")
     def test_returns_on_404(self, mock_get, mock_fetch):
-        result = retrieve_and_parse_content(guid="eggs", handle="user@example.com", entity_type="spam")
+        result = retrieve_and_parse_content(id="eggs", guid="eggs", handle="user@example.com", entity_type="spam")
         assert not result
 
 
