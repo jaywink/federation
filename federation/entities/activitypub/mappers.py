@@ -73,6 +73,7 @@ def extract_receiver(payload: Dict, receiver: str) -> Optional[UserType]:
     """
     Transform a single receiver ID to a UserType.
     """
+    actor = payload.get("actor") or payload.get("attributedTo") or ""
     if receiver == NAMESPACE_PUBLIC:
         # Ignore since we already store "public" as a boolean on the entity
         return
@@ -87,8 +88,8 @@ def extract_receiver(payload: Dict, receiver: str) -> Optional[UserType]:
     #     then; assume this is the followers collection of said actor ID.
     #   When we have a caching system, just fetch each receiver and check what it is.
     #   Without caching this would be too expensive to do.
-    elif receiver.find("followers") > -1 and receiver.startswith(payload.get('actor')):
-        return UserType(id=payload.get("actor"), receiver_variant=ReceiverVariant.FOLLOWERS)
+    elif receiver.find("followers") > -1 and receiver.startswith(actor):
+        return UserType(id=actor, receiver_variant=ReceiverVariant.FOLLOWERS)
     # Assume actor ID
     return UserType(id=receiver, receiver_variant=ReceiverVariant.ACTOR)
 
