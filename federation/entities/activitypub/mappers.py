@@ -189,7 +189,7 @@ def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dic
             transformed["id"] = value
         else:
             transformed["activity_id"] = value
-    elif key == "actor":
+    elif key in ("actor", "attributedTo"):
         transformed["actor_id"] = value
     elif key == "content":
         transformed["raw_content"] = value
