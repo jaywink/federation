@@ -21,7 +21,6 @@ MAPPINGS = {
     "Note": ActivitypubPost,
     "Page": ActivitypubPost,
     "Person": ActivitypubProfile,
-    "Undo": ActivitypubFollow,  # Technically not correct, but for now we support only undoing a follow of a profile
 }
 
 OBJECTS = (
@@ -31,15 +30,23 @@ OBJECTS = (
     "Person",
 )
 
+UNDO_MAPPINGS = {
+    "Follow": ActivitypubFollow,
+    "Announce": ActivitypubRetraction,
+}
 
 def element_to_objects(payload: Dict) -> List:
     """
     Transform an Element to a list of entities.
     """
+    cls = None
     entities = []
     is_object = True if payload.get('type') in OBJECTS else False
     if payload.get('type') == "Delete":
         cls = ActivitypubRetraction
+    elif payload.get('type') == "Undo":
+        if isinstance(payload.get('object'), dict):
+            cls = UNDO_MAPPINGS.get(payload["object"]["type"])
     elif isinstance(payload.get('object'), dict) and payload["object"].get('type'):
         if payload["object"]["type"] == "Note" and payload["object"].get("inReplyTo"):
             cls = ActivitypubComment
@@ -233,7 +240,7 @@ def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dic
         transformed["target_id"] = value
     elif key == "name":
         transformed["name"] = value
-    elif key == "object":
+    elif key == "object" and not is_object:
         if isinstance(value, dict):
             if cls == ActivitypubAccept:
                 transformed["target_id"] = value.get("id")

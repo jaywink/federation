@@ -9,7 +9,7 @@ from federation.entities.activitypub.mappers import message_to_objects, get_outb
 from federation.entities.base import Accept, Follow, Profile, Post, Comment
 from federation.tests.fixtures.payloads import (
     ACTIVITYPUB_FOLLOW, ACTIVITYPUB_PROFILE, ACTIVITYPUB_PROFILE_INVALID, ACTIVITYPUB_UNDO_FOLLOW, ACTIVITYPUB_POST,
-    ACTIVITYPUB_COMMENT, ACTIVITYPUB_RETRACTION, ACTIVITYPUB_SHARE)
+    ACTIVITYPUB_COMMENT, ACTIVITYPUB_RETRACTION, ACTIVITYPUB_SHARE, ACTIVITYPUB_RETRACTION_SHARE)
 from federation.types import UserType, ReceiverVariant
 
 
@@ -178,6 +178,15 @@ class TestActivitypubEntityMappersReceive:
         assert isinstance(entity, ActivitypubRetraction)
         assert entity.actor_id == "https://friendica.feneas.org/profile/jaywink"
         assert entity.target_id == "https://friendica.feneas.org/objects/76158462-165d-3386-aa23-ba2090614385"
+        assert entity.entity_type == "Object"
+
+    def test_message_to_objects_retraction__share(self):
+        entities = message_to_objects(ACTIVITYPUB_RETRACTION_SHARE, "https://mastodon.social/users/jaywink")
+        assert len(entities) == 1
+        entity = entities[0]
+        assert isinstance(entity, ActivitypubRetraction)
+        assert entity.actor_id == "https://mastodon.social/users/jaywink"
+        assert entity.target_id == "https://mastodon.social/users/jaywink/statuses/102571932479036987/activity"
         assert entity.entity_type == "Object"
 
     @pytest.mark.skip

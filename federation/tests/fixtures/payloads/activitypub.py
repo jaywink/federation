@@ -183,6 +183,25 @@ ACTIVITYPUB_RETRACTION = {
     },
 }
 
+ACTIVITYPUB_RETRACTION_SHARE = {'@context': 'https://www.w3.org/ns/activitystreams',
+ 'id': 'https://mastodon.social/users/jaywink#announces/102571932479036987/undo',
+ 'type': 'Undo',
+ 'actor': 'https://mastodon.social/users/jaywink',
+ 'to': ['https://www.w3.org/ns/activitystreams#Public'],
+ 'object': {'id': 'https://mastodon.social/users/jaywink/statuses/102571932479036987/activity',
+  'type': 'Announce',
+  'actor': 'https://mastodon.social/users/jaywink',
+  'published': '2019-08-06T20:31:21Z',
+  'to': ['https://www.w3.org/ns/activitystreams#Public'],
+  'cc': ['https://mastodon.art/users/asterii',
+   'https://mastodon.social/users/jaywink/followers'],
+  'object': 'https://mastodon.art/users/asterii/statuses/102571181579804095',
+  'atomUri': 'https://mastodon.social/users/jaywink/statuses/102571932479036987/activity'},
+ 'signature': {'type': 'RsaSignature2017',
+  'creator': 'https://mastodon.social/users/jaywink#main-key',
+  'created': '2019-08-06T20:32:23Z',
+  'signatureValue': 'erI90OrrLqK1DiTqb4OO72XLcE7m74Fs4cH6s0plKKELHa7BZFQmtQYXKEgA9LwIUdSRrIurAUiaDWAw2sQZDg7opYo9x3z+GJDMZ3KxhBND7iHO8ZeGhV1ZBBKUMuBb3BfhOkd3ADp+RQ/fHcw6kOcViV2VsQduinAgQRpiutmGCLd/7eshqSF/aL4tFoAOyCskkm/5JDMNp2nnHNoXXJ+SZf7a8C6YPNDxWd7GzyQNeWkTBBdCJBPvS4HI0wQrTWemBvy6uP8k5QQ7FnqrrRrk/7zrcibFSInuYxiRTRV++rQ3irIbXNtoLhWQd36Iu5U22BclmkS1AAVBDUIj8w=='}}
+
 ACTIVITYPUB_SHARE = {
     '@context': 'https://www.w3.org/ns/activitystreams',
     'id': 'https://mastodon.social/users/jaywink/statuses/102560701449465612/activity',
