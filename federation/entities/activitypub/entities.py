@@ -209,17 +209,29 @@ class ActivitypubProfile(ActivitypubEntityMixin, Profile):
 
 
 class ActivitypubRetraction(ActivitypubEntityMixin, Retraction):
-    _type = ObjectType.TOMBSTONE.value
+    def resolve_object_type(self):
+        return {
+            "Comment": ObjectType.TOMBSTONE.value,
+            "Post": ObjectType.TOMBSTONE.value,
+            "Share": ActivityType.ANNOUNCE.value,
+        }.get(self.entity_type)
+
+    def resolve_type(self):
+        return {
+            "Comment": ActivityType.DELETE.value,
+            "Post": ActivityType.DELETE.value,
+            "Share": ActivityType.UNDO.value,
+        }.get(self.entity_type)
 
     def to_as2(self) -> Dict:
         as2 = {
             "@context": CONTEXTS_DEFAULT,
             "id": self.activity_id,
-            "type": ActivityType.DELETE.value,
+            "type": self.resolve_type(),
             "actor": self.actor_id,
             "object": {
                 "id": self.target_id,
-                "type": self._type,
+                "type": self.resolve_object_type(),
             },
             "published": self.created_at.isoformat(),
         }

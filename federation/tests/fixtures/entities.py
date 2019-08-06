@@ -94,6 +94,17 @@ def activitypubretraction():
 
 
 @pytest.fixture
+def activitypubretraction_announce():
+    with freeze_time("2019-04-27"):
+        return ActivitypubRetraction(
+            target_id="http://127.0.0.1:8000/post/123456/activity",
+            activity_id="http://127.0.0.1:8000/post/123456/#delete",
+            actor_id="http://127.0.0.1:8000/profile/123456/",
+            entity_type="Share",
+        )
+
+
+@pytest.fixture
 def activitypubundofollow():
     return ActivitypubFollow(
         activity_id="https://localhost/undo",

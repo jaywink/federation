@@ -166,6 +166,22 @@ class TestEntitiesConvertToAS2:
             'published': '2019-04-27T00:00:00',
         }
 
+    def test_retraction_to_as2__announce(self, activitypubretraction_announce):
+        result = activitypubretraction_announce.to_as2()
+        assert result == {
+            '@context': [
+                'https://www.w3.org/ns/activitystreams',
+            ],
+            'type': 'Undo',
+            'id': 'http://127.0.0.1:8000/post/123456/#delete',
+            'actor': 'http://127.0.0.1:8000/profile/123456/',
+            'object': {
+                'id': 'http://127.0.0.1:8000/post/123456/activity',
+                'type': 'Announce',
+            },
+            'published': '2019-04-27T00:00:00',
+        }
+
 
 class TestEntitiesPostReceive:
     @patch("federation.utils.activitypub.retrieve_and_parse_profile", autospec=True)
