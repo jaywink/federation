@@ -183,6 +183,49 @@ ACTIVITYPUB_RETRACTION = {
     },
 }
 
+ACTIVITYPUB_RETRACTION_SHARE = {'@context': 'https://www.w3.org/ns/activitystreams',
+ 'id': 'https://mastodon.social/users/jaywink#announces/102571932479036987/undo',
+ 'type': 'Undo',
+ 'actor': 'https://mastodon.social/users/jaywink',
+ 'to': ['https://www.w3.org/ns/activitystreams#Public'],
+ 'object': {'id': 'https://mastodon.social/users/jaywink/statuses/102571932479036987/activity',
+  'type': 'Announce',
+  'actor': 'https://mastodon.social/users/jaywink',
+  'published': '2019-08-06T20:31:21Z',
+  'to': ['https://www.w3.org/ns/activitystreams#Public'],
+  'cc': ['https://mastodon.art/users/asterii',
+   'https://mastodon.social/users/jaywink/followers'],
+  'object': 'https://mastodon.art/users/asterii/statuses/102571181579804095',
+  'atomUri': 'https://mastodon.social/users/jaywink/statuses/102571932479036987/activity'},
+ 'signature': {'type': 'RsaSignature2017',
+  'creator': 'https://mastodon.social/users/jaywink#main-key',
+  'created': '2019-08-06T20:32:23Z',
+  'signatureValue': 'erI90OrrLqK1DiTqb4OO72XLcE7m74Fs4cH6s0plKKELHa7BZFQmtQYXKEgA9LwIUdSRrIurAUiaDWAw2sQZDg7opYo9x3z+GJDMZ3KxhBND7iHO8ZeGhV1ZBBKUMuBb3BfhOkd3ADp+RQ/fHcw6kOcViV2VsQduinAgQRpiutmGCLd/7eshqSF/aL4tFoAOyCskkm/5JDMNp2nnHNoXXJ+SZf7a8C6YPNDxWd7GzyQNeWkTBBdCJBPvS4HI0wQrTWemBvy6uP8k5QQ7FnqrrRrk/7zrcibFSInuYxiRTRV++rQ3irIbXNtoLhWQd36Iu5U22BclmkS1AAVBDUIj8w=='}}
+
+ACTIVITYPUB_SHARE = {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    'id': 'https://mastodon.social/users/jaywink/statuses/102560701449465612/activity',
+    'type': 'Announce',
+    'actor': 'https://mastodon.social/users/jaywink',
+    'published': '2019-08-04T20:55:09Z',
+    'to': ['https://www.w3.org/ns/activitystreams#Public'],
+    'cc': [
+        'https://mastodon.social/users/Gargron',
+        'https://mastodon.social/users/jaywink/followers',
+    ],
+    'object': 'https://mastodon.social/users/Gargron/statuses/102559779793316012',
+    'atomUri': 'https://mastodon.social/users/jaywink/statuses/102560701449465612/activity',
+    'signature': {
+        'type': 'RsaSignature2017',
+        'creator': 'https://mastodon.social/users/jaywink#main-key',
+        'created': '2019-08-04T20:55:09Z',
+        'signatureValue': 'fBW+hqP4ZslMf+1ZebqwuYAhQHvE5atsD/DLzda0eLY8xdf5XdROtoMHfVow5ZSq34w5CIPKOUUPo6aYx5bbLSd'
+                          'JqwhoKOuwbtAmq3UvUp3vsiX671Cc4AL2b7sRL2sH0XfMtl5vpVaZM4LnpzGE3py91tQPCKY+azg6XUxJKOn6Kt'
+                          'bo47LSpXZmzNacsfiiEmF48FlPojRZniz1wKNV+MIvvThIQlaahKAvPYHSF9INwMtlJpnVjc9T+9IkeSuHbNY4x'
+                          'R9huLESZc3iZQk1OPIUsbqmMYVRm1G/WEnPpQwl4rH64YNptpxq8oxvtkECcK1ulT9+XxoCFaLg7pHr9Q==',
+    },
+}
+
 ACTIVITYPUB_UNDO_FOLLOW = {
   "@context": [
     "https://www.w3.org/ns/activitystreams",
@@ -247,4 +290,32 @@ ACTIVITYPUB_POST = {
   'creator': 'https://diaspodon.fr/users/jaywink#main-key',
   'created': '2019-06-29T21:08:45Z',
   'signatureValue': 'SjDACS7Z/Cb1SEC3AtxEokID5SHAYl7kpys/hhmaRbpXuFKCxfj2P9BmH8QhLnuam3sENZlrnBOcB5NlcBhIfwo/Xh242RZBmPQf+edTVYVCe1j19dihcftNCHtnqAcKwp/51dNM/OlKu2730FrwvOUXVIPtB7iVqkseO9TRzDYIDj+zBTksnR/NAYtq6SUpmefXfON0uW3N3Uq6PGfExJaS+aeqRf8cPGkZFSIUQZwOLXbIpb7BFjJ1+y1OMOAJueqvikUprAit3v6BiNWurAvSQpC7WWMFUKyA79/xtkO9kIPA/Q4C9ryqdzxZJ0jDhXiaIIQj2JZfIADdjLZHJA=='}
+}
+
+ACTIVITYPUB_POST_OBJECT = {
+    'id': 'https://diaspodon.fr/users/jaywink/statuses/102356911717767237',
+    'type': 'Note',
+    'summary': None,
+    'inReplyTo': None,
+    'published': '2019-06-29T21:08:45Z',
+    'url': 'https://diaspodon.fr/@jaywink/102356911717767237',
+    'attributedTo': 'https://diaspodon.fr/users/jaywink',
+    'to': ['https://www.w3.org/ns/activitystreams#Public'],
+    'cc': ['https://diaspodon.fr/users/jaywink/followers',
+        'https://dev.jasonrobinson.me/p/d4574854-a5d7-42be-bfac-f70c16fcaa97/'],
+    'sensitive': False,
+    'atomUri': 'https://diaspodon.fr/users/jaywink/statuses/102356911717767237',
+    'inReplyToAtomUri': None,
+    'conversation': 'tag:diaspodon.fr,2019-06-28:objectId=2347687:objectType=Conversation',
+    'content': '<p><span class="h-card"><a href="https://dev.jasonrobinson.me/u/jaywink/" class="u-url mention">@<span>jaywink</span></a></span> boom</p>',
+    'contentMap': {'en': '<p><span class="h-card"><a href="https://dev.jasonrobinson.me/u/jaywink/" class="u-url mention">@<span>jaywink</span></a></span> boom</p>'},
+    'attachment': [],
+    'tag': [{'type': 'Mention',
+        'href': 'https://dev.jasonrobinson.me/p/d4574854-a5d7-42be-bfac-f70c16fcaa97/',
+        'name': '@jaywink@dev.jasonrobinson.me'}],
+    'replies': {'id': 'https://diaspodon.fr/users/jaywink/statuses/102356911717767237/replies',
+        'type': 'Collection',
+        'first': {'type': 'CollectionPage',
+        'partOf': 'https://diaspodon.fr/users/jaywink/statuses/102356911717767237/replies',
+        'items': []}},
 }

@@ -26,6 +26,8 @@
 
 * Added `root_target_id` and `root_target_guid` to `Comment` base entity. This allows referring to a parent object up the hierarchy chain for threaded comments.
 
+* The high level fetcher `retrieve_remote_content` now supports ActivityPub ID's.
+
 ### Changed
 
 * **Backwards incompatible.** Lowest compatible Python version is now 3.6.

@@ -8,9 +8,9 @@ from federation.entities.activitypub.constants import (
     CONTEXTS_DEFAULT, CONTEXT_MANUALLY_APPROVES_FOLLOWERS, CONTEXT_SENSITIVE, CONTEXT_HASHTAG,
     CONTEXT_LD_SIGNATURES)
 from federation.entities.activitypub.enums import ActorType, ObjectType, ActivityType
-from federation.entities.activitypub.mixins import ActivitypubObjectMixin, ActivitypubActorMixin
+from federation.entities.activitypub.mixins import ActivitypubEntityMixin
 from federation.entities.activitypub.objects import ImageObject
-from federation.entities.base import Profile, Post, Follow, Accept, Comment, Retraction
+from federation.entities.base import Profile, Post, Follow, Accept, Comment, Retraction, Share
 from federation.outbound import handle_send
 from federation.types import UserType
 from federation.utils.text import with_slash
@@ -18,7 +18,7 @@ from federation.utils.text import with_slash
 logger = logging.getLogger("federation")
 
 
-class ActivitypubAccept(ActivitypubObjectMixin, Accept):
+class ActivitypubAccept(ActivitypubEntityMixin, Accept):
     _type = ActivityType.ACCEPT.value
     object: Dict = None
 
@@ -33,7 +33,7 @@ class ActivitypubAccept(ActivitypubObjectMixin, Accept):
         return as2
 
 
-class ActivitypubComment(ActivitypubObjectMixin, Comment):
+class ActivitypubComment(ActivitypubEntityMixin, Comment):
     _type = ObjectType.NOTE.value
 
     def to_as2(self) -> Dict:
@@ -63,7 +63,7 @@ class ActivitypubComment(ActivitypubObjectMixin, Comment):
         return as2
 
 
-class ActivitypubFollow(ActivitypubObjectMixin, Follow):
+class ActivitypubFollow(ActivitypubEntityMixin, Follow):
     _type = ActivityType.FOLLOW.value
 
     def post_receive(self) -> None:
@@ -138,7 +138,7 @@ class ActivitypubFollow(ActivitypubObjectMixin, Follow):
         return as2
 
 
-class ActivitypubPost(ActivitypubObjectMixin, Post):
+class ActivitypubPost(ActivitypubEntityMixin, Post):
     _type = ObjectType.NOTE.value
 
     def to_as2(self) -> Dict:
@@ -168,7 +168,7 @@ class ActivitypubPost(ActivitypubObjectMixin, Post):
         return as2
 
 
-class ActivitypubProfile(ActivitypubActorMixin, Profile):
+class ActivitypubProfile(ActivitypubEntityMixin, Profile):
     _type = ActorType.PERSON.value
     public = True
 
@@ -208,19 +208,46 @@ class ActivitypubProfile(ActivitypubActorMixin, Profile):
         return as2
 
 
-class ActivitypubRetraction(ActivitypubObjectMixin, Retraction):
-    _type = ObjectType.TOMBSTONE.value
+class ActivitypubRetraction(ActivitypubEntityMixin, Retraction):
+    def resolve_object_type(self):
+        return {
+            "Comment": ObjectType.TOMBSTONE.value,
+            "Post": ObjectType.TOMBSTONE.value,
+            "Share": ActivityType.ANNOUNCE.value,
+        }.get(self.entity_type)
+
+    def resolve_type(self):
+        return {
+            "Comment": ActivityType.DELETE.value,
+            "Post": ActivityType.DELETE.value,
+            "Share": ActivityType.UNDO.value,
+        }.get(self.entity_type)
 
     def to_as2(self) -> Dict:
         as2 = {
             "@context": CONTEXTS_DEFAULT,
             "id": self.activity_id,
-            "type": ActivityType.DELETE.value,
+            "type": self.resolve_type(),
             "actor": self.actor_id,
             "object": {
                 "id": self.target_id,
-                "type": self._type,
+                "type": self.resolve_object_type(),
             },
+            "published": self.created_at.isoformat(),
+        }
+        return as2
+
+
+class ActivitypubShare(ActivitypubEntityMixin, Share):
+    _type = ActivityType.ANNOUNCE.value
+
+    def to_as2(self) -> Dict:
+        as2 = {
+            "@context": CONTEXTS_DEFAULT,
+            "id": self.activity_id,
+            "type": self._type,
+            "actor": self.actor_id,
+            "object": self.target_id,
             "published": self.created_at.isoformat(),
         }
         return as2

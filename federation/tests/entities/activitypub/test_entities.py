@@ -26,6 +26,17 @@ class TestEntitiesConvertToAS2:
             },
         }
 
+    def test_accounce_to_as2(self, activitypubannounce):
+        result = activitypubannounce.to_as2()
+        assert result == {
+            "@context": CONTEXTS_DEFAULT,
+            "id": "http://127.0.0.1:8000/post/123456/#create",
+            "type": "Announce",
+            "actor": "http://127.0.0.1:8000/profile/123456/",
+            "object": "http://127.0.0.1:8000/post/012345/",
+            'published': '2019-08-05T00:00:00',
+        }
+
     def test_comment_to_as2(self, activitypubcomment):
         result = activitypubcomment.to_as2()
         assert result == {
@@ -151,6 +162,22 @@ class TestEntitiesConvertToAS2:
             'object': {
                 'id': 'http://127.0.0.1:8000/post/123456/',
                 'type': 'Tombstone',
+            },
+            'published': '2019-04-27T00:00:00',
+        }
+
+    def test_retraction_to_as2__announce(self, activitypubretraction_announce):
+        result = activitypubretraction_announce.to_as2()
+        assert result == {
+            '@context': [
+                'https://www.w3.org/ns/activitystreams',
+            ],
+            'type': 'Undo',
+            'id': 'http://127.0.0.1:8000/post/123456/#delete',
+            'actor': 'http://127.0.0.1:8000/profile/123456/',
+            'object': {
+                'id': 'http://127.0.0.1:8000/post/123456/activity',
+                'type': 'Announce',
             },
             'published': '2019-04-27T00:00:00',
         }

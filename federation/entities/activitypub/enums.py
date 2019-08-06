@@ -9,6 +9,7 @@ class EnumBase(Enum):
 
 class ActivityType(EnumBase):
     ACCEPT = "Accept"
+    ANNOUNCE = "Announce"
     CREATE = "Create"
     DELETE = "Delete"
     FOLLOW = "Follow"

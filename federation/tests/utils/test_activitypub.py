@@ -1,8 +1,8 @@
 import json
 from unittest.mock import patch, Mock
 
-from federation.entities.activitypub.entities import ActivitypubFollow
-from federation.tests.fixtures.payloads import ACTIVITYPUB_FOLLOW
+from federation.entities.activitypub.entities import ActivitypubFollow, ActivitypubPost
+from federation.tests.fixtures.payloads import ACTIVITYPUB_FOLLOW, ACTIVITYPUB_POST, ACTIVITYPUB_POST_OBJECT
 from federation.utils.activitypub import retrieve_and_parse_document, retrieve_and_parse_profile
 
 
@@ -18,9 +18,23 @@ class TestRetrieveAndParseDocument:
         json.dumps(ACTIVITYPUB_FOLLOW), None, None),
     )
     @patch.object(ActivitypubFollow, "post_receive")
-    def test_returns_entity_for_valid_document(self, mock_post_receive, mock_fetch):
+    def test_returns_entity_for_valid_document__follow(self, mock_post_receive, mock_fetch):
         entity = retrieve_and_parse_document("https://example.com/foobar")
         assert isinstance(entity, ActivitypubFollow)
+
+    @patch("federation.utils.activitypub.fetch_document", autospec=True, return_value=(
+            json.dumps(ACTIVITYPUB_POST_OBJECT), None, None),
+    )
+    def test_returns_entity_for_valid_document__post__without_activity(self, mock_fetch):
+        entity = retrieve_and_parse_document("https://example.com/foobar")
+        assert isinstance(entity, ActivitypubPost)
+
+    @patch("federation.utils.activitypub.fetch_document", autospec=True, return_value=(
+        json.dumps(ACTIVITYPUB_POST), None, None),
+    )
+    def test_returns_entity_for_valid_document__post__wrapped_in_activity(self, mock_fetch):
+        entity = retrieve_and_parse_document("https://example.com/foobar")
+        assert isinstance(entity, ActivitypubPost)
 
     @patch("federation.utils.activitypub.fetch_document", autospec=True, return_value=('{"foo": "bar"}', None, None))
     def test_returns_none_for_invalid_document(self, mock_fetch):

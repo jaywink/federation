@@ -5,10 +5,10 @@ from dirty_validators.basic import Email
 from federation.entities.activitypub.enums import ActivityType
 from federation.entities.mixins import (
     PublicMixin, TargetIDMixin, ParticipationMixin, CreatedAtMixin, RawContentMixin, OptionalRawContentMixin,
-    EntityTypeMixin, ProviderDisplayNameMixin, RootTargetIDMixin)
+    EntityTypeMixin, ProviderDisplayNameMixin, RootTargetIDMixin, BaseEntity)
 
 
-class Accept(CreatedAtMixin, TargetIDMixin):
+class Accept(CreatedAtMixin, TargetIDMixin, BaseEntity):
     """An acceptance message for some target."""
 
     def __init__(self, *args, **kwargs):
@@ -17,7 +17,7 @@ class Accept(CreatedAtMixin, TargetIDMixin):
         self._required.remove('id')
 
 
-class Image(PublicMixin, OptionalRawContentMixin, CreatedAtMixin):
+class Image(PublicMixin, OptionalRawContentMixin, CreatedAtMixin, BaseEntity):
     """Reflects a single image, possibly linked to another object."""
     remote_path = ""
     remote_name = ""
@@ -34,7 +34,7 @@ class Image(PublicMixin, OptionalRawContentMixin, CreatedAtMixin):
         self._required += ["remote_path", "remote_name"]
 
 
-class Comment(RawContentMixin, ParticipationMixin, CreatedAtMixin, RootTargetIDMixin):
+class Comment(RawContentMixin, ParticipationMixin, CreatedAtMixin, RootTargetIDMixin, BaseEntity):
     """Represents a comment, linked to another object."""
     participation = "comment"
     url = ""
@@ -43,7 +43,7 @@ class Comment(RawContentMixin, ParticipationMixin, CreatedAtMixin, RootTargetIDM
     _default_activity = ActivityType.CREATE
 
 
-class Follow(CreatedAtMixin, TargetIDMixin):
+class Follow(CreatedAtMixin, TargetIDMixin, BaseEntity):
     """Represents a handle following or unfollowing another handle."""
     following = True
 
@@ -54,7 +54,7 @@ class Follow(CreatedAtMixin, TargetIDMixin):
         self._required.remove('id')
 
 
-class Post(RawContentMixin, PublicMixin, CreatedAtMixin, ProviderDisplayNameMixin):
+class Post(RawContentMixin, PublicMixin, CreatedAtMixin, ProviderDisplayNameMixin, BaseEntity):
     """Reflects a post, status message, etc, which will be composed from the message or to the message."""
     location = ""
     url = ""
@@ -63,7 +63,7 @@ class Post(RawContentMixin, PublicMixin, CreatedAtMixin, ProviderDisplayNameMixi
     _default_activity = ActivityType.CREATE
 
 
-class Reaction(ParticipationMixin, CreatedAtMixin):
+class Reaction(ParticipationMixin, CreatedAtMixin, BaseEntity):
     """Represents a reaction to another object, for example a like."""
     participation = "reaction"
     reaction = ""
@@ -86,7 +86,7 @@ class Reaction(ParticipationMixin, CreatedAtMixin):
             ))
 
 
-class Relationship(CreatedAtMixin, TargetIDMixin):
+class Relationship(CreatedAtMixin, TargetIDMixin, BaseEntity):
     """Represents a relationship between two handles."""
     relationship = ""
 
@@ -104,7 +104,7 @@ class Relationship(CreatedAtMixin, TargetIDMixin):
             ))
 
 
-class Profile(CreatedAtMixin, OptionalRawContentMixin, PublicMixin):
+class Profile(CreatedAtMixin, OptionalRawContentMixin, PublicMixin, BaseEntity):
     """Represents a profile for a user."""
     atom_url = ""
     email = ""
@@ -141,7 +141,7 @@ class Profile(CreatedAtMixin, OptionalRawContentMixin, PublicMixin):
                 raise ValueError("Email is not valid")
 
 
-class Retraction(CreatedAtMixin, TargetIDMixin, EntityTypeMixin):
+class Retraction(CreatedAtMixin, TargetIDMixin, EntityTypeMixin, BaseEntity):
     """Represents a retraction of content by author."""
 
     def __init__(self, *args, **kwargs):
@@ -151,7 +151,7 @@ class Retraction(CreatedAtMixin, TargetIDMixin, EntityTypeMixin):
 
 
 class Share(CreatedAtMixin, TargetIDMixin, EntityTypeMixin, OptionalRawContentMixin, PublicMixin,
-            ProviderDisplayNameMixin):
+            ProviderDisplayNameMixin, BaseEntity):
     """Represents a share of another entity.
 
     ``entity_type`` defaults to "Post" but can be any base entity class name. It should be the class name of the

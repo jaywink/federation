@@ -4,8 +4,8 @@ from typing import List, Callable, Dict, Union, Optional
 from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
 from federation.entities.activitypub.entities import (
     ActivitypubFollow, ActivitypubProfile, ActivitypubAccept, ActivitypubPost, ActivitypubComment,
-    ActivitypubRetraction)
-from federation.entities.base import Follow, Profile, Accept, Post, Comment, Retraction
+    ActivitypubRetraction, ActivitypubShare)
+from federation.entities.base import Follow, Profile, Accept, Post, Comment, Retraction, Share
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType, ReceiverVariant
 
@@ -14,23 +14,39 @@ logger = logging.getLogger("federation")
 
 MAPPINGS = {
     "Accept": ActivitypubAccept,
+    "Announce": ActivitypubShare,
     "Article": ActivitypubPost,
     "Delete": ActivitypubRetraction,
     "Follow": ActivitypubFollow,  # Technically not correct, but for now we support only following profiles
     "Note": ActivitypubPost,
     "Page": ActivitypubPost,
     "Person": ActivitypubProfile,
-    "Undo": ActivitypubFollow,  # Technically not correct, but for now we support only undoing a follow of a profile
 }
 
+OBJECTS = (
+    "Article",
+    "Note",
+    "Page",
+    "Person",
+)
+
+UNDO_MAPPINGS = {
+    "Follow": ActivitypubFollow,
+    "Announce": ActivitypubRetraction,
+}
 
 def element_to_objects(payload: Dict) -> List:
     """
     Transform an Element to a list of entities.
     """
+    cls = None
     entities = []
+    is_object = True if payload.get('type') in OBJECTS else False
     if payload.get('type') == "Delete":
         cls = ActivitypubRetraction
+    elif payload.get('type') == "Undo":
+        if isinstance(payload.get('object'), dict):
+            cls = UNDO_MAPPINGS.get(payload["object"]["type"])
     elif isinstance(payload.get('object'), dict) and payload["object"].get('type'):
         if payload["object"]["type"] == "Note" and payload["object"].get("inReplyTo"):
             cls = ActivitypubComment
@@ -41,7 +57,7 @@ def element_to_objects(payload: Dict) -> List:
     if not cls:
         return []
 
-    transformed = transform_attributes(payload, cls)
+    transformed = transform_attributes(payload, cls, is_object=is_object)
     entity = cls(**transformed)
     # Add protocol name
     entity._source_protocol = "activitypub"
@@ -72,6 +88,7 @@ def extract_receiver(payload: Dict, receiver: str) -> Optional[UserType]:
     """
     Transform a single receiver ID to a UserType.
     """
+    actor = payload.get("actor") or payload.get("attributedTo") or ""
     if receiver == NAMESPACE_PUBLIC:
         # Ignore since we already store "public" as a boolean on the entity
         return
@@ -86,8 +103,8 @@ def extract_receiver(payload: Dict, receiver: str) -> Optional[UserType]:
     #     then; assume this is the followers collection of said actor ID.
     #   When we have a caching system, just fetch each receiver and check what it is.
     #   Without caching this would be too expensive to do.
-    elif receiver.find("followers") > -1 and receiver.startswith(payload.get('actor')):
-        return UserType(id=payload.get("actor"), receiver_variant=ReceiverVariant.FOLLOWERS)
+    elif receiver.find("followers") > -1 and receiver.startswith(actor):
+        return UserType(id=actor, receiver_variant=ReceiverVariant.FOLLOWERS)
     # Assume actor ID
     return UserType(id=receiver, receiver_variant=ReceiverVariant.ACTOR)
 
@@ -131,7 +148,7 @@ def get_outbound_entity(entity: BaseEntity, private_key):
     cls = entity.__class__
     if cls in [
         ActivitypubAccept, ActivitypubFollow, ActivitypubProfile, ActivitypubPost, ActivitypubComment,
-        ActivitypubRetraction,
+        ActivitypubRetraction, ActivitypubShare,
     ]:
         # Already fine
         outbound = entity
@@ -147,6 +164,8 @@ def get_outbound_entity(entity: BaseEntity, private_key):
         outbound = ActivitypubRetraction.from_base(entity)
     elif cls == Comment:
         outbound = ActivitypubComment.from_base(entity)
+    elif cls == Share:
+        outbound = ActivitypubShare.from_base(entity)
     if not outbound:
         raise ValueError("Don't know how to convert this base entity to ActivityPub protocol entities.")
     # TODO LDS signing
@@ -181,11 +200,13 @@ def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dic
                 transformed["entity_type"] = "Object"
             else:
                 transformed["id"] = value
-        elif cls == ActivitypubProfile:
+        elif cls in (ActivitypubProfile, ActivitypubShare):
             transformed["id"] = value
         else:
             transformed["activity_id"] = value
     elif key == "actor":
+        transformed["actor_id"] = value
+    elif key == "attributedTo" and is_object:
         transformed["actor_id"] = value
     elif key == "content":
         transformed["raw_content"] = value
@@ -219,7 +240,7 @@ def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dic
         transformed["target_id"] = value
     elif key == "name":
         transformed["name"] = value
-    elif key == "object":
+    elif key == "object" and not is_object:
         if isinstance(value, dict):
             if cls == ActivitypubAccept:
                 transformed["target_id"] = value.get("id")

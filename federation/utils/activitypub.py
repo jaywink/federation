@@ -10,6 +10,10 @@ from federation.utils.text import decode_if_bytes
 logger = logging.getLogger('federation')
 
 
+def retrieve_and_parse_content(**kwargs) -> Optional[Any]:
+    return retrieve_and_parse_document(kwargs.get("id"))
+
+
 def retrieve_and_parse_document(fid: str) -> Optional[Any]:
     """
     Retrieve remote document by ID and return the entity.
@@ -18,7 +22,9 @@ def retrieve_and_parse_document(fid: str) -> Optional[Any]:
     if document:
         document = json.loads(decode_if_bytes(document))
         entities = message_to_objects(document, fid)
+        logger.info("retrieve_and_parse_document - found %s entities", len(entities))
         if entities:
+            logger.info("retrieve_and_parse_document - using first entity: %s", entities[0])
             return entities[0]
 
 

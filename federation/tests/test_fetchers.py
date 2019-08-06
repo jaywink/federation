@@ -5,12 +5,21 @@ from federation.fetchers import retrieve_remote_profile, retrieve_remote_content
 
 class TestRetrieveRemoteContent:
     @patch("federation.fetchers.importlib.import_module")
+    def test_calls_activitypub_retrieve_and_parse_content(self, mock_import):
+        mock_retrieve = Mock()
+        mock_import.return_value = mock_retrieve
+        retrieve_remote_content("https://example.com/foobar")
+        mock_retrieve.retrieve_and_parse_content.assert_called_once_with(
+            id="https://example.com/foobar", guid=None, handle=None, entity_type=None, sender_key_fetcher=None,
+        )
+
+    @patch("federation.fetchers.importlib.import_module")
     def test_calls_diaspora_retrieve_and_parse_content(self, mock_import):
         mock_retrieve = Mock()
         mock_import.return_value = mock_retrieve
         retrieve_remote_content("1234", handle="user@example.com", entity_type="post", sender_key_fetcher=sum)
         mock_retrieve.retrieve_and_parse_content.assert_called_once_with(
-            guid="1234", handle="user@example.com", entity_type="post", sender_key_fetcher=sum,
+            id="1234", guid="1234", handle="user@example.com", entity_type="post", sender_key_fetcher=sum,
         )
 
 
