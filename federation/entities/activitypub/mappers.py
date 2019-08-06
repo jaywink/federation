@@ -24,12 +24,20 @@ MAPPINGS = {
     "Undo": ActivitypubFollow,  # Technically not correct, but for now we support only undoing a follow of a profile
 }
 
+OBJECTS = (
+    "Article",
+    "Note",
+    "Page",
+    "Person",
+)
+
 
 def element_to_objects(payload: Dict) -> List:
     """
     Transform an Element to a list of entities.
     """
     entities = []
+    is_object = True if payload.get('type') in OBJECTS else False
     if payload.get('type') == "Delete":
         cls = ActivitypubRetraction
     elif isinstance(payload.get('object'), dict) and payload["object"].get('type'):
@@ -42,7 +50,7 @@ def element_to_objects(payload: Dict) -> List:
     if not cls:
         return []
 
-    transformed = transform_attributes(payload, cls)
+    transformed = transform_attributes(payload, cls, is_object=is_object)
     entity = cls(**transformed)
     # Add protocol name
     entity._source_protocol = "activitypub"
@@ -189,7 +197,9 @@ def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dic
             transformed["id"] = value
         else:
             transformed["activity_id"] = value
-    elif key in ("actor", "attributedTo"):
+    elif key == "actor":
+        transformed["actor_id"] = value
+    elif key == "attributedTo" and is_object:
         transformed["actor_id"] = value
     elif key == "content":
         transformed["raw_content"] = value

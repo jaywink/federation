@@ -13,13 +13,3 @@ class ActivitypubEntityMixin(BaseEntity):
     def to_string(self):
         # noinspection PyUnresolvedReferences
         return str(self.to_as2())
-
-
-class ActivitypubActorMixin(ActivitypubEntityMixin):
-    pass
-
-
-class ActivitypubObjectMixin(ActivitypubEntityMixin):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._required.append('activity_id')
