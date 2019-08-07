@@ -23,6 +23,7 @@ def activitypubannounce():
             target_id="http://127.0.0.1:8000/post/012345/",
         )
 
+
 @pytest.fixture
 def activitypubcomment():
     with freeze_time("2019-04-27"):
@@ -63,6 +64,21 @@ def activitypubpost():
             raw_content="raw_content",
             public=True,
             provider_display_name="Socialhome",
+            id=f"http://127.0.0.1:8000/post/123456/",
+            activity_id=f"http://127.0.0.1:8000/post/123456/#create",
+            actor_id=f"http://127.0.0.1:8000/profile/123456/",
+        )
+
+
+@pytest.fixture
+def activitypubpost_linkified_tags():
+    with freeze_time("2019-04-27"):
+        return ActivitypubPost(
+            raw_content='<p>👁️ foobar 👁️ </p><p>barfoo!<br><a href="https://mastodon.art/tags/fanart">'
+                        '#<span>fanart</span></a> <a href="https://mastodon.art/tags/mastoart">'
+                        '#<span>mastoart</span></a></p>',
+            public=True,
+            provider_display_name="Mastodon",
             id=f"http://127.0.0.1:8000/post/123456/",
             activity_id=f"http://127.0.0.1:8000/post/123456/#create",
             actor_id=f"http://127.0.0.1:8000/profile/123456/",
