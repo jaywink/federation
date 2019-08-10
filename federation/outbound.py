@@ -141,15 +141,15 @@ def handle_send(
             try:
                 payload = handle_create_payload(entity, author_user, protocol, parent_user=parent_user)
                 if public:
-                    payload["to"] = NAMESPACE_PUBLIC
+                    payload["to"] = [NAMESPACE_PUBLIC]
                     payload["cc"] = [fid]
                     if isinstance(payload.get("object"), dict):
-                        payload["object"]["to"] = NAMESPACE_PUBLIC
+                        payload["object"]["to"] = [NAMESPACE_PUBLIC]
                         payload["object"]["cc"] = [fid]
                 else:
-                    payload["to"] = fid
+                    payload["to"] = [fid]
                     if isinstance(payload.get("object"), dict):
-                        payload["object"]["to"] = fid
+                        payload["object"]["to"] = [fid]
                 payload = json.dumps(payload).encode("utf-8")
             except Exception as ex:
                 logger.error("handle_send - failed to generate private payload for %s: %s", fid, ex)
