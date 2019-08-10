@@ -259,6 +259,8 @@ def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dic
     elif key in ("to", "cc"):
         if isinstance(value, list) and NAMESPACE_PUBLIC in value:
             transformed["public"] = True
+        elif value == NAMESPACE_PUBLIC:
+            transformed["public"] = True
     elif key == "type":
         if value == "Undo":
             transformed["following"] = False
