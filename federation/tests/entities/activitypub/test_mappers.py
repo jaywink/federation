@@ -6,10 +6,11 @@ from federation.entities.activitypub.entities import (
     ActivitypubFollow, ActivitypubAccept, ActivitypubProfile, ActivitypubPost, ActivitypubComment,
     ActivitypubRetraction, ActivitypubShare)
 from federation.entities.activitypub.mappers import message_to_objects, get_outbound_entity
-from federation.entities.base import Accept, Follow, Profile, Post, Comment
+from federation.entities.base import Accept, Follow, Profile, Post, Comment, Image
 from federation.tests.fixtures.payloads import (
     ACTIVITYPUB_FOLLOW, ACTIVITYPUB_PROFILE, ACTIVITYPUB_PROFILE_INVALID, ACTIVITYPUB_UNDO_FOLLOW, ACTIVITYPUB_POST,
-    ACTIVITYPUB_COMMENT, ACTIVITYPUB_RETRACTION, ACTIVITYPUB_SHARE, ACTIVITYPUB_RETRACTION_SHARE)
+    ACTIVITYPUB_COMMENT, ACTIVITYPUB_RETRACTION, ACTIVITYPUB_SHARE, ACTIVITYPUB_RETRACTION_SHARE,
+    ACTIVITYPUB_POST_IMAGES)
 from federation.types import UserType, ReceiverVariant
 
 
@@ -71,25 +72,22 @@ class TestActivitypubEntityMappersReceive:
         assert post.public is True
         assert getattr(post, "target_id", None) is None
 
-    @pytest.mark.skip
     def test_message_to_objects_post_with_photos(self):
-        entities = message_to_objects(DIASPORA_POST_WITH_PHOTOS, "alice@alice.diaspora.example.org")
+        entities = message_to_objects(ACTIVITYPUB_POST_IMAGES, "https://mastodon.social/users/jaywink")
         assert len(entities) == 1
         post = entities[0]
-        assert isinstance(post, DiasporaPost)
+        assert isinstance(post, ActivitypubPost)
+        assert len(post._children) == 1
         photo = post._children[0]
-        assert isinstance(photo, DiasporaImage)
-        assert photo.remote_path == "https://alice.diaspora.example.org/uploads/images/"
-        assert photo.remote_name == "1234.jpg"
+        assert isinstance(photo, Image)
+        assert photo.url == "https://files.mastodon.social/media_attachments/files/017/642/079/original/" \
+                            "f51b0aee0ee1f2e1.jpg"
+        assert photo.name == ""
         assert photo.raw_content == ""
-        assert photo.linked_type == "Post"
-        assert photo.linked_guid == "((guidguidguidguidguidguidguid))"
-        assert photo.height == 120
-        assert photo.width == 120
-        assert photo.guid == "((guidguidguidguidguidguidguif))"
-        assert photo.handle == "alice@alice.diaspora.example.org"
-        assert photo.public == False
-        assert photo.created_at == datetime(2011, 7, 20, 1, 36, 7)
+        assert photo.height == 0
+        assert photo.width == 0
+        assert photo.guid == ""
+        assert photo.handle == ""
 
     def test_message_to_objects_comment(self):
         entities = message_to_objects(ACTIVITYPUB_COMMENT, "https://diaspodon.fr/users/jaywink")

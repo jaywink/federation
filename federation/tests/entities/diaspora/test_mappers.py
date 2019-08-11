@@ -51,16 +51,13 @@ class TestDiasporaEntityMappersReceive:
         assert isinstance(post, DiasporaPost)
         photo = post._children[0]
         assert isinstance(photo, DiasporaImage)
-        assert photo.remote_path == "https://alice.diaspora.example.org/uploads/images/"
-        assert photo.remote_name == "1234.jpg"
+        assert photo.url == "https://alice.diaspora.example.org/uploads/images/1234.jpg"
+        assert photo.name == ""
         assert photo.raw_content == ""
-        assert photo.linked_type == "Post"
-        assert photo.linked_guid == "((guidguidguidguidguidguidguid))"
         assert photo.height == 120
         assert photo.width == 120
         assert photo.guid == "((guidguidguidguidguidguidguif))"
         assert photo.handle == "alice@alice.diaspora.example.org"
-        assert photo.public == False
         assert photo.created_at == datetime(2011, 7, 20, 1, 36, 7)
 
     @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")

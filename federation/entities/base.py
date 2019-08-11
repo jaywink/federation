@@ -17,21 +17,18 @@ class Accept(CreatedAtMixin, TargetIDMixin, BaseEntity):
         self._required.remove('id')
 
 
-class Image(PublicMixin, OptionalRawContentMixin, CreatedAtMixin, BaseEntity):
+class Image(OptionalRawContentMixin, CreatedAtMixin, BaseEntity):
     """Reflects a single image, possibly linked to another object."""
-    remote_path = ""
-    remote_name = ""
-    linked_type = ""
-    linked_guid = ""
+    url = ""
+    name = ""
     height = 0
     width = 0
-    url = ""
 
     _default_activity = ActivityType.CREATE
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._required += ["remote_path", "remote_name"]
+        self._required += ["url"]
 
 
 class Comment(RawContentMixin, ParticipationMixin, CreatedAtMixin, RootTargetIDMixin, BaseEntity):

@@ -59,12 +59,12 @@ class DiasporaPostFactory(PostFactory):
         model = DiasporaPost
 
 
-class ImageFactory(ActorIDMixinFactory, IDMixinFactory, PublicMixinFactory, factory.Factory):
+class ImageFactory(ActorIDMixinFactory, IDMixinFactory, factory.Factory):
     class Meta:
         model = Image
 
-    remote_path = factory.Faker('uri')
-    remote_name = factory.Faker('file_path', extension='jpg')
+    url = factory.Faker('uri')
+    name = factory.Faker('slug')
 
 
 class ProfileFactory(IDMixinFactory, RawContentMixinFactory, factory.Factory):
