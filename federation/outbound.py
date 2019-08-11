@@ -3,6 +3,7 @@ import json
 import logging
 from typing import List, Dict, Union
 
+# noinspection PyPackageRequirements
 from Crypto.PublicKey.RSA import RsaKey
 from iteration_utilities import unique_everseen
 
@@ -165,9 +166,13 @@ def handle_send(
                 if public_key:
                     raise ValueError("handle_send - Diaspora recipient cannot be public and use encrypted delivery")
                 if not public_payloads[protocol]["payload"]:
-                    public_payloads[protocol]["payload"] = handle_create_payload(
-                        entity, author_user, protocol, parent_user=parent_user,
-                    )
+                    try:
+                        # noinspection PyTypeChecker
+                        public_payloads[protocol]["payload"] = handle_create_payload(
+                            entity, author_user, protocol, parent_user=parent_user,
+                        )
+                    except Exception as ex:
+                        logger.error("handle_send - failed to generate public payload for %s: %s", endpoint, ex)
                 public_payloads["diaspora"]["urls"].add(endpoint)
             else:
                 if not public_key:
@@ -180,7 +185,7 @@ def handle_send(
                     )
                     payload = json.dumps(payload)
                 except Exception as ex:
-                    logger.error("handle_send - failed to generate private payload for %s: %s", fid, ex)
+                    logger.error("handle_send - failed to generate private payload for %s: %s", endpoint, ex)
                     continue
                 payloads.append({
                     "urls": {endpoint}, "payload": payload, "content_type": "application/json", "auth": None,
