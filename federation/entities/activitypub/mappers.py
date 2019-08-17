@@ -5,7 +5,7 @@ from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
 from federation.entities.activitypub.entities import (
     ActivitypubFollow, ActivitypubProfile, ActivitypubAccept, ActivitypubPost, ActivitypubComment,
     ActivitypubRetraction, ActivitypubShare)
-from federation.entities.activitypub.objects import ImageObject
+from federation.entities.activitypub.objects import IMAGE_TYPES
 from federation.entities.base import Follow, Profile, Accept, Post, Comment, Retraction, Share, Image
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType, ReceiverVariant
@@ -98,7 +98,7 @@ def extract_attachments(payload: Dict) -> List[Image]:
     attachments = []
     for item in payload.get('attachment', []):
         # noinspection PyProtectedMember
-        if item.get("type") == "Document" and item.get("mediaType") in ImageObject._allowed_types:
+        if item.get("type") == "Document" and item.get("mediaType") in IMAGE_TYPES:
             attachments.append(
                 Image(
                     url=item.get('url'),
