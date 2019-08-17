@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 from typing import Callable, List
 
+# noinspection PyPackageRequirements
 from Crypto.PublicKey.RSA import RsaKey
 from lxml import etree
 
@@ -131,6 +132,7 @@ def element_to_objects(
     entity._mentions = entity.extract_mentions()
     # Do child elements
     for child in element:
+        # noinspection PyProtectedMember
         entity._children.extend(element_to_objects(child, sender, user=user))
     # Add to entities list
     entities.append(entity)
@@ -219,12 +221,7 @@ def transform_attributes(attrs, cls):
         elif key in ["target_type"] and cls == DiasporaRetraction:
             transformed["entity_type"] = DiasporaRetraction.entity_type_from_remote(value)
         elif key == "remote_photo_path":
-            transformed["remote_path"] = value
-        elif key == "remote_photo_name":
-            transformed["remote_name"] = value
-        elif key == "status_message_guid":
-            transformed["linked_guid"] = value
-            transformed["linked_type"] = "Post"
+            transformed["url"] = f"{value}{attrs.get('remote_photo_name')}"
         elif key == "author_signature":
             transformed["signature"] = value
         elif key in BOOLEAN_KEYS:

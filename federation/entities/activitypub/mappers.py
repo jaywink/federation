@@ -5,7 +5,8 @@ from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
 from federation.entities.activitypub.entities import (
     ActivitypubFollow, ActivitypubProfile, ActivitypubAccept, ActivitypubPost, ActivitypubComment,
     ActivitypubRetraction, ActivitypubShare)
-from federation.entities.base import Follow, Profile, Accept, Post, Comment, Retraction, Share
+from federation.entities.activitypub.objects import IMAGE_TYPES
+from federation.entities.base import Follow, Profile, Accept, Post, Comment, Retraction, Share, Image
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType, ReceiverVariant
 
@@ -34,6 +35,7 @@ UNDO_MAPPINGS = {
     "Follow": ActivitypubFollow,
     "Announce": ActivitypubRetraction,
 }
+
 
 def element_to_objects(payload: Dict) -> List:
     """
@@ -65,6 +67,9 @@ def element_to_objects(payload: Dict) -> List:
     entity._source_object = payload
     # Extract receivers
     entity._receivers = extract_receivers(payload)
+    # Extract children
+    if payload.get("object") and isinstance(payload.get("object"), dict):
+        entity._children = extract_attachments(payload.get("object"))
 
     if hasattr(entity, "post_receive"):
         entity.post_receive()
@@ -82,6 +87,25 @@ def element_to_objects(payload: Dict) -> List:
     entities.append(entity)
 
     return entities
+
+
+def extract_attachments(payload: Dict) -> List[Image]:
+    """
+    Extract images from attachments.
+
+    There could be other attachments, but currently we only extract images.
+    """
+    attachments = []
+    for item in payload.get('attachment', []):
+        # noinspection PyProtectedMember
+        if item.get("type") == "Document" and item.get("mediaType") in IMAGE_TYPES:
+            attachments.append(
+                Image(
+                    url=item.get('url'),
+                    name=item.get('name') or "",
+                )
+            )
+    return attachments
 
 
 def extract_receiver(payload: Dict, receiver: str) -> Optional[UserType]:
@@ -239,7 +263,7 @@ def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dic
     elif key == "inReplyTo":
         transformed["target_id"] = value
     elif key == "name":
-        transformed["name"] = value
+        transformed["name"] = value or ""
     elif key == "object" and not is_object:
         if isinstance(value, dict):
             if cls == ActivitypubAccept:
