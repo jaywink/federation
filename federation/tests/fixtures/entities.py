@@ -71,6 +71,27 @@ def activitypubpost():
 
 
 @pytest.fixture
+def activitypubpost_localimages():
+    with freeze_time("2019-04-27"):
+        return ActivitypubPost(
+            raw_content="""
+#Cycling #lauttasaari #sea #sun
+
+
+![](https://jasonrobinson.me/media/uploads/2019/07/16/daa24d89-cedf-4fc7-bad8-74a902541476.jpg)![](https://jasonrobinson.me/media/uploads/2019/07/16/daa24d89-cedf-4fc7-bad8-74a902541477.jpg)
+
+![foobar](https://jasonrobinson.me/media/uploads/2019/07/16/daa24d89-cedf-4fc7-bad8-74a902541478.jpg)
+![foobar barfoo](https://jasonrobinson.me/media/uploads/2019/07/16/daa24d89-cedf-4fc7-bad8-74a902541479.jpg)            
+""",
+            public=True,
+            provider_display_name="Socialhome",
+            id=f"http://127.0.0.1:8000/post/123456/",
+            activity_id=f"http://127.0.0.1:8000/post/123456/#create",
+            actor_id=f"https://jasonrobinson.me/u/jaywink/",
+        )
+
+
+@pytest.fixture
 def activitypubpost_linkified_tags():
     with freeze_time("2019-04-27"):
         return ActivitypubPost(

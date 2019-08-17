@@ -209,3 +209,13 @@ class TestEntitiesPostReceive:
     def test_post__post_receive__cleans_linkified_tags(self, activitypubpost_linkified_tags):
         activitypubpost_linkified_tags.post_receive()
         assert activitypubpost_linkified_tags.raw_content == '<p>👁️ foobar 👁️ </p><p>barfoo!<br>#fanart #mastoart</p>'
+
+
+class TestEntitiesPreSend:
+    def test_post_local_images_are_attached(self, activitypubpost_localimages):
+        activitypubpost_localimages.pre_send()
+        assert activitypubpost_localimages.raw_content == "#Cycling #lauttasaari #sea #sun"
+        assert len(activitypubpost_localimages._children) == 4
+        image = activitypubpost_localimages._children[3]
+        assert image.url == "https://jasonrobinson.me/media/uploads/2019/07/16/daa24d89-cedf-4fc7-bad8-74a902541479.jpg"
+        assert image.name == "foobar barfoo"

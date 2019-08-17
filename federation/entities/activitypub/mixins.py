@@ -1,7 +1,29 @@
 import re
 
+from federation.entities.base import Image
 from federation.entities.mixins import BaseEntity, RawContentMixin
 from federation.entities.utils import get_base_attributes
+
+
+class AttachImagesMixin(RawContentMixin):
+    def pre_send(self) -> None:
+        """
+        Attach any embedded images from the sender server.
+        """
+        actor_domain = re.match(r"https?://([\w.\-]+)", self.actor_id).groups()[0]
+        actor_domain = actor_domain.replace(".", "\\.")
+        regex = r"!\[([\w ]*)\]\((https?://%s[\w\/\-.]+\.[jpg|gif|jpeg|png]*)\)" % actor_domain
+        matches = re.finditer(regex, self.raw_content, re.MULTILINE | re.IGNORECASE)
+        for match in matches:
+            groups = match.groups()
+            self._children.append(
+                Image(
+                    url=groups[1],
+                    name=groups[0] or "",
+                )
+            )
+        self.raw_content = re.sub(regex, "", self.raw_content, re.MULTILINE | re.IGNORECASE)
+        self.raw_content = self.raw_content.strip()
 
 
 class ActivitypubEntityMixin(BaseEntity):

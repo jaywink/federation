@@ -8,7 +8,7 @@ from federation.entities.activitypub.constants import (
     CONTEXTS_DEFAULT, CONTEXT_MANUALLY_APPROVES_FOLLOWERS, CONTEXT_SENSITIVE, CONTEXT_HASHTAG,
     CONTEXT_LD_SIGNATURES)
 from federation.entities.activitypub.enums import ActorType, ObjectType, ActivityType
-from federation.entities.activitypub.mixins import ActivitypubEntityMixin, CleanContentMixin
+from federation.entities.activitypub.mixins import ActivitypubEntityMixin, CleanContentMixin, AttachImagesMixin
 from federation.entities.activitypub.objects import ImageObject
 from federation.entities.base import Profile, Post, Follow, Accept, Comment, Retraction, Share
 from federation.outbound import handle_send
@@ -33,7 +33,7 @@ class ActivitypubAccept(ActivitypubEntityMixin, Accept):
         return as2
 
 
-class ActivitypubComment(ActivitypubEntityMixin, CleanContentMixin, Comment):
+class ActivitypubComment(ActivitypubEntityMixin, AttachImagesMixin, CleanContentMixin, Comment):
     _type = ObjectType.NOTE.value
 
     def to_as2(self) -> Dict:
@@ -138,7 +138,7 @@ class ActivitypubFollow(ActivitypubEntityMixin, Follow):
         return as2
 
 
-class ActivitypubPost(ActivitypubEntityMixin, CleanContentMixin, Post):
+class ActivitypubPost(ActivitypubEntityMixin, AttachImagesMixin, CleanContentMixin, Post):
     _type = ObjectType.NOTE.value
 
     def to_as2(self) -> Dict:

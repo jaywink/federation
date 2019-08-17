@@ -201,6 +201,9 @@ def get_outbound_entity(entity: BaseEntity, private_key):
     #     # in all situations but is apparently being removed.
     #     # TODO: remove this once Diaspora removes the extra signature
     #     outbound.parent_signature = outbound.signature
+    if getattr(outbound, "pre_send", None) and isinstance(getattr(outbound, "pre_send"), callable):
+        # noinspection PyUnresolvedReferences
+        outbound.pre_send()
     return outbound
 
 
