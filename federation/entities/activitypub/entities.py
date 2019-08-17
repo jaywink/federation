@@ -33,7 +33,7 @@ class ActivitypubAccept(ActivitypubEntityMixin, Accept):
         return as2
 
 
-class ActivitypubComment(ActivitypubEntityMixin, AttachImagesMixin, CleanContentMixin, Comment):
+class ActivitypubNoteMixin(AttachImagesMixin, CleanContentMixin, ActivitypubEntityMixin):
     _type = ObjectType.NOTE.value
 
     def to_as2(self) -> Dict:
@@ -52,7 +52,7 @@ class ActivitypubComment(ActivitypubEntityMixin, AttachImagesMixin, CleanContent
                 "attributedTo": self.actor_id,
                 "content": self.raw_content,  # TODO render to html, add source markdown
                 "published": self.created_at.isoformat(),
-                "inReplyTo": self.target_id,
+                "inReplyTo": None,
                 "sensitive": True if "nsfw" in self.tags else False,
                 "summary": None,  # TODO Short text? First sentence? First line?
                 "tag": [],  # TODO add tags
@@ -60,6 +60,24 @@ class ActivitypubComment(ActivitypubEntityMixin, AttachImagesMixin, CleanContent
             },
             "published": self.created_at.isoformat(),
         }
+        if len(self._children):
+            as2["object"]["attachment"] = []
+            for child in self._children:
+                image = ImageObject(url=child.url)
+                if image.mediaType:
+                    as2["object"]["attachment"].append({
+                        "type": "Document",
+                        "mediaType": image.mediaType,
+                        "name": child.name,
+                        "url": child.url,
+                    })
+        return as2
+
+
+class ActivitypubComment(ActivitypubNoteMixin, Comment):
+    def to_as2(self) -> Dict:
+        as2 = super().to_as2()
+        as2["object"]["inReplyTo"] = self.target_id
         return as2
 
 
@@ -138,34 +156,8 @@ class ActivitypubFollow(ActivitypubEntityMixin, Follow):
         return as2
 
 
-class ActivitypubPost(ActivitypubEntityMixin, AttachImagesMixin, CleanContentMixin, Post):
-    _type = ObjectType.NOTE.value
-
-    def to_as2(self) -> Dict:
-        as2 = {
-            "@context": CONTEXTS_DEFAULT + [
-                CONTEXT_HASHTAG,
-                CONTEXT_LD_SIGNATURES,
-                CONTEXT_SENSITIVE,
-            ],
-            "type": self.activity.value,
-            "id": self.activity_id,
-            "actor": self.actor_id,
-            "object": {
-                "id": self.id,
-                "type": self._type,
-                "attributedTo": self.actor_id,
-                "content": self.raw_content,  # TODO render to html, add source markdown
-                "published": self.created_at.isoformat(),
-                "inReplyTo": None,
-                "sensitive": True if "nsfw" in self.tags else False,
-                "summary": None,  # TODO Short text? First sentence? First line?
-                "tag": [],  # TODO add tags
-                "url": self.url,
-            },
-            "published": self.created_at.isoformat(),
-        }
-        return as2
+class ActivitypubPost(ActivitypubNoteMixin, Post):
+    pass
 
 
 class ActivitypubProfile(ActivitypubEntityMixin, Profile):

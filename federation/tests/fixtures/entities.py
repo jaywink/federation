@@ -4,7 +4,7 @@ from freezegun import freeze_time
 from federation.entities.activitypub.entities import (
     ActivitypubPost, ActivitypubAccept, ActivitypubFollow, ActivitypubProfile, ActivitypubComment,
     ActivitypubRetraction, ActivitypubShare)
-from federation.entities.base import Profile
+from federation.entities.base import Profile, Image
 from federation.entities.diaspora.entities import (
     DiasporaPost, DiasporaComment, DiasporaLike, DiasporaProfile, DiasporaRetraction,
     DiasporaContact, DiasporaReshare,
@@ -71,7 +71,24 @@ def activitypubpost():
 
 
 @pytest.fixture
-def activitypubpost_localimages():
+def activitypubpost_images():
+    with freeze_time("2019-04-27"):
+        return ActivitypubPost(
+            raw_content="raw_content",
+            public=True,
+            provider_display_name="Socialhome",
+            id=f"http://127.0.0.1:8000/post/123456/",
+            activity_id=f"http://127.0.0.1:8000/post/123456/#create",
+            actor_id=f"http://127.0.0.1:8000/profile/123456/",
+            _children=[
+                Image(url="foobar"),
+                Image(url="barfoo", name="spam and eggs"),
+            ],
+        )
+
+
+@pytest.fixture
+def activitypubpost_embedded_images():
     with freeze_time("2019-04-27"):
         return ActivitypubPost(
             raw_content="""
