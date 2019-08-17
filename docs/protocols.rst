@@ -37,7 +37,11 @@ ActivityPub
 Features currently supported:
 
 * Webfinger
-* Entities as follows:
+* Objects and activities as follows:
 
-   * Profile
-   * Post
+   * Actor (Person)
+   * Note, Article and Page (Create, Delete, Update)
+     * These become a `Post` or `Comment` depending on `inReplyTo`.
+   * Attachment images from the above objects
+   * Follow, Accept Follow, Undo Follow
+   * Announce
