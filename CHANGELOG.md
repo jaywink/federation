@@ -46,6 +46,11 @@
   
     For Diaspora private deliveries, also a `public_key` is required containing the receiver public key. Note that passing in handles as recipients is not any more possible - always pass in a url for `endpoint`.
   * The outbound function `outbound.handle_create_payload` now requires an extra third parameter for the protocol to use. This function should rarely need to be called directly - use `handle_send` instead which can handle both ActivityPub and Diaspora protocols.
+  * The `Image` base entity has been made more generic.
+    
+    The following were removed: `remote_path`, `remote_name`, `linked_type`, `linked_guid`, `public`.
+    
+    The following were added: `url`, `name`.
   
 * **Backwards incompatible.** Generator `RFC3033Webfinger` and the related `rfc3033_webfinger_view` have been renamed to `RFC7033Webfinger` and `rfc7033_webfinger_view` to reflect the right RFC number.
 
