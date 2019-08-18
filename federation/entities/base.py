@@ -23,6 +23,7 @@ class Image(OptionalRawContentMixin, CreatedAtMixin, BaseEntity):
     name = ""
     height = 0
     width = 0
+    inline = False
 
     _default_activity = ActivityType.CREATE
 

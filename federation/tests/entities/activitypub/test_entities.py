@@ -271,10 +271,22 @@ class TestEntitiesPostReceive:
 
 
 class TestEntitiesPreSend:
-    def test_post_local_images_are_attached(self, activitypubpost_embedded_images):
+    def test_post_inline_images_are_attached(self, activitypubpost_embedded_images):
         activitypubpost_embedded_images.pre_send()
-        assert activitypubpost_embedded_images.raw_content == "#Cycling #lauttasaari #sea #sun"
         assert len(activitypubpost_embedded_images._children) == 4
+        image = activitypubpost_embedded_images._children[0]
+        assert image.url == "https://example.com/media/uploads/2019/07/16/daa24d89-cedf-4fc7-bad8-74a902541476.jpeg"
+        assert image.name == ""
+        assert image.inline
+        image = activitypubpost_embedded_images._children[1]
+        assert image.url == "https://jasonrobinson.me/media/uploads/2019/07/16/daa24d89-cedf-4fc7-bad8-74a902541477.png"
+        assert image.name == ""
+        assert image.inline
+        image = activitypubpost_embedded_images._children[2]
+        assert image.url == "https://jasonrobinson.me/media/uploads/2019/07/16/daa24d89-cedf-4fc7-bad8-74a902541478.gif"
+        assert image.name == "foobar"
+        assert image.inline
         image = activitypubpost_embedded_images._children[3]
         assert image.url == "https://jasonrobinson.me/media/uploads/2019/07/16/daa24d89-cedf-4fc7-bad8-74a902541479.jpg"
         assert image.name == "foobar barfoo"
+        assert image.inline

@@ -50,3 +50,17 @@ Namespace
 .........
 
 All payloads over ActivityPub sent can be identified with by checking ``@context`` which will include the ``pyfed: https://docs.jasonrobinson.me/ns/python-federation`` namespace.
+
+Content media type
+..................
+
+When receiving, all ``object.content`` keys are expected to be in ``text/html``.
+
+For outbound entities, ``raw_content`` is expected to be in ``text/markdown``, specifically CommonMark. When sending payloads, ``raw_content`` will be rendered via the ``commonmark`` library into ``object.content``. The original ``raw_content`` will be added to the ``object.source`` property.
+
+Images
+......
+
+Any images referenced in the ``raw_content`` of outbound entities will be extracted into ``object.attachment`` objects, for receivers that don't support inline images. These attachments will have a ``pyfed:inlineImage`` property set to ``true`` to indicate the image has been extrated from the content. Receivers should ignore the inline image attachments if they support showing ``<img>`` HTML tags or the markdown content in ``object.source``.
+
+For inbound entities we do this automatically by not including received attachments in the entity ``_children`` attribute.

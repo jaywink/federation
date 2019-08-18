@@ -8,11 +8,9 @@ from federation.entities.utils import get_base_attributes
 class AttachImagesMixin(RawContentMixin):
     def pre_send(self) -> None:
         """
-        Attach any embedded images from the sender server.
+        Attach any embedded images from raw_content.
         """
-        actor_domain = re.match(r"https?://([\w.\-]+)", self.actor_id).groups()[0]
-        actor_domain = actor_domain.replace(".", "\\.")
-        regex = r"!\[([\w ]*)\]\((https?://%s[\w\/\-.]+\.[jpg|gif|jpeg|png]*)\)" % actor_domain
+        regex = r"!\[([\w ]*)\]\((https?://[\w\d\-\./]+\.[\w]*((?<=jpg)|(?<=gif)|(?<=png)|(?<=jpeg)))\)"
         matches = re.finditer(regex, self.raw_content, re.MULTILINE | re.IGNORECASE)
         for match in matches:
             groups = match.groups()
@@ -20,10 +18,9 @@ class AttachImagesMixin(RawContentMixin):
                 Image(
                     url=groups[1],
                     name=groups[0] or "",
+                    inline=True,
                 )
             )
-        self.raw_content = re.sub(regex, "", self.raw_content, re.MULTILINE | re.IGNORECASE)
-        self.raw_content = self.raw_content.strip()
 
 
 class ActivitypubEntityMixin(BaseEntity):

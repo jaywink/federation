@@ -70,12 +70,15 @@ class ActivitypubNoteMixin(AttachImagesMixin, CleanContentMixin, ActivitypubEnti
             for child in self._children:
                 image = ImageObject(url=child.url)
                 if image.mediaType:
-                    as2["object"]["attachment"].append({
+                    attachment = {
                         "type": "Document",
                         "mediaType": image.mediaType,
                         "name": child.name,
                         "url": child.url,
-                    })
+                    }
+                    if child.inline:
+                        attachment["pyfed:inlineImage"] = True
+                    as2["object"]["attachment"].append(attachment)
         return as2
 
 

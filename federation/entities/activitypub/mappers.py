@@ -97,8 +97,10 @@ def extract_attachments(payload: Dict) -> List[Image]:
     """
     attachments = []
     for item in payload.get('attachment', []):
-        # noinspection PyProtectedMember
         if item.get("type") == "Document" and item.get("mediaType") in IMAGE_TYPES:
+            if item.get('pyfed:inlineImage', False):
+                # Skip this image as it's indicated to be inline in content and source already
+                continue
             attachments.append(
                 Image(
                     url=item.get('url'),
