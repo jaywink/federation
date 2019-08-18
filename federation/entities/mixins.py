@@ -3,6 +3,8 @@ import importlib
 import warnings
 from typing import List, Set
 
+from commonmark import commonmark
+
 from federation.entities.activitypub.enums import ActivityType
 
 
@@ -175,11 +177,22 @@ class CreatedAtMixin(BaseEntity):
 
 
 class RawContentMixin(BaseEntity):
-    raw_content = ""
+    _media_type: str = "text/markdown"
+    _rendered_content: str = ""
+    raw_content: str = ""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._required += ["raw_content"]
+
+    @property
+    def rendered_content(self) -> str:
+        """Returns the rendered version of raw_content, or just raw_content."""
+        if self._rendered_content:
+            return self._rendered_content
+        elif self._media_type == "text/markdown" and self.raw_content:
+            return commonmark(self.raw_content).strip()
+        return self.raw_content
 
     @property
     def tags(self):

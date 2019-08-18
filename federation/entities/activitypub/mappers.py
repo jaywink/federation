@@ -218,7 +218,9 @@ def message_to_objects(
     return element_to_objects(message)
 
 
-def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dict, cls, is_object: bool) -> None:
+def transform_attribute(
+        key: str, value: Union[str, Dict, int], transformed: Dict, cls, is_object: bool, payload: Dict,
+) -> None:
     if value is None:
         value = ""
     if key == "id":
@@ -236,8 +238,15 @@ def transform_attribute(key: str, value: Union[str, Dict, int], transformed: Dic
         transformed["actor_id"] = value
     elif key == "attributedTo" and is_object:
         transformed["actor_id"] = value
-    elif key == "content":
-        transformed["raw_content"] = value
+    elif key in ("content", "source"):
+        if payload.get('source') and isinstance(payload.get("source"), dict):
+            transformed["raw_content"] = payload.get('source').get('content')
+            transformed["_media_type"] = payload.get('source').get('mediaType')
+            transformed["_rendered_content"] = payload.get('content')
+        else:
+            transformed["raw_content"] = value
+            # Assume HTML by convention
+            transformed["_media_type"] = "text/html"
     elif key == "inboxes" and isinstance(value, dict):
         if "inboxes" not in transformed:
             transformed["inboxes"] = {"private": None, "public": None}
@@ -300,5 +309,5 @@ def transform_attributes(payload: Dict, cls, transformed: Dict = None, is_object
     if not transformed:
         transformed = {}
     for key, value in payload.items():
-        transform_attribute(key, value, transformed, cls, is_object)
+        transform_attribute(key, value, transformed, cls, is_object, payload)
     return transformed

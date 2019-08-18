@@ -10,6 +10,8 @@ class AttachImagesMixin(RawContentMixin):
         """
         Attach any embedded images from raw_content.
         """
+        if self._media_type != "text/markdown":
+            return
         regex = r"!\[([\w ]*)\]\((https?://[\w\d\-\./]+\.[\w]*((?<=jpg)|(?<=gif)|(?<=png)|(?<=jpeg)))\)"
         matches = re.finditer(regex, self.raw_content, re.MULTILINE | re.IGNORECASE)
         for match in matches:

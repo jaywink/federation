@@ -10,7 +10,7 @@ from federation.entities.base import Accept, Follow, Profile, Post, Comment, Ima
 from federation.tests.fixtures.payloads import (
     ACTIVITYPUB_FOLLOW, ACTIVITYPUB_PROFILE, ACTIVITYPUB_PROFILE_INVALID, ACTIVITYPUB_UNDO_FOLLOW, ACTIVITYPUB_POST,
     ACTIVITYPUB_COMMENT, ACTIVITYPUB_RETRACTION, ACTIVITYPUB_SHARE, ACTIVITYPUB_RETRACTION_SHARE,
-    ACTIVITYPUB_POST_IMAGES)
+    ACTIVITYPUB_POST_IMAGES, ACTIVITYPUB_POST_WITH_SOURCE)
 from federation.types import UserType, ReceiverVariant
 
 
@@ -67,9 +67,26 @@ class TestActivitypubEntityMappersReceive:
         assert isinstance(post, Post)
         assert post.raw_content == '<p><span class="h-card"><a href="https://dev.jasonrobinson.me/u/jaywink/" ' \
                                    'class="u-url mention">@<span>jaywink</span></a></span> boom</p>'
+        assert post.rendered_content == post.raw_content
         assert post.id == "https://diaspodon.fr/users/jaywink/statuses/102356911717767237"
         assert post.actor_id == "https://diaspodon.fr/users/jaywink"
         assert post.public is True
+        assert post._media_type == "text/html"
+        assert getattr(post, "target_id", None) is None
+
+    def test_message_to_objects_simple_post__with_source(self):
+        entities = message_to_objects(ACTIVITYPUB_POST_WITH_SOURCE, "https://diaspodon.fr/users/jaywink")
+        assert len(entities) == 1
+        post = entities[0]
+        assert isinstance(post, ActivitypubPost)
+        assert isinstance(post, Post)
+        assert post.rendered_content == '<p><span class="h-card"><a href="https://dev.jasonrobinson.me/u/jaywink/" ' \
+                                        'class="u-url mention">@<span>jaywink</span></a></span> boom</p>'
+        assert post.raw_content == "@jaywink boom"
+        assert post.id == "https://diaspodon.fr/users/jaywink/statuses/102356911717767237"
+        assert post.actor_id == "https://diaspodon.fr/users/jaywink"
+        assert post.public is True
+        assert post._media_type == "text/markdown"
         assert getattr(post, "target_id", None) is None
 
     def test_message_to_objects_post_with_photos(self):

@@ -3,7 +3,6 @@ import uuid
 from typing import Dict
 
 import attr
-from commonmark import commonmark
 
 from federation.entities.activitypub.constants import (
     CONTEXTS_DEFAULT, CONTEXT_MANUALLY_APPROVES_FOLLOWERS, CONTEXT_SENSITIVE, CONTEXT_HASHTAG,
@@ -51,7 +50,7 @@ class ActivitypubNoteMixin(AttachImagesMixin, CleanContentMixin, ActivitypubEnti
                 "id": self.id,
                 "type": self._type,
                 "attributedTo": self.actor_id,
-                "content": commonmark(self.raw_content).strip(),
+                "content": self.rendered_content,
                 "published": self.created_at.isoformat(),
                 "inReplyTo": None,
                 "sensitive": True if "nsfw" in self.tags else False,
@@ -60,7 +59,7 @@ class ActivitypubNoteMixin(AttachImagesMixin, CleanContentMixin, ActivitypubEnti
                 "url": self.url,
                 'source': {
                     'content': self.raw_content,
-                    'mediaType': 'text/markdown',
+                    'mediaType': self._media_type,
                 },
             },
             "published": self.created_at.isoformat(),

@@ -30,6 +30,10 @@
 
 * All ActivityPub payloads are added a `pyfed: https://docs.jasonrobinson.me/ns/python-federation` context to identify payloads sent by this library.
 
+* Entities with `raw_content` now also contain a `_media_type` and `rendered_content`.
+
+  The default `_media_type` is `text/markdown` except for ActivityPub originating posts it defaults to `text/html`. If the ActivityPub payload contains a `source`, that mediaType will be used instead.
+
 ### Changed
 
 * **Backwards incompatible.** Lowest compatible Python version is now 3.6.
