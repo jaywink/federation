@@ -47,5 +47,5 @@ class CleanContentMixin(RawContentMixin):
             return f"#{match.groups()[0]}"
 
         self.raw_content = re.sub(
-            r'<a href=\"https://[\w/\.]+\">#<span>([a-zA-Z0-9-_]+)</span></a>', cleaner, self.raw_content, re.MULTILINE,
+            r'<a.*class.*hashtag.*#<span>([a-zA-Z0-9-_]+)</span></a>', cleaner, self.raw_content, re.MULTILINE,
         )
