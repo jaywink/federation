@@ -4,7 +4,7 @@ from freezegun import freeze_time
 from federation.entities.activitypub.entities import (
     ActivitypubPost, ActivitypubAccept, ActivitypubFollow, ActivitypubProfile, ActivitypubComment,
     ActivitypubRetraction, ActivitypubShare)
-from federation.entities.base import Profile
+from federation.entities.base import Profile, Image
 from federation.entities.diaspora.entities import (
     DiasporaPost, DiasporaComment, DiasporaLike, DiasporaProfile, DiasporaRetraction,
     DiasporaContact, DiasporaReshare,
@@ -67,6 +67,44 @@ def activitypubpost():
             id=f"http://127.0.0.1:8000/post/123456/",
             activity_id=f"http://127.0.0.1:8000/post/123456/#create",
             actor_id=f"http://127.0.0.1:8000/profile/123456/",
+        )
+
+
+@pytest.fixture
+def activitypubpost_images():
+    with freeze_time("2019-04-27"):
+        return ActivitypubPost(
+            raw_content="raw_content",
+            public=True,
+            provider_display_name="Socialhome",
+            id=f"http://127.0.0.1:8000/post/123456/",
+            activity_id=f"http://127.0.0.1:8000/post/123456/#create",
+            actor_id=f"http://127.0.0.1:8000/profile/123456/",
+            _children=[
+                Image(url="foobar"),
+                Image(url="barfoo", name="spam and eggs"),
+            ],
+        )
+
+
+@pytest.fixture
+def activitypubpost_embedded_images():
+    with freeze_time("2019-04-27"):
+        return ActivitypubPost(
+            raw_content="""
+#Cycling #lauttasaari #sea #sun
+
+
+![](https://jasonrobinson.me/media/uploads/2019/07/16/daa24d89-cedf-4fc7-bad8-74a902541476.jpg)![](https://jasonrobinson.me/media/uploads/2019/07/16/daa24d89-cedf-4fc7-bad8-74a902541477.jpg)
+
+![foobar](https://jasonrobinson.me/media/uploads/2019/07/16/daa24d89-cedf-4fc7-bad8-74a902541478.jpg)
+![foobar barfoo](https://jasonrobinson.me/media/uploads/2019/07/16/daa24d89-cedf-4fc7-bad8-74a902541479.jpg)            
+""",
+            public=True,
+            provider_display_name="Socialhome",
+            id=f"http://127.0.0.1:8000/post/123456/",
+            activity_id=f"http://127.0.0.1:8000/post/123456/#create",
+            actor_id=f"https://jasonrobinson.me/u/jaywink/",
         )
 
 

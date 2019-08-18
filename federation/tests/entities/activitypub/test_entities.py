@@ -118,6 +118,48 @@ class TestEntitiesConvertToAS2:
         }
 
     @patch("federation.entities.activitypub.objects.fetch_content_type", return_value="image/jpeg")
+    def test_post_to_as2__with_images(self, mock_fetch, activitypubpost_images):
+        result = activitypubpost_images.to_as2()
+        assert result == {
+            '@context': [
+                'https://www.w3.org/ns/activitystreams',
+                {'Hashtag': 'as:Hashtag'},
+                'https://w3id.org/security/v1',
+                {'sensitive': 'as:sensitive'},
+            ],
+            'type': 'Create',
+            'id': 'http://127.0.0.1:8000/post/123456/#create',
+            'actor': 'http://127.0.0.1:8000/profile/123456/',
+            'object': {
+                'id': 'http://127.0.0.1:8000/post/123456/',
+                'type': 'Note',
+                'attributedTo': 'http://127.0.0.1:8000/profile/123456/',
+                'content': 'raw_content',
+                'published': '2019-04-27T00:00:00',
+                'inReplyTo': None,
+                'sensitive': False,
+                'summary': None,
+                'tag': [],
+                'url': '',
+                'attachment': [
+                    {
+                        'type': 'Document',
+                        'mediaType': 'image/jpeg',
+                        'name': '',
+                        'url': 'foobar',
+                    },
+                    {
+                        'type': 'Document',
+                        'mediaType': 'image/jpeg',
+                        'name': 'spam and eggs',
+                        'url': 'barfoo',
+                    },
+                ],
+            },
+            'published': '2019-04-27T00:00:00',
+        }
+
+    @patch("federation.entities.activitypub.objects.fetch_content_type", return_value="image/jpeg")
     def test_profile_to_as2(self, mock_fetch, activitypubprofile):
         result = activitypubprofile.to_as2()
         assert result == {
@@ -209,3 +251,13 @@ class TestEntitiesPostReceive:
     def test_post__post_receive__cleans_linkified_tags(self, activitypubpost_linkified_tags):
         activitypubpost_linkified_tags.post_receive()
         assert activitypubpost_linkified_tags.raw_content == '<p>👁️ foobar 👁️ </p><p>barfoo!<br>#fanart #mastoart</p>'
+
+
+class TestEntitiesPreSend:
+    def test_post_local_images_are_attached(self, activitypubpost_embedded_images):
+        activitypubpost_embedded_images.pre_send()
+        assert activitypubpost_embedded_images.raw_content == "#Cycling #lauttasaari #sea #sun"
+        assert len(activitypubpost_embedded_images._children) == 4
+        image = activitypubpost_embedded_images._children[3]
+        assert image.url == "https://jasonrobinson.me/media/uploads/2019/07/16/daa24d89-cedf-4fc7-bad8-74a902541479.jpg"
+        assert image.name == "foobar barfoo"
