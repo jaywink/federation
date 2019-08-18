@@ -153,7 +153,7 @@ def handle_send(
                         payload["object"]["to"] = [fid]
                 payload = json.dumps(payload).encode("utf-8")
             except Exception as ex:
-                logger.error("handle_send - failed to generate private payload for %s: %s", fid, ex)
+                logger.error("handle_send - failed to generate payload for %s, %s: %s", fid, endpoint, ex)
                 continue
             payloads.append({
                 "auth": get_http_authentication(author_user.private_key, f"{author_user.id}#main-key"),
