@@ -42,7 +42,7 @@ class TestEntitiesConvertToAS2:
         assert result == {
             '@context': [
                 'https://www.w3.org/ns/activitystreams',
-                {"pyfed": "https://jasonrobinson.me/ns/federation"},
+                {"pyfed": "https://docs.jasonrobinson.me/ns/python-federation"},
                 {'Hashtag': 'as:Hashtag'},
                 'https://w3id.org/security/v1',
                 {'sensitive': 'as:sensitive'},
@@ -100,7 +100,7 @@ class TestEntitiesConvertToAS2:
         assert result == {
             '@context': [
                 'https://www.w3.org/ns/activitystreams',
-                {"pyfed": "https://jasonrobinson.me/ns/federation"},
+                {"pyfed": "https://docs.jasonrobinson.me/ns/python-federation"},
                 {'Hashtag': 'as:Hashtag'},
                 'https://w3id.org/security/v1',
                 {'sensitive': 'as:sensitive'},
@@ -133,7 +133,7 @@ class TestEntitiesConvertToAS2:
         assert result == {
             '@context': [
                 'https://www.w3.org/ns/activitystreams',
-                {"pyfed": "https://jasonrobinson.me/ns/federation"},
+                {"pyfed": "https://docs.jasonrobinson.me/ns/python-federation"},
                 {'Hashtag': 'as:Hashtag'},
                 'https://w3id.org/security/v1',
                 {'sensitive': 'as:sensitive'},
@@ -212,7 +212,7 @@ class TestEntitiesConvertToAS2:
         assert result == {
             '@context': [
                 'https://www.w3.org/ns/activitystreams',
-                {"pyfed": "https://jasonrobinson.me/ns/federation"},
+                {"pyfed": "https://docs.jasonrobinson.me/ns/python-federation"},
             ],
             'type': 'Delete',
             'id': 'http://127.0.0.1:8000/post/123456/#delete',
@@ -229,7 +229,7 @@ class TestEntitiesConvertToAS2:
         assert result == {
             '@context': [
                 'https://www.w3.org/ns/activitystreams',
-                {"pyfed": "https://jasonrobinson.me/ns/federation"},
+                {"pyfed": "https://docs.jasonrobinson.me/ns/python-federation"},
             ],
             'type': 'Undo',
             'id': 'http://127.0.0.1:8000/post/123456/#delete',
