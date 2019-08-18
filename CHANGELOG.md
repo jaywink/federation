@@ -28,6 +28,8 @@
 
 * The high level fetcher `retrieve_remote_content` now supports ActivityPub ID's.
 
+* All ActivityPub payloads are added a `pyfed: https://docs.jasonrobinson.me/ns/python-federation` context to identify payloads sent by this library.
+
 ### Changed
 
 * **Backwards incompatible.** Lowest compatible Python version is now 3.6.

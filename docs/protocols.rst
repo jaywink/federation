@@ -41,7 +41,12 @@ Features currently supported:
 
    * Actor (Person)
    * Note, Article and Page (Create, Delete, Update)
-     * These become a `Post` or `Comment` depending on `inReplyTo`.
+     * These become a ``Post`` or ``Comment`` depending on ``inReplyTo``.
    * Attachment images from the above objects
    * Follow, Accept Follow, Undo Follow
    * Announce
+
+Namespace
+.........
+
+All payloads over ActivityPub sent can be identified with by checking ``@context`` which will include the ``pyfed: https://docs.jasonrobinson.me/ns/python-federation`` namespace.
