@@ -75,7 +75,10 @@ def fetch_nodeinfo_document(host):
     doc, status_code, error = fetch_document(url=url)
     if status_code >= 300 and not doc:
         return
-    doc = json.loads(doc)
+    try:
+        doc = json.loads(doc)
+    except json.JSONDecodeError:
+        return
     return parse_nodeinfo_document(doc, host)
 
 
