@@ -33,6 +33,8 @@
 * Entities with `raw_content` now also contain a `_media_type` and `rendered_content`.
 
   The default `_media_type` is `text/markdown` except for ActivityPub originating posts it defaults to `text/html`. If the ActivityPub payload contains a `source`, that mediaType will be used instead.
+  
+* Host meta fetchers now support NodeInfo 2.1
 
 ### Changed
 

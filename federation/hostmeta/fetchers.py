@@ -8,7 +8,7 @@ from federation.hostmeta.parsers import (
     parse_matrix_document, parse_misskey_document)
 from federation.utils.network import fetch_document
 
-HIGHEST_SUPPORTED_NODEINFO_VERSION = 2.0
+HIGHEST_SUPPORTED_NODEINFO_VERSION = 2.1
 
 
 def fetch_mastodon_document(host):
