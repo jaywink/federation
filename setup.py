@@ -35,6 +35,7 @@ setup(
         "lxml>=3.4.0",
         "ipdata>=3.0",
         "iteration_utilities",
+        "markdownify",
         "jsonschema>=2.0.0",
         "pycryptodome>=3.4.10",
         "python-dateutil>=2.4.0",

@@ -65,9 +65,9 @@ class TestActivitypubEntityMappersReceive:
         post = entities[0]
         assert isinstance(post, ActivitypubPost)
         assert isinstance(post, Post)
-        assert post.raw_content == '<p><span class="h-card"><a href="https://dev.jasonrobinson.me/u/jaywink/" ' \
-                                   'class="u-url mention">@<span>jaywink</span></a></span> boom</p>'
-        assert post.rendered_content == post.raw_content
+        assert post.raw_content == '[@jaywink](https://dev.jasonrobinson.me/u/jaywink/) boom'
+        assert post.rendered_content == '<p><span class="h-card"><a href="https://dev.jasonrobinson.me/u/jaywink/" ' \
+                                        'class="u-url mention">@<span>jaywink</span></a></span> boom</p>'
         assert post.id == "https://diaspodon.fr/users/jaywink/statuses/102356911717767237"
         assert post.actor_id == "https://diaspodon.fr/users/jaywink"
         assert post.public is True
@@ -80,7 +80,7 @@ class TestActivitypubEntityMappersReceive:
         post = entities[0]
         assert isinstance(post, ActivitypubPost)
         assert isinstance(post, Post)
-        assert post.raw_content == "<p>boom #test</p>"
+        assert post.raw_content == 'boom [#test](https://mastodon.social/tags/test)'
 
     def test_message_to_objects_simple_post__with_source(self):
         entities = message_to_objects(ACTIVITYPUB_POST_WITH_SOURCE, "https://diaspodon.fr/users/jaywink")
@@ -120,8 +120,7 @@ class TestActivitypubEntityMappersReceive:
         comment = entities[0]
         assert isinstance(comment, ActivitypubComment)
         assert isinstance(comment, Comment)
-        assert comment.raw_content == '<p><span class="h-card"><a href="https://dev.jasonrobinson.me/u/jaywink/" ' \
-                                      'class="u-url mention">@<span>jaywink</span></a></span> boom</p>'
+        assert comment.raw_content == '[@jaywink](https://dev.jasonrobinson.me/u/jaywink/) boom'
         assert comment.id == "https://diaspodon.fr/users/jaywink/statuses/102356911717767237"
         assert comment.actor_id == "https://diaspodon.fr/users/jaywink"
         assert comment.target_id == "https://dev.jasonrobinson.me/content/653bad70-41b3-42c9-89cb-c4ee587e68e4/"
