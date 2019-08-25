@@ -66,7 +66,7 @@ def fetch_nodeinfo_document(host):
     else:
         for link in doc.get('links'):
             version = float(link.get('rel').split('/')[-1])
-            if version > highest_version and version <= HIGHEST_SUPPORTED_NODEINFO_VERSION:
+            if highest_version < version <= HIGHEST_SUPPORTED_NODEINFO_VERSION:
                 url, highest_version = link.get('href'), version
 
     if not url:
