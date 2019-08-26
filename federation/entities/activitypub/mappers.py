@@ -1,6 +1,8 @@
 import logging
 from typing import List, Callable, Dict, Union, Optional
 
+from markdownify import markdownify
+
 from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
 from federation.entities.activitypub.entities import (
     ActivitypubFollow, ActivitypubProfile, ActivitypubAccept, ActivitypubPost, ActivitypubComment,
@@ -240,12 +242,18 @@ def transform_attribute(
         transformed["actor_id"] = value
     elif key in ("content", "source"):
         if payload.get('source') and isinstance(payload.get("source"), dict):
-            transformed["raw_content"] = payload.get('source').get('content')
-            transformed["_media_type"] = payload.get('source').get('mediaType')
-            transformed["_rendered_content"] = payload.get('content')
+            if payload.get('source').get('mediaType') == "text/html":
+                transformed["_rendered_content"] = payload.get('content')
+                transformed["_media_type"] = "text/html"
+                transformed["raw_content"] = markdownify(payload.get('source').get('content')).strip()
+            else:
+                transformed["_media_type"] = payload.get('source').get('mediaType')
+                transformed["_rendered_content"] = payload.get("content").strip()
+                transformed["raw_content"] = payload.get('source').get('content').strip()
         else:
-            transformed["raw_content"] = value
+            transformed["raw_content"] = markdownify(value).strip()
             # Assume HTML by convention
+            transformed["_rendered_content"] = value.strip()
             transformed["_media_type"] = "text/html"
     elif key == "inboxes" and isinstance(value, dict):
         if "inboxes" not in transformed:
