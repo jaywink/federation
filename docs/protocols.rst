@@ -54,7 +54,16 @@ All payloads over ActivityPub sent can be identified with by checking ``@context
 Content media type
 ..................
 
-When receiving, all ``object.content`` keys are expected to be in ``text/html``.
+The following keys will be set on the entity based on the ``source`` property existing:
+
+* if the object has an ``object.source`` property:
+  * ``_media_type`` will be the source media type
+  * ``_rendered_content`` will be the object ``content``
+  * ``raw_content`` will be the source ``content``
+* if the object has no ``object.source`` property:
+  * ``_media_type`` will be ``text/html``
+  * ``_rendered_content`` will be the object ``content``
+  * ``raw_content`` will object ``content`` run through a HTML2Markdown renderer
 
 For outbound entities, ``raw_content`` is expected to be in ``text/markdown``, specifically CommonMark. When sending payloads, ``raw_content`` will be rendered via the ``commonmark`` library into ``object.content``. The original ``raw_content`` will be added to the ``object.source`` property.
 
