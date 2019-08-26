@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 from federation import __version__
 
 
-description = 'Python library to abstract social web federation protocols like Diaspora.'
+description = 'Python library to abstract social web federation protocols like ActivityPub and Diaspora.'
 
 
 def get_long_description():
@@ -52,10 +52,11 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 3 :: Only',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Communications',
         'Topic :: Internet',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    keywords='federation diaspora activitypub federate social',
+    keywords='federation diaspora activitypub federate fediverse social',
 )
