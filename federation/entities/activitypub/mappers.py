@@ -18,19 +18,27 @@ logger = logging.getLogger("federation")
 MAPPINGS = {
     "Accept": ActivitypubAccept,
     "Announce": ActivitypubShare,
+    "Application": ActivitypubProfile,
     "Article": ActivitypubPost,
     "Delete": ActivitypubRetraction,
     "Follow": ActivitypubFollow,  # Technically not correct, but for now we support only following profiles
+    "Group": ActivitypubProfile,
     "Note": ActivitypubPost,
+    "Organization": ActivitypubProfile,
     "Page": ActivitypubPost,
     "Person": ActivitypubProfile,
+    "Service": ActivitypubProfile,
 }
 
 OBJECTS = (
+    "Application",
     "Article",
+    "Group",
     "Note",
+    "Organization",
     "Page",
     "Person",
+    "Service",
 )
 
 UNDO_MAPPINGS = {
