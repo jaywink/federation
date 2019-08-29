@@ -41,13 +41,13 @@ class ActivitypubEntityMixin(BaseEntity):
 class CleanContentMixin(RawContentMixin):
     def post_receive(self) -> None:
         """
-        Make linkified Mastodon tags normal tags.
+        Make linkified tags normal tags.
         """
         def cleaner(match):
             return f"#{match.groups()[0]}"
 
         self.raw_content = re.sub(
-            r'<a href=\"[^\"]*\" class=\"mention hashtag\" rel=\"tag\">#<span>([a-zA-Z0-9-_]+)</span></a>',
+            r'\[#([\w\-_]+)\]\(http?s://.+\)',
             cleaner,
             self.raw_content,
             re.MULTILINE,
