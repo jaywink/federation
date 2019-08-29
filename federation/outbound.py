@@ -39,9 +39,9 @@ def handle_create_payload(
     mappers = importlib.import_module(f"federation.entities.{protocol_name}.mappers")
     protocol = importlib.import_module(f"federation.protocols.{protocol_name}.protocol")
     protocol = protocol.Protocol()
-    outbound_entity = mappers.get_outbound_entity(entity, author_user.private_key)
+    outbound_entity = mappers.get_outbound_entity(entity, author_user.rsa_private_key)
     if parent_user:
-        outbound_entity.sign_with_parent(parent_user.private_key)
+        outbound_entity.sign_with_parent(parent_user.rsa_private_key)
     send_as_user = parent_user if parent_user else author_user
     data = protocol.build_send(entity=outbound_entity, from_user=send_as_user, to_user_key=to_user_key)
     return data
@@ -156,7 +156,7 @@ def handle_send(
                 logger.error("handle_send - failed to generate payload for %s, %s: %s", fid, endpoint, ex)
                 continue
             payloads.append({
-                "auth": get_http_authentication(author_user.private_key, f"{author_user.id}#main-key"),
+                "auth": get_http_authentication(author_user.rsa_private_key, f"{author_user.id}#main-key"),
                 "payload": payload,
                 "content_type": 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
                 "urls": {endpoint},

@@ -5,6 +5,7 @@ import pytest
 from federation.entities.diaspora.entities import DiasporaPost
 from federation.outbound import handle_create_payload, handle_send
 from federation.tests.fixtures.keys import get_dummy_private_key
+from federation.types import UserType
 from federation.utils.text import encode_if_text
 
 
@@ -50,10 +51,10 @@ class TestHandleSend:
                 "protocol": "activitypub",
             }
         ]
-        mock_author = Mock(
+        author = UserType(
             private_key=key, id="foo@example.com", handle="foo@example.com",
         )
-        handle_send(profile, mock_author, recipients)
+        handle_send(profile, author, recipients)
 
         # Ensure first call is a private diaspora payload
         args, kwargs = mock_send.call_args_list[0]

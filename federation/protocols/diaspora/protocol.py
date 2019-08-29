@@ -106,7 +106,7 @@ class Protocol:
     def _get_user_key(self):
         if not getattr(self.user, "private_key", None):
             raise EncryptedMessageError("Cannot decrypt private message without user key")
-        return self.user.private_key
+        return self.user.rsa_private_key
 
     def get_sender(self):
         return MagicEnvelope.get_sender(self.doc)
@@ -150,7 +150,7 @@ class Protocol:
             xml = entity.outbound_doc
         else:
             xml = entity.to_xml()
-        me = MagicEnvelope(etree.tostring(xml), private_key=from_user.private_key, author_handle=from_user.handle)
+        me = MagicEnvelope(etree.tostring(xml), private_key=from_user.rsa_private_key, author_handle=from_user.handle)
         rendered = me.render()
         if to_user_key:
             return EncryptedPayload.encrypt(rendered, to_user_key)

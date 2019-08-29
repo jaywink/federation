@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Optional, Dict, Union
 
 import attr
+from Crypto.PublicKey import RSA
 from Crypto.PublicKey.RSA import RsaKey
 
 
@@ -28,9 +29,15 @@ class ReceiverVariant(Enum):
 @attr.s(frozen=True)
 class UserType:
     id: str = attr.ib()
-    private_key: Optional[RsaKey] = attr.ib(default=None)
+    private_key: Optional[Union[RsaKey, str]] = attr.ib(default=None)
     receiver_variant: Optional[ReceiverVariant] = attr.ib(default=None)
 
     # Required only if sending to Diaspora protocol platforms
     handle: Optional[str] = attr.ib(default=None)
     guid: Optional[str] = attr.ib(default=None)
+
+    @property
+    def rsa_private_key(self) -> RsaKey:
+        if isinstance(self.private_key, str):
+            return RSA.importKey(self.private_key)
+        return self.private_key
