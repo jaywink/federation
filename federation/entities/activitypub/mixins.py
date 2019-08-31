@@ -47,7 +47,7 @@ class CleanContentMixin(RawContentMixin):
             return f"#{match.groups()[0]}"
 
         self.raw_content = re.sub(
-            r'\[#([\w\-_]+)\]\(http?s://.+\)',
+            r'\[#([\w\-_]+)\]\(http?s://[a-zA-Z0-9/._-]+\)',
             cleaner,
             self.raw_content,
             re.MULTILINE,

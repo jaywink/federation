@@ -80,7 +80,7 @@ class TestActivitypubEntityMappersReceive:
         post = entities[0]
         assert isinstance(post, ActivitypubPost)
         assert isinstance(post, Post)
-        assert post.raw_content == 'boom [#test](https://mastodon.social/tags/test)'
+        assert post.raw_content == 'boom #test'
 
     def test_message_to_objects_simple_post__with_source(self):
         entities = message_to_objects(ACTIVITYPUB_POST_WITH_SOURCE, "https://diaspodon.fr/users/jaywink")

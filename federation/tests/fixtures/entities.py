@@ -117,11 +117,8 @@ https://jasonrobinson.me/media/uploads/2019/07/16/daa24d89-cedf-4fc7-bad8-74a902
 def activitypubpost_linkified_tags():
     with freeze_time("2019-04-27"):
         return ActivitypubPost(
-            raw_content='<p>👁️ foobar 👁️ </p><p>barfoo!<br><a href="https://mastodon.art/tags/fanart" '
-                        'class="mention hashtag" rel="tag">'
-                        '#<span>fanart</span></a> <a href="https://mastodon.art/tags/mastoart" '
-                        'class="mention hashtag" rel="tag">'
-                        '#<span>mastoart</span></a></p>',
+            raw_content='<p>👁️foobar</p><p>barfoo!<br>[#fanart](https://mastodon.art/tags/fanart) '
+                        '[#mastoart](https://mastodon.art/tags/mastoart)</p>',
             public=True,
             provider_display_name="Mastodon",
             id=f"http://127.0.0.1:8000/post/123456/",

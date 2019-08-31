@@ -267,7 +267,7 @@ class TestEntitiesPostReceive:
 
     def test_post__post_receive__cleans_linkified_tags(self, activitypubpost_linkified_tags):
         activitypubpost_linkified_tags.post_receive()
-        assert activitypubpost_linkified_tags.raw_content == '<p>👁️ foobar 👁️ </p><p>barfoo!<br>#fanart #mastoart</p>'
+        assert activitypubpost_linkified_tags.raw_content == '<p>👁️foobar</p><p>barfoo!<br>#fanart #mastoart</p>'
 
 
 class TestEntitiesPreSend:
