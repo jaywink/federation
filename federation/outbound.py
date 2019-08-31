@@ -4,6 +4,7 @@ import logging
 from typing import List, Dict, Union
 
 # noinspection PyPackageRequirements
+from Crypto.PublicKey import RSA
 from Crypto.PublicKey.RSA import RsaKey
 from iteration_utilities import unique_everseen
 
@@ -87,7 +88,7 @@ def handle_send(
                             "fid": "",
                             "protocol": "diaspora",
                             "public": False,
-                            "public_key": <RSAPublicKey object>,
+                            "public_key": <RSAPublicKey object> | str,
                         },
                         {
                             "endpoint": "https://domain2.tld/receive/public",
@@ -135,6 +136,8 @@ def handle_send(
         endpoint = recipient["endpoint"]
         fid = recipient["fid"]
         public_key = recipient.get("public_key")
+        if isinstance(public_key, str):
+            public_key = RSA.importKey(public_key)
         protocol = recipient["protocol"]
         public = recipient["public"]
 
