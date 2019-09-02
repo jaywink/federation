@@ -475,3 +475,33 @@ ACTIVITYPUB_POST_IMAGES = {'@context': ['https://www.w3.org/ns/activitystreams',
   'creator': 'https://mastodon.social/users/jaywink#main-key',
   'created': '2019-08-13T21:22:37Z',
   'signatureValue': 'Ia61wdHHIy9gCY5YwqlPtd80eJ2liT9Yi3yHdRdP+fQ5/9np3wHJKNPa7gdzP/BiRzh6aOa2dHWJjB8mOnHYrYBn6Fl3RlCniqousVTDue/ek0zvcFWmlhfja02meDiva+t61O/6Ul1l4tQObMorSf7GbEPePlQiozr/SR/5HIj3SDP0Y8JmlTvhSFgiH6obdroaIYEMQAoYZVcYofGeQUEhotDRp0OGQ4UaPBli4WyzVOUqHMW6pw90QQzZF9XpimwAemk9oAgPmGEPkugFeHfrWt1l84KLdwqwWD8FRIep7gCtu6MpCA8TX4JC5yJvyQ9GbZLZfJSQ6t5wSrcafw=='}}
+
+ACTIVITYPUB_POST_OBJECT_IMAGES = {
+    "@context": ["https://www.w3.org/ns/activitystreams",
+               {"ostatus": "http://ostatus.org#", "atomUri": "ostatus:atomUri",
+                "inReplyToAtomUri": "ostatus:inReplyToAtomUri",
+                "conversation": "ostatus:conversation", "sensitive": "as:sensitive",
+                "Hashtag": "as:Hashtag", "toot": "http://joinmastodon.org/ns#",
+                "Emoji": "toot:Emoji",
+                "focalPoint": {"@container": "@list", "@id": "toot:focalPoint"},
+                "blurhash": "toot:blurhash"}],
+    "id": "https://mastodon.social/users/foobar/statuses/34324r",
+    "type": "Note", "summary": None, "inReplyTo": None,
+    "published": "2019-08-18T02:03:17Z",
+    "url": "https://mastodon.social/@foobar/34324r",
+    "attributedTo": "https://mastodon.social/users/foobar",
+    "to": ["https://www.w3.org/ns/activitystreams#Public"],
+    "cc": ["https://mastodon.social/users/foobar/followers"], "sensitive": False,
+    "atomUri": "https://mastodon.social/users/foobar/statuses/34324r",
+    "inReplyToAtomUri": None,
+    "conversation": None,
+    "content": "foobar",
+    "contentMap": {
+        "en": "foobar"
+    },
+    "attachment": [{"type": "Document", "mediaType": "image/jpeg",
+                  "url": "https://files.mastodon.social/media_attachments/files/017/792/237/original/foobar.jpg",
+                  "name": None, "blurhash": "fff"}],
+    "tag": [],
+    "replies": {}
+}

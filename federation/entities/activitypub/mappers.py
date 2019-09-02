@@ -79,7 +79,11 @@ def element_to_objects(payload: Dict) -> List:
     entity._receivers = extract_receivers(payload)
     # Extract children
     if payload.get("object") and isinstance(payload.get("object"), dict):
+        # Try object if exists
         entity._children = extract_attachments(payload.get("object"))
+    else:
+        # Try payload itself
+        entity._children = extract_attachments(payload)
 
     if hasattr(entity, "post_receive"):
         entity.post_receive()
