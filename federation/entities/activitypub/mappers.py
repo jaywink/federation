@@ -254,18 +254,17 @@ def transform_attribute(
         transformed["actor_id"] = value
     elif key in ("content", "source"):
         if payload.get('source') and isinstance(payload.get("source"), dict):
-            if payload.get('source').get('mediaType') == "text/html":
-                transformed["_rendered_content"] = payload.get('content')
-                transformed["_media_type"] = "text/html"
-                transformed["raw_content"] = markdownify(payload.get('source').get('content')).strip()
-            else:
-                transformed["_media_type"] = payload.get('source').get('mediaType')
-                transformed["_rendered_content"] = payload.get("content").strip()
+            transformed["_rendered_content"] = payload.get('content').strip()
+            if payload.get('source').get('mediaType') == "text/markdown":
+                transformed["_media_type"] = "text/markdown"
                 transformed["raw_content"] = payload.get('source').get('content').strip()
+            else:
+                transformed["raw_content"] = markdownify(payload.get('content').strip())
+                transformed["_media_type"] = payload.get('source').get('mediaType')
         else:
-            transformed["raw_content"] = markdownify(value).strip()
+            transformed["raw_content"] = markdownify(payload.get('content').strip()).strip()
             # Assume HTML by convention
-            transformed["_rendered_content"] = value.strip()
+            transformed["_rendered_content"] = payload.get('content').strip()
             transformed["_media_type"] = "text/html"
     elif key == "inboxes" and isinstance(value, dict):
         if "inboxes" not in transformed:

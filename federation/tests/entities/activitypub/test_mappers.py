@@ -10,7 +10,8 @@ from federation.entities.base import Accept, Follow, Profile, Post, Comment, Ima
 from federation.tests.fixtures.payloads import (
     ACTIVITYPUB_FOLLOW, ACTIVITYPUB_PROFILE, ACTIVITYPUB_PROFILE_INVALID, ACTIVITYPUB_UNDO_FOLLOW, ACTIVITYPUB_POST,
     ACTIVITYPUB_COMMENT, ACTIVITYPUB_RETRACTION, ACTIVITYPUB_SHARE, ACTIVITYPUB_RETRACTION_SHARE,
-    ACTIVITYPUB_POST_IMAGES, ACTIVITYPUB_POST_WITH_SOURCE, ACTIVITYPUB_POST_WITH_TAGS)
+    ACTIVITYPUB_POST_IMAGES, ACTIVITYPUB_POST_WITH_SOURCE_MARKDOWN, ACTIVITYPUB_POST_WITH_TAGS,
+    ACTIVITYPUB_POST_WITH_SOURCE_BBCODE)
 from federation.types import UserType, ReceiverVariant
 
 
@@ -82,8 +83,18 @@ class TestActivitypubEntityMappersReceive:
         assert isinstance(post, Post)
         assert post.raw_content == 'boom #test'
 
-    def test_message_to_objects_simple_post__with_source(self):
-        entities = message_to_objects(ACTIVITYPUB_POST_WITH_SOURCE, "https://diaspodon.fr/users/jaywink")
+    def test_message_to_objects_simple_post__with_source__bbcode(self):
+        entities = message_to_objects(ACTIVITYPUB_POST_WITH_SOURCE_BBCODE, "https://diaspodon.fr/users/jaywink")
+        assert len(entities) == 1
+        post = entities[0]
+        assert isinstance(post, ActivitypubPost)
+        assert isinstance(post, Post)
+        assert post.rendered_content == '<p><span class="h-card"><a href="https://dev.jasonrobinson.me/u/jaywink/" ' \
+                                        'class="u-url mention">@<span>jaywink</span></a></span> boom</p>'
+        assert post.raw_content == '[@jaywink](https://dev.jasonrobinson.me/u/jaywink/) boom\n\n'
+
+    def test_message_to_objects_simple_post__with_source__markdown(self):
+        entities = message_to_objects(ACTIVITYPUB_POST_WITH_SOURCE_MARKDOWN, "https://diaspodon.fr/users/jaywink")
         assert len(entities) == 1
         post = entities[0]
         assert isinstance(post, ActivitypubPost)
