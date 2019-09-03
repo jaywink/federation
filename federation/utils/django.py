@@ -14,6 +14,7 @@ def get_configuration():
         "nodeinfo2_function": None,
         "process_payload_function": None,
         "search_path": None,
+        "tags_path": None,
         # TODO remove or default to True once AP support is more ready
         "activitypub": False,
     }

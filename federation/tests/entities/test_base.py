@@ -11,11 +11,11 @@ from federation.tests.factories.entities import TaggedPostFactory, PostFactory, 
 class TestPostEntityTags:
     def test_post_entity_returns_list_of_tags(self):
         post = TaggedPostFactory()
-        assert post.tags == {"tagone", "tagtwo", "tagthree", "upper", "snakecase"}
+        assert post.tags == ["snakecase", "tagone", "tagthree", "tagtwo", "upper"]
 
     def test_post_entity_without_raw_content_tags_returns_empty_set(self):
         post = PostFactory(raw_content=None)
-        assert post.tags == set()
+        assert post.tags == []
 
 
 class TestBaseEntityCallsValidateMethods:

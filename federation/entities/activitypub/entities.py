@@ -1,6 +1,6 @@
 import logging
 import uuid
-from typing import Dict
+from typing import Dict, List
 
 import attr
 
@@ -13,6 +13,7 @@ from federation.entities.activitypub.objects import ImageObject
 from federation.entities.base import Profile, Post, Follow, Accept, Comment, Retraction, Share
 from federation.outbound import handle_send
 from federation.types import UserType
+from federation.utils.django import get_configuration
 from federation.utils.text import with_slash
 
 logger = logging.getLogger("federation")
@@ -36,6 +37,30 @@ class ActivitypubAccept(ActivitypubEntityMixin, Accept):
 class ActivitypubNoteMixin(AttachImagesMixin, CleanContentMixin, ActivitypubEntityMixin):
     _type = ObjectType.NOTE.value
 
+    def add_object_tags(self) -> List[Dict]:
+        """
+        Populate tags to the object.tag list.
+        """
+        tags = []
+        try:
+            config = get_configuration()
+        except ImportError:
+            tags_path = None
+        else:
+            if config["tags_path"]:
+                tags_path = f"{config['base_url']}{config['tags_path']}"
+            else:
+                tags_path = None
+        for tag in self.tags:
+            _tag = {
+                'type': 'Hashtag',
+                'name': f'#{tag}',
+            }
+            if tags_path:
+                _tag["href"] = tags_path.replace(":tag:", tag)
+            tags.append(_tag)
+        return tags
+
     def to_as2(self) -> Dict:
         as2 = {
             "@context": CONTEXTS_DEFAULT + [
@@ -55,7 +80,6 @@ class ActivitypubNoteMixin(AttachImagesMixin, CleanContentMixin, ActivitypubEnti
                 "inReplyTo": None,
                 "sensitive": True if "nsfw" in self.tags else False,
                 "summary": None,  # TODO Short text? First sentence? First line?
-                "tag": [],  # TODO add tags
                 "url": self.url,
                 'source': {
                     'content': self.raw_content,
@@ -78,6 +102,8 @@ class ActivitypubNoteMixin(AttachImagesMixin, CleanContentMixin, ActivitypubEnti
                     if child.inline:
                         attachment["pyfed:inlineImage"] = True
                     as2["object"]["attachment"].append(attachment)
+
+        as2["object"]["tag"] = self.add_object_tags()
         return as2
 
 

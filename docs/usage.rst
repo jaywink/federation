@@ -123,6 +123,7 @@ Some settings need to be set in Django settings. An example is below:
         "nodeinfo2_function": "myproject.utils.get_nodeinfo2_data",
         "process_payload_function": "myproject.utils.process_payload",
         "search_path": "/search/?q=",
+        "tags_path": "/tags/:tag:",
     }
 
 * ``base_url`` is the base URL of the server, ie protocol://domain.tld.
@@ -143,6 +144,7 @@ Some settings need to be set in Django settings. An example is below:
 
 * ``process_payload_function`` (optional) function that takes in a request object. It should return ``True`` if successful (or placed in queue for processing later) or ``False`` in case of any errors.
 * ``search_path`` (optional) site search path which ends in a parameter for search input, for example "/search?q="
+* ``tags_path`` (optional) path format to view items for a particular tag. ``:tag:`` will be replaced with the tag (without ``#``).
 
 Protocols
 ---------
