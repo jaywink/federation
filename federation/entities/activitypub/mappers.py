@@ -7,7 +7,6 @@ from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
 from federation.entities.activitypub.entities import (
     ActivitypubFollow, ActivitypubProfile, ActivitypubAccept, ActivitypubPost, ActivitypubComment,
     ActivitypubRetraction, ActivitypubShare)
-from federation.entities.activitypub.objects import IMAGE_TYPES
 from federation.entities.base import Follow, Profile, Accept, Post, Comment, Retraction, Share, Image
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType, ReceiverVariant
@@ -111,7 +110,8 @@ def extract_attachments(payload: Dict) -> List[Image]:
     """
     attachments = []
     for item in payload.get('attachment', []):
-        if item.get("type") == "Document" and item.get("mediaType") in IMAGE_TYPES:
+        # noinspection PyProtectedMember
+        if item.get("type") == "Document" and item.get("mediaType") in Image._valid_media_types:
             if item.get('pyfed:inlineImage', False):
                 # Skip this image as it's indicated to be inline in content and source already
                 continue
@@ -119,6 +119,7 @@ def extract_attachments(payload: Dict) -> List[Image]:
                 Image(
                     url=item.get('url'),
                     name=item.get('name') or "",
+                    media_type=item.get("mediaType"),
                 )
             )
     return attachments

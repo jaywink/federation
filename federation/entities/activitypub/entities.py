@@ -1,22 +1,70 @@
 import logging
+import re
 import uuid
 from typing import Dict, List
-
-import attr
 
 from federation.entities.activitypub.constants import (
     CONTEXTS_DEFAULT, CONTEXT_MANUALLY_APPROVES_FOLLOWERS, CONTEXT_SENSITIVE, CONTEXT_HASHTAG,
     CONTEXT_LD_SIGNATURES)
 from federation.entities.activitypub.enums import ActorType, ObjectType, ActivityType
-from federation.entities.activitypub.mixins import ActivitypubEntityMixin, CleanContentMixin, AttachImagesMixin
-from federation.entities.activitypub.objects import ImageObject
-from federation.entities.base import Profile, Post, Follow, Accept, Comment, Retraction, Share
+from federation.entities.base import Profile, Post, Follow, Accept, Comment, Retraction, Share, Image
+from federation.entities.mixins import RawContentMixin, BaseEntity
+from federation.entities.utils import get_base_attributes
 from federation.outbound import handle_send
 from federation.types import UserType
 from federation.utils.django import get_configuration
 from federation.utils.text import with_slash
 
 logger = logging.getLogger("federation")
+
+
+class AttachImagesMixin(RawContentMixin):
+    def pre_send(self) -> None:
+        """
+        Attach any embedded images from raw_content.
+        """
+        if self._media_type != "text/markdown":
+            return
+        regex = r"!\[([\w ]*)\]\((https?://[\w\d\-\./]+\.[\w]*((?<=jpg)|(?<=gif)|(?<=png)|(?<=jpeg)))\)"
+        matches = re.finditer(regex, self.raw_content, re.MULTILINE | re.IGNORECASE)
+        for match in matches:
+            groups = match.groups()
+            self._children.append(
+                ActivitypubImage(
+                    url=groups[1],
+                    name=groups[0] or "",
+                    inline=True,
+                )
+            )
+
+
+class ActivitypubEntityMixin(BaseEntity):
+    _type = None
+
+    @classmethod
+    def from_base(cls, entity):
+        # noinspection PyArgumentList
+        return cls(**get_base_attributes(entity))
+
+    def to_string(self):
+        # noinspection PyUnresolvedReferences
+        return str(self.to_as2())
+
+
+class CleanContentMixin(RawContentMixin):
+    def post_receive(self) -> None:
+        """
+        Make linkified tags normal tags.
+        """
+        def cleaner(match):
+            return f"#{match.groups()[0]}"
+
+        self.raw_content = re.sub(
+            r'\[#([\w\-_]+)\]\(http?s://[a-zA-Z0-9/._-]+\)',
+            cleaner,
+            self.raw_content,
+            re.MULTILINE,
+        )
 
 
 class ActivitypubAccept(ActivitypubEntityMixin, Accept):
@@ -91,17 +139,7 @@ class ActivitypubNoteMixin(AttachImagesMixin, CleanContentMixin, ActivitypubEnti
         if len(self._children):
             as2["object"]["attachment"] = []
             for child in self._children:
-                image = ImageObject(url=child.url)
-                if image.mediaType:
-                    attachment = {
-                        "type": "Document",
-                        "mediaType": image.mediaType,
-                        "name": child.name,
-                        "url": child.url,
-                    }
-                    if child.inline:
-                        attachment["pyfed:inlineImage"] = True
-                    as2["object"]["attachment"].append(attachment)
+                as2["object"]["attachment"].append(child.to_as2())
 
         as2["object"]["tag"] = self.add_object_tags()
         return as2
@@ -189,6 +227,19 @@ class ActivitypubFollow(ActivitypubEntityMixin, Follow):
         return as2
 
 
+class ActivitypubImage(ActivitypubEntityMixin, Image):
+    _type = ObjectType.IMAGE.value
+
+    def to_as2(self) -> Dict:
+        return {
+            "type": self._type,
+            "url": self.url,
+            "mediaType": self.media_type,
+            "name": self.name,
+            "pyfed:inlineImage": self.inline,
+        }
+
+
 class ActivitypubPost(ActivitypubNoteMixin, Post):
     pass
 
@@ -227,7 +278,9 @@ class ActivitypubProfile(ActivitypubEntityMixin, Profile):
             as2['summary'] = self.raw_content
         if self.image_urls.get('large'):
             try:
-                as2['icon'] = attr.asdict(ImageObject(url=self.image_urls.get('large')))
+                profile_icon = ActivitypubImage(url=self.image_urls.get('large'))
+                if profile_icon.media_type:
+                    as2['icon'] = profile_icon.to_as2()
             except Exception as ex:
                 logger.warning("ActivitypubProfile.to_as2 - failed to set profile icon: %s", ex)
         return as2

@@ -22,5 +22,6 @@ class ActorType(EnumBase):
 
 
 class ObjectType(EnumBase):
+    IMAGE = "Image"
     NOTE = "Note"
     TOMBSTONE = "Tombstone"

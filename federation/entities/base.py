@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Tuple
 
 from dirty_validators.basic import Email
 
@@ -6,6 +6,7 @@ from federation.entities.activitypub.enums import ActivityType
 from federation.entities.mixins import (
     PublicMixin, TargetIDMixin, ParticipationMixin, CreatedAtMixin, RawContentMixin, OptionalRawContentMixin,
     EntityTypeMixin, ProviderDisplayNameMixin, RootTargetIDMixin, BaseEntity)
+from federation.utils.network import fetch_content_type
 
 
 class Accept(CreatedAtMixin, TargetIDMixin, BaseEntity):
@@ -19,17 +20,33 @@ class Accept(CreatedAtMixin, TargetIDMixin, BaseEntity):
 
 class Image(OptionalRawContentMixin, CreatedAtMixin, BaseEntity):
     """Reflects a single image, possibly linked to another object."""
-    url = ""
-    name = ""
-    height = 0
-    width = 0
-    inline = False
+    url: str = ""
+    name: str = ""
+    height: int = 0
+    width: int = 0
+    inline: bool = False
+    media_type: str = ""
 
     _default_activity = ActivityType.CREATE
+    _valid_media_types: Tuple[str] = (
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._required += ["url"]
+        self._required.remove("id")
+        self._required.remove("actor_id")
+        if self.url and not self.media_type:
+            self.media_type = self.get_media_type()
+
+    def get_media_type(self) -> str:
+        media_type = fetch_content_type(self.url)
+        if media_type in self._valid_media_types:
+            return media_type
+        return ""
 
 
 class Comment(RawContentMixin, ParticipationMixin, CreatedAtMixin, RootTargetIDMixin, BaseEntity):

@@ -3,7 +3,7 @@ from freezegun import freeze_time
 
 from federation.entities.activitypub.entities import (
     ActivitypubPost, ActivitypubAccept, ActivitypubFollow, ActivitypubProfile, ActivitypubComment,
-    ActivitypubRetraction, ActivitypubShare)
+    ActivitypubRetraction, ActivitypubShare, ActivitypubImage)
 from federation.entities.base import Profile, Image
 from federation.entities.diaspora.entities import (
     DiasporaPost, DiasporaComment, DiasporaLike, DiasporaProfile, DiasporaRetraction,
@@ -81,8 +81,8 @@ def activitypubpost_images():
             activity_id=f"http://127.0.0.1:8000/post/123456/#create",
             actor_id=f"http://127.0.0.1:8000/profile/123456/",
             _children=[
-                Image(url="foobar"),
-                Image(url="barfoo", name="spam and eggs"),
+                ActivitypubImage(url="foobar", media_type="image/jpeg"),
+                ActivitypubImage(url="barfoo", name="spam and eggs", media_type="image/jpeg"),
             ],
         )
 
