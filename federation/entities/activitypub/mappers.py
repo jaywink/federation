@@ -323,8 +323,8 @@ def transform_attribute(
     elif key == "type":
         if value == "Undo":
             transformed["following"] = False
-    elif key == "url":
-        transformed["url"] = value
+    else:
+        transformed[key] = value
 
 
 def transform_attributes(payload: Dict, cls, transformed: Dict = None, is_object: bool = False) -> Dict:
