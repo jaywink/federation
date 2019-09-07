@@ -9,7 +9,7 @@ from federation.entities.activitypub.constants import (
     CONTEXT_LD_SIGNATURES)
 from federation.entities.activitypub.enums import ActorType, ObjectType, ActivityType
 from federation.entities.activitypub.mixins import ActivitypubEntityMixin, CleanContentMixin, AttachImagesMixin
-from federation.entities.activitypub.objects import ImageObject
+from federation.entities.objects import ImageObject
 from federation.entities.base import Profile, Post, Follow, Accept, Comment, Retraction, Share
 from federation.outbound import handle_send
 from federation.types import UserType

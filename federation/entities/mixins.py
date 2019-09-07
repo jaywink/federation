@@ -178,10 +178,12 @@ class CreatedAtMixin(BaseEntity):
 
 class RawContentMixin(BaseEntity):
     _media_type: str = "text/markdown"
+    _mentions: List = None
     _rendered_content: str = ""
     raw_content: str = ""
 
     def __init__(self, *args, **kwargs):
+        self._mentions = []
         super().__init__(*args, **kwargs)
         self._required += ["raw_content"]
 

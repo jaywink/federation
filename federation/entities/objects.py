@@ -12,7 +12,7 @@ IMAGE_TYPES = (
 @attr.s
 class ImageObject:
     """
-    An Image object for AS2 serialization.
+    An Image object.
     """
     url: str = attr.ib()
     type: str = attr.ib(default="Image")
@@ -24,3 +24,13 @@ class ImageObject:
         if content_type in IMAGE_TYPES:
             return content_type
         return ""
+
+
+@attr.s
+class MentionObject:
+    """
+    A Mention object.
+    """
+    id: str = attr.ib()
+    type: str = attr.ib(default="Mention")
+    name: str = attr.ib(default="")

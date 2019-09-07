@@ -7,7 +7,7 @@ from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
 from federation.entities.activitypub.entities import (
     ActivitypubFollow, ActivitypubProfile, ActivitypubAccept, ActivitypubPost, ActivitypubComment,
     ActivitypubRetraction, ActivitypubShare)
-from federation.entities.activitypub.objects import IMAGE_TYPES
+from federation.entities.objects import IMAGE_TYPES
 from federation.entities.base import Follow, Profile, Accept, Post, Comment, Retraction, Share, Image
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType, ReceiverVariant

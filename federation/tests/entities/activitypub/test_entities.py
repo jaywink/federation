@@ -170,7 +170,7 @@ class TestEntitiesConvertToAS2:
             'published': '2019-04-27T00:00:00',
         }
 
-    @patch("federation.entities.activitypub.objects.fetch_content_type", return_value="image/jpeg")
+    @patch("federation.entities.objects.fetch_content_type", return_value="image/jpeg")
     def test_post_to_as2__with_images(self, mock_fetch, activitypubpost_images):
         result = activitypubpost_images.to_as2()
         assert result == {
@@ -217,7 +217,7 @@ class TestEntitiesConvertToAS2:
             'published': '2019-04-27T00:00:00',
         }
 
-    @patch("federation.entities.activitypub.objects.fetch_content_type", return_value="image/jpeg")
+    @patch("federation.entities.objects.fetch_content_type", return_value="image/jpeg")
     def test_profile_to_as2(self, mock_fetch, activitypubprofile):
         result = activitypubprofile.to_as2()
         assert result == {
