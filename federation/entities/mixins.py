@@ -1,7 +1,7 @@
 import datetime
 import importlib
 import warnings
-from typing import List, Set
+from typing import List, Set, Union, Dict
 
 from commonmark import commonmark
 
@@ -16,7 +16,7 @@ class BaseEntity:
     _receivers: List = None
     _source_protocol: str = ""
     # Contains the original object from payload as a string
-    _source_object: str = None
+    _source_object: Union[str, Dict] = None
     _sender_key: str = ""
     # ActivityType
     activity: ActivityType = None
@@ -50,7 +50,7 @@ class BaseEntity:
         klass = getattr(entities, f"{protocol.title()}{self.__class__.__name__}")
         return klass.from_base(self)
 
-    def extract_mentions(self):
+    def extract_mentions(self) -> Set:
         return set()
 
     def validate(self):
@@ -178,10 +178,12 @@ class CreatedAtMixin(BaseEntity):
 
 class RawContentMixin(BaseEntity):
     _media_type: str = "text/markdown"
+    _mentions: List = None
     _rendered_content: str = ""
     raw_content: str = ""
 
     def __init__(self, *args, **kwargs):
+        self._mentions = []
         super().__init__(*args, **kwargs)
         self._required += ["raw_content"]
 

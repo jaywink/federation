@@ -11,7 +11,7 @@ from federation.tests.fixtures.payloads import (
     ACTIVITYPUB_FOLLOW, ACTIVITYPUB_PROFILE, ACTIVITYPUB_PROFILE_INVALID, ACTIVITYPUB_UNDO_FOLLOW, ACTIVITYPUB_POST,
     ACTIVITYPUB_COMMENT, ACTIVITYPUB_RETRACTION, ACTIVITYPUB_SHARE, ACTIVITYPUB_RETRACTION_SHARE,
     ACTIVITYPUB_POST_IMAGES, ACTIVITYPUB_POST_WITH_SOURCE_MARKDOWN, ACTIVITYPUB_POST_WITH_TAGS,
-    ACTIVITYPUB_POST_WITH_SOURCE_BBCODE)
+    ACTIVITYPUB_POST_WITH_SOURCE_BBCODE, ACTIVITYPUB_POST_WITH_MENTIONS)
 from federation.types import UserType, ReceiverVariant
 
 
@@ -82,6 +82,15 @@ class TestActivitypubEntityMappersReceive:
         assert isinstance(post, ActivitypubPost)
         assert isinstance(post, Post)
         assert post.raw_content == 'boom #test'
+
+    def test_message_to_objects_simple_post__with_mentions(self):
+        entities = message_to_objects(ACTIVITYPUB_POST_WITH_MENTIONS, "https://mastodon.social/users/jaywink")
+        assert len(entities) == 1
+        post = entities[0]
+        assert isinstance(post, ActivitypubPost)
+        assert isinstance(post, Post)
+        assert len(post._mentions) == 1
+        assert list(post._mentions)[0] == "https://dev3.jasonrobinson.me/u/jaywink/"
 
     def test_message_to_objects_simple_post__with_source__bbcode(self):
         entities = message_to_objects(ACTIVITYPUB_POST_WITH_SOURCE_BBCODE, "https://diaspodon.fr/users/jaywink")

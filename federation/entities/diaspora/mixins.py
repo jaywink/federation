@@ -1,4 +1,5 @@
 import re
+from typing import Set
 
 from Crypto.PublicKey import RSA
 from lxml import etree
@@ -14,7 +15,7 @@ class DiasporaEntityMixin(BaseEntity):
     # Normally outbound document is generated from entity. Store one here if at some point we already have a doc
     outbound_doc = None
 
-    def extract_mentions(self):
+    def extract_mentions(self) -> Set:
         """
         Extract mentions from an entity with ``raw_content``.
 
