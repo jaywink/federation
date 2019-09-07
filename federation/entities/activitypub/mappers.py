@@ -6,7 +6,7 @@ from markdownify import markdownify
 from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
 from federation.entities.activitypub.entities import (
     ActivitypubFollow, ActivitypubProfile, ActivitypubAccept, ActivitypubPost, ActivitypubComment,
-    ActivitypubRetraction, ActivitypubShare)
+    ActivitypubRetraction, ActivitypubShare, ActivitypubImage)
 from federation.entities.base import Follow, Profile, Accept, Post, Comment, Retraction, Share, Image
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType, ReceiverVariant
@@ -22,6 +22,7 @@ MAPPINGS = {
     "Delete": ActivitypubRetraction,
     "Follow": ActivitypubFollow,  # Technically not correct, but for now we support only following profiles
     "Group": ActivitypubProfile,
+    "Image": ActivitypubImage,
     "Note": ActivitypubPost,
     "Organization": ActivitypubProfile,
     "Page": ActivitypubPost,
@@ -33,6 +34,7 @@ OBJECTS = (
     "Application",
     "Article",
     "Group",
+    "Image",
     "Note",
     "Organization",
     "Page",
@@ -111,12 +113,12 @@ def extract_attachments(payload: Dict) -> List[Image]:
     attachments = []
     for item in payload.get('attachment', []):
         # noinspection PyProtectedMember
-        if item.get("type") == "Document" and item.get("mediaType") in Image._valid_media_types:
+        if item.get("type") in ("Document", "Image") and item.get("mediaType") in Image._valid_media_types:
             if item.get('pyfed:inlineImage', False):
                 # Skip this image as it's indicated to be inline in content and source already
                 continue
             attachments.append(
-                Image(
+                ActivitypubImage(
                     url=item.get('url'),
                     name=item.get('name') or "",
                     media_type=item.get("mediaType"),
