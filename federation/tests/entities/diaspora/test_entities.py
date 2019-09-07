@@ -103,6 +103,15 @@ class TestEntitiesExtractMentions:
     def test_extract_mentions__set_contains_mentioned_handles(self, diasporapost):
         diasporapost.raw_content = 'yeye @{Jason Robinson 🐍🍻; jaywink@jasonrobinson.me} foobar ' \
                                    '@{bar; foo@example.com}'
+        response = diasporapost.extract_mentions()
+        assert response == {
+            'jaywink@jasonrobinson.me',
+            'foo@example.com',
+        }
+
+    def test_extract_mentions__set_contains_mentioned_handles__without_display_name(self, diasporapost):
+        diasporapost.raw_content = 'yeye @{jaywink@jasonrobinson.me} foobar ' \
+                                   '@{bar; foo@example.com}'
         assert diasporapost.extract_mentions() == {
             'jaywink@jasonrobinson.me',
             'foo@example.com',

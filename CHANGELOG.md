@@ -76,6 +76,10 @@
   enum. `ACTOR` means this receiver is a single actor ID.
   `FOLLOWERS` means this is the followers of the ID in the receiver.
 
+### Fixed
+
+* Ensure Diaspora mentions are extracted when they don't have a display name part.
+
 ### Removed
 
 * **Backwards incompatible.** Support for Legacy Diaspora payloads have been removed to reduce the amount of code needed to maintain while refactoring for ActivityPub.

@@ -22,12 +22,17 @@ class DiasporaEntityMixin(BaseEntity):
         """
         if not hasattr(self, "raw_content"):
             return set()
-        mentions = re.findall(r'@{[^;]+; [\w.-]+@[^}]+}', self.raw_content)
+        mentions = re.findall(r'@{([\S ][^{}]+)}', self.raw_content)
         if not mentions:
             return set()
-        mentions = {s.split(';')[1].strip(' }') for s in mentions}
-        mentions = {s for s in mentions}
-        return mentions
+        _mentions = set()
+        for mention in mentions:
+            splits = mention.split(";")
+            if len(splits) == 1:
+                _mentions.add(splits[0].strip(' }'))
+            elif len(splits) == 2:
+                _mentions.add(splits[1].strip(' }'))
+        return _mentions
 
     def to_string(self) -> str:
         """
