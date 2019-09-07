@@ -104,7 +104,7 @@ class BaseEntity:
     def _validate_children(self):
         """Check that the children we have are allowed here."""
         for child in self._children:
-            if child.__class__ not in self._allowed_children:
+            if not isinstance(child, self._allowed_children):
                 raise ValueError(
                     "Child %s is not allowed as a children for this %s type entity." % (
                         child, self.__class__
