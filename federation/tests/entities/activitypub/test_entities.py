@@ -127,6 +127,56 @@ class TestEntitiesConvertToAS2:
             'published': '2019-04-27T00:00:00',
         }
 
+    def test_post_to_as2__with_mentions(self, activitypubpost_mentions):
+        activitypubpost_mentions.pre_send()
+        result = activitypubpost_mentions.to_as2()
+        assert result == {
+            '@context': [
+                'https://www.w3.org/ns/activitystreams',
+                {"pyfed": "https://docs.jasonrobinson.me/ns/python-federation"},
+                {'Hashtag': 'as:Hashtag'},
+                'https://w3id.org/security/v1',
+                {'sensitive': 'as:sensitive'},
+            ],
+            'type': 'Create',
+            'id': 'http://127.0.0.1:8000/post/123456/#create',
+            'actor': 'http://127.0.0.1:8000/profile/123456/',
+            'object': {
+                'id': 'http://127.0.0.1:8000/post/123456/',
+                'type': 'Note',
+                'attributedTo': 'http://127.0.0.1:8000/profile/123456/',
+                'content': """<h1>raw_content</h1>
+<p>@{someone@localhost.local}</p>""",
+                'published': '2019-04-27T00:00:00',
+                'inReplyTo': None,
+                'sensitive': False,
+                'summary': None,
+                'tag': [
+                    {
+                        "type": "Mention",
+                        "href": "http://127.0.0.1:8000/profile/999999",
+                        "name": "http://127.0.0.1:8000/profile/999999",
+                    },
+                    {
+                        "type": "Mention",
+                        "href": "jaywink@localhost.local",
+                        "name": "jaywink@localhost.local",
+                    },
+                    {
+                        "type": "Mention",
+                        "href": "someone@localhost.local",
+                        "name": "someone@localhost.local",
+                    },
+                ],
+                'url': '',
+                'source': {
+                    'content': '# raw_content\n\n@{someone@localhost.local}',
+                    'mediaType': 'text/markdown',
+                },
+            },
+            'published': '2019-04-27T00:00:00',
+        }
+
     def test_post_to_as2__with_tags(self, activitypubpost_tags):
         result = activitypubpost_tags.to_as2()
         assert result == {

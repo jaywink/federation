@@ -51,6 +51,18 @@ class BaseEntity:
         klass = getattr(entities, f"{protocol.title()}{self.__class__.__name__}")
         return klass.from_base(self)
 
+    def post_receive(self):
+        """
+        Run any actions after deserializing the payload into an entity.
+        """
+        pass
+
+    def pre_send(self):
+        """
+        Run any actions before serializing the entity for sending.
+        """
+        pass
+
     def validate(self):
         """Do validation.
 

@@ -88,6 +88,23 @@ def activitypubpost_images():
 
 
 @pytest.fixture
+def activitypubpost_mentions():
+    with freeze_time("2019-04-27"):
+        return ActivitypubPost(
+            raw_content="""# raw_content\n\n@{someone@localhost.local}""",
+            public=True,
+            provider_display_name="Socialhome",
+            id=f"http://127.0.0.1:8000/post/123456/",
+            activity_id=f"http://127.0.0.1:8000/post/123456/#create",
+            actor_id=f"http://127.0.0.1:8000/profile/123456/",
+            _mentions={
+                "http://127.0.0.1:8000/profile/999999",
+                "jaywink@localhost.local",
+            }
+        )
+
+
+@pytest.fixture
 def activitypubpost_tags():
     with freeze_time("2019-04-27"):
         return ActivitypubPost(

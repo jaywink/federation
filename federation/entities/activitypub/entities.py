@@ -1,7 +1,7 @@
 import logging
 import re
 import uuid
-from typing import Dict, List, Set
+from typing import Dict, List
 
 from federation.entities.activitypub.constants import (
     CONTEXTS_DEFAULT, CONTEXT_MANUALLY_APPROVES_FOLLOWERS, CONTEXT_SENSITIVE, CONTEXT_HASHTAG,
@@ -13,7 +13,7 @@ from federation.entities.utils import get_base_attributes
 from federation.outbound import handle_send
 from federation.types import UserType
 from federation.utils.django import get_configuration
-from federation.utils.text import with_slash
+from federation.utils.text import with_slash, validate_handle
 
 logger = logging.getLogger("federation")
 
@@ -23,6 +23,7 @@ class AttachImagesMixin(RawContentMixin):
         """
         Attach any embedded images from raw_content.
         """
+        super().pre_send()
         if self._media_type != "text/markdown":
             return
         regex = r"!\[([\w ]*)\]\((https?://[\w\d\-\./]+\.[\w]*((?<=jpg)|(?<=gif)|(?<=png)|(?<=jpeg)))\)"
@@ -59,6 +60,7 @@ class CleanContentMixin(RawContentMixin):
         def cleaner(match):
             return f"#{match.groups()[0]}"
 
+        super().post_receive()
         self.raw_content = re.sub(
             r'\[#([\w\-_]+)\]\(http?s://[a-zA-Z0-9/._-]+\)',
             cleaner,
@@ -122,6 +124,10 @@ class ActivitypubNoteMixin(AttachImagesMixin, CleanContentMixin, ActivitypubEnti
             if tag.get('type') == "Mention" and tag.get('href'):
                 self._mentions.add(tag.get('href'))
 
+    def pre_send(self):
+        super().pre_send()
+        self.extract_mentions()
+
     def to_as2(self) -> Dict:
         as2 = {
             "@context": CONTEXTS_DEFAULT + [
@@ -146,15 +152,35 @@ class ActivitypubNoteMixin(AttachImagesMixin, CleanContentMixin, ActivitypubEnti
                     'content': self.raw_content,
                     'mediaType': self._media_type,
                 },
+                "tag": [],
             },
             "published": self.created_at.isoformat(),
         }
+
         if len(self._children):
             as2["object"]["attachment"] = []
             for child in self._children:
                 as2["object"]["attachment"].append(child.to_as2())
 
-        as2["object"]["tag"] = self.add_object_tags()
+        if len(self._mentions):
+            mentions = list(self._mentions)
+            mentions.sort()
+            for mention in mentions:
+                if mention.startswith("http"):
+                    as2["object"]["tag"].append({
+                        'type': 'Mention',
+                        'href': mention,
+                        'name': mention,
+                    })
+                elif validate_handle(mention):
+                    # Look up via WebFinger
+                    as2["object"]["tag"].append({
+                        'type': 'Mention',
+                        'href': mention,  # TODO need to implement fetch via webfinger for AP handles first
+                        'name': mention,
+                    })
+
+        as2["object"]["tag"].extend(self.add_object_tags())
         return as2
 
 
@@ -172,6 +198,7 @@ class ActivitypubFollow(ActivitypubEntityMixin, Follow):
         """
         Post receive hook - send back follow ack.
         """
+        super().post_receive()
         if not self.following:
             return
 
