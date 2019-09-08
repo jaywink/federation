@@ -38,7 +38,7 @@ Federation identifiers
 All entities have an ``id`` to guarantee them a unique name in the network. The format of the ``id`` depends on the
 protocol in question.
 
-* ActivityPub: maps to Object or Activity ``id``
+* ActivityPub: maps to the object ``id`` (whether wrapped in an Activity or not)
 * Diaspora: maps to ``guid`` for the entity.
 
 Profiles
