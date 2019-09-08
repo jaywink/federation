@@ -94,17 +94,15 @@ class TestEntitiesConvertToXML:
 
 
 class TestEntitiesExtractMentions:
-    def test_extract_mentions__empty_set_if_no_raw_content(self, diasporacontact):
-        assert diasporacontact.extract_mentions() == set()
-
     def test_extract_mentions__empty_set_if_no_mentions(self, diasporacomment):
-        assert diasporacomment.extract_mentions() == set()
+        diasporacomment.extract_mentions()
+        assert diasporacomment._mentions == set()
 
     def test_extract_mentions__set_contains_mentioned_handles(self, diasporapost):
         diasporapost.raw_content = 'yeye @{Jason Robinson 🐍🍻; jaywink@jasonrobinson.me} foobar ' \
                                    '@{bar; foo@example.com}'
-        response = diasporapost.extract_mentions()
-        assert response == {
+        diasporapost.extract_mentions()
+        assert diasporapost._mentions == {
             'jaywink@jasonrobinson.me',
             'foo@example.com',
         }
@@ -112,7 +110,8 @@ class TestEntitiesExtractMentions:
     def test_extract_mentions__set_contains_mentioned_handles__without_display_name(self, diasporapost):
         diasporapost.raw_content = 'yeye @{jaywink@jasonrobinson.me} foobar ' \
                                    '@{bar; foo@example.com}'
-        assert diasporapost.extract_mentions() == {
+        diasporapost.extract_mentions()
+        assert diasporapost._mentions == {
             'jaywink@jasonrobinson.me',
             'foo@example.com',
         }

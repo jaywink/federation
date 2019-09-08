@@ -109,19 +109,18 @@ class ActivitypubNoteMixin(AttachImagesMixin, CleanContentMixin, ActivitypubEnti
             tags.append(_tag)
         return tags
 
-    def extract_mentions(self) -> Set:
+    def extract_mentions(self):
         """
         Extract mentions from the source object.
         """
+        super().extract_mentions()
         if not isinstance(self._source_object, dict):
-            return set()
-        _mentions = set()
+            return
         source = self._source_object.get('object') if isinstance(self._source_object.get('object'), dict) else \
             self._source_object
         for tag in source.get('tag', []):
             if tag.get('type') == "Mention" and tag.get('href'):
-                _mentions.add(tag.get('href'))
-        return _mentions
+                self._mentions.add(tag.get('href'))
 
     def to_as2(self) -> Dict:
         as2 = {

@@ -128,8 +128,11 @@ def element_to_objects(
             "transformed": transformed,
         })
         return []
+
     # Extract mentions
-    entity._mentions = entity.extract_mentions()
+    if hasattr(entity, "extract_mentions"):
+        entity.extract_mentions()
+
     # Do child elements
     for child in element:
         # noinspection PyProtectedMember

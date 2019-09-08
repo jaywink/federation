@@ -1,6 +1,3 @@
-import re
-from typing import Set
-
 from Crypto.PublicKey import RSA
 from lxml import etree
 
@@ -14,26 +11,6 @@ from federation.protocols.diaspora.signatures import verify_relayable_signature,
 class DiasporaEntityMixin(BaseEntity):
     # Normally outbound document is generated from entity. Store one here if at some point we already have a doc
     outbound_doc = None
-
-    def extract_mentions(self) -> Set:
-        """
-        Extract mentions from an entity with ``raw_content``.
-
-        :return: set
-        """
-        if not hasattr(self, "raw_content"):
-            return set()
-        mentions = re.findall(r'@{([\S ][^{}]+)}', self.raw_content)
-        if not mentions:
-            return set()
-        _mentions = set()
-        for mention in mentions:
-            splits = mention.split(";")
-            if len(splits) == 1:
-                _mentions.add(splits[0].strip(' }'))
-            elif len(splits) == 2:
-                _mentions.add(splits[1].strip(' }'))
-        return _mentions
 
     def to_string(self) -> str:
         """

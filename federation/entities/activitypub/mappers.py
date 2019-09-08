@@ -97,7 +97,8 @@ def element_to_objects(payload: Dict) -> List:
         })
         return []
     # Extract mentions
-    entity._mentions = entity.extract_mentions()
+    if hasattr(entity, "extract_mentions"):
+        entity.extract_mentions()
 
     entities.append(entity)
 

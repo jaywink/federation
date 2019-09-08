@@ -1,5 +1,6 @@
 import datetime
 import importlib
+import re
 import warnings
 from typing import List, Set, Union, Dict
 
@@ -49,9 +50,6 @@ class BaseEntity:
         entities = importlib.import_module(f"federation.entities.{protocol}.entities")
         klass = getattr(entities, f"{protocol.title()}{self.__class__.__name__}")
         return klass.from_base(self)
-
-    def extract_mentions(self) -> Set:
-        return set()
 
     def validate(self):
         """Do validation.
@@ -178,12 +176,12 @@ class CreatedAtMixin(BaseEntity):
 
 class RawContentMixin(BaseEntity):
     _media_type: str = "text/markdown"
-    _mentions: List = None
+    _mentions: Set = None
     _rendered_content: str = ""
     raw_content: str = ""
 
     def __init__(self, *args, **kwargs):
-        self._mentions = []
+        self._mentions = set()
         super().__init__(*args, **kwargs)
         self._required += ["raw_content"]
 
@@ -203,6 +201,17 @@ class RawContentMixin(BaseEntity):
             return []
         tags = {word.strip("#").lower() for word in self.raw_content.split() if word.startswith("#") and len(word) > 1}
         return sorted(tags)
+
+    def extract_mentions(self):
+        matches = re.findall(r'@{([\S ][^{}]+)}', self.raw_content)
+        if not matches:
+            return
+        for mention in matches:
+            splits = mention.split(";")
+            if len(splits) == 1:
+                self._mentions.add(splits[0].strip(' }'))
+            elif len(splits) == 2:
+                self._mentions.add(splits[1].strip(' }'))
 
 
 class OptionalRawContentMixin(RawContentMixin):
