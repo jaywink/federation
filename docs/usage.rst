@@ -32,6 +32,79 @@ If you need the correct protocol speficic entity class from the base entity, eac
 
 .. autofunction:: federation.entities.diaspora.mappers.get_outbound_entity
 
+Federation identifiers
+......................
+
+All entities have an ``id`` to guarantee them a unique name in the network. The format of the ``id`` depends on the
+protocol in question.
+
+* ActivityPub: maps to Object or Activity ``id``
+* Diaspora: maps to ``guid`` for the entity.
+
+Profiles
+++++++++
+
+Profiles are uniquely identified by the ``id`` as above. Additionally for Diaspora they always have a ``handle``.
+ActivityPub profiles can also have a ``handle`` but it is optional.
+
+A handle will always be in email like format, without the `@` prefix found on some platforms. This will be added
+to outgoing payloads where needed.
+
+Creator and owner identifiers
+.............................
+
+All entities except ``Profile`` have an ``actor_id`` which tells who created this object or activity. The format
+depends on the protocol
+in question.
+
+* ActivityPub: maps to Object ``attributedTo`` or Activity ``actor_id``.
+* Diaspora: maps to entity ``author``
+
+Activity identifiers
+....................
+
+Entities which are an activity on something, for example creating, updating, deleting, following, etc, should have
+an ``activity_id`` given to be able to send out to the ActivityPub protocol.
+
+Mentions
+........
+
+Entities store mentions in the list ``_mentions``. The list is a simple list of strings which will be either
+an URL format ``profile.id`` or handle, as per above examples.
+
+The syntax for a mention in text is URL format ``@{<profile.id>}`` or ``@{<profile.handle>}``.
+The GUID format ``profile.id`` cannot be used for a mention.
+
+Examples:
+
+::
+
+    # profile.handle
+    Hello @{user@domain.tld}!
+
+    # profile.id in URL format
+    Hello @{https://domain.tld/user}
+
+It is suggested ``profile.handle`` syntax is used always for textual mentions unless handles are not available.
+
+Inbound
++++++++
+
+Mentions are added to the entity ``_mentions`` list when processing inbound entities. For ActivityPub they will be
+extracted from ``Mention`` tags and for Diaspora extracted from the text using the Diaspora mention format.
+
+Outbound
+++++++++
+
+Mentions can be given in the ``_mentions`` list. If not given, they will be extracted from the textual content
+using the above formats in the example.
+
+For ActivityPub they will be added as ``Mention`` tags before sending. If the mention is in handle format,
+a WebFinger fetch will be made to find the profile URL format ID.
+
+For Diaspora they will be added to the text
+in the correct format, if not found. If they are found in the text in non-Diaspora format, they will be converted
+before sending.
 
 Discovery
 ---------
