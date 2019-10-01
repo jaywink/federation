@@ -8,7 +8,7 @@ from federation.entities.activitypub.constants import (
     CONTEXT_LD_SIGNATURES)
 from federation.entities.activitypub.enums import ActorType, ObjectType, ActivityType
 from federation.entities.base import Profile, Post, Follow, Accept, Comment, Retraction, Share, Image
-from federation.entities.mixins import RawContentMixin, BaseEntity
+from federation.entities.mixins import RawContentMixin, BaseEntity, PublicMixin
 from federation.entities.utils import get_base_attributes
 from federation.outbound import handle_send
 from federation.types import UserType
@@ -84,7 +84,7 @@ class ActivitypubAccept(ActivitypubEntityMixin, Accept):
         return as2
 
 
-class ActivitypubNoteMixin(AttachImagesMixin, CleanContentMixin, ActivitypubEntityMixin):
+class ActivitypubNoteMixin(AttachImagesMixin, CleanContentMixin, PublicMixin, ActivitypubEntityMixin):
     _type = ObjectType.NOTE.value
 
     def add_object_tags(self) -> List[Dict]:
