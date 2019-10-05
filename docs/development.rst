@@ -34,6 +34,7 @@ Built documentation is available at ``docs/_build/html/index.html``.
 Contact for help
 ----------------
 
-Easiest via Matrix on channel ``#socialhome:matrix.org``.
+Easiest via Matrix on room ``#socialhome:feneas.org``. There is a bridged
+Freenode channel as well found at ``#socialhome``.
 
 You can also ask questions or give feedback via issues.

@@ -1,7 +1,10 @@
 Protocols
 =========
 
-Currently two protocols are being focused on. Diaspora is considered in relatively stable status with most of the protocol implemented. ActivityPub support is work in progress.
+Currently two protocols are being focused on. Diaspora is considered to be stable with most
+of the protocol implemented. ActivityPub support should be considered as alpha - all the basic
+things work but there are likely to be a lot of compatibility issues with other ActivityPub
+implementations.
 
 For example implementations in real life projects check :ref:`example-projects`.
 
@@ -39,7 +42,7 @@ Features currently supported:
 * Webfinger
 * Objects and activities as follows:
 
-   * Actor (Person)
+   * Actor (Person outbound, Person, Organization, Service inbound)
    * Note, Article and Page (Create, Delete, Update)
      * These become a ``Post`` or ``Comment`` depending on ``inReplyTo``.
    * Attachment images from the above objects
@@ -65,11 +68,20 @@ The following keys will be set on the entity based on the ``source`` property ex
   * ``_rendered_content`` will be the object ``content``
   * ``raw_content`` will object ``content`` run through a HTML2Markdown renderer
 
-For outbound entities, ``raw_content`` is expected to be in ``text/markdown``, specifically CommonMark. When sending payloads, ``raw_content`` will be rendered via the ``commonmark`` library into ``object.content``. The original ``raw_content`` will be added to the ``object.source`` property.
+For outbound entities, ``raw_content`` is expected to be in ``text/markdown``,
+specifically CommonMark. When sending payloads, ``raw_content`` will be rendered via
+the ``commonmark`` library into ``object.content``. The original ``raw_content``
+will be added to the ``object.source`` property.
 
 Images
 ......
 
-Any images referenced in the ``raw_content`` of outbound entities will be extracted into ``object.attachment`` objects, for receivers that don't support inline images. These attachments will have a ``pyfed:inlineImage`` property set to ``true`` to indicate the image has been extrated from the content. Receivers should ignore the inline image attachments if they support showing ``<img>`` HTML tags or the markdown content in ``object.source``.
+Any images referenced in the ``raw_content`` of outbound entities will be extracted
+into ``object.attachment`` objects, for receivers that don't support inline images.
+These attachments will have a ``pyfed:inlineImage`` property set to ``true`` to
+indicate the image has been extrated from the content. Receivers should ignore the
+inline image attachments if they support showing ``<img>`` HTML tags or the markdown
+content in ``object.source``.
 
-For inbound entities we do this automatically by not including received attachments in the entity ``_children`` attribute.
+For inbound entities we do this automatically by not including received attachments in
+the entity ``_children`` attribute.

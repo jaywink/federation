@@ -6,7 +6,7 @@
 federation
 ==========
 
-Python library to abstract social web federation protocols like Diaspora.
+Python library to abstract social web federation protocols like ActivityPub and Diaspora.
 
 Contents:
 

@@ -4,8 +4,6 @@
 
 ### Added
 
-* Work has started on ActivityPub support 🎉
-
 * Base entities `Post`, `Comment` and `Image` now accept an `url` parameter. This will be used when serializing the entities to AS2 for ActivityPub.
 
 * RFC7033 webfinger generator now has compatibility to platforms using it with ActivityPub. It now lists `aliases` pointing to the ActivityPub entity ID and profile URL. Also there is a `rel=self` to point to the `application/activity+json` AS2 document location.

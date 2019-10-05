@@ -5,7 +5,10 @@ Usage
 Entities
 --------
 
-Federation has it's own base entity classes. When incoming messages are processed, the protocol specific entity mappers transform the messages into our base entities. In reverse, when creating outgoing payloads, outgoing protocol specific messages are constructed from the base entities.
+Federation has it's own base entity classes. When incoming messages are processed, the
+protocol specific entity mappers transform the messages into our base entities. In
+reverse, when creating outgoing payloads, outgoing protocol specific messages are
+constructed from the base entities.
 
 Entity types are as follows below.
 
@@ -22,21 +25,29 @@ Entity types are as follows below.
 Protocol entities
 .................
 
-Each protocol additionally has it's own variants of the base entities, for example Diaspora entities in ``federation.entities.diaspora.entities``. All the protocol specific entities subclass the base entities so you can safely work with for example ``DiasporaPost`` and use ``isinstance(obj, Post)``.
+Each protocol additionally has it's own variants of the base entities, for example
+Diaspora entities in ``federation.entities.diaspora.entities``. All the protocol
+specific entities subclass the base entities so you can safely work with for example
+``DiasporaPost`` and use ``isinstance(obj, Post)``.
 
-When creating incoming objects from messages, protocol specific entity classes are returned. This is to ensure protocol specific extra attributes or methods are passed back to the caller.
+When creating incoming objects from messages, protocol specific entity classes are
+returned. This is to ensure protocol specific extra attributes or methods are
+passed back to the caller.
 
-For sending messages out, either base or protocol specific entities can be passed to the outbound senders. Base entities should be preferred unless the caller knows which protocol to send to.
+For sending messages out, either base or protocol specific entities can be passed
+to the outbound senders.
 
-If you need the correct protocol speficic entity class from the base entity, each protocol will define a ``get_outbound_entity`` function, for example the Diaspora function as follows.
+If you need the correct protocol speficic entity class from the base entity,
+each protocol will define a ``get_outbound_entity`` function.
 
+.. autofunction:: federation.entities.activitypub.mappers.get_outbound_entity
 .. autofunction:: federation.entities.diaspora.mappers.get_outbound_entity
 
 Federation identifiers
 ......................
 
-All entities have an ``id`` to guarantee them a unique name in the network. The format of the ``id`` depends on the
-protocol in question.
+All entities have an ``id`` to guarantee them a unique name in the network.
+The format of the ``id`` depends on the protocol in question.
 
 * ActivityPub: maps to the object ``id`` (whether wrapped in an Activity or not)
 * Diaspora: maps to ``guid`` for the entity.
@@ -109,9 +120,13 @@ before sending.
 Discovery
 ---------
 
-Federation provides many generators to allow providing the discovery documents that are necessary for the Diaspora protocol for example. The have been made as Pythonic as possible so that library users don't have to meddle with the various documents and their internals.
+Federation provides many generators to allow providing discovery documents.
+They have been made as Pythonic as possible so that library users don't have to
+meddle with the various documents and their internals.
 
-The protocols themselves are too complex to document within this library, please consult protocol documentation on what kind of discovery documents are expected to be served by the application.
+The protocols themselves are too complex to document within this library,
+please consult protocol documentation on what kind of discovery documents are expected to
+be served by the application.
 
 Generators
 ..........
@@ -150,7 +165,8 @@ High level utility functions to fetch remote objects. These should be favoured i
 Inbound
 -------
 
-High level utility functions to pass incoming messages to. These should be favoured instead of protocol specific utility functions.
+High level utility functions to pass incoming messages to. These should be favoured
+instead of protocol specific utility functions.
 
 
 .. autofunction:: federation.inbound.handle_receive
@@ -161,7 +177,6 @@ Outbound
 
 High level utility functions to pass outbound entities to. These should be favoured instead of protocol specific utility functions.
 
-.. autofunction:: federation.outbound.handle_create_payload
 .. autofunction:: federation.outbound.handle_send
 
 Django
@@ -169,7 +184,8 @@ Django
 
 Some ready provided views and URL configuration exist for Django.
 
-Note! Django is not part of the normal requirements for this library. It must be installed separately.
+Note! Django is not part of the normal requirements for this library.
+It must be installed separately.
 
 .. autofunction:: federation.entities.activitypub.django.views.activitypub_object_view
 .. autofunction:: federation.hostmeta.django.generators.rfc7033_webfinger_view
@@ -234,6 +250,13 @@ Utils
 
 Various utils are provided for internal and external usage.
 
+ActivityPub
+...........
+
+.. autofunction:: federation.utils.activitypub.retrieve_and_parse_content
+.. autofunction:: federation.utils.activitypub.retrieve_and_parse_document
+.. autofunction:: federation.utils.activitypub.retrieve_and_parse_profile
+
 Diaspora
 ........
 
@@ -259,6 +282,10 @@ Network
 .. autofunction:: federation.utils.network.fetch_host_ip_and_country
 .. autofunction:: federation.utils.network.send_document
 
+Protocols
+.........
+
+.. autofunction:: federation.utils.protocols.identify_recipient_protocol
 
 Exceptions
 ----------
