@@ -25,3 +25,6 @@ freezegun
 # Django support
 django>=1.8,<2.3
 pytest-django
+
+# Releasing
+twine
