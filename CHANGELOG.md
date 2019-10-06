@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.18.1] - 2019-10-06
+
+### Changed
+
+* Removed possibility to deactivate ActivityPub support. It is now always enabled by default.
+
 ## [0.18.0] - 2019-10-06
 
 ### Added

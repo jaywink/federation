@@ -8,8 +8,6 @@ from jsonschema import validate
 from jsonschema.exceptions import ValidationError
 from xrd import XRD, Link, Element
 
-from federation.utils.django import get_configuration
-
 
 def generate_host_meta(template=None, *args, **kwargs):
     """Generate a host-meta XRD document.
@@ -391,22 +389,11 @@ class RFC7033Webfinger:
             ],
         }
 
-        # TODO remove once AP support is more ready
-        try:
-            config = get_configuration()
-        except ImportError:
-            webfinger["links"].append({
-                "rel": "self",
-                "href": self.id,
-                "type": "application/activity+json",
-            })
-        else:
-            if config.get("activitypub"):
-                webfinger["links"].append({
-                    "rel": "self",
-                    "href": self.id,
-                    "type": "application/activity+json",
-                })
+        webfinger["links"].append({
+            "rel": "self",
+            "href": self.id,
+            "type": "application/activity+json",
+        })
 
         if self.atom_path:
             webfinger['links'].append(

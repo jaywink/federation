@@ -10,6 +10,4 @@ FEDERATION = {
     "process_payload_function": "federation.tests.django.utils.process_payload",
     "search_path": "/search?q=",
     "tags_path": "/tag/:tag:/",
-    # TODO remove once AP support is more ready
-    "activitypub": True,
 }
