@@ -2,6 +2,12 @@
 
 ## [0.19.0-dev] - unreleased
 
+### Changed
+
+* All outgoing entities are now validated before sending. This stops the sending of invalid
+  entities to the network, for example a Share of a Post from ActivityPub to the Diaspora
+  protocol network.
+
 ## [0.18.1] - 2019-10-06
 
 ### Changed
