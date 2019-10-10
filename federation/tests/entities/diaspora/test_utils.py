@@ -1,10 +1,12 @@
 import datetime
 import re
+from unittest.mock import patch, Mock
 
 import arrow
 from lxml import etree
 
 from federation.entities.base import Post, Profile
+from federation.entities.diaspora.entities import DiasporaPost
 from federation.entities.diaspora.utils import (
     get_full_xml_representation, format_dt, add_element_to_doc)
 from federation.entities.utils import get_base_attributes
@@ -30,6 +32,7 @@ class TestGetBaseAttributes:
 
 
 class TestGetFullXMLRepresentation:
+    @patch.object(DiasporaPost, "validate", new=Mock())
     def test_returns_xml_document(self):
         entity = Post()
         document = get_full_xml_representation(entity, "")

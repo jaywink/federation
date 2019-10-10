@@ -158,6 +158,10 @@ class DiasporaReshare(DiasporaEntityMixin, Share):
     """Diaspora Reshare."""
     _tag_name = "reshare"
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._required += ["target_guid", "target_handle"]
+
     @staticmethod
     def fill_extra_attributes(attributes):
         """If `public` is missing, add it as True.

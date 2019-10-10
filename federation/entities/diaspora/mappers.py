@@ -285,4 +285,6 @@ def get_outbound_entity(entity: BaseEntity, private_key: RsaKey):
         # in all situations but is apparently being removed.
         # TODO: remove this once Diaspora removes the extra signature
         outbound.parent_signature = outbound.signature
+    # Validate the entity
+    outbound.validate(direction="outbound")
     return outbound

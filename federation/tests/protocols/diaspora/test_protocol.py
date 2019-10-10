@@ -111,6 +111,7 @@ class TestDiasporaProtocol(DiasporaTestBase):
         mock_me.return_value = mock_me_instance
         protocol = Protocol()
         entity = DiasporaPost()
+        entity.validate = Mock()
         private_key = get_dummy_private_key()
         outbound_entity = get_outbound_entity(entity, private_key)
         data = protocol.build_send(outbound_entity, from_user=UserType(
@@ -131,6 +132,7 @@ class TestDiasporaProtocol(DiasporaTestBase):
         mock_me.return_value = mock_me_instance
         protocol = Protocol()
         entity = DiasporaPost()
+        entity.validate = Mock()
         private_key = get_dummy_private_key()
         outbound_entity = get_outbound_entity(entity, private_key)
         data = protocol.build_send(outbound_entity, to_user_key="public key", from_user=UserType(

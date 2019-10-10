@@ -63,14 +63,14 @@ class BaseEntity:
         """
         pass
 
-    def validate(self):
+    def validate(self, direction: str = "inbound") -> None:
         """Do validation.
 
         1) Check `_required` have been given
         2) Make sure all attrs in required have a non-empty value
         3) Loop through attributes and call their `validate_<attr>` methods, if any.
         4) Validate allowed children
-        5) Validate signatures
+        5) Validate signatures (if inbound)
         """
         attributes = []
         validates = []
@@ -86,7 +86,8 @@ class BaseEntity:
         self._validate_required(attributes)
         self._validate_attributes(validates)
         self._validate_children()
-        self._validate_signatures()
+        if direction == "inbound":
+            self._validate_signatures()
 
     def _validate_required(self, attributes):
         """Ensure required attributes are present."""
