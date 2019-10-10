@@ -224,7 +224,7 @@ def get_outbound_entity(entity: BaseEntity, private_key):
     if hasattr(outbound, "pre_send"):
         outbound.pre_send()
     # Validate the entity
-    outbound.validate()
+    outbound.validate(direction="outbound")
     return outbound
 
 
