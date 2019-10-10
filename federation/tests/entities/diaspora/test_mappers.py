@@ -262,31 +262,40 @@ class TestDiasporaEntityMappersReceive:
 class TestGetOutboundEntity:
     def test_already_fine_entities_are_returned_as_is(self, private_key):
         entity = DiasporaPost()
+        entity.validate = Mock()
         assert get_outbound_entity(entity, private_key) == entity
         entity = DiasporaLike()
+        entity.validate = Mock()
         assert get_outbound_entity(entity, private_key) == entity
         entity = DiasporaComment()
+        entity.validate = Mock()
         assert get_outbound_entity(entity, private_key) == entity
         entity = DiasporaProfile(handle="foobar@example.com", guid="1234")
+        entity.validate = Mock()
         assert get_outbound_entity(entity, private_key) == entity
         entity = DiasporaContact()
+        entity.validate = Mock()
         assert get_outbound_entity(entity, private_key) == entity
         entity = DiasporaReshare()
+        entity.validate = Mock()
         assert get_outbound_entity(entity, private_key) == entity
 
+    @patch.object(DiasporaPost, "validate", new=Mock())
     def test_post_is_converted_to_diasporapost(self, private_key):
         entity = Post()
         assert isinstance(get_outbound_entity(entity, private_key), DiasporaPost)
 
+    @patch.object(DiasporaComment, "validate", new=Mock())
     def test_comment_is_converted_to_diasporacomment(self, private_key):
         entity = Comment()
         assert isinstance(get_outbound_entity(entity, private_key), DiasporaComment)
 
+    @patch.object(DiasporaLike, "validate", new=Mock())
     def test_reaction_of_like_is_converted_to_diasporalike(self, private_key):
         entity = Reaction(reaction="like")
         assert isinstance(get_outbound_entity(entity, private_key), DiasporaLike)
 
-
+    @patch.object(DiasporaProfile, "validate", new=Mock())
     def test_profile_is_converted_to_diasporaprofile(self, private_key):
         entity = Profile(handle="foobar@example.com", guid="1234")
         assert isinstance(get_outbound_entity(entity, private_key), DiasporaProfile)
@@ -301,20 +310,24 @@ class TestGetOutboundEntity:
         with pytest.raises(ValueError):
             get_outbound_entity(entity, private_key)
 
+    @patch.object(DiasporaRetraction, "validate", new=Mock())
     def test_retraction_is_converted_to_diasporaretraction(self, private_key):
         entity = Retraction()
         assert isinstance(get_outbound_entity(entity, private_key), DiasporaRetraction)
 
+    @patch.object(DiasporaContact, "validate", new=Mock())
     def test_follow_is_converted_to_diasporacontact(self, private_key):
         entity = Follow()
         assert isinstance(get_outbound_entity(entity, private_key), DiasporaContact)
 
+    @patch.object(DiasporaReshare, "validate", new=Mock())
     def test_share_is_converted_to_diasporareshare(self, private_key):
         entity = Share()
         assert isinstance(get_outbound_entity(entity, private_key), DiasporaReshare)
 
     def test_signs_relayable_if_no_signature(self, private_key):
         entity = DiasporaComment()
+        entity.validate = Mock()
         outbound = get_outbound_entity(entity, private_key)
         assert outbound.signature != ""
 
@@ -322,6 +335,31 @@ class TestGetOutboundEntity:
         entity = Comment()
         entity.outbound_doc = "foobar"
         assert get_outbound_entity(entity, private_key) == entity
+
+    def test_entity_is_validated__fail(self, private_key):
+        entity = Share(
+            actor_id="foobar@localhost.local",
+            handle="foobar@localhost.local",
+            id="1"*16,
+            guid="1"*16,
+            created_at=datetime.now(),
+            target_id="2" * 16,
+        )
+        with pytest.raises(ValueError):
+            get_outbound_entity(entity, private_key)
+
+    def test_entity_is_validated__success(self, private_key):
+        entity = Share(
+            actor_id="foobar@localhost.local",
+            handle="foobar@localhost.local",
+            id="1" * 16,
+            guid="1" * 16,
+            created_at=datetime.now(),
+            target_handle="barfoo@remote.local",
+            target_id="2" * 16,
+            target_guid="2" * 16,
+        )
+        get_outbound_entity(entity, private_key)
 
 
 def test_check_sender_and_entity_handle_match():

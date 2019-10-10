@@ -16,6 +16,7 @@ class TestHandleCreatePayloadBuildsAPayload:
         mock_me.return_value = Mock(render=mock_render)
         author_user = Mock()
         entity = DiasporaPost()
+        entity.validate = Mock()
         handle_create_payload(entity, author_user, "diaspora")
         mock_render.assert_called_once_with()
 

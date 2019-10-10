@@ -1,4 +1,5 @@
-from unittest.mock import patch
+from datetime import datetime
+from unittest.mock import patch, Mock
 
 import pytest
 
@@ -6,7 +7,7 @@ from federation.entities.activitypub.entities import (
     ActivitypubFollow, ActivitypubAccept, ActivitypubProfile, ActivitypubPost, ActivitypubComment,
     ActivitypubRetraction, ActivitypubShare)
 from federation.entities.activitypub.mappers import message_to_objects, get_outbound_entity
-from federation.entities.base import Accept, Follow, Profile, Post, Comment, Image
+from federation.entities.base import Accept, Follow, Profile, Post, Comment, Image, Share
 from federation.tests.fixtures.payloads import (
     ACTIVITYPUB_FOLLOW, ACTIVITYPUB_PROFILE, ACTIVITYPUB_PROFILE_INVALID, ACTIVITYPUB_UNDO_FOLLOW, ACTIVITYPUB_POST,
     ACTIVITYPUB_COMMENT, ACTIVITYPUB_RETRACTION, ACTIVITYPUB_SHARE, ACTIVITYPUB_RETRACTION_SHARE,
@@ -274,20 +275,44 @@ class TestActivitypubEntityMappersReceive:
 class TestGetOutboundEntity:
     def test_already_fine_entities_are_returned_as_is(self, private_key):
         entity = ActivitypubAccept()
+        entity.validate = Mock()
         assert get_outbound_entity(entity, private_key) == entity
         entity = ActivitypubFollow()
+        entity.validate = Mock()
         assert get_outbound_entity(entity, private_key) == entity
         entity = ActivitypubProfile()
+        entity.validate = Mock()
         assert get_outbound_entity(entity, private_key) == entity
 
+    @patch.object(ActivitypubAccept, "validate", new=Mock())
     def test_accept_is_converted_to_activitypubaccept(self, private_key):
         entity = Accept()
         assert isinstance(get_outbound_entity(entity, private_key), ActivitypubAccept)
 
+    @patch.object(ActivitypubFollow, "validate", new=Mock())
     def test_follow_is_converted_to_activitypubfollow(self, private_key):
         entity = Follow()
         assert isinstance(get_outbound_entity(entity, private_key), ActivitypubFollow)
 
+    @patch.object(ActivitypubProfile, "validate", new=Mock())
     def test_profile_is_converted_to_activitypubprofile(self, private_key):
         entity = Profile()
         assert isinstance(get_outbound_entity(entity, private_key), ActivitypubProfile)
+
+    def test_entity_is_validated__fail(self, private_key):
+        entity = Share(
+            actor_id="https://localhost.local/foo",
+            id="https://localhost.local/bar",
+            created_at=datetime.now(),
+        )
+        with pytest.raises(ValueError):
+            get_outbound_entity(entity, private_key)
+
+    def test_entity_is_validated__success(self, private_key):
+        entity = Share(
+            actor_id="https://localhost.local/foo",
+            id="https://localhost.local/bar",
+            created_at=datetime.now(),
+            target_id="https://localhost.local/bar",
+        )
+        get_outbound_entity(entity, private_key)
