@@ -9,7 +9,7 @@ from xrd import XRD
 
 from federation.inbound import handle_receive
 from federation.types import RequestType
-from federation.utils.network import fetch_document
+from federation.utils.network import fetch_document, try_retrieve_webfinger_document
 from federation.utils.text import validate_handle
 
 logger = logging.getLogger("federation")
@@ -74,16 +74,10 @@ def retrieve_and_parse_diaspora_webfinger(handle):
     :arg handle: Remote handle to retrieve
     :returns: dict
     """
-    try:
-        host = handle.split("@")[1]
-    except AttributeError:
-        logger.warning("retrieve_and_parse_diaspora_webfinger: invalid handle given: %s", handle)
-        return None
-    document, code, exception = fetch_document(
-        host=host, path="/.well-known/webfinger?resource=acct:%s" % quote(handle),
-    )
+    document = try_retrieve_webfinger_document(handle)
     if document:
         return parse_diaspora_webfinger(document)
+    host = handle.split("@")[1]
     hostmeta = retrieve_diaspora_host_meta(host)
     if not hostmeta:
         return None

@@ -4,6 +4,7 @@ import logging
 import re
 import socket
 from typing import Optional, Tuple
+from urllib.parse import quote
 
 import requests
 from ipdata import ipdata
@@ -215,3 +216,20 @@ def send_document(url, data, timeout=10, *args, **kwargs):
     except RequestException as ex:
         logger.debug("send_document: exception %s", ex)
         return None, ex
+
+
+def try_retrieve_webfinger_document(handle: str) -> Optional[str]:
+    """
+    Try to retrieve an RFC7033 webfinger document. Does not raise if it fails.
+    """
+    try:
+        host = handle.split("@")[1]
+    except AttributeError:
+        logger.warning("retrieve_webfinger_document: invalid handle given: %s", handle)
+        return None
+    document, code, exception = fetch_document(
+        host=host, path="/.well-known/webfinger?resource=acct:%s" % quote(handle),
+    )
+    if exception:
+        logger.debug("retrieve_webfinger_document: failed to fetch webfinger document: %s, %s", code, exception)
+    return document
