@@ -4,7 +4,38 @@ from unittest.mock import patch, Mock
 from federation.entities.activitypub.entities import ActivitypubFollow, ActivitypubPost
 from federation.tests.fixtures.payloads import (
     ACTIVITYPUB_FOLLOW, ACTIVITYPUB_POST, ACTIVITYPUB_POST_OBJECT, ACTIVITYPUB_POST_OBJECT_IMAGES)
-from federation.utils.activitypub import retrieve_and_parse_document, retrieve_and_parse_profile
+from federation.utils.activitypub import (
+    retrieve_and_parse_document, retrieve_and_parse_profile, get_profile_id_from_webfinger)
+
+
+class TestGetProfileIdFromWebfinger:
+    @patch("federation.utils.activitypub.try_retrieve_webfinger_document", autospec=True, return_value=None)
+    def test_calls_try_retrieve_webfinger_document(self, mock_try):
+        get_profile_id_from_webfinger("foobar@localhost")
+        mock_try.assert_called_once_with("foobar@localhost")
+
+    @patch("federation.utils.activitypub.try_retrieve_webfinger_document", autospec=True, return_value=json.dumps({
+        "links": [
+            {
+                "rel": "foobar",
+                "type": "application/activity+json",
+                "href": "spam and eggs",
+            },
+            {
+                "rel": "self",
+                "type": "application/activity+json",
+                "href": "https://localhost/profile",
+            },
+        ],
+    }))
+    def test_returns_href_from_document(self, mock_try):
+        href = get_profile_id_from_webfinger("foobar@localhost")
+        assert href == "https://localhost/profile"
+
+    @patch("federation.utils.activitypub.try_retrieve_webfinger_document", autospec=True, return_value="not json")
+    def test_survives_bad_json(self, mock_try):
+        href = get_profile_id_from_webfinger("foobar@localhost")
+        assert href is None
 
 
 class TestRetrieveAndParseDocument:
@@ -54,8 +85,13 @@ class TestRetrieveAndParseDocument:
 
 
 class TestRetrieveAndParseProfile:
+    @patch("federation.utils.activitypub.get_profile_id_from_webfinger", autospec=True, return_value=None)
+    def test_calls_get_profile_id_from_webfinger__with_handle_fid(self, mock_get):
+        retrieve_and_parse_profile("profile@example.com")
+        mock_get.assert_called_once_with("profile@example.com")
+
     @patch("federation.utils.activitypub.retrieve_and_parse_document", autospec=True)
-    def test_calls_retrieve_and_parse_document(self, mock_retrieve):
+    def test_calls_retrieve_and_parse_document__with_url_fid(self, mock_retrieve):
         retrieve_and_parse_profile("https://example.com/profile")
         mock_retrieve.assert_called_once_with("https://example.com/profile")
 

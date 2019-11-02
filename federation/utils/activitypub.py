@@ -4,10 +4,28 @@ from typing import Optional, Any
 
 from federation.entities.activitypub.entities import ActivitypubProfile
 from federation.entities.activitypub.mappers import message_to_objects
-from federation.utils.network import fetch_document
-from federation.utils.text import decode_if_bytes
+from federation.utils.network import fetch_document, try_retrieve_webfinger_document
+from federation.utils.text import decode_if_bytes, validate_handle
 
 logger = logging.getLogger('federation')
+
+
+def get_profile_id_from_webfinger(handle: str) -> Optional[str]:
+    """
+    Fetch remote webfinger, if any, and try to parse an AS2 profile ID.
+    """
+    document = try_retrieve_webfinger_document(handle)
+    if not document:
+        return
+
+    try:
+        doc = json.loads(document)
+    except json.JSONDecodeError:
+        return
+    for link in doc.get("links", []):
+        if link.get("rel") == "self" and link.get("type") == "application/activity+json":
+            return link["href"]
+    logger.debug("get_profile_id_from_webfinger: found webfinger but it has no as2 self href")
 
 
 def retrieve_and_parse_content(**kwargs) -> Optional[Any]:
@@ -32,7 +50,13 @@ def retrieve_and_parse_profile(fid: str) -> Optional[ActivitypubProfile]:
     """
     Retrieve the remote fid and return a Profile object.
     """
-    profile = retrieve_and_parse_document(fid)
+    if validate_handle(fid):
+        profile_id = get_profile_id_from_webfinger(fid)
+        if not profile_id:
+            return
+    else:
+        profile_id = fid
+    profile = retrieve_and_parse_document(profile_id)
     if not profile:
         return
     try:
