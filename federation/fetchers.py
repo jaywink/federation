@@ -4,6 +4,8 @@ from typing import Optional, Callable
 
 from federation import identify_protocol_by_id
 from federation.entities.base import Profile
+from federation.protocols.activitypub import protocol as activitypub_protocol
+from federation.protocols.diaspora import protocol as diaspora_protocol
 from federation.utils.text import validate_handle
 
 logger = logging.getLogger("federation")
@@ -33,8 +35,14 @@ def retrieve_remote_content(
 def retrieve_remote_profile(id: str) -> Optional[Profile]:
     """High level retrieve profile method.
 
-    Retrieve the profile from a remote location, using protocol based on the given ID.
+    Retrieve the profile from a remote location, using protocols based on the given ID.
     """
-    protocol = identify_protocol_by_id(id)
-    utils = importlib.import_module(f"federation.utils.{protocol.PROTOCOL_NAME}")
-    return utils.retrieve_and_parse_profile(id)
+    if validate_handle(id):
+        protocols = (activitypub_protocol, diaspora_protocol)
+    else:
+        protocols = (identify_protocol_by_id(id),)
+    for protocol in protocols:
+        utils = importlib.import_module(f"federation.utils.{protocol.PROTOCOL_NAME}")
+        profile = utils.retrieve_and_parse_profile(id)
+        if profile:
+            return profile

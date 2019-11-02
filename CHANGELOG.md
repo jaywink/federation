@@ -2,6 +2,10 @@
 
 ## [0.19.0-dev] - unreleased
 
+### Added
+
+* The fetcher `retrieve_remote_profile` now also supports handle based fetching for the ActivityPub protocol.
+
 ### Changed
 
 * All outgoing entities are now validated before sending. This stops the sending of invalid

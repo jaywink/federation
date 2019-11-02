@@ -77,30 +77,27 @@ class TestRetrieveAndParseDiasporaWebfinger:
         retrieve_and_parse_diaspora_webfinger("bob@localhost")
         mock_retrieve.assert_called_with("localhost")
 
-    @patch("federation.utils.diaspora.fetch_document", return_value=(None, None, None))
+    @patch("federation.utils.diaspora.try_retrieve_webfinger_document", return_value=None)
     @patch("federation.utils.diaspora.retrieve_diaspora_host_meta", return_value=None)
-    def test_fetch_document_is_called__to_fetch_json_webfinger(self, mock_retrieve, mock_fetch):
+    def test_try_retrieve_webfinger_document_is_called(self, mock_retrieve, mock_fetch):
         retrieve_and_parse_diaspora_webfinger("bob@localhost")
-        mock_fetch.assert_called_once_with(
-            host="localhost",
-            path="/.well-known/webfinger?resource=acct:bob%40localhost",
-        )
+        mock_fetch.assert_called_once_with("bob@localhost")
 
     @patch("federation.utils.diaspora.XRD.parse_xrd")
     @patch("federation.utils.diaspora.fetch_document", return_value=(None, None, None))
     @patch("federation.utils.diaspora.parse_diaspora_webfinger", return_value={'hcard_url': None})
     @patch("federation.utils.diaspora.retrieve_diaspora_host_meta", return_value=None)
-    def test_fetch_document_is_called__to_fetch_xml_webfinger(self, mock_retrieve, mock_parse, mock_fetch, mock_xrd):
+    @patch("federation.utils.diaspora.try_retrieve_webfinger_document", return_value=None)
+    def test_fetch_document_is_called__to_fetch_xml_webfinger(
+            self, mock_try, mock_retrieve, mock_parse, mock_fetch, mock_xrd,
+    ):
         mock_retrieve.return_value = DiasporaHostMeta(
             webfinger_host="https://localhost"
         ).xrd
         mock_xrd.return_value = "document"
         result = retrieve_and_parse_diaspora_webfinger("bob@localhost")
+        mock_try.assert_called_once_with("bob@localhost")
         calls = [
-            call(
-                host="localhost",
-                path="/.well-known/webfinger?resource=acct:bob%40localhost",
-            ),
             call("https://localhost/webfinger?q=%s" % quote("bob@localhost")),
         ]
         assert calls == mock_fetch.call_args_list
