@@ -42,9 +42,10 @@ def verify_request_signature(request: RequestType, public_key: Union[str, bytes]
 
     ts = parse_http_date(date_header)
     dt = datetime.datetime.utcfromtimestamp(ts).replace(tzinfo=pytz.utc)
-    delta = datetime.timedelta(seconds=30)
+    past_delta = datetime.timedelta(hours=24)
+    future_delta = datetime.timedelta(seconds=30)
     now = datetime.datetime.utcnow().replace(tzinfo=pytz.utc)
-    if dt < now - delta or dt > now + delta:
+    if dt < now - past_delta or dt > now + future_delta:
         raise ValueError("Request Date is too far in future or past")
 
     HTTPSignatureHeaderAuth.verify(request, key_resolver=lambda **kwargs: key)

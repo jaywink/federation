@@ -11,6 +11,13 @@
 * All outgoing entities are now validated before sending. This stops the sending of invalid
   entities to the network, for example a Share of a Post from ActivityPub to the Diaspora
   protocol network.
+  
+### Fixed
+
+* Allow ActivityPub HTTP Signature verification to pass if signature is at most 24 hours old.
+
+  Previously requirement was 30 seconds, which caused loss of messages where signature validation
+  didn't happen immediately, but in a background worker which didn't immediately process the job.
 
 ## [0.18.1] - 2019-10-06
 
