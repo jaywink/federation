@@ -19,6 +19,10 @@
   Previously requirement was 30 seconds, which caused loss of messages where signature validation
   didn't happen immediately, but in a background worker which didn't immediately process the job.
 
+### Internal changes
+
+* Improve performance of generating ActivityPub payloads for a large number of receivers in `handle_send`.
+
 ## [0.18.1] - 2019-10-06
 
 ### Changed

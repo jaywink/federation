@@ -1,3 +1,4 @@
+import copy
 import importlib
 import json
 import logging
@@ -114,7 +115,7 @@ def handle_send(
                       be generated. If given, the payload will be sent as this user.
     """
     payloads = []
-    public_payloads = {
+    ready_payloads = {
         "activitypub": {
             "auth": None,
             "payload": None,
@@ -143,7 +144,12 @@ def handle_send(
 
         if protocol == "activitypub":
             try:
-                payload = handle_create_payload(entity, author_user, protocol, parent_user=parent_user)
+                if not ready_payloads[protocol]["payload"]:
+                    # noinspection PyTypeChecker
+                    ready_payloads[protocol]["payload"] = handle_create_payload(
+                        entity, author_user, protocol, parent_user=parent_user,
+                    )
+                payload = copy.copy(ready_payloads[protocol]["payload"])
                 if public:
                     payload["to"] = [NAMESPACE_PUBLIC]
                     payload["cc"] = [fid]
@@ -154,13 +160,13 @@ def handle_send(
                     payload["to"] = [fid]
                     if isinstance(payload.get("object"), dict):
                         payload["object"]["to"] = [fid]
-                payload = json.dumps(payload).encode("utf-8")
+                rendered_payload = json.dumps(payload).encode("utf-8")
             except Exception as ex:
                 logger.error("handle_send - failed to generate payload for %s, %s: %s", fid, endpoint, ex)
                 continue
             payloads.append({
                 "auth": get_http_authentication(author_user.rsa_private_key, f"{author_user.id}#main-key"),
-                "payload": payload,
+                "payload": rendered_payload,
                 "content_type": 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
                 "urls": {endpoint},
             })
@@ -168,15 +174,15 @@ def handle_send(
             if public:
                 if public_key:
                     raise ValueError("handle_send - Diaspora recipient cannot be public and use encrypted delivery")
-                if not public_payloads[protocol]["payload"]:
+                if not ready_payloads[protocol]["payload"]:
                     try:
                         # noinspection PyTypeChecker
-                        public_payloads[protocol]["payload"] = handle_create_payload(
+                        ready_payloads[protocol]["payload"] = handle_create_payload(
                             entity, author_user, protocol, parent_user=parent_user,
                         )
                     except Exception as ex:
                         logger.error("handle_send - failed to generate public payload for %s: %s", endpoint, ex)
-                public_payloads["diaspora"]["urls"].add(endpoint)
+                ready_payloads["diaspora"]["urls"].add(endpoint)
             else:
                 if not public_key:
                     raise ValueError("handle_send - Diaspora recipient cannot be private without a public key for "
@@ -195,9 +201,9 @@ def handle_send(
                 })
 
     # Add public diaspora payload
-    if public_payloads["diaspora"]["payload"]:
+    if ready_payloads["diaspora"]["payload"]:
         payloads.append({
-            "urls": public_payloads["diaspora"]["urls"], "payload": public_payloads["diaspora"]["payload"],
+            "urls": ready_payloads["diaspora"]["urls"], "payload": ready_payloads["diaspora"]["payload"],
             "content_type": "application/magic-envelope+xml", "auth": None,
         })
 
