@@ -127,6 +127,10 @@ def handle_send(
             "urls": set(),
         },
     }
+    skip_ready_payload = {
+        "activitypub": False,
+        "diaspora": False,
+    }
 
     # Flatten to unique recipients
     # TODO supply a callable that empties "fid" in the case that public=True
@@ -142,13 +146,18 @@ def handle_send(
         protocol = recipient["protocol"]
         public = recipient["public"]
 
-        if protocol == "activitypub":
+        if protocol == "activitypub" and not skip_ready_payload["activitypub"]:
             try:
                 if not ready_payloads[protocol]["payload"]:
-                    # noinspection PyTypeChecker
-                    ready_payloads[protocol]["payload"] = handle_create_payload(
-                        entity, author_user, protocol, parent_user=parent_user,
-                    )
+                    try:
+                        # noinspection PyTypeChecker
+                        ready_payloads[protocol]["payload"] = handle_create_payload(
+                            entity, author_user, protocol, parent_user=parent_user,
+                        )
+                    except ValueError as ex:
+                        # No point continuing for this protocol
+                        skip_ready_payload["activitypub"] = True
+                        logger.warning("handle_send - skipping activitypub due to failure to generate payload: %s", ex)
                 payload = copy.copy(ready_payloads[protocol]["payload"])
                 if public:
                     payload["to"] = [NAMESPACE_PUBLIC]
@@ -171,7 +180,7 @@ def handle_send(
                 "urls": {endpoint},
             })
         elif protocol == "diaspora":
-            if public:
+            if public and not skip_ready_payload["activitypub"]:
                 if public_key:
                     raise ValueError("handle_send - Diaspora recipient cannot be public and use encrypted delivery")
                 if not ready_payloads[protocol]["payload"]:
@@ -180,8 +189,10 @@ def handle_send(
                         ready_payloads[protocol]["payload"] = handle_create_payload(
                             entity, author_user, protocol, parent_user=parent_user,
                         )
-                    except Exception as ex:
-                        logger.error("handle_send - failed to generate public payload for %s: %s", endpoint, ex)
+                    except ValueError as ex:
+                        # No point continuing for this protocol
+                        skip_ready_payload["diaspora"] = True
+                        logger.warning("handle_send - skipping diaspora due to failure to generate payload: %s", ex)
                 ready_payloads["diaspora"]["urls"].add(endpoint)
             else:
                 if not public_key:

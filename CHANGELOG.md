@@ -23,6 +23,9 @@
 
 * Improve performance of generating ActivityPub payloads for a large number of receivers in `handle_send`.
 
+* Fail early in outbound `handle_send` if a payload cannot be generated for a payload which
+  doesn't depend on recipient attributes.
+
 ## [0.18.1] - 2019-10-06
 
 ### Changed
