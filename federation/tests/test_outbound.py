@@ -96,3 +96,36 @@ class TestHandleSend:
         with pytest.raises(IndexError):
             # noinspection PyStatementEffect
             mock_send.call_args_list[5]
+
+    def test_survives_sending_share_if_diaspora_payload_cannot_be_created(self, mock_send, share):
+        key = get_dummy_private_key()
+        share.target_handle = None  # Ensure diaspora payload fails
+        recipients = [
+            {
+                "endpoint": "https://example.com/receive/public", "public": True, "protocol": "diaspora",
+                "fid": "",
+            },
+            {
+                "endpoint": "https://example.tld/receive/public", "public": True, "protocol": "diaspora",
+                "fid": "",
+            },
+            {
+                "endpoint": "https://example.net/inbox", "fid": "https://example.net/foobar", "public": True,
+                "protocol": "activitypub",
+            }
+        ]
+        author = UserType(
+            private_key=key, id="foo@example.com", handle="foo@example.com",
+        )
+        handle_send(share, author, recipients)
+
+        # Ensure first call is a public activitypub payload
+        args, kwargs = mock_send.call_args_list[0]
+        assert args[0] == "https://example.net/inbox"
+        assert kwargs['headers'] == {
+            'Content-Type': 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
+        }
+        assert encode_if_text("https://www.w3.org/ns/activitystreams#Public") in args[1]
+
+        # Should only be one call
+        assert mock_send.call_count == 1

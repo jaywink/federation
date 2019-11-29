@@ -319,3 +319,8 @@ def diasporaretraction():
         target_guid="target_guid",
         entity_type="Post",
     )
+
+
+@pytest.fixture
+def share():
+    return ShareFactory()

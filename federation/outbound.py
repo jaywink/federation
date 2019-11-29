@@ -180,7 +180,9 @@ def handle_send(
                 "urls": {endpoint},
             })
         elif protocol == "diaspora":
-            if public and not skip_ready_payload["diaspora"]:
+            if public:
+                if skip_ready_payload["diaspora"]:
+                    continue
                 if public_key:
                     raise ValueError("handle_send - Diaspora recipient cannot be public and use encrypted delivery")
                 if not ready_payloads[protocol]["payload"]:
