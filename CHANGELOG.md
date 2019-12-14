@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.19.0-dev] - unreleased
+## [0.19.0] - 2019-12-15
 
 ### Added
 

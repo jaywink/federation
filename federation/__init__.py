@@ -6,7 +6,7 @@ from federation.exceptions import NoSuitableProtocolFoundError
 if TYPE_CHECKING:
     from federation.types import RequestType
 
-__version__ = "0.19.0-dev"
+__version__ = "0.19.0"
 
 PROTOCOLS = (
     "activitypub",
