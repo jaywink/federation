@@ -2,6 +2,10 @@
 
 ## [0.20.0-dev] - unreleased
 
+### Fixed
+
+* Don't crash loudly when fetching webfinger for Diaspora that does not contain XML.
+
 ## [0.19.0] - 2019-12-15
 
 ### Added

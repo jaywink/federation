@@ -1,7 +1,7 @@
 import json
 import logging
 import xml
-from typing import Callable
+from typing import Callable, Dict
 from urllib.parse import quote
 
 from lxml import html
@@ -25,7 +25,7 @@ def fetch_public_key(handle):
     return profile.public_key
 
 
-def parse_diaspora_webfinger(document):
+def parse_diaspora_webfinger(document: str) -> Dict:
     """
     Parse Diaspora webfinger which is either in JSON format (new) or XRD (old).
 
@@ -34,6 +34,7 @@ def parse_diaspora_webfinger(document):
     webfinger = {
         "hcard_url": None,
     }
+    # noinspection PyBroadException
     try:
         doc = json.loads(document)
         for link in doc["links"]:
@@ -47,8 +48,8 @@ def parse_diaspora_webfinger(document):
         try:
             xrd = XRD.parse_xrd(document)
             webfinger["hcard_url"] = xrd.find_link(rels="http://microformats.org/profile/hcard").href
-        except xml.parsers.expat.ExpatError:
-            logger.warning("parse_diaspora_webfinger: found XML webfinger but it fails to parse (ExpatError)")
+        except (xml.parsers.expat.ExpatError, TypeError):
+            logger.warning("parse_diaspora_webfinger: found XML webfinger but it fails to parse")
             pass
     return webfinger
 
