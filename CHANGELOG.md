@@ -11,7 +11,9 @@
   fetching by domain and path.
   
 * Don't crash when parsing an invalid NodeInfo document where the usage dictionary
-  is not following specification. 
+  is not following specification.
+  
+* Ensure Pixelfed, Kroeg and Kibou instances that emulate the Mastodon API don't get identified as Mastodon instances. 
 
 ## [0.19.0] - 2019-12-15
 

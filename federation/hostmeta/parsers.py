@@ -55,7 +55,8 @@ def int_or_none(value):
 
 def parse_mastodon_document(doc, host):
     # Check first this is not actually Pleroma or Misskey
-    if doc.get('version', '').find('Pleroma') > -1:
+    if doc.get('version', '').find('Pleroma') > -1 or doc.get('version', '').find('Pixelfed') > -1 or \
+            doc.get('version', '').find('Kibou') > -1 or doc.get('version', '').find('Kroeg') > -1:
         # Use NodeInfo instead, otherwise this is logged as Mastodon
         from federation.hostmeta.fetchers import fetch_nodeinfo_document
         return fetch_nodeinfo_document(host)
