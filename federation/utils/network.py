@@ -63,6 +63,7 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
     :arg path: Path without domain (defaults to "/")
     :arg timeout: Seconds to wait for response (defaults to 10)
     :arg raise_ssl_errors: Pass False if you want to try HTTP even for sites with SSL errors (default True)
+    :arg extra_headers: Optional extra headers dictionary to add to requests
     :returns: Tuple of document (str or None), status code (int or None) and error (an exception class instance or None)
     :raises ValueError: If neither url nor host are given as parameters
     """
@@ -80,6 +81,7 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
         try:
             response = requests.get(url, timeout=timeout, headers=headers)
             logger.debug("fetch_document: found document, code %s", response.status_code)
+            response.raise_for_status()
             return response.text, response.status_code, None
         except RequestException as ex:
             logger.debug("fetch_document: exception %s", ex)

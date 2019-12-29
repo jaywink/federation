@@ -6,6 +6,10 @@
 
 * Don't crash loudly when fetching webfinger for Diaspora that does not contain XML.
 
+* Add missing `response.raise_for_status()` call to the `fetch_document` network helper
+  when fetching with given URL. Error status was already being raised correctly when
+  fetching by domain and path. 
+
 ## [0.19.0] - 2019-12-15
 
 ### Added
