@@ -70,6 +70,13 @@ NODEINFO_20_DOC = '{"version":"2.0","software":{"name":"diaspora","version":"0.7
                   '22,"localComments":17671},"metadata":{"nodeName":"I Like Toast","xmppChat":false,"camo":{"' \
                   'markdown":false,"opengraph":false,"remotePods":false},"adminAccount":"podmin"}}'
 
+# Some Pleroma instances don't conform to NodeInfo spec
+NODEINFO_21_DOC_INVALID_USAGE_COUNTS = \
+                  '{"version":"2.1","software":{"name":"pleroma","version":"0.7.4.0-pd0313756"},"protocols":' \
+                  '["activitypub"],"services":{"inbound":[],"outbound":[]},"openRegistrations"' \
+                  ':true,"usage":{"users":{"total":348},"localPosts":{"all":3,"direct":1}},' \
+                  '"metadata":{}}'
+
 # Buggy NodeInfo well known found in certain older Hubzilla versions
 NODEINFO_WELL_KNOWN_BUGGY = '{"links":{"rel":"http:\/\/nodeinfo.diaspora.software\/ns\/schema\/1.0","href":"h' \
                             'ttps:\/\/example.com\/nodeinfo\/1.0"},"0":{"rel":"http:\/\/nodeinfo.diaspo' \

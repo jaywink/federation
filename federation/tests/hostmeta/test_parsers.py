@@ -6,7 +6,8 @@ from federation.hostmeta.parsers import (
     parse_mastodon_document, parse_matrix_document)
 from federation.tests.fixtures.hostmeta import (
     NODEINFO2_10_DOC, NODEINFO_10_DOC, NODEINFO_20_DOC, STATISTICS_JSON_DOC, MASTODON_DOC, MASTODON_ACTIVITY_DOC,
-    MASTODON_RC_DOC, MASTODON_DOC_NULL_CONTACT, MATRIX_SYNAPSE_DOC, PLEROMA_MASTODON_API_DOC)
+    MASTODON_RC_DOC, MASTODON_DOC_NULL_CONTACT, MATRIX_SYNAPSE_DOC, PLEROMA_MASTODON_API_DOC,
+    NODEINFO_21_DOC_INVALID_USAGE_COUNTS)
 
 
 class TestIntOrNone:
@@ -257,6 +258,36 @@ class TestParseNodeInfoDocument:
                 },
                 'local_posts': 8522,
                 'local_comments': 17671,
+            },
+        }
+
+    def test_parse_nodeinfo_21_document__invalid_usage_counts(self):
+        result = parse_nodeinfo_document(json.loads(NODEINFO_21_DOC_INVALID_USAGE_COUNTS), 'pleroma.local')
+        assert result == {
+            'organization': {
+                'account': '',
+                'contact': '',
+                'name': '',
+            },
+            'host': 'pleroma.local',
+            'name': 'pleroma.local',
+            'open_signups': True,
+            'protocols': ["activitypub"],
+            'relay': '',
+            'server_meta': {},
+            'services': [],
+            'platform': 'pleroma',
+            'version': '0.7.4.0-pd0313756',
+            'features': {},
+            'activity': {
+                'users': {
+                    'total': 348,
+                    'half_year': None,
+                    'monthly': None,
+                    'weekly': None,
+                },
+                'local_posts': None,
+                'local_comments': None,
             },
         }
 

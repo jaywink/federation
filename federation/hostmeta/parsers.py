@@ -40,6 +40,8 @@ defaults = {
 
 
 def int_or_none(value):
+    if isinstance(value, dict):
+        return None
     if value is None or value == '':
         return None
     try:

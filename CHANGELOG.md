@@ -8,7 +8,10 @@
 
 * Add missing `response.raise_for_status()` call to the `fetch_document` network helper
   when fetching with given URL. Error status was already being raised correctly when
-  fetching by domain and path. 
+  fetching by domain and path.
+  
+* Don't crash when parsing an invalid NodeInfo document where the usage dictionary
+  is not following specification. 
 
 ## [0.19.0] - 2019-12-15
 
