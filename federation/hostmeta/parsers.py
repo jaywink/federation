@@ -125,9 +125,8 @@ def parse_mastodon_document(doc, host):
 
 def parse_matrix_document(doc: Dict, host: str) -> Dict:
     result = deepcopy(defaults)
-    host_without_port = host.split(':')[0]
-    result['host'] = host_without_port
-    result['name'] = host_without_port
+    result['host'] = host
+    result['name'] = host
     result['protocols'] = ['matrix']
     result['platform'] = f'matrix|{doc["server"]["name"].lower()}'
     result['version'] = doc["server"]["version"]
