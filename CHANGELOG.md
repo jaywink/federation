@@ -4,7 +4,7 @@
 
 ### Changed
 
-* Matrix and NodeInfo2 hostmeta parsers now clean the port out of the host name.
+* The NodeInfo2 hostmeta parser now cleans the port out of the host name.
 
 ### Fixed
 
