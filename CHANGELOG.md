@@ -2,6 +2,10 @@
 
 ## [0.20.0-dev] - unreleased
 
+### Changed
+
+* Matrix and NodeInfo2 hostmeta parsers now clean the port out of the host name.
+
 ### Fixed
 
 * Don't crash loudly when fetching webfinger for Diaspora that does not contain XML.

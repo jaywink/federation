@@ -125,8 +125,9 @@ def parse_mastodon_document(doc, host):
 
 def parse_matrix_document(doc: Dict, host: str) -> Dict:
     result = deepcopy(defaults)
-    result['host'] = host
-    result['name'] = host
+    host_without_port = host.split(':')[0]
+    result['host'] = host_without_port
+    result['name'] = host_without_port
     result['protocols'] = ['matrix']
     result['platform'] = f'matrix|{doc["server"]["name"].lower()}'
     result['version'] = doc["server"]["version"]
@@ -223,16 +224,18 @@ def parse_nodeinfo_document(doc, host):
 
 def parse_nodeinfo2_document(doc, host):
     result = deepcopy(defaults)
-    result['name'] = doc.get('server', {}).get('name', '') or ''
     result['platform'] = doc.get('server', {}).get('software', 'unknown').lower()
     result['version'] = doc.get('server', {}).get('version', '') or ''
     # Ensure baseUrl is reported as the host we called
     base_url = doc.get('server', {}).get('baseUrl', '').rstrip('/')
-    cleaned_base_url = re.sub(r'https?://', '', base_url)
+    cleaned_base_url = re.sub(r'https?://', '', base_url).split(':')[0]
     if cleaned_base_url.startswith(host):
         result['host'] = cleaned_base_url
     else:
         raise ValueError('NodeInfo2 baseUrl is outside called host.')
+    result['name'] = doc.get('server', {}).get('name', '') or ''
+    if not result['name']:
+        result['name'] = result['host']
     result['open_signups'] = doc.get('openRegistrations', False)
     inbound = doc.get('services', {}).get('inbound', [])
     outbound = doc.get('services', {}).get('outbound', [])

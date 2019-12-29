@@ -120,6 +120,37 @@ class TestParseMastodonDocument:
 
 class TestParseMatrixDocument:
     @patch('federation.hostmeta.parsers.send_document', autospec=True, return_value=(403, None))
+    def test_parse_matrix_document__removes_port_from_host(self, mock_send):
+        result = parse_matrix_document(json.loads(MATRIX_SYNAPSE_DOC), 'feneas.org:8448')
+        assert result == {
+            'organization': {
+                'account': '',
+                'contact': '',
+                'name': '',
+            },
+            'host': 'feneas.org',
+            'name': 'feneas.org',
+            'open_signups': False,
+            'protocols': ['matrix'],
+            'relay': '',
+            'server_meta': {},
+            'services': [],
+            'platform': 'matrix|synapse',
+            'version': '0.33.8',
+            'features': {},
+            'activity': {
+                'users': {
+                    'total': None,
+                    'half_year': None,
+                    'monthly': None,
+                    'weekly': None,
+                },
+                'local_posts': None,
+                'local_comments': None,
+            },
+        }
+
+    @patch('federation.hostmeta.parsers.send_document', autospec=True, return_value=(403, None))
     def test_parse_matrix_document__signups_closed(self, mock_send):
         result = parse_matrix_document(json.loads(MATRIX_SYNAPSE_DOC), 'feneas.org')
         assert result == {
@@ -295,6 +326,38 @@ class TestParseNodeInfoDocument:
 class TestParseNodeInfo2Document:
     def test_parse_nodeinfo2_10_document(self):
         result = parse_nodeinfo2_document(json.loads(NODEINFO2_10_DOC), 'example.com')
+        assert result == {
+            'organization': {
+                'account': 'https://example.com/u/admin',
+                'contact': 'foobar@example.com',
+                'name': 'Example organization',
+            },
+            'host': 'example.com',
+            'name': 'Example server',
+            'open_signups': True,
+            'protocols': ["diaspora", "zot"],
+            'relay': "tags",
+            'server_meta': {},
+            'services': ["facebook", "gnusocial", "twitter"],
+            'platform': 'example',
+            'version': '0.5.0',
+            'features': {},
+            'activity': {
+                'users': {
+                    'total': 123,
+                    'half_year': 42,
+                    'monthly': 23,
+                    'weekly': 10,
+                },
+                'local_posts': 500,
+                'local_comments': 1000,
+            },
+        }
+
+    def test_parse_nodeinfo2_10_document__cleans_port_from_host(self):
+        response = json.loads(NODEINFO2_10_DOC)
+        response["server"]["baseUrl"] = "https://example.com:5221"
+        result = parse_nodeinfo2_document(response, 'example.com')
         assert result == {
             'organization': {
                 'account': 'https://example.com/u/admin',
