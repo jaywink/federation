@@ -148,9 +148,11 @@ class TargetIDMixin(BaseEntity):
     target_handle = ""
     target_guid = ""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._required += ["target_id"]
+    def validate(self, *args, **kwargs) -> None:
+        super().validate(*args, **kwargs)
+        # Ensure one of the target attributes is filled at least
+        if not self.target_id and not self.target_handle and not self.target_guid:
+            raise ValueError("Must give one of the target attributes for TargetIDMixin.")
 
 
 class RootTargetIDMixin(BaseEntity):

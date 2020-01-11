@@ -17,7 +17,11 @@
 * Don't crash when parsing an invalid NodeInfo document where the usage dictionary
   is not following specification.
   
-* Ensure Pixelfed, Kroeg and Kibou instances that emulate the Mastodon API don't get identified as Mastodon instances. 
+* Ensure Pixelfed, Kroeg and Kibou instances that emulate the Mastodon API don't get identified as Mastodon instances.
+
+* Loosen validation of `TargetIDMixin`, it now requires one of the target attributes
+  to be set, not just `target_id`. This fixes follows over the Diaspora protocol which
+  broke with stricter send validation added in 0.19.0. 
 
 ## [0.19.0] - 2019-12-15
 
