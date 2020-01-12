@@ -21,7 +21,9 @@
 
 * Loosen validation of `TargetIDMixin`, it now requires one of the target attributes
   to be set, not just `target_id`. This fixes follows over the Diaspora protocol which
-  broke with stricter send validation added in 0.19.0. 
+  broke with stricter send validation added in 0.19.0.
+  
+* Fix some edge case crashes of `handle_send` when there are Diaspora protocol receivers. 
 
 ## [0.19.0] - 2019-12-15
 

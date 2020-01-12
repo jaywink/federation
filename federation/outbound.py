@@ -184,22 +184,24 @@ def handle_send(
                 if skip_ready_payload["diaspora"]:
                     continue
                 if public_key:
-                    raise ValueError("handle_send - Diaspora recipient cannot be public and use encrypted delivery")
+                    logger.warning("handle_send - Diaspora recipient cannot be public and use encrypted delivery")
+                    continue
                 if not ready_payloads[protocol]["payload"]:
                     try:
                         # noinspection PyTypeChecker
                         ready_payloads[protocol]["payload"] = handle_create_payload(
                             entity, author_user, protocol, parent_user=parent_user,
                         )
-                    except ValueError as ex:
+                    except Exception as ex:
                         # No point continuing for this protocol
                         skip_ready_payload["diaspora"] = True
                         logger.warning("handle_send - skipping diaspora due to failure to generate payload: %s", ex)
                 ready_payloads["diaspora"]["urls"].add(endpoint)
             else:
                 if not public_key:
-                    raise ValueError("handle_send - Diaspora recipient cannot be private without a public key for "
-                                     "encrypted delivery")
+                    logger.warning("handle_send - Diaspora recipient cannot be private without a public key for "
+                                   "encrypted delivery")
+                    continue
                 # Private payload
                 try:
                     payload = handle_create_payload(
