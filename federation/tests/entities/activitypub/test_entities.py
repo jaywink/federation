@@ -146,7 +146,7 @@ class TestEntitiesConvertToAS2:
                 'type': 'Note',
                 'attributedTo': 'http://127.0.0.1:8000/profile/123456/',
                 'content': """<h1>raw_content</h1>
-<p>@{someone@localhost.local}</p>""",
+<p>@{someone@localhost.local} @<a href="http://localhost.local/someone">Bob Bobértson</a></p>""",
                 'published': '2019-04-27T00:00:00',
                 'inReplyTo': None,
                 'sensitive': False,
@@ -156,6 +156,11 @@ class TestEntitiesConvertToAS2:
                         "type": "Mention",
                         "href": "http://127.0.0.1:8000/profile/999999",
                         "name": "http://127.0.0.1:8000/profile/999999",
+                    },
+                    {
+                        "type": "Mention",
+                        "href": "http://localhost.local/someone",
+                        "name": "http://localhost.local/someone",
                     },
                     {
                         "type": "Mention",
@@ -170,7 +175,7 @@ class TestEntitiesConvertToAS2:
                 ],
                 'url': '',
                 'source': {
-                    'content': '# raw_content\n\n@{someone@localhost.local}',
+                    'content': '# raw_content\n\n@{someone@localhost.local} @{http://localhost.local/someone}',
                     'mediaType': 'text/markdown',
                 },
             },

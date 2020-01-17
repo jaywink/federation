@@ -7,9 +7,9 @@ from typing import List, Set, Union, Dict
 from commonmark import commonmark
 
 from federation.entities.activitypub.enums import ActivityType
+from federation.entities.utils import get_name_for_profile
 
 
-# TODO someday, rewrite entities as dataclasses or attr's
 class BaseEntity:
     _allowed_children: tuple = ()
     _children: List = None
@@ -206,7 +206,17 @@ class RawContentMixin(BaseEntity):
         if self._rendered_content:
             return self._rendered_content
         elif self._media_type == "text/markdown" and self.raw_content:
-            return commonmark(self.raw_content).strip()
+            rendered = commonmark(self.raw_content).strip()
+            if self._mentions:
+                for mention in self._mentions:
+                    # Only linkify mentions that are URL's
+                    if not mention.startswith("http"):
+                        continue
+                    display_name = get_name_for_profile(mention)
+                    if not display_name:
+                        display_name = mention
+                    rendered = rendered.replace("@{%s}" % mention, f'@<a href="{mention}">{display_name}</a>')
+            return rendered
         return self.raw_content
 
     @property

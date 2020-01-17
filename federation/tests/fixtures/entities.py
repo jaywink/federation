@@ -91,7 +91,7 @@ def activitypubpost_images():
 def activitypubpost_mentions():
     with freeze_time("2019-04-27"):
         return ActivitypubPost(
-            raw_content="""# raw_content\n\n@{someone@localhost.local}""",
+            raw_content="""# raw_content\n\n@{someone@localhost.local} @{http://localhost.local/someone}""",
             public=True,
             provider_display_name="Socialhome",
             id=f"http://127.0.0.1:8000/post/123456/",
@@ -100,6 +100,7 @@ def activitypubpost_mentions():
             _mentions={
                 "http://127.0.0.1:8000/profile/999999",
                 "jaywink@localhost.local",
+                "http://localhost.local/someone",
             }
         )
 

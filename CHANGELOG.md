@@ -2,6 +2,13 @@
 
 ## [0.20.0-dev] - unreleased
 
+### Added
+
+* Entities with a `raw_content` field now have URL syntax mentions rendered into a link. ([related issue](https://git.feneas.org/socialhome/socialhome/issues/572))
+
+  If Django is configured, a profile will be retrieved using the configured profile
+  getter function and the profile name or username will be used for the link.
+
 ### Changed
 
 * The NodeInfo2 hostmeta parser now cleans the port out of the host name.
