@@ -23,7 +23,7 @@ def get_private_key(identifier: str) -> RsaKey:
     return get_dummy_private_key()
 
 
-def get_profile(handle=None, request=None):
+def get_profile(fid=None, handle=None, guid=None, request=None):
     return dummy_profile()
 
 

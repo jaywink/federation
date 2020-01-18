@@ -27,7 +27,7 @@ def get_name_for_profile(fid: str) -> Optional[str]:
         profile_func = get_function_from_config("get_profile_function")
         if not profile_func:
             return
-        profile = profile_func(fid)
+        profile = profile_func(fid=fid)
         if not profile:
             return
         if profile.name == fid and profile.username:
