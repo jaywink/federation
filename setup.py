@@ -28,6 +28,7 @@ setup(
     license="BSD 3-clause",
     install_requires=[
         "attrs",
+        "bleach>3.0",
         "commonmark",
         "cryptography",
         "cssselect>=0.9.2",

@@ -8,6 +8,8 @@
 
   If Django is configured, a profile will be retrieved using the configured profile
   getter function and the profile name or username will be used for the link.
+  
+* Add `process_text_links` text utility to linkify URL's in text.
 
 ### Changed
 
