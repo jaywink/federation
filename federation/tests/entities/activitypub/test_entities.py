@@ -69,6 +69,40 @@ class TestEntitiesConvertToAS2:
             'published': '2019-04-27T00:00:00',
         }
 
+    def test_comment_to_as2__url_in_raw_content(self, activitypubcomment):
+        activitypubcomment.raw_content = 'raw_content http://example.com'
+        result = activitypubcomment.to_as2()
+        assert result == {
+            '@context': [
+                'https://www.w3.org/ns/activitystreams',
+                {"pyfed": "https://docs.jasonrobinson.me/ns/python-federation"},
+                {'Hashtag': 'as:Hashtag'},
+                'https://w3id.org/security/v1',
+                {'sensitive': 'as:sensitive'},
+            ],
+            'type': 'Create',
+            'id': 'http://127.0.0.1:8000/post/123456/#create',
+            'actor': 'http://127.0.0.1:8000/profile/123456/',
+            'object': {
+                'id': 'http://127.0.0.1:8000/post/123456/',
+                'type': 'Note',
+                'attributedTo': 'http://127.0.0.1:8000/profile/123456/',
+                'content': '<p>raw_content <a href="http://example.com" rel="nofollow" target="_blank">'
+                           'http://example.com</a></p>',
+                'published': '2019-04-27T00:00:00',
+                'inReplyTo': 'http://127.0.0.1:8000/post/012345/',
+                'sensitive': False,
+                'summary': None,
+                'tag': [],
+                'url': '',
+                'source': {
+                    'content': 'raw_content http://example.com',
+                    'mediaType': 'text/markdown',
+                },
+            },
+            'published': '2019-04-27T00:00:00',
+        }
+
     def test_follow_to_as2(self, activitypubfollow):
         result = activitypubfollow.to_as2()
         assert result == {
@@ -145,8 +179,8 @@ class TestEntitiesConvertToAS2:
                 'id': 'http://127.0.0.1:8000/post/123456/',
                 'type': 'Note',
                 'attributedTo': 'http://127.0.0.1:8000/profile/123456/',
-                'content': """<h1>raw_content</h1>
-<p>@{someone@localhost.local} @<a href="http://localhost.local/someone">Bob Bobértson</a></p>""",
+                'content': '<h1>raw_content</h1>\n<p>@{someone@localhost.local} @<a href="http://localhost.local/'
+                           'someone" rel="nofollow" target="_blank">Bob Bobértson</a></p>',
                 'published': '2019-04-27T00:00:00',
                 'inReplyTo': None,
                 'sensitive': False,

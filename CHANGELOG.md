@@ -15,6 +15,9 @@
 
 * The NodeInfo2 hostmeta parser now cleans the port out of the host name.
 
+* URL's in outgoing text content are now linkified for the HTML representation
+  of the content for ActivityPub payloads. 
+
 ### Fixed
 
 * Don't crash loudly when fetching webfinger for Diaspora that does not contain XML.

@@ -8,6 +8,7 @@ from commonmark import commonmark
 
 from federation.entities.activitypub.enums import ActivityType
 from federation.entities.utils import get_name_for_profile
+from federation.utils.text import process_text_links
 
 
 class BaseEntity:
@@ -216,6 +217,8 @@ class RawContentMixin(BaseEntity):
                     if not display_name:
                         display_name = mention
                     rendered = rendered.replace("@{%s}" % mention, f'@<a href="{mention}">{display_name}</a>')
+            # Finally linkify remaining URL's that are not links
+            rendered = process_text_links(rendered)
             return rendered
         return self.raw_content
 
