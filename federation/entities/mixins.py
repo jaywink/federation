@@ -216,7 +216,10 @@ class RawContentMixin(BaseEntity):
                     display_name = get_name_for_profile(mention)
                     if not display_name:
                         display_name = mention
-                    rendered = rendered.replace("@{%s}" % mention, f'@<a href="{mention}">{display_name}</a>')
+                    rendered = rendered.replace(
+                        "@{%s}" % mention,
+                        f'@<a href="{mention}" class="mention">{display_name}</a>',
+                    )
             # Finally linkify remaining URL's that are not links
             rendered = process_text_links(rendered)
             return rendered

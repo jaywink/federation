@@ -179,8 +179,9 @@ class TestEntitiesConvertToAS2:
                 'id': 'http://127.0.0.1:8000/post/123456/',
                 'type': 'Note',
                 'attributedTo': 'http://127.0.0.1:8000/profile/123456/',
-                'content': '<h1>raw_content</h1>\n<p>@{someone@localhost.local} @<a href="http://localhost.local/'
-                           'someone" rel="nofollow" target="_blank">Bob Bobértson</a></p>',
+                'content': '<h1>raw_content</h1>\n<p>@{someone@localhost.local} @<a class="mention" '
+                           'href="http://localhost.local/someone" rel="nofollow" target="_blank">'
+                           'Bob Bobértson</a></p>',
                 'published': '2019-04-27T00:00:00',
                 'inReplyTo': None,
                 'sensitive': False,
