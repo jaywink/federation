@@ -16,7 +16,9 @@
 * The NodeInfo2 hostmeta parser now cleans the port out of the host name.
 
 * URL's in outgoing text content are now linkified for the HTML representation
-  of the content for ActivityPub payloads. 
+  of the content for ActivityPub payloads.
+  
+* Don't include OStatus for Mastodon 3.0+ protocols list. ([related issue](https://github.com/thefederationinfo/the-federation.info/issues/217))
 
 ### Fixed
 

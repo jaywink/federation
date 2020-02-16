@@ -7,7 +7,7 @@ from federation.hostmeta.parsers import (
 from federation.tests.fixtures.hostmeta import (
     NODEINFO2_10_DOC, NODEINFO_10_DOC, NODEINFO_20_DOC, STATISTICS_JSON_DOC, MASTODON_DOC, MASTODON_ACTIVITY_DOC,
     MASTODON_RC_DOC, MASTODON_DOC_NULL_CONTACT, MATRIX_SYNAPSE_DOC, PLEROMA_MASTODON_API_DOC,
-    NODEINFO_21_DOC_INVALID_USAGE_COUNTS)
+    NODEINFO_21_DOC_INVALID_USAGE_COUNTS, MASTODON_DOC_3)
 
 
 class TestIntOrNone:
@@ -104,6 +104,38 @@ class TestParseMastodonDocument:
             'services': [],
             'platform': 'mastodon',
             'version': '2.4.1rc1',
+            'features': {},
+            'activity': {
+                'users': {
+                    'total': 159726,
+                    'half_year': 90774,
+                    'monthly': 27829,
+                    'weekly': 8779,
+                },
+                'local_posts': 6059606,
+                'local_comments': None,
+            },
+        }
+
+    @patch('federation.hostmeta.parsers.fetch_document')
+    def test_parse_mastodon_document__protocols(self, mock_fetch):
+        mock_fetch.return_value = MASTODON_ACTIVITY_DOC, 200, None
+        result = parse_mastodon_document(json.loads(MASTODON_DOC_3), 'example.com')
+        assert result == {
+            'organization': {
+                'account': 'https://mastodon.local/@Admin',
+                'contact': 'hello@mastodon.local',
+                'name': 'Admin dude',
+            },
+            'host': 'example.com',
+            'name': 'Mastodon',
+            'open_signups': True,
+            'protocols': ["activitypub"],
+            'relay': False,
+            'server_meta': {},
+            'services': [],
+            'platform': 'mastodon',
+            'version': '3.0.0',
             'features': {},
             'activity': {
                 'users': {

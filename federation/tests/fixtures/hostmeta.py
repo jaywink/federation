@@ -17,6 +17,25 @@ MASTODON_DOC = """
                      "fields": []}}
 """
 
+MASTODON_DOC_3 = """
+{"uri": "mastodon.local", "title": "Mastodon",
+ "description": "This page describes the mastodon.local",
+ "email": "hello@mastodon.local", "version": "3.0.0", "urls": {"streaming_api": "wss://mastodon.local"},
+ "stats": {"user_count": 159726, "status_count": 6059606, "domain_count": 4703},
+ "thumbnail": "https://files.mastodon.local/site_uploads/files/000/000/001/original/file.jpeg",
+ "languages": ["en"],
+ "contact_account": {"id": "1", "username": "Admin", "acct": "Admin", "display_name": "Admin dude", "locked": false,
+                     "bot": false, "created_at": "2016-03-16T14:34:26.392Z",
+                     "note": "\u003cp\u003eSuperuser\u003c/p\u003e",
+                     "url": "https://mastodon.local/@Admin",
+                     "avatar": "https://files.mastodon.local/accounts/avatars/000/000/001/original/file.png",
+                     "avatar_static": "https://files.mastodon.local/accounts/avatars/000/000/001/original/file.png",
+                     "header": "https://files.mastodon.local/accounts/headers/000/000/001/original/file.jpeg",
+                     "header_static": "https://files.mastodon.local/accounts/headers/000/000/001/original/file.jpeg",
+                     "followers_count": 81779, "following_count": 506, "statuses_count": 36722, "emojis": [],
+                     "fields": []}}
+"""
+
 MASTODON_DOC_NULL_CONTACT = """
 {"uri": "mastodon.local", "title": "Mastodon",
  "description": "This page describes the mastodon.local",

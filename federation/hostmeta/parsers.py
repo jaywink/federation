@@ -79,7 +79,9 @@ def parse_mastodon_document(doc, host):
 
     version = re.sub(r'[^0-9.]', '', doc.get('version', ''))
     version = [int(part) for part in version.split('.')]
-    if version >= [1, 6, 0]:
+    if version >= [3, 0, 0]:
+        result['protocols'] = ['activitypub']
+    elif version >= [1, 6, 0]:
         result['protocols'] = ['ostatus', 'activitypub']
     else:
         result['protocols'] = ['ostatus']
