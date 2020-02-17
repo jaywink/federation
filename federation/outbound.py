@@ -2,6 +2,7 @@ import copy
 import importlib
 import json
 import logging
+import traceback
 from typing import List, Dict, Union
 
 # noinspection PyPackageRequirements
@@ -170,10 +171,10 @@ def handle_send(
                     if isinstance(payload.get("object"), dict):
                         payload["object"]["to"] = [fid]
                 rendered_payload = json.dumps(payload).encode("utf-8")
-            except Exception as ex:
-                logger.error("handle_send - failed to generate payload for %s, %s: %s", fid, endpoint, ex)
-                import traceback
-                logger.error(traceback.format_exc())
+            except Exception:
+                logger.error(
+                    "handle_send - failed to generate payload for %s, %s: %s", fid, endpoint, traceback.format_exc(),
+                )
                 continue
             payloads.append({
                 "auth": get_http_authentication(author_user.rsa_private_key, f"{author_user.id}#main-key"),
