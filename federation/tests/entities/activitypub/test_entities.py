@@ -234,7 +234,15 @@ class TestEntitiesConvertToAS2:
                 'id': 'http://127.0.0.1:8000/post/123456/',
                 'type': 'Note',
                 'attributedTo': 'http://127.0.0.1:8000/profile/123456/',
-                'content': '<h1>raw_content</h1>\n<p>#foobar\n#barfoo</p>',
+                'content': '<h1>raw_content</h1>\n'
+                           '<p><a class="mention hashtag" '
+                           'href="https://example.com/tag/foobar/" rel="noopener '
+                           'noreferrer nofollow" '
+                           'target="_blank">#<span>foobar</span></a>\n'
+                           '<a class="mention hashtag" '
+                           'href="https://example.com/tag/barfoo/" rel="noopener '
+                           'noreferrer nofollow" '
+                           'target="_blank">#<span>barfoo</span></a></p>',
                 'published': '2019-04-27T00:00:00',
                 'inReplyTo': None,
                 'sensitive': False,

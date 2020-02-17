@@ -204,10 +204,27 @@ class RawContentMixin(BaseEntity):
     @property
     def rendered_content(self) -> str:
         """Returns the rendered version of raw_content, or just raw_content."""
+        from federation.utils.django import get_configuration
+        try:
+            config = get_configuration()
+            if config["tags_path"]:
+                def linkifier(tag: str) -> str:
+                    return f'<a href="{config["base_url"]}{config["tags_path"].replace(":tag:", tag.lower())}" ' \
+                           f'class="mention hashtag" rel="noopener noreferrer">' \
+                           f'#<span>{tag}</span></a>'
+            else:
+                linkifier = None
+        except ImportError:
+            linkifier = None
+
         if self._rendered_content:
             return self._rendered_content
         elif self._media_type == "text/markdown" and self.raw_content:
-            rendered = commonmark(self.raw_content).strip()
+            # Do tags
+            _tags, rendered = find_tags(self.raw_content, replacer=linkifier)
+            # Render markdown to HTML
+            rendered = commonmark(rendered).strip()
+            # Do mentions
             if self._mentions:
                 for mention in self._mentions:
                     # Only linkify mentions that are URL's
