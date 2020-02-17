@@ -34,5 +34,5 @@ def get_name_for_profile(fid: str) -> Optional[str]:
             return profile.username
         else:
             return profile.name
-    except ImportError:
+    except Exception:
         pass
