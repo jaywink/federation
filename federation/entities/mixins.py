@@ -8,7 +8,7 @@ from commonmark import commonmark
 
 from federation.entities.activitypub.enums import ActivityType
 from federation.entities.utils import get_name_for_profile
-from federation.utils.text import process_text_links
+from federation.utils.text import process_text_links, find_tags
 
 
 class BaseEntity:
@@ -204,10 +204,27 @@ class RawContentMixin(BaseEntity):
     @property
     def rendered_content(self) -> str:
         """Returns the rendered version of raw_content, or just raw_content."""
+        from federation.utils.django import get_configuration
+        try:
+            config = get_configuration()
+            if config["tags_path"]:
+                def linkifier(tag: str) -> str:
+                    return f'<a href="{config["base_url"]}{config["tags_path"].replace(":tag:", tag.lower())}" ' \
+                           f'class="mention hashtag" rel="noopener noreferrer">' \
+                           f'#<span>{tag}</span></a>'
+            else:
+                linkifier = None
+        except ImportError:
+            linkifier = None
+
         if self._rendered_content:
             return self._rendered_content
         elif self._media_type == "text/markdown" and self.raw_content:
-            rendered = commonmark(self.raw_content).strip()
+            # Do tags
+            _tags, rendered = find_tags(self.raw_content, replacer=linkifier)
+            # Render markdown to HTML
+            rendered = commonmark(rendered).strip()
+            # Do mentions
             if self._mentions:
                 for mention in self._mentions:
                     # Only linkify mentions that are URL's
@@ -218,7 +235,7 @@ class RawContentMixin(BaseEntity):
                         display_name = mention
                     rendered = rendered.replace(
                         "@{%s}" % mention,
-                        f'@<a href="{mention}" class="mention">{display_name}</a>',
+                        f'@<a href="{mention}" class="mention"><span>{display_name}</span></a>',
                     )
             # Finally linkify remaining URL's that are not links
             rendered = process_text_links(rendered)
@@ -230,7 +247,7 @@ class RawContentMixin(BaseEntity):
         """Returns a `list` of unique tags contained in `raw_content`."""
         if not self.raw_content:
             return []
-        tags = {word.strip("#").lower() for word in self.raw_content.split() if word.startswith("#") and len(word) > 1}
+        tags, _text = find_tags(self.raw_content)
         return sorted(tags)
 
     def extract_mentions(self):

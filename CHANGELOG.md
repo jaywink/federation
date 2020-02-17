@@ -11,6 +11,10 @@
   
 * Add `process_text_links` text utility to linkify URL's in text.
 
+* Add `find_tags` text utility to find hashtags from text. Optionally the function can
+  also replace the tags through a given `replacer` function. This utility is used
+  to improve the tag extraction logic from entities text fields. ([related issue](https://git.feneas.org/jaywink/federation/issues/70))
+
 ### Changed
 
 * The NodeInfo2 hostmeta parser now cleans the port out of the host name.
