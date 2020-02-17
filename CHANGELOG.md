@@ -11,7 +11,8 @@
   
 * Add `process_text_links` text utility to linkify URL's in text.
 
-* Add `find_tags` text utility to find hashtags from text.
+* Add `find_tags` text utility to find hashtags from text. This utility is used
+  to improve the tag extraction logic from entities text fields. ([related issue](https://git.feneas.org/jaywink/federation/issues/70))
 
 ### Changed
 

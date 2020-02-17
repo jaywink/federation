@@ -8,7 +8,7 @@ from commonmark import commonmark
 
 from federation.entities.activitypub.enums import ActivityType
 from federation.entities.utils import get_name_for_profile
-from federation.utils.text import process_text_links
+from federation.utils.text import process_text_links, find_tags
 
 
 class BaseEntity:
@@ -230,7 +230,7 @@ class RawContentMixin(BaseEntity):
         """Returns a `list` of unique tags contained in `raw_content`."""
         if not self.raw_content:
             return []
-        tags = {word.strip("#").lower() for word in self.raw_content.split() if word.startswith("#") and len(word) > 1}
+        tags = find_tags(self.raw_content)
         return sorted(tags)
 
     def extract_mentions(self):
