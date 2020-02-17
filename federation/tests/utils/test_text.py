@@ -1,4 +1,4 @@
-from federation.utils.text import decode_if_bytes, encode_if_text, validate_handle, process_text_links
+from federation.utils.text import decode_if_bytes, encode_if_text, validate_handle, process_text_links, find_tags
 
 
 def test_decode_if_bytes():
@@ -9,6 +9,36 @@ def test_decode_if_bytes():
 def test_encode_if_text():
     assert encode_if_text(b"foobar") == b"foobar"
     assert encode_if_text("foobar") == b"foobar"
+
+
+class TestFindTags:
+    def test_factory_instance_has_tags(self):
+        assert find_tags("**Foobar** #tag #othertag") == {"tag", "othertag"}
+
+    def test_extract_tags_adds_new_tags(self):
+        assert find_tags("#post **Foobar** #tag #OtherTag #third\n#fourth") == {
+            "third", "fourth", "post", "othertag", "tag",
+        }
+
+    def test_all_tags_are_parsed_from_text(self):
+        assert find_tags("#starting and #MixED with some #line\nendings also tags can\n#start on new line") == \
+            {"starting", "mixed", "line", "start"}
+
+    def test_invalid_text_returns_no_tags(self):
+        assert find_tags("#a!a #a#a #a$a #a%a #a^a #a&a #a*a #a+a #a.a #a,a #a@a #a£a #a/a #a(a #a)a #a=a #a?a #a`a "
+                         "#a'a #a\\a #a{a #a[a #a]a #a}a #a~a #a;a #a:a #a\"a #a’a #a”a #\xa0cd") == set()
+
+    def test_endings_are_filtered_out(self):
+        assert find_tags("#parenthesis) #exp! #list]") == {"parenthesis", "exp", "list"}
+
+    def test_prefixed_tags(self):
+        assert find_tags("(#foo [#bar") == {"foo", "bar"}
+
+    def test_postfixed_tags(self):
+        assert find_tags("#foo) #bar] #hoo, #hee.") == {"foo", "bar", "hoo", "hee"}
+
+    def test_code_block_tags_ignored(self):
+        assert find_tags("foo\n```\n#code\n```\n#notcode\n\n    #alsocode\n") == {"notcode"}
 
 
 class TestProcessTextLinks:

@@ -1,8 +1,11 @@
 import re
+from typing import Set
 from urllib.parse import urlparse
 
 import bleach
 from bleach import callbacks
+
+ILLEGAL_TAG_CHARS = "!#$%^&*+.,@£/()=?`'\\{[]}~;:\"’”—\xa0"
 
 
 def decode_if_bytes(text):
@@ -17,6 +20,31 @@ def encode_if_text(text):
         return bytes(text, encoding="utf-8")
     except TypeError:
         return text
+
+
+def find_tags(text: str) -> Set:
+    """Find tags in text.
+
+    Tries to ignore tags inside code blocks.
+    """
+    found_tags = set()
+    lines = text.splitlines(keepends=True)
+    code_block = False
+    # Check each line separately
+    for line in lines:
+        if line[0:3] == "```":
+            code_block = not code_block
+        if line.find("#") == -1 or line[0:4] == "    " or code_block:
+            continue
+        # Check each word separately
+        words = line.split(" ")
+        for word in words:
+            candidate = word.strip().strip("([]),.!?:")
+            if candidate.startswith("#"):
+                candidate = candidate.strip("#")
+                if test_tag(candidate.lower()):
+                    found_tags.add(candidate.lower())
+    return found_tags
 
 
 def get_path_from_url(url: str) -> str:
@@ -48,6 +76,16 @@ def process_text_links(text):
         parse_email=False,
         skip_tags=["code"],
     )
+
+
+def test_tag(tag: str) -> bool:
+    """Test a word whether it could be accepted as a tag."""
+    if not tag:
+        return False
+    for char in ILLEGAL_TAG_CHARS:
+        if char in tag:
+            return False
+    return True
 
 
 def validate_handle(handle):

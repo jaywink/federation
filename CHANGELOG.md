@@ -11,6 +11,8 @@
   
 * Add `process_text_links` text utility to linkify URL's in text.
 
+* Add `find_tags` text utility to find hashtags from text.
+
 ### Changed
 
 * The NodeInfo2 hostmeta parser now cleans the port out of the host name.
