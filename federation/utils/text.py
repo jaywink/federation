@@ -1,5 +1,5 @@
 import re
-from typing import Set
+from typing import Set, Tuple
 from urllib.parse import urlparse
 
 import bleach
@@ -22,19 +22,29 @@ def encode_if_text(text):
         return text
 
 
-def find_tags(text: str) -> Set:
+def find_tags(text: str, replacer: callable = None) -> Tuple[Set, str]:
     """Find tags in text.
 
     Tries to ignore tags inside code blocks.
+
+    Optionally, if passed a "replacer", will also replace the tag word with the result
+    of the replacer function called with the tag word.
+
+    Returns a set of tags and the original or replaced text.
     """
     found_tags = set()
     lines = text.splitlines(keepends=True)
+    final_lines = []
     code_block = False
+    final_text = None
     # Check each line separately
     for line in lines:
+        final_words = []
         if line[0:3] == "```":
             code_block = not code_block
         if line.find("#") == -1 or line[0:4] == "    " or code_block:
+            # Just add the whole line
+            final_lines.append(line)
             continue
         # Check each word separately
         words = line.split(" ")
@@ -44,7 +54,20 @@ def find_tags(text: str) -> Set:
                 candidate = candidate.strip("#")
                 if test_tag(candidate.lower()):
                     found_tags.add(candidate.lower())
-    return found_tags
+                    if replacer:
+                        try:
+                            tag_word = word.replace("#%s" % candidate, replacer(candidate))
+                            final_words.append(tag_word)
+                        except Exception:
+                            final_words.append(word)
+                else:
+                    final_words.append(word)
+            else:
+                final_words.append(word)
+        final_lines.append(" ".join(final_words))
+    if replacer:
+        final_text = "".join(final_lines)
+    return found_tags, final_text or text
 
 
 def get_path_from_url(url: str) -> str:

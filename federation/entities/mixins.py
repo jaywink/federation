@@ -230,7 +230,7 @@ class RawContentMixin(BaseEntity):
         """Returns a `list` of unique tags contained in `raw_content`."""
         if not self.raw_content:
             return []
-        tags = find_tags(self.raw_content)
+        tags, _text = find_tags(self.raw_content)
         return sorted(tags)
 
     def extract_mentions(self):
