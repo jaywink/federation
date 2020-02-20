@@ -25,6 +25,7 @@ def handle_create_payload(
         protocol_name: str,
         to_user_key: RsaKey = None,
         parent_user: UserType = None,
+        payload_logger: callable = None,
 ) -> Union[str, dict]:
     """Create a payload with the given protocol.
 
@@ -37,7 +38,9 @@ def handle_create_payload(
     :arg parent_user: (Optional) User object of the parent object, if there is one. This must be given for the
                       Diaspora protocol if a parent object exists, so that a proper ``parent_author_signature`` can
                       be generated. If given, the payload will be sent as this user.
-    :returns: Built payload message (str)
+    :arg payload_logger: (Optional) Function to log the payloads with.
+
+    :returns: Built payload (str or dict)
     """
     mappers = importlib.import_module(f"federation.entities.{protocol_name}.mappers")
     protocol = importlib.import_module(f"federation.protocols.{protocol_name}.protocol")
@@ -47,6 +50,11 @@ def handle_create_payload(
         outbound_entity.sign_with_parent(parent_user.rsa_private_key)
     send_as_user = parent_user if parent_user else author_user
     data = protocol.build_send(entity=outbound_entity, from_user=send_as_user, to_user_key=to_user_key)
+    if payload_logger:
+        try:
+            payload_logger(data)
+        except Exception as ex:
+            logger.warning("handle_create_payload | Failed to log payload: %s" % ex)
     return data
 
 
@@ -55,6 +63,7 @@ def handle_send(
         author_user: UserType,
         recipients: List[Dict],
         parent_user: UserType = None,
+        payload_logger: callable = None,
 ) -> None:
     """Send an entity to remote servers.
 
@@ -114,6 +123,7 @@ def handle_send(
     :arg parent_user: (Optional) User object of the parent object, if there is one. This must be given for the
                       Diaspora protocol if a parent object exists, so that a proper ``parent_author_signature`` can
                       be generated. If given, the payload will be sent as this user.
+    :arg payload_logger: (Optional) Function to log the payloads with.
     """
     payloads = []
     ready_payloads = {
@@ -153,7 +163,7 @@ def handle_send(
                     try:
                         # noinspection PyTypeChecker
                         ready_payloads[protocol]["payload"] = handle_create_payload(
-                            entity, author_user, protocol, parent_user=parent_user,
+                            entity, author_user, protocol, parent_user=parent_user, payload_logger=payload_logger,
                         )
                     except ValueError as ex:
                         # No point continuing for this protocol
@@ -193,7 +203,7 @@ def handle_send(
                     try:
                         # noinspection PyTypeChecker
                         ready_payloads[protocol]["payload"] = handle_create_payload(
-                            entity, author_user, protocol, parent_user=parent_user,
+                            entity, author_user, protocol, parent_user=parent_user, payload_logger=payload_logger,
                         )
                     except Exception as ex:
                         # No point continuing for this protocol
@@ -209,6 +219,7 @@ def handle_send(
                 try:
                     payload = handle_create_payload(
                         entity, author_user, "diaspora", to_user_key=public_key, parent_user=parent_user,
+                        payload_logger = payload_logger,
                     )
                     payload = json.dumps(payload)
                 except Exception as ex:

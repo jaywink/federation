@@ -15,6 +15,10 @@
   also replace the tags through a given `replacer` function. This utility is used
   to improve the tag extraction logic from entities text fields. ([related issue](https://git.feneas.org/jaywink/federation/issues/70))
 
+* Outbound functions `handle_send` and `handle_create_payload` now accept an optional `payload_logger`
+  parameter. If given it should be a function that takes a `str` or `dict` payload as the only
+  parameter. This will be called for each generated payload.
+
 ### Changed
 
 * The NodeInfo2 hostmeta parser now cleans the port out of the host name.
