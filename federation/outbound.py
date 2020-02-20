@@ -52,7 +52,7 @@ def handle_create_payload(
     data = protocol.build_send(entity=outbound_entity, from_user=send_as_user, to_user_key=to_user_key)
     if payload_logger:
         try:
-            payload_logger(data)
+            payload_logger(data, protocol_name, author_user.id)
         except Exception as ex:
             logger.warning("handle_create_payload | Failed to log payload: %s" % ex)
     return data
