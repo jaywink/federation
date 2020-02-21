@@ -49,7 +49,11 @@
   to be set, not just `target_id`. This fixes follows over the Diaspora protocol which
   broke with stricter send validation added in 0.19.0.
   
-* Fix some edge case crashes of `handle_send` when there are Diaspora protocol receivers. 
+* Fix some edge case crashes of `handle_send` when there are Diaspora protocol receivers.
+
+* Fix reading `sharedInbox` from remote ActivityPub profiles. This caused public payloads not
+  to be deduplicated when sending public payloads to remote ActivityPub servers. Refetching
+  profiles should now fix this. ([related issue](https://git.feneas.org/jaywink/federation/issues/124))  
 
 ## [0.19.0] - 2019-12-15
 

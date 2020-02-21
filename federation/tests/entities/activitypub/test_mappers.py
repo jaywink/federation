@@ -171,6 +171,10 @@ class TestActivitypubEntityMappersReceive:
         assert len(entities) == 1
         profile = entities[0]
         assert profile.id == "https://diaspodon.fr/users/jaywink"
+        assert profile.inboxes == {
+            "private": "https://diaspodon.fr/users/jaywink/inbox",
+            "public": "https://diaspodon.fr/inbox",
+        }
         assert profile.handle == ""
         assert profile.name == "Jason Robinson"
         assert profile.image_urls == {

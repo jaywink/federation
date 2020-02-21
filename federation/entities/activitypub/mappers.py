@@ -272,11 +272,11 @@ def transform_attribute(
             # Assume HTML by convention
             transformed["_rendered_content"] = payload.get('content').strip()
             transformed["_media_type"] = "text/html"
-    elif key == "inboxes" and isinstance(value, dict):
+    elif key == "endpoints" and isinstance(value, dict):
         if "inboxes" not in transformed:
             transformed["inboxes"] = {"private": None, "public": None}
         if value.get('sharedInbox'):
-            transformed["endpoints"]["public"] = value.get("sharedInbox")
+            transformed["inboxes"]["public"] = value.get("sharedInbox")
     elif key == "icon":
         # TODO maybe we should ditch these size constants and instead have a more flexible dict for images
         # so based on protocol there would either be one url or many by size name
