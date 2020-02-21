@@ -18,7 +18,11 @@ def get_configuration():
         # TODO remove or default to True once AP support is more ready
         "activitypub": False,
     }
-    configuration.update(settings.FEDERATION)
+    try:
+        configuration.update(settings.FEDERATION)
+    except ImproperlyConfigured:
+        # Django is not properly configured, return defaults
+        return configuration
     if not all([
         "get_private_key_function" in configuration,
         "get_profile_function" in configuration,

@@ -55,6 +55,8 @@
   to be deduplicated when sending public payloads to remote ActivityPub servers. Refetching
   profiles should now fix this. ([related issue](https://git.feneas.org/jaywink/federation/issues/124))  
 
+* Don't always crash generating payloads if Django is installed but not configured.
+
 ## [0.19.0] - 2019-12-15
 
 ### Added
