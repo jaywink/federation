@@ -149,6 +149,7 @@ def handle_send(
 
     # Generate payloads and collect urls
     for recipient in unique_recipients:
+        payload = None
         endpoint = recipient["endpoint"]
         fid = recipient["fid"]
         public_key = recipient.get("public_key")
@@ -157,7 +158,9 @@ def handle_send(
         protocol = recipient["protocol"]
         public = recipient["public"]
 
-        if protocol == "activitypub" and not skip_ready_payload["activitypub"]:
+        if protocol == "activitypub":
+            if skip_ready_payload["activitypub"]:
+                continue
             try:
                 if not ready_payloads[protocol]["payload"]:
                     try:
@@ -169,6 +172,7 @@ def handle_send(
                         # No point continuing for this protocol
                         skip_ready_payload["activitypub"] = True
                         logger.warning("handle_send - skipping activitypub due to failure to generate payload: %s", ex)
+                        continue
                 payload = copy.copy(ready_payloads[protocol]["payload"])
                 if public:
                     payload["to"] = [NAMESPACE_PUBLIC]
@@ -184,6 +188,16 @@ def handle_send(
             except Exception:
                 logger.error(
                     "handle_send - failed to generate payload for %s, %s: %s", fid, endpoint, traceback.format_exc(),
+                    extra={
+                        "recipient": recipient,
+                        "unique_recipients": unique_recipients,
+                        "payload": payload,
+                        "payloads": payloads,
+                        "ready_payloads": ready_payloads,
+                        "entity": entity,
+                        "author_user": author_user,
+                        "parent_user": parent_user,
+                    }
                 )
                 continue
             payloads.append({
@@ -209,6 +223,7 @@ def handle_send(
                         # No point continuing for this protocol
                         skip_ready_payload["diaspora"] = True
                         logger.warning("handle_send - skipping diaspora due to failure to generate payload: %s", ex)
+                        continue
                 ready_payloads["diaspora"]["urls"].add(endpoint)
             else:
                 if not public_key:
@@ -219,7 +234,7 @@ def handle_send(
                 try:
                     payload = handle_create_payload(
                         entity, author_user, "diaspora", to_user_key=public_key, parent_user=parent_user,
-                        payload_logger = payload_logger,
+                        payload_logger=payload_logger,
                     )
                     payload = json.dumps(payload)
                 except Exception as ex:
