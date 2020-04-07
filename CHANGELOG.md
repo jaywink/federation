@@ -57,6 +57,9 @@
 
 * Don't always crash generating payloads if Django is installed but not configured.
 
+* Don't try to relay AP payloads to Diaspora receivers and vice versa, for now, until cross-protocol
+  relaying is supported.
+
 ## [0.19.0] - 2019-12-15
 
 ### Added
