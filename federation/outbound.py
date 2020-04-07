@@ -194,13 +194,13 @@ def handle_send(
                     "handle_send - failed to generate payload for %s, %s: %s", fid, endpoint, traceback.format_exc(),
                     extra={
                         "recipient": recipient,
-                        "unique_recipients": unique_recipients,
+                        "unique_recipients": list(unique_recipients),
                         "payload": payload,
                         "payloads": payloads,
                         "ready_payloads": ready_payloads,
                         "entity": entity,
-                        "author_user": author_user,
-                        "parent_user": parent_user,
+                        "author": author_user.id,
+                        "parent_user": parent_user.id,
                     }
                 )
                 continue
