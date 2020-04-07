@@ -331,9 +331,9 @@ class TestGetOutboundEntity:
         outbound = get_outbound_entity(entity, private_key)
         assert outbound.signature != ""
 
-    def test_returns_entity_if_outbound_doc_on_entity(self, private_key):
+    def test_returns_entity_if_outbound_doc_on_entity(self, private_key, diasporacomment):
         entity = Comment()
-        entity.outbound_doc = "foobar"
+        entity.outbound_doc = diasporacomment.to_xml()
         assert get_outbound_entity(entity, private_key) == entity
 
     def test_entity_is_validated__fail(self, private_key):

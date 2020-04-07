@@ -161,6 +161,10 @@ def handle_send(
         if protocol == "activitypub":
             if skip_ready_payload["activitypub"]:
                 continue
+            if entity.__class__.__name__.startswith("Diaspora"):
+                # Don't try to do anything with Diaspora entities currently
+                skip_ready_payload["activitypub"] = True
+                continue
             try:
                 if not ready_payloads[protocol]["payload"]:
                     try:
@@ -207,6 +211,10 @@ def handle_send(
                 "urls": {endpoint},
             })
         elif protocol == "diaspora":
+            if entity.__class__.__name__.startswith("Activitypub"):
+                # Don't try to do anything with Activitypub entities currently
+                skip_ready_payload["diaspora"] = True
+                continue
             if public:
                 if skip_ready_payload["diaspora"]:
                     continue

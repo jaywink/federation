@@ -97,6 +97,35 @@ class TestHandleSend:
             # noinspection PyStatementEffect
             mock_send.call_args_list[5]
 
+    @patch("federation.outbound.logger.error", autospec=True)
+    def test_no_error_for_diaspora_entities_on_activitypub_recipients(self, mock_logger, mock_send, diasporacomment):
+        key = get_dummy_private_key()
+        diasporacomment.outbound_doc = diasporacomment.to_xml()
+        recipients = [
+            {
+                "endpoint": "https://example.com/receive/public", "public": True, "protocol": "diaspora",
+                "fid": "",
+            },
+            {
+                "endpoint": "https://example.net/inbox", "fid": "https://example.net/foobar", "public": True,
+                "protocol": "activitypub",
+            }
+        ]
+        author = UserType(
+            private_key=key, id="foo@example.com", handle="foo@example.com",
+        )
+        handle_send(diasporacomment, author, recipients)
+
+        # Ensure first call is a public diaspora payload
+        args, kwargs = mock_send.call_args_list[0]
+        assert args[0] == "https://example.com/receive/public"
+
+        # Should only be one call
+        assert mock_send.call_count == 1
+
+        # Ensure no error logged
+        assert mock_logger.call_count == 0
+
     def test_survives_sending_share_if_diaspora_payload_cannot_be_created(self, mock_send, share):
         key = get_dummy_private_key()
         share.target_handle = None  # Ensure diaspora payload fails
