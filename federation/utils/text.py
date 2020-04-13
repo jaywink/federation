@@ -49,17 +49,23 @@ def find_tags(text: str, replacer: callable = None) -> Tuple[Set, str]:
         # Check each word separately
         words = line.split(" ")
         for word in words:
-            candidate = word.strip().strip("([]),.!?:")
-            if candidate.startswith("#"):
-                candidate = candidate.strip("#")
-                if test_tag(candidate.lower()):
-                    found_tags.add(candidate.lower())
-                    if replacer:
-                        try:
-                            tag_word = word.replace("#%s" % candidate, replacer(candidate))
-                            final_words.append(tag_word)
-                        except Exception:
-                            final_words.append(word)
+            if word.find('#') > -1:
+                candidate = word.strip().strip("([]),.!?:")
+                if candidate.find('<') > -1 or candidate.find('>') > -1:
+                    # Strip html
+                    candidate = bleach.clean(word, strip=True)
+                if candidate.startswith("#"):
+                    candidate = candidate.strip("#")
+                    if test_tag(candidate.lower()):
+                        found_tags.add(candidate.lower())
+                        if replacer:
+                            try:
+                                tag_word = word.replace("#%s" % candidate, replacer(candidate))
+                                final_words.append(tag_word)
+                            except Exception:
+                                final_words.append(word)
+                    else:
+                        final_words.append(word)
                 else:
                     final_words.append(word)
             else:

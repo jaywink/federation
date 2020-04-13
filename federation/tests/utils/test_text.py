@@ -49,6 +49,14 @@ class TestFindTags:
         tags, text = find_tags(source, replacer=self._replacer)
         assert text == "#post/post **Foobar** #tag/tag #OtherTag/othertag #third/third\n#fourth/fourth"
 
+    def test_ok_with_html_tags_in_text(self):
+        source = "<p>#starting and <span>#MixED</span> however not <#>this</#> or <#/>that"
+        tags, text = find_tags(source)
+        assert tags == {"starting", "mixed"}
+        assert text == source
+        tags, text = find_tags(source, replacer=self._replacer)
+        assert text == "<p>#starting/starting and <span>#MixED/mixed</span> however not <#>this</#> or <#/>that"
+
     def test_postfixed_tags(self):
         source = "#foo) #bar] #hoo, #hee."
         tags, text = find_tags(source)
