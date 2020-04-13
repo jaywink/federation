@@ -33,7 +33,9 @@ def find_tags(text: str, replacer: callable = None) -> Tuple[Set, str]:
     Returns a set of tags and the original or replaced text.
     """
     found_tags = set()
-    lines = text.splitlines(keepends=True)
+    # <br> and <p> tags cause issues in us finding words - add some spacing around them
+    new_text = text.replace("<br>", " <br> ").replace("<p>", " <p> ").replace("</p>", " </p> ")
+    lines = new_text.splitlines(keepends=True)
     final_lines = []
     code_block = False
     final_text = None
@@ -49,17 +51,28 @@ def find_tags(text: str, replacer: callable = None) -> Tuple[Set, str]:
         # Check each word separately
         words = line.split(" ")
         for word in words:
-            candidate = word.strip().strip("([]),.!?:")
-            if candidate.startswith("#"):
-                candidate = candidate.strip("#")
-                if test_tag(candidate.lower()):
-                    found_tags.add(candidate.lower())
-                    if replacer:
-                        try:
-                            tag_word = word.replace("#%s" % candidate, replacer(candidate))
-                            final_words.append(tag_word)
-                        except Exception:
-                            final_words.append(word)
+            if word.find('#') > -1:
+                candidate = word.strip().strip("([]),.!?:*_%/")
+                if candidate.find('<') > -1 or candidate.find('>') > -1:
+                    # Strip html
+                    candidate = bleach.clean(word, strip=True)
+                # Now split with slashes
+                candidates = candidate.split("/")
+                to_replace = []
+                for candidate in candidates:
+                    if candidate.startswith("#"):
+                        candidate = candidate.strip("#")
+                        if test_tag(candidate.lower()):
+                            found_tags.add(candidate.lower())
+                            to_replace.append(candidate)
+                if replacer:
+                    tag_word = word
+                    try:
+                        for counter, replacee in enumerate(to_replace, 1):
+                            tag_word = tag_word.replace("#%s" % replacee, replacer(replacee))
+                    except Exception:
+                        pass
+                    final_words.append(tag_word)
                 else:
                     final_words.append(word)
             else:
@@ -67,6 +80,8 @@ def find_tags(text: str, replacer: callable = None) -> Tuple[Set, str]:
         final_lines.append(" ".join(final_words))
     if replacer:
         final_text = "".join(final_lines)
+    if final_text:
+        final_text = final_text.replace(" <br> ", "<br>").replace(" <p> ", "<p>").replace(" </p> ", "</p>")
     return found_tags, final_text or text
 
 

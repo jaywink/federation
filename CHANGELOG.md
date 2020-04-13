@@ -32,6 +32,10 @@
   
 * Don't include OStatus for Mastodon 3.0+ protocols list. ([related issue](https://github.com/thefederationinfo/the-federation.info/issues/217))
 
+* **Backwards incompatible**: Stop markdownifying incoming ActivityPub content. Instead
+  copy it as is to the ``raw_content`` attribute on the entity, setting also the
+  ``_media_type`` to ``text/html``.
+
 ### Fixed
 
 * Don't crash loudly when fetching webfinger for Diaspora that does not contain XML.
@@ -59,6 +63,10 @@
 
 * Don't try to relay AP payloads to Diaspora receivers and vice versa, for now, until cross-protocol
   relaying is supported.
+  
+* Fix some characters stopping tags being identified ([related issue](https://git.feneas.org/socialhome/socialhome/-/issues/222))
+
+* Fix tags separated by slashes being identified ([related issue](https://git.feneas.org/socialhome/socialhome/-/issues/198))
 
 ## [0.19.0] - 2019-12-15
 

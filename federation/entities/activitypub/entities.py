@@ -3,6 +3,8 @@ import re
 import uuid
 from typing import Dict, List
 
+import bleach
+
 from federation.entities.activitypub.constants import (
     CONTEXTS_DEFAULT, CONTEXT_MANUALLY_APPROVES_FOLLOWERS, CONTEXT_SENSITIVE, CONTEXT_HASHTAG,
     CONTEXT_LD_SIGNATURES)
@@ -57,15 +59,19 @@ class CleanContentMixin(RawContentMixin):
         """
         Make linkified tags normal tags.
         """
-        def cleaner(match):
-            return f"#{match.groups()[0]}"
-
         super().post_receive()
-        self.raw_content = re.sub(
-            r'\[#([\w\-_]+)\]\(http?s://[a-zA-Z0-9/._-]+\)',
-            cleaner,
+
+        def remove_tag_links(attrs, new=False):
+            rel = (None, "rel")
+            if attrs.get(rel) == "tag":
+                return
+            return attrs
+
+        self.raw_content = bleach.linkify(
             self.raw_content,
-            re.MULTILINE,
+            callbacks=[remove_tag_links],
+            parse_email=False,
+            skip_tags=["code", "pre"],
         )
 
 

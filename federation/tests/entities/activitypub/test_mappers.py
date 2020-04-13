@@ -67,7 +67,9 @@ class TestActivitypubEntityMappersReceive:
         post = entities[0]
         assert isinstance(post, ActivitypubPost)
         assert isinstance(post, Post)
-        assert post.raw_content == '[@jaywink](https://dev.jasonrobinson.me/u/jaywink/) boom'
+        assert post.raw_content == '<p><span class="h-card"><a class="u-url mention" ' \
+                                   'href="https://dev.jasonrobinson.me/u/jaywink/">' \
+                                   '@<span>jaywink</span></a></span> boom</p>'
         assert post.rendered_content == '<p><span class="h-card"><a href="https://dev.jasonrobinson.me/u/jaywink/" ' \
                                         'class="u-url mention">@<span>jaywink</span></a></span> boom</p>'
         assert post.id == "https://diaspodon.fr/users/jaywink/statuses/102356911717767237"
@@ -82,7 +84,7 @@ class TestActivitypubEntityMappersReceive:
         post = entities[0]
         assert isinstance(post, ActivitypubPost)
         assert isinstance(post, Post)
-        assert post.raw_content == 'boom #test'
+        assert post.raw_content == '<p>boom #test</p>'
 
     def test_message_to_objects_simple_post__with_mentions(self):
         entities = message_to_objects(ACTIVITYPUB_POST_WITH_MENTIONS, "https://mastodon.social/users/jaywink")
@@ -101,7 +103,9 @@ class TestActivitypubEntityMappersReceive:
         assert isinstance(post, Post)
         assert post.rendered_content == '<p><span class="h-card"><a href="https://dev.jasonrobinson.me/u/jaywink/" ' \
                                         'class="u-url mention">@<span>jaywink</span></a></span> boom</p>'
-        assert post.raw_content == '[@jaywink](https://dev.jasonrobinson.me/u/jaywink/) boom\n\n'
+        assert post.raw_content == '<p><span class="h-card"><a class="u-url mention" ' \
+                                   'href="https://dev.jasonrobinson.me/u/jaywink/">' \
+                                   '@<span>jaywink</span></a></span> boom</p>'
 
     def test_message_to_objects_simple_post__with_source__markdown(self):
         entities = message_to_objects(ACTIVITYPUB_POST_WITH_SOURCE_MARKDOWN, "https://diaspodon.fr/users/jaywink")
@@ -141,7 +145,9 @@ class TestActivitypubEntityMappersReceive:
         comment = entities[0]
         assert isinstance(comment, ActivitypubComment)
         assert isinstance(comment, Comment)
-        assert comment.raw_content == '[@jaywink](https://dev.jasonrobinson.me/u/jaywink/) boom'
+        assert comment.raw_content == '<p><span class="h-card"><a class="u-url mention" ' \
+                                      'href="https://dev.jasonrobinson.me/u/jaywink/">' \
+                                      '@<span>jaywink</span></a></span> boom</p>'
         assert comment.id == "https://diaspodon.fr/users/jaywink/statuses/102356911717767237"
         assert comment.actor_id == "https://diaspodon.fr/users/jaywink"
         assert comment.target_id == "https://dev.jasonrobinson.me/content/653bad70-41b3-42c9-89cb-c4ee587e68e4/"

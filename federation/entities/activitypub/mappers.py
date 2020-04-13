@@ -1,8 +1,6 @@
 import logging
 from typing import List, Callable, Dict, Union, Optional
 
-from markdownify import markdownify
-
 from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
 from federation.entities.activitypub.entities import (
     ActivitypubFollow, ActivitypubProfile, ActivitypubAccept, ActivitypubPost, ActivitypubComment,
@@ -259,19 +257,16 @@ def transform_attribute(
     elif key == "attributedTo" and is_object:
         transformed["actor_id"] = value
     elif key in ("content", "source"):
-        if payload.get('source') and isinstance(payload.get("source"), dict):
+        if payload.get('source') and isinstance(payload.get("source"), dict) and \
+                payload.get('source').get('mediaType') == "text/markdown":
+            transformed["_media_type"] = "text/markdown"
+            transformed["raw_content"] = payload.get('source').get('content').strip()
             transformed["_rendered_content"] = payload.get('content').strip()
-            if payload.get('source').get('mediaType') == "text/markdown":
-                transformed["_media_type"] = "text/markdown"
-                transformed["raw_content"] = payload.get('source').get('content').strip()
-            else:
-                transformed["raw_content"] = markdownify(payload.get('content').strip())
-                transformed["_media_type"] = payload.get('source').get('mediaType')
         else:
-            transformed["raw_content"] = markdownify(payload.get('content').strip()).strip()
             # Assume HTML by convention
-            transformed["_rendered_content"] = payload.get('content').strip()
             transformed["_media_type"] = "text/html"
+            transformed["raw_content"] = payload.get('content').strip()
+            transformed["_rendered_content"] = transformed["raw_content"]
     elif key == "endpoints" and isinstance(value, dict):
         if "inboxes" not in transformed:
             transformed["inboxes"] = {"private": None, "public": None}

@@ -34,12 +34,13 @@ class TestFindTags:
         assert text == "foo\n```\n#code\n```\n#notcode/notcode\n\n    #alsocode\n"
 
     def test_endings_are_filtered_out(self):
-        source = "#parenthesis) #exp! #list]"
+        source = "#parenthesis) #exp! #list] *#doh* _#bah_ #gah% #foo/#bar"
         tags, text = find_tags(source)
-        assert tags == {"parenthesis", "exp", "list"}
+        assert tags == {"parenthesis", "exp", "list", "doh", "bah", "gah", "foo", "bar"}
         assert text == source
         tags, text = find_tags(source, replacer=self._replacer)
-        assert text == "#parenthesis/parenthesis) #exp/exp! #list/list]"
+        assert text == "#parenthesis/parenthesis) #exp/exp! #list/list] *#doh/doh* _#bah/bah_ #gah/gah% " \
+                       "#foo/foo/#bar/bar"
 
     def test_finds_tags(self):
         source = "#post **Foobar** #tag #OtherTag #third\n#fourth"
@@ -48,6 +49,14 @@ class TestFindTags:
         assert text == source
         tags, text = find_tags(source, replacer=self._replacer)
         assert text == "#post/post **Foobar** #tag/tag #OtherTag/othertag #third/third\n#fourth/fourth"
+
+    def test_ok_with_html_tags_in_text(self):
+        source = "<p>#starting and <span>#MixED</span> however not <#>this</#> or <#/>that"
+        tags, text = find_tags(source)
+        assert tags == {"starting", "mixed"}
+        assert text == source
+        tags, text = find_tags(source, replacer=self._replacer)
+        assert text == "<p>#starting/starting and <span>#MixED/mixed</span> however not <#>this</#> or <#/>that"
 
     def test_postfixed_tags(self):
         source = "#foo) #bar] #hoo, #hee."
@@ -66,13 +75,21 @@ class TestFindTags:
         assert text == "(#foo/foo [#bar/bar"
 
     def test_invalid_text_returns_no_tags(self):
-        source = "#a!a #a#a #a$a #a%a #a^a #a&a #a*a #a+a #a.a #a,a #a@a #a£a #a/a #a(a #a)a #a=a " \
+        source = "#a!a #a#a #a$a #a%a #a^a #a&a #a*a #a+a #a.a #a,a #a@a #a£a #a(a #a)a #a=a " \
                  "#a?a #a`a #a'a #a\\a #a{a #a[a #a]a #a}a #a~a #a;a #a:a #a\"a #a’a #a”a #\xa0cd"
         tags, text = find_tags(source)
         assert tags == set()
         assert text == source
         tags, text = find_tags(source, replacer=self._replacer)
         assert text == source
+
+    def test_start_of_paragraph_in_html_content(self):
+        source = '<p>First line</p><p>#foobar #barfoo</p>'
+        tags, text = find_tags(source)
+        assert tags == {"foobar", "barfoo"}
+        assert text == source
+        tags, text = find_tags(source, replacer=self._replacer)
+        assert text == '<p>First line</p><p>#foobar/foobar #barfoo/barfoo</p>'
 
 
 class TestProcessTextLinks:
@@ -96,6 +113,12 @@ class TestProcessTextLinks:
     def test_does_not_add_target_blank_if_link_is_internal(self):
         assert process_text_links('<a href="/streams/tag/foobar">#foobar</a>') == \
                '<a href="/streams/tag/foobar">#foobar</a>'
+
+    def test_does_not_remove_mention_classes(self):
+        assert process_text_links('<p><span class="h-card"><a href="https://dev.jasonrobinson.me/u/jaywink/" '
+                                  'class="u-url mention">@<span>jaywink</span></a></span> boom</p>') == \
+           '<p><span class="h-card"><a class="u-url mention" href="https://dev.jasonrobinson.me/u/jaywink/" ' \
+           'rel="nofollow" target="_blank">@<span>jaywink</span></a></span> boom</p>'
 
 
 def test_validate_handle():
