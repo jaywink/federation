@@ -83,6 +83,14 @@ class TestFindTags:
         tags, text = find_tags(source, replacer=self._replacer)
         assert text == source
 
+    def test_start_of_paragraph_in_html_content(self):
+        source = '<p>First line</p><p>#foobar #barfoo</p>'
+        tags, text = find_tags(source)
+        assert tags == {"foobar", "barfoo"}
+        assert text == source
+        tags, text = find_tags(source, replacer=self._replacer)
+        assert text == '<p>First line</p><p>#foobar/foobar #barfoo/barfoo</p>'
+
 
 class TestProcessTextLinks:
     def test_link_at_start_or_end(self):
