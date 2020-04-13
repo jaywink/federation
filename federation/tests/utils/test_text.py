@@ -106,6 +106,12 @@ class TestProcessTextLinks:
         assert process_text_links('<a href="/streams/tag/foobar">#foobar</a>') == \
                '<a href="/streams/tag/foobar">#foobar</a>'
 
+    def test_does_not_remove_mention_classes(self):
+        assert process_text_links('<p><span class="h-card"><a href="https://dev.jasonrobinson.me/u/jaywink/" '
+                                  'class="u-url mention">@<span>jaywink</span></a></span> boom</p>') == \
+           '<p><span class="h-card"><a class="u-url mention" href="https://dev.jasonrobinson.me/u/jaywink/" ' \
+           'rel="nofollow" target="_blank">@<span>jaywink</span></a></span> boom</p>'
+
 
 def test_validate_handle():
     assert validate_handle("foo@bar.com")
