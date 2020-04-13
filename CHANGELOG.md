@@ -63,6 +63,8 @@
 
 * Don't try to relay AP payloads to Diaspora receivers and vice versa, for now, until cross-protocol
   relaying is supported.
+  
+* Fix some characters stopping tags being identified ([related issue](https://git.feneas.org/socialhome/socialhome/-/issues/222))
 
 ## [0.19.0] - 2019-12-15
 

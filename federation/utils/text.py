@@ -50,7 +50,7 @@ def find_tags(text: str, replacer: callable = None) -> Tuple[Set, str]:
         words = line.split(" ")
         for word in words:
             if word.find('#') > -1:
-                candidate = word.strip().strip("([]),.!?:")
+                candidate = word.strip().strip("([]),.!?:*_%")
                 if candidate.find('<') > -1 or candidate.find('>') > -1:
                     # Strip html
                     candidate = bleach.clean(word, strip=True)

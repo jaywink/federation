@@ -34,12 +34,12 @@ class TestFindTags:
         assert text == "foo\n```\n#code\n```\n#notcode/notcode\n\n    #alsocode\n"
 
     def test_endings_are_filtered_out(self):
-        source = "#parenthesis) #exp! #list]"
+        source = "#parenthesis) #exp! #list] *#doh* _#bah_ #gah%"
         tags, text = find_tags(source)
-        assert tags == {"parenthesis", "exp", "list"}
+        assert tags == {"parenthesis", "exp", "list", "doh", "bah", "gah"}
         assert text == source
         tags, text = find_tags(source, replacer=self._replacer)
-        assert text == "#parenthesis/parenthesis) #exp/exp! #list/list]"
+        assert text == "#parenthesis/parenthesis) #exp/exp! #list/list] *#doh/doh* _#bah/bah_ #gah/gah%"
 
     def test_finds_tags(self):
         source = "#post **Foobar** #tag #OtherTag #third\n#fourth"
