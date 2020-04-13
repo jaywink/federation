@@ -34,12 +34,13 @@ class TestFindTags:
         assert text == "foo\n```\n#code\n```\n#notcode/notcode\n\n    #alsocode\n"
 
     def test_endings_are_filtered_out(self):
-        source = "#parenthesis) #exp! #list] *#doh* _#bah_ #gah%"
+        source = "#parenthesis) #exp! #list] *#doh* _#bah_ #gah% #foo/#bar"
         tags, text = find_tags(source)
-        assert tags == {"parenthesis", "exp", "list", "doh", "bah", "gah"}
+        assert tags == {"parenthesis", "exp", "list", "doh", "bah", "gah", "foo", "bar"}
         assert text == source
         tags, text = find_tags(source, replacer=self._replacer)
-        assert text == "#parenthesis/parenthesis) #exp/exp! #list/list] *#doh/doh* _#bah/bah_ #gah/gah%"
+        assert text == "#parenthesis/parenthesis) #exp/exp! #list/list] *#doh/doh* _#bah/bah_ #gah/gah% " \
+                       "#foo/foo/#bar/bar"
 
     def test_finds_tags(self):
         source = "#post **Foobar** #tag #OtherTag #third\n#fourth"
@@ -74,7 +75,7 @@ class TestFindTags:
         assert text == "(#foo/foo [#bar/bar"
 
     def test_invalid_text_returns_no_tags(self):
-        source = "#a!a #a#a #a$a #a%a #a^a #a&a #a*a #a+a #a.a #a,a #a@a #a£a #a/a #a(a #a)a #a=a " \
+        source = "#a!a #a#a #a$a #a%a #a^a #a&a #a*a #a+a #a.a #a,a #a@a #a£a #a(a #a)a #a=a " \
                  "#a?a #a`a #a'a #a\\a #a{a #a[a #a]a #a}a #a~a #a;a #a:a #a\"a #a’a #a”a #\xa0cd"
         tags, text = find_tags(source)
         assert tags == set()

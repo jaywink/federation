@@ -50,22 +50,27 @@ def find_tags(text: str, replacer: callable = None) -> Tuple[Set, str]:
         words = line.split(" ")
         for word in words:
             if word.find('#') > -1:
-                candidate = word.strip().strip("([]),.!?:*_%")
+                candidate = word.strip().strip("([]),.!?:*_%/")
                 if candidate.find('<') > -1 or candidate.find('>') > -1:
                     # Strip html
                     candidate = bleach.clean(word, strip=True)
-                if candidate.startswith("#"):
-                    candidate = candidate.strip("#")
-                    if test_tag(candidate.lower()):
-                        found_tags.add(candidate.lower())
-                        if replacer:
-                            try:
-                                tag_word = word.replace("#%s" % candidate, replacer(candidate))
-                                final_words.append(tag_word)
-                            except Exception:
-                                final_words.append(word)
-                    else:
-                        final_words.append(word)
+                # Now split with slashes
+                candidates = candidate.split("/")
+                to_replace = []
+                for candidate in candidates:
+                    if candidate.startswith("#"):
+                        candidate = candidate.strip("#")
+                        if test_tag(candidate.lower()):
+                            found_tags.add(candidate.lower())
+                            to_replace.append(candidate)
+                if replacer:
+                    tag_word = word
+                    try:
+                        for counter, replacee in enumerate(to_replace, 1):
+                            tag_word = tag_word.replace("#%s" % replacee, replacer(replacee))
+                    except Exception:
+                        pass
+                    final_words.append(tag_word)
                 else:
                     final_words.append(word)
             else:
