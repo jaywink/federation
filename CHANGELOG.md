@@ -22,6 +22,8 @@
     * `str` sender id
     
   The function will be called for each generated payload.
+  
+* Diaspora entity guid will now be extracted from ActivityPub payloads implementing the Diaspora extension.
 
 ### Changed
 

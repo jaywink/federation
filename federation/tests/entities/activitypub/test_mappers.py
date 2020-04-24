@@ -12,7 +12,7 @@ from federation.tests.fixtures.payloads import (
     ACTIVITYPUB_FOLLOW, ACTIVITYPUB_PROFILE, ACTIVITYPUB_PROFILE_INVALID, ACTIVITYPUB_UNDO_FOLLOW, ACTIVITYPUB_POST,
     ACTIVITYPUB_COMMENT, ACTIVITYPUB_RETRACTION, ACTIVITYPUB_SHARE, ACTIVITYPUB_RETRACTION_SHARE,
     ACTIVITYPUB_POST_IMAGES, ACTIVITYPUB_POST_WITH_SOURCE_MARKDOWN, ACTIVITYPUB_POST_WITH_TAGS,
-    ACTIVITYPUB_POST_WITH_SOURCE_BBCODE, ACTIVITYPUB_POST_WITH_MENTIONS)
+    ACTIVITYPUB_POST_WITH_SOURCE_BBCODE, ACTIVITYPUB_POST_WITH_MENTIONS, ACTIVITYPUB_PROFILE_WITH_DIASPORA_GUID)
 from federation.types import UserType, ReceiverVariant
 
 
@@ -205,6 +205,15 @@ class TestActivitypubEntityMappersReceive:
         assert profile.public is True
         assert profile.nsfw is False
         assert profile.tag_list == []
+
+    def test_message_to_objects_profile__diaspora_guid_extracted(self):
+        entities = message_to_objects(
+            ACTIVITYPUB_PROFILE_WITH_DIASPORA_GUID, "https://friendica.feneas.org/profile/feneas",
+        )
+        assert len(entities) == 1
+        profile = entities[0]
+        assert profile.id == "https://friendica.feneas.org/profile/feneas"
+        assert profile.guid == "76158462365bd347844d248732383358"
 
     def test_message_to_objects_receivers_are_saved(self):
         # noinspection PyTypeChecker

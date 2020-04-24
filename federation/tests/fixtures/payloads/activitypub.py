@@ -144,6 +144,58 @@ ACTIVITYPUB_PROFILE_INVALID = {
   },
 }
 
+ACTIVITYPUB_PROFILE_WITH_DIASPORA_GUID = {
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://w3id.org/security/v1",
+    {
+      "vcard": "http://www.w3.org/2006/vcard/ns#",
+      "dfrn": "http://purl.org/macgirvin/dfrn/1.0/",
+      "diaspora": "https://diasporafoundation.org/ns/",
+      "litepub": "http://litepub.social/ns#",
+      "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+      "sensitive": "as:sensitive",
+      "Hashtag": "as:Hashtag",
+      "directMessage": "litepub:directMessage"
+    }
+  ],
+  "id": "https://friendica.feneas.org/profile/feneas",
+  "diaspora:guid": "76158462365bd347844d248732383358",
+  "type": "Organization",
+  "following": "https://friendica.feneas.org/following/feneas",
+  "followers": "https://friendica.feneas.org/followers/feneas",
+  "inbox": "https://friendica.feneas.org/inbox/feneas",
+  "outbox": "https://friendica.feneas.org/outbox/feneas",
+  "preferredUsername": "feneas",
+  "name": "Federated Networks Association",
+  "vcard:hasAddress": {
+    "@type": "vcard:Home",
+    "vcard:country-name": "",
+    "vcard:region": "",
+    "vcard:locality": ""
+  },
+  "summary": "Federated Networks Association Ry is a non-profit volunteer organization that aims to spread knowledge about federated web projects and help people and projects involved in this area.",
+  "url": "https://friendica.feneas.org/profile/feneas",
+  "manuallyApprovesFollowers": False,
+  "publicKey": {
+    "id": "https://friendica.feneas.org/profile/feneas#main-key",
+    "owner": "https://friendica.feneas.org/profile/feneas",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAtrN/RR6tSG0oH+G1oZmR\nHLx90i7ZgLAviJkfudnrgQDdSk5PKobKKyKw/GW07CuGtispNbI1nls3DdwnnPPl\naQYAvMW0MdLyPtviETecNcwRMMo4zOJxUMVooxjaK1bLstSxSbXpXXXWnn1niFkV\n+tHvtXXPJ12vXGoZjz0hKqzfKCND27rXCwFuecgvmMO8qeJB8aiJH5XfTPhAR0u1\nnA1Y2+GIdHP0Tnmt27nG0+9v9UqzIwlXOWRS2c5bG5XXZ35EnQEnfU9C+fhBzYEF\nBe5FwMR/sbK+a75ii0KxpP8x97MUnTkeuY7NgqY7GXJeKa9EZWK9xL7o5WDL5joe\ndNbDtyDL1CvUAB2JN+FabqbPeeHR1E5SFppBU7u0jyWTMejUqagBXdbf/Y6l7SRd\nJd51mSpmTkO9voybny7iXF4F2THZX0ZN77rDWYB8+NHAjdomfpz/wMwaaSALN6ZM\nSLxuobD0X3Rsv/2gDVL63UEXixQk4ZKBXfdZY2BmEKTKBezoWhR5yAbvTUPoklqL\nk98ajd9SIhE/YZD6nXD1S8CPiaV7qhw+2zdPIZDgq/S2P57eXcHam5ZasSzQGoo/\npVNvWzlRUo0GLIWEuA9FHklVpbuFlthaf5SP5qjKCtbYqLlzBPcxWaI0Y8Ei9ZL2\nTaosv23vnPSkN5wZp15lCrECAwEAAQ==\n-----END PUBLIC KEY-----\n"
+  },
+  "endpoints": {
+    "sharedInbox": "https://friendica.feneas.org/inbox"
+  },
+  "icon": {
+    "type": "Image",
+    "url": "https://friendica.feneas.org/photo/11107142045be6113fe88d7733317204-4.jpg?ts=1541804364"
+  },
+  "generator": {
+    "type": "Service",
+    "name": "Friendica 'Dalmatian Bellflower' 2019.12-1327",
+    "url": "https://friendica.feneas.org"
+  }
+}
+
 ACTIVITYPUB_RETRACTION = {
     '@context': [
         'https://www.w3.org/ns/activitystreams',
