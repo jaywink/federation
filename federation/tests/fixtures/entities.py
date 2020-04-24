@@ -71,6 +71,20 @@ def activitypubpost():
 
 
 @pytest.fixture
+def activitypubpost_diaspora_guid():
+    with freeze_time("2019-04-27"):
+        return ActivitypubPost(
+            raw_content="raw_content",
+            public=True,
+            provider_display_name="Socialhome",
+            id=f"http://127.0.0.1:8000/post/123456/",
+            activity_id=f"http://127.0.0.1:8000/post/123456/#create",
+            actor_id=f"http://127.0.0.1:8000/profile/123456/",
+            guid="totallyrandomguid",
+        )
+
+
+@pytest.fixture
 def activitypubpost_images():
     with freeze_time("2019-04-27"):
         return ActivitypubPost(
@@ -154,6 +168,20 @@ def activitypubprofile():
             "private": "https://example.com/bob/private",
             "public": "https://example.com/public",
         }, public_key=PUBKEY, url="https://example.com/bob-bobertson"
+    )
+
+
+@pytest.fixture
+def activitypubprofile_diaspora_guid():
+    return ActivitypubProfile(
+        id="https://example.com/bob", raw_content="foobar", name="Bob Bobertson", public=True,
+        tag_list=["socialfederation", "federation"], image_urls={
+            "large": "urllarge", "medium": "urlmedium", "small": "urlsmall"
+        }, inboxes={
+            "private": "https://example.com/bob/private",
+            "public": "https://example.com/public",
+        }, public_key=PUBKEY, url="https://example.com/bob-bobertson",
+        guid="totallyrandomguid", handle="bob@example.com",
     )
 
 

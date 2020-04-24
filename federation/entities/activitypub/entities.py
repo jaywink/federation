@@ -7,7 +7,7 @@ import bleach
 
 from federation.entities.activitypub.constants import (
     CONTEXTS_DEFAULT, CONTEXT_MANUALLY_APPROVES_FOLLOWERS, CONTEXT_SENSITIVE, CONTEXT_HASHTAG,
-    CONTEXT_LD_SIGNATURES)
+    CONTEXT_LD_SIGNATURES, CONTEXT_DIASPORA)
 from federation.entities.activitypub.enums import ActorType, ObjectType, ActivityType
 from federation.entities.base import Profile, Post, Follow, Accept, Comment, Retraction, Share, Image
 from federation.entities.mixins import RawContentMixin, BaseEntity, PublicMixin
@@ -187,6 +187,11 @@ class ActivitypubNoteMixin(AttachImagesMixin, CleanContentMixin, PublicMixin, Ac
                     })
 
         as2["object"]["tag"].extend(self.add_object_tags())
+
+        if self.guid:
+            as2["@context"].append(CONTEXT_DIASPORA)
+            as2["object"]["diaspora:guid"] = self.guid
+
         return as2
 
 
@@ -329,6 +334,14 @@ class ActivitypubProfile(ActivitypubEntityMixin, Profile):
                     as2['icon'] = profile_icon.to_as2()
             except Exception as ex:
                 logger.warning("ActivitypubProfile.to_as2 - failed to set profile icon: %s", ex)
+
+        if self.guid or self.handle:
+            as2["@context"].append(CONTEXT_DIASPORA)
+            if self.guid:
+                as2["diaspora:guid"] = self.guid
+            if self.handle:
+                as2["diaspora:handle"] = self.handle
+
         return as2
 
 

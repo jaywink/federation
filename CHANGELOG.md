@@ -22,8 +22,11 @@
     * `str` sender id
     
   The function will be called for each generated payload.
-  
-* Diaspora entity guid will now be extracted from ActivityPub payloads implementing the Diaspora extension.
+
+* Cross-protocol improvements:  
+    * Extract Diaspora guid from ActivityPub payloads implementing the Diaspora extension.
+    * Add Diaspora extension and guid to outbound ActivityPub payloads, if available. For
+      profiles, also add handle.
 
 ### Changed
 

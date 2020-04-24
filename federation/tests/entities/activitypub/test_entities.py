@@ -3,7 +3,7 @@ from unittest.mock import patch
 from Crypto.PublicKey.RSA import RsaKey
 
 from federation.entities.activitypub.constants import (
-    CONTEXTS_DEFAULT, CONTEXT_MANUALLY_APPROVES_FOLLOWERS, CONTEXT_LD_SIGNATURES)
+    CONTEXTS_DEFAULT, CONTEXT_MANUALLY_APPROVES_FOLLOWERS, CONTEXT_LD_SIGNATURES, CONTEXT_DIASPORA)
 from federation.entities.activitypub.entities import ActivitypubAccept
 from federation.tests.fixtures.keys import PUBKEY
 from federation.types import UserType
@@ -316,6 +316,40 @@ class TestEntitiesConvertToAS2:
             'published': '2019-04-27T00:00:00',
         }
 
+    def test_post_to_as2__with_diaspora_guid(self, activitypubpost_diaspora_guid):
+        result = activitypubpost_diaspora_guid.to_as2()
+        assert result == {
+            '@context': [
+                'https://www.w3.org/ns/activitystreams',
+                {"pyfed": "https://docs.jasonrobinson.me/ns/python-federation"},
+                {'Hashtag': 'as:Hashtag'},
+                'https://w3id.org/security/v1',
+                {'sensitive': 'as:sensitive'},
+                {'diaspora': 'https://diasporafoundation.org/ns/'},
+            ],
+            'type': 'Create',
+            'id': 'http://127.0.0.1:8000/post/123456/#create',
+            'actor': 'http://127.0.0.1:8000/profile/123456/',
+            'object': {
+                'id': 'http://127.0.0.1:8000/post/123456/',
+                'diaspora:guid': 'totallyrandomguid',
+                'type': 'Note',
+                'attributedTo': 'http://127.0.0.1:8000/profile/123456/',
+                'content': '<p>raw_content</p>',
+                'published': '2019-04-27T00:00:00',
+                'inReplyTo': None,
+                'sensitive': False,
+                'summary': None,
+                'tag': [],
+                'url': '',
+                'source': {
+                    'content': 'raw_content',
+                    'mediaType': 'text/markdown',
+                },
+            },
+            'published': '2019-04-27T00:00:00',
+        }
+
     @patch("federation.entities.base.fetch_content_type", return_value="image/jpeg")
     def test_profile_to_as2(self, mock_fetch, activitypubprofile):
         result = activitypubprofile.to_as2()
@@ -330,6 +364,44 @@ class TestEntitiesConvertToAS2:
             "followers": "https://example.com/bob/followers/",
             "following": "https://example.com/bob/following/",
             "id": "https://example.com/bob",
+            "inbox": "https://example.com/bob/private",
+            "manuallyApprovesFollowers": False,
+            "name": "Bob Bobertson",
+            "outbox": "https://example.com/bob/outbox/",
+            "publicKey": {
+                "id": "https://example.com/bob#main-key",
+                "owner": "https://example.com/bob",
+                "publicKeyPem": PUBKEY,
+            },
+            "type": "Person",
+            "url": "https://example.com/bob-bobertson",
+            "summary": "foobar",
+            "icon": {
+                "type": "Image",
+                "url": "urllarge",
+                "mediaType": "image/jpeg",
+                "name": "",
+                "pyfed:inlineImage": False,
+            }
+        }
+
+    @patch("federation.entities.base.fetch_content_type", return_value="image/jpeg")
+    def test_profile_to_as2__with_diaspora_guid(self, mock_fetch, activitypubprofile_diaspora_guid):
+        result = activitypubprofile_diaspora_guid.to_as2()
+        assert result == {
+            "@context": CONTEXTS_DEFAULT + [
+                CONTEXT_LD_SIGNATURES,
+                CONTEXT_MANUALLY_APPROVES_FOLLOWERS,
+                CONTEXT_DIASPORA,
+            ],
+            "endpoints": {
+                "sharedInbox": "https://example.com/public",
+            },
+            "followers": "https://example.com/bob/followers/",
+            "following": "https://example.com/bob/following/",
+            "id": "https://example.com/bob",
+            "diaspora:guid": "totallyrandomguid",
+            "diaspora:handle": "bob@example.com",
             "inbox": "https://example.com/bob/private",
             "manuallyApprovesFollowers": False,
             "name": "Bob Bobertson",

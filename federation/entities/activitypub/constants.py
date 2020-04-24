@@ -1,4 +1,5 @@
 CONTEXT_ACTIVITYSTREAMS = "https://www.w3.org/ns/activitystreams"
+CONTEXT_DIASPORA = {"diaspora": "https://diasporafoundation.org/ns/"}
 CONTEXT_HASHTAG = {"Hashtag": "as:Hashtag"}
 CONTEXT_LD_SIGNATURES = "https://w3id.org/security/v1"
 CONTEXT_MANUALLY_APPROVES_FOLLOWERS = {"manuallyApprovesFollowers": "as:manuallyApprovesFollowers"}
