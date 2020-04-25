@@ -27,6 +27,8 @@
     * Extract Diaspora guid from ActivityPub payloads implementing the Diaspora extension.
     * Add Diaspora extension and guid to outbound ActivityPub payloads, if available. For
       profiles, also add handle.
+    * Add ActivityPub ID to outbound Diaspora payloads of types comment, post and profile, 
+      if an URL given as `id`.
 
 ### Changed
 

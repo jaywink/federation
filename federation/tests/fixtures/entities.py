@@ -254,6 +254,20 @@ def diasporacomment():
 
 
 @pytest.fixture
+def diasporacomment_activitypub_id():
+    return DiasporaComment(
+        raw_content="raw_content",
+        signature="signature",
+        id="https://domain.tld/id",
+        guid="guid",
+        actor_id="alice@example.com",
+        handle="alice@example.com",
+        target_id="target_guid",
+        target_guid="target_guid",
+    )
+
+
+@pytest.fixture
 def diasporanestedcomment():
     return DiasporaComment(
         raw_content="raw_content",
@@ -307,6 +321,19 @@ def diasporapost():
 
 
 @pytest.fixture
+def diasporapost_activitypub_id():
+    return DiasporaPost(
+        raw_content="raw_content",
+        public=True,
+        provider_display_name="Socialhome",
+        id="https://domain.tld/id",
+        guid="guid",
+        actor_id="alice@example.com",
+        handle="alice@example.com",
+    )
+
+
+@pytest.fixture
 def diasporaprofile():
     return DiasporaProfile(
         raw_content="foobar", name="Bob Bobertson", public=True,
@@ -314,6 +341,19 @@ def diasporaprofile():
             "large": "urllarge", "medium": "urlmedium", "small": "urlsmall"
         },
         id="alice@example.com",
+        handle="alice@example.com",
+        guid="guid",
+    )
+
+
+@pytest.fixture
+def diasporaprofile_activitypub_id():
+    return DiasporaProfile(
+        raw_content="foobar", name="Bob Bobertson", public=True,
+        tag_list=["socialfederation", "federation"], image_urls={
+            "large": "urllarge", "medium": "urlmedium", "small": "urlsmall"
+        },
+        id="http://example.com/alice",
         handle="alice@example.com",
         guid="guid",
     )

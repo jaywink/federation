@@ -21,6 +21,17 @@ class TestEntitiesConvertToXML:
                     b"</created_at><provider_display_name>Socialhome</provider_display_name></status_message>"
         assert etree.tostring(result) == converted
 
+    def test_post_to_xml__with_activitypub_id(self, diasporapost_activitypub_id):
+        result = diasporapost_activitypub_id.to_xml()
+        assert result.tag == "status_message"
+        assert len(result.find("created_at").text) > 0
+        result.find("created_at").text = ""  # timestamp makes testing painful
+        converted = b"<status_message><text>raw_content</text><guid>guid</guid>" \
+                    b"<author>alice@example.com</author><public>true</public><created_at>" \
+                    b"</created_at><provider_display_name>Socialhome</provider_display_name>" \
+                    b"<activitypub_id>https://domain.tld/id</activitypub_id></status_message>"
+        assert etree.tostring(result) == converted
+
     def test_comment_to_xml(self, diasporacomment):
         result = diasporacomment.to_xml()
         assert result.tag == "comment"
@@ -31,6 +42,18 @@ class TestEntitiesConvertToXML:
                     b"<author_signature>signature</author_signature><parent_author_signature>" \
                     b"</parent_author_signature><text>raw_content</text><author>alice@example.com</author>" \
                     b"<created_at></created_at></comment>"
+        assert etree.tostring(result) == converted
+
+    def test_comment_to_xml__with_activitypub_id(self, diasporacomment_activitypub_id):
+        result = diasporacomment_activitypub_id.to_xml()
+        assert result.tag == "comment"
+        assert len(result.find("created_at").text) > 0
+        result.find("created_at").text = ""  # timestamp makes testing painful
+        converted = b"<comment><guid>guid</guid><parent_guid>target_guid</parent_guid>" \
+                    b"<thread_parent_guid>target_guid</thread_parent_guid>" \
+                    b"<author_signature>signature</author_signature><parent_author_signature>" \
+                    b"</parent_author_signature><text>raw_content</text><author>alice@example.com</author>" \
+                    b"<created_at></created_at><activitypub_id>https://domain.tld/id</activitypub_id></comment>"
         assert etree.tostring(result) == converted
 
     def test_nested_comment_to_xml(self, diasporanestedcomment):
@@ -62,6 +85,17 @@ class TestEntitiesConvertToXML:
                     b"<image_url_small>urlsmall</image_url_small><image_url_medium>urlmedium</image_url_medium>" \
                     b"<gender></gender><bio>foobar</bio><location></location><searchable>true</searchable>" \
                     b"<nsfw>false</nsfw><tag_string>#socialfederation #federation</tag_string></profile>"
+        assert etree.tostring(result) == converted
+
+    def test_profile_to_xml__with_activitypub_id(self, diasporaprofile_activitypub_id):
+        result = diasporaprofile_activitypub_id.to_xml()
+        assert result.tag == "profile"
+        converted = b"<profile><author>alice@example.com</author>" \
+                    b"<first_name>Bob Bobertson</first_name><last_name></last_name><image_url>urllarge</image_url>" \
+                    b"<image_url_small>urlsmall</image_url_small><image_url_medium>urlmedium</image_url_medium>" \
+                    b"<gender></gender><bio>foobar</bio><location></location><searchable>true</searchable>" \
+                    b"<nsfw>false</nsfw><tag_string>#socialfederation #federation</tag_string>" \
+                    b"<activitypub_id>http://example.com/alice</activitypub_id></profile>"
         assert etree.tostring(result) == converted
 
     def test_retraction_to_xml(self, diasporaretraction):

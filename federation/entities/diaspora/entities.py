@@ -13,7 +13,7 @@ class DiasporaComment(DiasporaRelayableMixin, Comment):
 
     def to_xml(self):
         element = etree.Element(self._tag_name)
-        struct_to_xml(element, [
+        properties = [
             {"guid": self.guid},
             {"parent_guid": self.root_target_guid or self.target_guid},
             {"thread_parent_guid": self.target_guid},
@@ -22,7 +22,12 @@ class DiasporaComment(DiasporaRelayableMixin, Comment):
             {"text": self.raw_content},
             {"author": self.handle},
             {"created_at": format_dt(self.created_at)},
-        ])
+        ]
+        if self.id and self.id.startswith("http"):
+            properties.append({
+                "activitypub_id": self.id,
+            })
+        struct_to_xml(element, properties)
         return element
 
 
@@ -37,14 +42,19 @@ class DiasporaPost(DiasporaEntityMixin, Post):
     def to_xml(self):
         """Convert to XML message."""
         element = etree.Element(self._tag_name)
-        struct_to_xml(element, [
+        properties = [
             {"text": self.raw_content},
             {"guid": self.guid},
             {"author": self.handle},
             {"public": "true" if self.public else "false"},
             {"created_at": format_dt(self.created_at)},
             {"provider_display_name": self.provider_display_name},
-        ])
+        ]
+        if self.id and self.id.startswith("http"):
+            properties.append({
+                "activitypub_id": self.id,
+            })
+        struct_to_xml(element, properties)
         return element
 
 
@@ -101,7 +111,7 @@ class DiasporaProfile(DiasporaEntityMixin, Profile):
     def to_xml(self):
         """Convert to XML message."""
         element = etree.Element(self._tag_name)
-        struct_to_xml(element, [
+        properties = [
             {"author": self.handle},
             {"first_name": self.name},
             {"last_name": ""},  # We only have one field - splitting it would be artificial
@@ -114,7 +124,12 @@ class DiasporaProfile(DiasporaEntityMixin, Profile):
             {"searchable": "true" if self.public else "false"},
             {"nsfw": "true" if self.nsfw else "false"},
             {"tag_string": " ".join(["#%s" % tag for tag in self.tag_list])},
-        ])
+        ]
+        if self.id and self.id.startswith("http"):
+            properties.append({
+                "activitypub_id": self.id,
+            })
+        struct_to_xml(element, properties)
         return element
 
 
