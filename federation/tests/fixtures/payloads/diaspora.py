@@ -25,6 +25,18 @@ DIASPORA_ENCRYPTED_PAYLOAD = """{
 }
 """
 
+DIASPORA_POST_ACTIVITYPUB_ID = """
+    <status_message>
+      <text>((status message))</text>
+      <guid>((guidguidguidguidguidguidguid))</guid>
+      <author>alice@alice.diaspora.example.org</author>
+      <public>false</public>
+      <created_at>2011-07-20T01:36:07Z</created_at>
+      <provider_display_name>Socialhome</provider_display_name>
+      <activitypub_id>https://alice.diaspora.example.org/posts/1</activitypub_id>
+    </status_message>
+"""
+
 DIASPORA_POST_SIMPLE = """
     <status_message>
       <text>((status message))</text>
@@ -35,6 +47,7 @@ DIASPORA_POST_SIMPLE = """
       <provider_display_name>Socialhome</provider_display_name>
     </status_message>
 """
+
 
 DIASPORA_POST_SIMPLE_WITH_MENTION = """
     <status_message>
@@ -91,6 +104,18 @@ DIASPORA_POST_COMMENT = """
     </comment>
 """
 
+DIASPORA_POST_COMMENT_ACTIVITYPUB_ID = """
+    <comment>
+      <guid>((guidguidguidguidguidguid))</guid>
+      <parent_guid>((parent_guidparent_guidparent_guidparent_guid))</parent_guid>
+      <author_signature>((base64-encoded data))</author_signature>
+      <text>((text))</text>
+      <author>alice@alice.diaspora.example.org</author>
+      <author_signature>((signature))</author_signature>
+      <activitypub_id>https://alice.diaspora.example.org/comments/1</activitypub_id>
+    </comment>
+"""
+
 DIASPORA_POST_COMMENT_NESTED = """
     <comment>
       <guid>((guidguidguidguidguidguid))</guid>
@@ -129,6 +154,24 @@ DIASPORA_PROFILE = """
         <searchable>true</searchable>
         <nsfw>false</nsfw>
         <tag_string>#socialfederation #federation</tag_string>
+    </profile>
+"""
+
+DIASPORA_PROFILE_ACTIVITYPUB_ID = """
+    <profile>
+        <author>bob@example.com</author>
+        <first_name>Bob</first_name>
+        <last_name>Bobertson</last_name>
+        <image_url>https://example.com/uploads/images/thumb_large_c833747578b5.jpg</image_url>
+        <image_url_small>https://example.com/uploads/images/thumb_small_c8b147578b5.jpg</image_url_small>
+        <image_url_medium>https://example.com/uploads/images/thumb_medium_c8b1aab04f3.jpg</image_url_medium>
+        <gender></gender>
+        <bio>A cool bio</bio>
+        <location>Helsinki</location>
+        <searchable>true</searchable>
+        <nsfw>false</nsfw>
+        <tag_string>#socialfederation #federation</tag_string>
+        <activitypub_id>https://example.com/bob</activitypub_id>
     </profile>
 """
 

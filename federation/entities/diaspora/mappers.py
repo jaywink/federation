@@ -176,6 +176,8 @@ def transform_attributes(attrs, cls):
             value = ""
         if key == "text":
             transformed["raw_content"] = value
+        elif key == "activitypub_id":
+            transformed["id"] = value
         elif key == "author":
             if cls == DiasporaProfile:
                 # Diaspora Profile XML message contains no GUID. We need the guid. Fetch it.
