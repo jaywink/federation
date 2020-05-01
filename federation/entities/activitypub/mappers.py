@@ -227,7 +227,7 @@ def get_outbound_entity(entity: BaseEntity, private_key):
 
 
 def message_to_objects(
-        message: Dict, sender: str, sender_key_fetcher: Callable[[str], str] = None, user: UserType = None,
+        message: Dict, sender: str = "", sender_key_fetcher: Callable[[str], str] = None, user: UserType = None,
 ) -> List:
     """
     Takes in a message extracted by a protocol and maps it to entities.
@@ -267,6 +267,8 @@ def transform_attribute(
             transformed["_media_type"] = "text/html"
             transformed["raw_content"] = payload.get('content').strip()
             transformed["_rendered_content"] = transformed["raw_content"]
+    elif key == "diaspora:guid":
+        transformed["guid"] = value
     elif key == "endpoints" and isinstance(value, dict):
         if "inboxes" not in transformed:
             transformed["inboxes"] = {"private": None, "public": None}

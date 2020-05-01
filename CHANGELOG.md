@@ -23,6 +23,14 @@
     
   The function will be called for each generated payload.
 
+* Cross-protocol improvements:  
+    * Extract Diaspora guid from ActivityPub payloads implementing the Diaspora extension.
+    * Add Diaspora extension and guid to outbound ActivityPub payloads, if available. For
+      profiles, also add handle.
+    * Extract ActivityPub ID from Diaspora payloads if found as the `activitypub_id` property.
+    * Add ActivityPub ID to outbound Diaspora payloads of types comment, post and profile, 
+      if an URL given as `id`.
+
 ### Changed
 
 * The NodeInfo2 hostmeta parser now cleans the port out of the host name.
