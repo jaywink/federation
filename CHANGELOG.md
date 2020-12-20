@@ -2,10 +2,18 @@
 
 ## [unreleased]
 
+### Added
+
+* Start testing on Python 3.8 which is the new recommended version to use.
+
 ### Removed
 
 * Removed the network utils `fetch_host_ip_and_country` and `fetch_country_by_ip` due to the
   library that was used starting to require an API key.
+
+### Internal changes
+
+* Fix some tests for newer Python.
 
 ## [0.20.0] - 2020-12-20
 

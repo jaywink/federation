@@ -270,7 +270,7 @@ DIASPORA_WEBFINGER_JSON = """{
 
 DIASPORA_HOSTMETA = """<?xml version="1.0" encoding="UTF-8"?>
 <XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0">
-  <Link rel="lrdd" template="https://example.com/webfinger?q={uri}" type="application/xrd+xml"/>
+  <Link rel="lrdd" type="application/xrd+xml" template="https://example.com/webfinger?q={uri}"/>
 </XRD>
 """
 
@@ -278,11 +278,11 @@ DIASPORA_WEBFINGER = """<?xml version="1.0" encoding="UTF-8"?>
 <XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0">
   <Subject>acct:user@server.example</Subject>
   <Alias>https://server.example/people/0123456789abcdef</Alias>
-  <Link href="https://server.example/hcard/users/0123456789abcdef" rel="http://microformats.org/profile/hcard" type="text/html"/>
-  <Link href="https://server.example" rel="http://joindiaspora.com/seed_location" type="text/html"/>
-  <Link href="0123456789abcdef" rel="http://joindiaspora.com/guid" type="text/html"/>
-  <Link href="https://server.example/u/user" rel="http://webfinger.net/rel/profile-page" type="text/html"/>
-  <Link href="https://server.example/public/user.atom" rel="http://schemas.google.com/g/2010#updates-from" type="application/atom+xml"/>
-  <Link href="QUJDREVGPT0=" rel="diaspora-public-key" type="RSA"/>
+  <Link rel="http://microformats.org/profile/hcard" type="text/html" href="https://server.example/hcard/users/0123456789abcdef"/>
+  <Link rel="http://joindiaspora.com/seed_location" type="text/html" href="https://server.example"/>
+  <Link rel="http://joindiaspora.com/guid" type="text/html" href="0123456789abcdef"/>
+  <Link rel="http://webfinger.net/rel/profile-page" type="text/html" href="https://server.example/u/user"/>
+  <Link rel="http://schemas.google.com/g/2010#updates-from" type="application/atom+xml" href="https://server.example/public/user.atom"/>
+  <Link rel="diaspora-public-key" type="RSA" href="QUJDREVGPT0="/>
 </XRD>
 """
