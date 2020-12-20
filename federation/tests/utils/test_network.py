@@ -5,17 +5,8 @@ from requests import HTTPError
 from requests.exceptions import SSLError, RequestException
 
 from federation.utils.network import (
-    fetch_document, USER_AGENT, send_document, fetch_country_by_ip, fetch_host_ip_and_country, fetch_host_ip)
-
-
-@patch('federation.utils.network.ipdata', autospec=True)
-class TestFetchCountryByIp:
-    def test_calls_ip_api_endpoint(self, mock_ipdata):
-        mock_lookup = Mock(lookup=Mock(return_value={'status': 200, 'response': {'country_code': 'DE'}}))
-        mock_ipdata.IPData.return_value = mock_lookup
-        country = fetch_country_by_ip('127.0.0.1')
-        mock_lookup.lookup.assert_called_once_with('127.0.0.1')
-        assert country == 'DE'
+    fetch_document, USER_AGENT, send_document, fetch_host_ip,
+)
 
 
 class TestFetchDocument:
@@ -111,16 +102,6 @@ class TestFetchHostIp:
         result = fetch_host_ip('domain.local')
         assert result == '127.0.0.1'
         mock_get_ip.assert_called_once_with('domain.local')
-
-
-class TestFetchHostIpAndCountry:
-    @patch('federation.utils.network.fetch_country_by_ip', autospec=True, return_value='FI')
-    @patch('federation.utils.network.fetch_host_ip', autospec=True, return_value='127.0.0.1')
-    def test_calls(self, mock_get_ip, mock_fetch_country):
-        result = fetch_host_ip_and_country('domain.local')
-        assert result == ('127.0.0.1', 'FI')
-        mock_get_ip.assert_called_once_with('domain.local')
-        mock_fetch_country.assert_called_once_with('127.0.0.1')
 
 
 class TestSendDocument:

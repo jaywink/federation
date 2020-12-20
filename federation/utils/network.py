@@ -3,11 +3,10 @@ import datetime
 import logging
 import re
 import socket
-from typing import Optional, Tuple
+from typing import Optional
 from urllib.parse import quote
 
 import requests
-from ipdata import ipdata
 from requests.exceptions import RequestException, HTTPError, SSLError
 from requests.exceptions import ConnectionError
 from requests.structures import CaseInsensitiveDict
@@ -29,26 +28,6 @@ def fetch_content_type(url: str) -> Optional[str]:
         logger.warning("fetch_content_type - %s when fetching url %s", ex, url)
     else:
         return response.headers.get('Content-Type')
-
-
-def fetch_country_by_ip(ip):
-    """
-    Fetches country code by IP
-
-    Returns empty string if the request fails in non-200 code.
-
-    Uses the ipdata.co service which has the following rules:
-
-    * Max 1500 requests per day
-
-    See: https://ipdata.co/docs.html#python-library
-    """
-    iplookup = ipdata.IPData()
-    data = iplookup.lookup(ip)
-    if data.get('status') != 200:
-        return ''
-
-    return data.get('response', {}).get('country_code', '')
 
 
 def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=True, extra_headers=None):
@@ -126,19 +105,6 @@ def fetch_host_ip(host: str) -> str:
         return ''
 
     return ip
-
-
-def fetch_host_ip_and_country(host: str) -> Tuple:
-    """
-    Fetch ip and country by host
-    """
-    ip = fetch_host_ip(host)
-    if not host:
-        return '', ''
-
-    country = fetch_country_by_ip(ip)
-
-    return ip, country
 
 
 def parse_http_date(date):

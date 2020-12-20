@@ -277,9 +277,7 @@ Diaspora
 Network
 .......
 
-.. autofunction:: federation.utils.network.fetch_country_by_ip
 .. autofunction:: federation.utils.network.fetch_document
-.. autofunction:: federation.utils.network.fetch_host_ip_and_country
 .. autofunction:: federation.utils.network.send_document
 
 Protocols

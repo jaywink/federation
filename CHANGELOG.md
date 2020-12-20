@@ -2,7 +2,10 @@
 
 ## [unreleased]
 
-* No changes yet
+### Removed
+
+* Removed the network utils `fetch_host_ip_and_country` and `fetch_country_by_ip` due to the
+  library that was used starting to require an API key.
 
 ## [0.20.0] - 2020-12-20
 
