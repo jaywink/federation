@@ -2,6 +2,11 @@
 
 ## [unreleased]
 
+### Added
+
+* Add `federation.hostmeta` generators for Matrix client and server well-known files. 
+  Django views and url configuration also included for convenience.
+
 ## [0.21.0] - 2020-12-20
 
 ### Added

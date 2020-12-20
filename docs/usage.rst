@@ -149,6 +149,8 @@ Generator classes
 .. autoclass:: federation.hostmeta.generators.DiasporaHostMeta
 .. autoclass:: federation.hostmeta.generators.DiasporaWebFinger
 .. autoclass:: federation.hostmeta.generators.DiasporaHCard
+.. autoclass:: federation.hostmeta.generators.MatrixClientWellKnown
+.. autoclass:: federation.hostmeta.generators.MatrixServerWellKnown
 .. autoclass:: federation.hostmeta.generators.NodeInfo
 .. autoclass:: federation.hostmeta.generators.RFC7033Webfinger
 .. autoclass:: federation.hostmeta.generators.SocialRelayWellKnown
@@ -189,6 +191,8 @@ It must be installed separately.
 
 .. autofunction:: federation.entities.activitypub.django.views.activitypub_object_view
 .. autofunction:: federation.hostmeta.django.generators.rfc7033_webfinger_view
+.. autofunction:: federation.hostmeta.django.generators.matrix_client_wellknown_view
+.. autofunction:: federation.hostmeta.django.generators.matrix_server_wellknown_view
 .. autofunction:: federation.hostmeta.django.generators.nodeinfo2_view
 
 Configuration
@@ -209,6 +213,7 @@ Some settings need to be set in Django settings. An example is below:
         "get_object_function": "myproject.utils.get_object",
         "get_private_key_function": "myproject.utils.get_private_key",
         "get_profile_function": "myproject.utils.get_profile",
+        "matrix_config_function": "myproject.utils.matrix_config_funct",
         "nodeinfo2_function": "myproject.utils.get_nodeinfo2_data",
         "process_payload_function": "myproject.utils.process_payload",
         "search_path": "/search/?q=",
@@ -219,6 +224,23 @@ Some settings need to be set in Django settings. An example is below:
 * ``get_object_function`` should be the full path to a function that will return the object matching the ActivityPub ID for the request object passed to this function.
 * ``get_private_key_function`` should be the full path to a function that will accept a federation ID (url, handle or guid) and return the private key of the user (as an RSA object). Required for example to sign outbound messages in some cases.
 * ``get_profile_function`` should be the full path to a function that should return a ``Profile`` entity. The function should take one or more keyword arguments: ``fid``, ``handle``, ``guid`` or ``request``. It should look up a profile with one or more of the provided parameters.
+* ``matrix_config_function`` (optional) function that returns a Matrix configuration dictionary, with the following objects:
+
+::
+
+    {
+      # Location of the homeserver (not server name)
+      "homeserver_base_url": "https://matrix.domain.tld",
+      # Homeserver domain and port (not server domain)
+      "homeserver_domain_with_port": "matrix.domain.tld:443",
+      # (Optional) location of identity server
+      "identity_server_base_url": "https://id.domain.tld",
+      # (Optional) other keys to include in the client well-known (must be a dictionary)
+      "client_wellknown_other_keys": {
+        "org.foo.key" "barfoo",
+      },
+    }
+
 * ``nodeinfo2_function`` (optional) function that returns data for generating a `NodeInfo2 document <https://github.com/jaywink/nodeinfo2>`_. Once configured the path ``/.well-known/x-nodeinfo2`` will automatically generate a NodeInfo2 document. The function should return a ``dict`` corresponding to the NodeInfo2 schema, with the following minimum items:
 
 ::
