@@ -7,6 +7,9 @@
 * Add `federation.hostmeta` generators for Matrix client and server well-known files. 
   Django views and url configuration also included for convenience.
 
+* Add `register_dendrite_user` Matrix protocol utility to register users on Dendrite
+  homeservers using a shared registration secret.
+
 ## [0.21.0] - 2020-12-20
 
 ### Added

@@ -239,6 +239,8 @@ Some settings need to be set in Django settings. An example is below:
       "client_wellknown_other_keys": {
         "org.foo.key" "barfoo",
       },
+      # (Optional) registration shared secret
+      "registration_shared_secret": "supersecretstring",
     }
 
 * ``nodeinfo2_function`` (optional) function that returns data for generating a `NodeInfo2 document <https://github.com/jaywink/nodeinfo2>`_. Once configured the path ``/.well-known/x-nodeinfo2`` will automatically generate a NodeInfo2 document. The function should return a ``dict`` corresponding to the NodeInfo2 schema, with the following minimum items:
@@ -295,6 +297,11 @@ Diaspora
 .. autofunction:: federation.utils.diaspora.retrieve_and_parse_profile
 .. autofunction:: federation.utils.diaspora.retrieve_diaspora_hcard
 .. autofunction:: federation.utils.diaspora.retrieve_diaspora_host_meta
+
+Matrix
+......
+
+.. autofunction:: federation.utils.matrix.register_dendrite_user
 
 Network
 .......
