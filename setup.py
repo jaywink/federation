@@ -40,6 +40,7 @@ setup(
         "python-dateutil>=2.4.0",
         "python-xrd>=0.1",
         "pytz",
+        "PyYAML",
         "requests>=2.8.0",
         "requests-http-signature-jaywink>=0.1.0.dev0",
     ],
@@ -59,5 +60,5 @@ setup(
         'Topic :: Internet',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    keywords='federation diaspora activitypub federate fediverse social',
+    keywords='federation diaspora activitypub matrix protocols federate fediverse social',
 )

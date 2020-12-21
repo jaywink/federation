@@ -7,6 +7,7 @@ FEDERATION = {
     "get_object_function": "federation.tests.django.utils.get_object_function",
     "get_private_key_function": "federation.tests.django.utils.get_private_key",
     "get_profile_function": "federation.tests.django.utils.get_profile",
+    "matrix_config_function": "federation.tests.django.utils.matrix_config_func",
     "process_payload_function": "federation.tests.django.utils.process_payload",
     "search_path": "/search?q=",
     "tags_path": "/tag/:tag:/",

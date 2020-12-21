@@ -105,3 +105,25 @@ the complex protocol related details. This library will then aim to abstract muc
 appservice gives or takes behind the same API as is provided for the other protocols.
 
 Currently support is being added, please visit back in future versions.
+
+NOTE! Current features also assume Django is configured, though this is likely to not be
+the case in the future.
+
+Appservice
+..........
+
+To generate the appservice registration file you must ensure you've added the relevant
+configuration (see :ref:`usage-configuration`), at minimum providing the following:
+
+* ``base_url``
+* ``matrix_config_function``
+
+Then launch a Django shell inside your project and run the following:
+
+::
+
+    from federation.protocols.matrix.appservice import print_registration_yaml
+    print_registration_yaml()
+
+This YAML needs to be registered with the linked Matrix homeserver as instructed in the
+relevant homeserver documentation.

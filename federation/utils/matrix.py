@@ -1,7 +1,7 @@
 import hashlib
 import hmac
 import uuid
-from typing import Dict
+from typing import Dict, Optional
 
 import requests
 
@@ -26,6 +26,19 @@ def generate_dendrite_mac(shared_secret: str, username: str, password: str, admi
     return mac.hexdigest()
 
 
+def get_matrix_configuration() -> Optional[Dict]:
+    """
+    Return Matrix configuration.
+
+    Requires Django support currently.
+    """
+    try:
+        matrix_config_func = get_function_from_config("matrix_config_function")
+    except AttributeError:
+        raise AttributeError("Not configured for Matrix support")
+    return matrix_config_func()
+
+
 def register_dendrite_user(username: str) -> Dict:
     """
     Shared secret registration for Dendrite.
@@ -43,11 +56,7 @@ def register_dendrite_user(username: str) -> Dict:
             'device_id': 'randomdevice'
         }
     """
-    try:
-        matrix_config_func = get_function_from_config("matrix_config_function")
-    except AttributeError:
-        raise AttributeError("Not configured for Matrix support")
-    matrix_config = matrix_config_func()
+    matrix_config = get_matrix_configuration
 
     password = str(uuid.uuid4())
     mac = generate_dendrite_mac(

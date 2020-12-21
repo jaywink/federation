@@ -1,3 +1,6 @@
+from typing import Dict
+
+# noinspection PyPackageRequirements
 from Crypto.PublicKey.RSA import RsaKey
 
 from federation.entities.base import Profile
@@ -25,6 +28,23 @@ def get_private_key(identifier: str) -> RsaKey:
 
 def get_profile(fid=None, handle=None, guid=None, request=None):
     return dummy_profile()
+
+
+def matrix_config_func() -> Dict:
+    return {
+        "homeserver_base_url": "https://matrix.domain.tld",
+        "homeserver_domain_with_port": "matrix.domain.tld:443",
+        "appservice": {
+            "id": "uniqueid",
+            "sender_localpart": "_myawesomeapp",
+            "token": "secret_token",
+        },
+        "identity_server_base_url": "https://id.domain.tld",
+        "client_wellknown_other_keys": {
+            "org.foo.key" "barfoo",
+        },
+        "registration_shared_secret": "supersecretstring",
+    }
 
 
 def process_payload(request):

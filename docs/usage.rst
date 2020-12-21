@@ -195,6 +195,8 @@ It must be installed separately.
 .. autofunction:: federation.hostmeta.django.generators.matrix_server_wellknown_view
 .. autofunction:: federation.hostmeta.django.generators.nodeinfo2_view
 
+.. _usage-configuration:
+
 Configuration
 .............
 
@@ -233,6 +235,15 @@ Some settings need to be set in Django settings. An example is below:
       "homeserver_base_url": "https://matrix.domain.tld",
       # Homeserver domain and port (not server domain)
       "homeserver_domain_with_port": "matrix.domain.tld:443",
+      # Appservice details
+      "appservice": {
+        # Unique ID to register with at the homeserver. Don't change this after creating.
+        "id": "uniqueid",
+        # Appservice user localpart (lowercase, should ideally start with _)
+        "sender_localpart": "_myawesomeapp",
+        # Secret token for communication
+        "token": "secret_token",
+      },
       # (Optional) location of identity server
       "identity_server_base_url": "https://id.domain.tld",
       # (Optional) other keys to include in the client well-known (must be a dictionary)
