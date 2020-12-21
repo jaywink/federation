@@ -11,10 +11,13 @@ without the app builder having to know everything about those protocols.
 Status
 ------
 
-Currently two protocols are being focused on. Diaspora is considered to be stable with most
-of the protocol implemented. ActivityPub support should be considered as alpha - all the basic
-things work but there are likely to be a lot of compatibility issues with other ActivityPub
-implementations.
+Currently three protocols are being focused on.
+
+* Diaspora is considered to be stable with most of the protocol implemented.
+* ActivityPub support should be considered as alpha - all the basic
+  things work but there are likely to be a lot of compatibility issues with other ActivityPub
+  implementations.
+* Matrix support cannot be considered usable as of yet.
 
 The code base is well tested and in use in several projects. Backward incompatible changes
 will be clearly documented in changelog entries.
@@ -45,5 +48,5 @@ License
 Author
 ......
 
-Jason Robinson / `jasonrobinson.me <https://jasonrobinson.me>`_ / `GitLab <https://git.feneas.org/jaywink>`_ / `GitHub <https://github.com/jaywink>`_
+Jason Robinson / `jasonrobinson.me <https://jasonrobinson.me>`_ / `@jaywink:federator.dev <https://matrix.to/#/@jaywink:federator.dev>`_ / `GitLab <https://git.feneas.org/jaywink>`_ / `GitHub <https://github.com/jaywink>`_
 

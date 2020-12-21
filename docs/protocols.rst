@@ -1,10 +1,13 @@
 Protocols
 =========
 
-Currently two protocols are being focused on. Diaspora is considered to be stable with most
-of the protocol implemented. ActivityPub support should be considered as alpha - all the basic
-things work but there are likely to be a lot of compatibility issues with other ActivityPub
-implementations.
+Currently three protocols are being focused on.
+
+* Diaspora is considered to be stable with most of the protocol implemented.
+* ActivityPub support should be considered as alpha - all the basic
+  things work but there are likely to be a lot of compatibility issues with other ActivityPub
+  implementations.
+* Matrix support cannot be considered usable as of yet.
 
 For example implementations in real life projects check :ref:`example-projects`.
 
@@ -85,3 +88,20 @@ content in ``object.source``.
 
 For inbound entities we do this automatically by not including received attachments in
 the entity ``_children`` attribute.
+
+.. _matrix:
+
+Matrix
+------
+
+The aim of Matrix support in this library is not to provide instant messaging but to wrap
+the parts of the Matrix protocol that specifically are especially useful for social media
+applications. The current ongoing work on `Ceruelan <https://matrix.org/blog/2020/12/18/introducing-cerulean>`_
+provides much of what will be implemented in this library.
+
+This library doesn't aim to be a homeserver or provide any part of the server to server API.
+The plan is to provide an appservice to hook onto a separate homeserver that deals with all
+the complex protocol related details. This library will then aim to abstract much of what the
+appservice gives or takes behind the same API as is provided for the other protocols.
+
+Currently support is being added, please visit back in future versions.

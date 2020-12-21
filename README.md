@@ -4,23 +4,26 @@
 
 # federation
 
-Python library to abstract social web federation protocols like ActivityPub and Diaspora.
+Python library to abstract social web federation protocols like ActivityPub, Diaspora and Matrix.
 
 ## Introduction
 
 The aim of `federation` is to provide and abstract multiple social web protocols like 
-ActivityPub and Diaspora in one package, over an easy to use and understand Python API. 
+ActivityPub, Diaspora and Matrix in one package, over an easy to use and understand Python API. 
 This way applications can be built to (almost) transparently support many protocols 
 without the app builder having to know everything about those protocols.
 
-![](http://federation.readthedocs.io/en/latest/_images/generic_diagram.png)
+![](./docs/_static/generic_diagram.png)
 
 ## Status
 
-Currently two protocols are being focused on. Diaspora is considered to be stable with most 
-of the protocol implemented. ActivityPub support should be considered as alpha - all the basic
-things work but there are likely to be a lot of compatibility issues with other ActivityPub
-implementations.
+Currently, three protocols are being focused on.
+
+* Diaspora is considered to be stable with most of the protocol implemented.
+* ActivityPub support should be considered as alpha - all the basic
+  things work but there are likely to be a lot of compatibility issues with other ActivityPub
+  implementations.
+* Matrix support cannot be considered usable yet.
 
 The code base is well tested and in use in several projects. Backward incompatible changes 
 will be clearly documented in changelog entries.
