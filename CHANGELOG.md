@@ -10,6 +10,8 @@
 * Add `register_dendrite_user` Matrix protocol utility to register users on Dendrite
   homeservers using a shared registration secret.
 
+* Added configuration for a Matrix appservice to be registered with a homeserver.
+
 ## [0.21.0] - 2020-12-20
 
 ### Added
