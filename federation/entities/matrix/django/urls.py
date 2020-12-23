@@ -6,9 +6,9 @@ from django.views.decorators.csrf import csrf_exempt
 from federation.entities.matrix.django.views import MatrixASTransactionsView
 
 urlpatterns = [
-    csrf_exempt(url(
+    url(
         regex=r"transactions/(?P<txn_id>[\w-]+)$",
-        view=MatrixASTransactionsView.as_view(),
+        view=csrf_exempt(MatrixASTransactionsView.as_view()),
         name="matrix-as-transactions",
-    )),
+    ),
 ]
