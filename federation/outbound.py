@@ -322,6 +322,7 @@ def handle_send(
             if not matrix_config:
                 matrix_config = get_matrix_configuration()
             user_id = f"@{author_user.username}:{matrix_config['homeserver_name']}"
+            # noinspection PyUnresolvedReferences
             payloads.append({
                 "auth": None,
                 "headers": {
