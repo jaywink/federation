@@ -331,7 +331,7 @@ def handle_send(
                 },
                 "payload": rendered_payload,
                 "urls": {
-                    f"{endpoint}/_matrix/client/r0/rooms/{fid}/state/{entity.event_type}/{entity.state_key}"
+                    f"{endpoint}/_matrix/client/r0/rooms/{fid}/send/{entity.event_type}/{entity.txn_id}"
                     f"?user_id={user_id}",
                 },
             })
