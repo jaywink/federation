@@ -24,7 +24,7 @@ class MatrixASBaseView(View):
 
 class MatrixASTransactionsView(MatrixASBaseView):
     # noinspection PyUnusedLocal,PyMethodMayBeStatic
-    def post(self, request, *args, **kwargs):
+    def put(self, request, *args, **kwargs):
         # Inject the transaction ID to the request as part of the meta items
         meta = deepcopy(request.META)
         meta["matrix_transaction_id"] = kwargs.get("txn_id")

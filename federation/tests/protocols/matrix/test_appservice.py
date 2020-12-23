@@ -5,7 +5,7 @@ def test_get_registration():
     config = get_registration_config()
     assert config == {
         "id": "uniqueid",
-        "url": "https://example.com",
+        "url": "https://example.com/matrix",
         "as_token": "secret_token",
         "hs_token": "secret_token",
         "sender_localpart": "_myawesomeapp",

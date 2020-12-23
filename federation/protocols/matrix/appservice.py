@@ -20,7 +20,7 @@ def get_registration_config() -> Dict:
 
     return {
         "id": matrix_config["appservice"]["id"],
-        "url": f"{config['base_url']}",
+        "url": f"{config['base_url']}/matrix",
         "as_token": matrix_config["appservice"]["token"],
         "hs_token": matrix_config["appservice"]["token"],
         "sender_localpart": matrix_config["appservice"]["sender_localpart"],
