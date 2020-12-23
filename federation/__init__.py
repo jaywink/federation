@@ -1,5 +1,6 @@
 import importlib
-from typing import Union, TYPE_CHECKING, Any
+from types import ModuleType
+from typing import Union, TYPE_CHECKING
 
 from federation.exceptions import NoSuitableProtocolFoundError
 
@@ -11,11 +12,12 @@ __version__ = "0.22.0-dev"
 PROTOCOLS = (
     "activitypub",
     "diaspora",
+    "matrix",
 )
 
 
 def identify_protocol(method, value):
-    # type: (str, Union[str, RequestType]) -> str
+    # type: (str, Union[str, RequestType]) -> ModuleType
     """
     Loop through protocols, import the protocol module and try to identify the id or request.
     """
@@ -27,10 +29,10 @@ def identify_protocol(method, value):
         raise NoSuitableProtocolFoundError()
 
 
-def identify_protocol_by_id(id: str):
-    return identify_protocol('id', id)
+def identify_protocol_by_id(identifier: str) -> ModuleType:
+    return identify_protocol('id', identifier)
 
 
 def identify_protocol_by_request(request):
-    # type: (RequestType) -> Any
+    # type: (RequestType) -> ModuleType
     return identify_protocol('request', request)
