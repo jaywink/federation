@@ -7,6 +7,7 @@ from typing import List, Dict, Union
 
 # noinspection PyPackageRequirements
 from Crypto.PublicKey import RSA
+# noinspection PyPackageRequirements
 from Crypto.PublicKey.RSA import RsaKey
 from iteration_utilities import unique_everseen
 
@@ -14,6 +15,7 @@ from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
 from federation.entities.mixins import BaseEntity
 from federation.protocols.activitypub.signing import get_http_authentication
 from federation.types import UserType
+from federation.utils.matrix import get_matrix_configuration
 from federation.utils.network import send_document
 
 logger = logging.getLogger("federation")
@@ -44,7 +46,9 @@ def handle_create_payload(
     """
     mappers = importlib.import_module(f"federation.entities.{protocol_name}.mappers")
     protocol = importlib.import_module(f"federation.protocols.{protocol_name}.protocol")
+    # noinspection PyUnresolvedReferences
     protocol = protocol.Protocol()
+    # noinspection PyUnresolvedReferences
     outbound_entity = mappers.get_outbound_entity(entity, author_user.rsa_private_key)
     if parent_user:
         outbound_entity.sign_with_parent(parent_user.rsa_private_key)
@@ -119,6 +123,12 @@ def handle_send(
                             "protocol": "activitypub",
                             "public": False,
                         },
+                        {
+                            "endpoint": "https://matrix.domain.tld",
+                            "fid": "#@user:domain.tld",
+                            "protocol": "matrix",
+                            "public": True,
+                        }
                      ]
     :arg parent_user: (Optional) User object of the parent object, if there is one. This must be given for the
                       Diaspora protocol if a parent object exists, so that a proper ``parent_author_signature`` can
@@ -129,11 +139,19 @@ def handle_send(
     ready_payloads = {
         "activitypub": {
             "auth": None,
+            "headers": {},
             "payload": None,
             "urls": set(),
         },
         "diaspora": {
             "auth": None,
+            "headers": {},
+            "payload": None,
+            "urls": set(),
+        },
+        "matrix": {
+            "auth": None,
+            "headers": {},
             "payload": None,
             "urls": set(),
         },
@@ -141,11 +159,14 @@ def handle_send(
     skip_ready_payload = {
         "activitypub": False,
         "diaspora": False,
+        "matrix": False,
     }
 
     # Flatten to unique recipients
     # TODO supply a callable that empties "fid" in the case that public=True
     unique_recipients = unique_everseen(recipients)
+
+    matrix_config = None
 
     # Generate payloads and collect urls
     for recipient in unique_recipients:
@@ -161,10 +182,11 @@ def handle_send(
         if protocol == "activitypub":
             if skip_ready_payload["activitypub"]:
                 continue
-            if entity.__class__.__name__.startswith("Diaspora"):
-                # Don't try to do anything with Diaspora entities currently
+            if entity.__class__.__name__.startswith("Diaspora") or entity.__class__.__name__.startswith("Matrix"):
+                # Don't try to do anything with these entities currently
                 skip_ready_payload["activitypub"] = True
                 continue
+            # noinspection PyBroadException
             try:
                 if not ready_payloads[protocol]["payload"]:
                     try:
@@ -191,7 +213,8 @@ def handle_send(
                 rendered_payload = json.dumps(payload).encode("utf-8")
             except Exception:
                 logger.error(
-                    "handle_send - failed to generate payload for %s, %s: %s", fid, endpoint, traceback.format_exc(),
+                    "handle_send - failed to generate activitypub payload for %s, %s: %s",
+                    fid, endpoint, traceback.format_exc(),
                     extra={
                         "recipient": recipient,
                         "unique_recipients": list(unique_recipients),
@@ -206,13 +229,15 @@ def handle_send(
                 continue
             payloads.append({
                 "auth": get_http_authentication(author_user.rsa_private_key, f"{author_user.id}#main-key"),
+                "headers": {
+                    "Content-Type": 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
+                },
                 "payload": rendered_payload,
-                "content_type": 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
                 "urls": {endpoint},
             })
         elif protocol == "diaspora":
-            if entity.__class__.__name__.startswith("Activitypub"):
-                # Don't try to do anything with Activitypub entities currently
+            if entity.__class__.__name__.startswith("Activitypub") or entity.__class__.__name__.startswith("Matrix"):
+                # Don't try to do anything with these entities currently
                 skip_ready_payload["diaspora"] = True
                 continue
             if public:
@@ -249,14 +274,76 @@ def handle_send(
                     logger.error("handle_send - failed to generate private payload for %s: %s", endpoint, ex)
                     continue
                 payloads.append({
-                    "urls": {endpoint}, "payload": payload, "content_type": "application/json", "auth": None,
+                    "auth": None,
+                    "headers": {
+                        "Content-Type": "application/json",
+                    },
+                    "payload": payload,
+                    "urls": {endpoint},
                 })
+        elif protocol == "matrix":
+            if skip_ready_payload["matrix"]:
+                continue
+            if entity.__class__.__name__.startswith("Activitypub") or entity.__class__.__name__.startswith("Diaspora"):
+                # Don't try to do anything with these entities currently
+                skip_ready_payload["matrix"] = True
+                continue
+            # noinspection PyBroadException
+            try:
+                if not ready_payloads[protocol]["payload"]:
+                    try:
+                        # noinspection PyTypeChecker
+                        ready_payloads[protocol]["payload"] = handle_create_payload(
+                            entity, author_user, protocol, parent_user=parent_user, payload_logger=payload_logger,
+                        )
+                    except ValueError as ex:
+                        # No point continuing for this protocol
+                        skip_ready_payload["matrix"] = True
+                        logger.warning("handle_send - skipping matrix due to failure to generate payload: %s", ex)
+                        continue
+                payload = copy.copy(ready_payloads[protocol]["payload"])
+                rendered_payload = json.dumps(payload).encode("utf-8")
+            except Exception:
+                logger.error(
+                    "handle_send - failed to generate matrix payload for %s, %s: %s",
+                    fid, endpoint, traceback.format_exc(),
+                    extra={
+                        "recipient": recipient,
+                        "unique_recipients": list(unique_recipients),
+                        "payload": payload,
+                        "payloads": payloads,
+                        "ready_payloads": ready_payloads,
+                        "entity": entity,
+                        "author": author_user.id,
+                        "parent_user": parent_user.id,
+                    }
+                )
+                continue
+            if not matrix_config:
+                matrix_config = get_matrix_configuration()
+            user_id = f"@{author_user.username}:{matrix_config['homeserver_name']}"
+            payloads.append({
+                "auth": None,
+                "headers": {
+                    "Authorization": f"Bearer {matrix_config['appservice']['token']}",
+                    "Content-Type": "application/json",
+                },
+                "payload": rendered_payload,
+                "urls": {
+                    f"{endpoint}/_matrix/client/r0/rooms/{fid}/state/{entity.event_type}/{entity.state_key}"
+                    f"?user_id={user_id}",
+                },
+            })
 
     # Add public diaspora payload
     if ready_payloads["diaspora"]["payload"]:
         payloads.append({
-            "urls": ready_payloads["diaspora"]["urls"], "payload": ready_payloads["diaspora"]["payload"],
-            "content_type": "application/magic-envelope+xml", "auth": None,
+            "auth": None,
+            "headers": {
+                "Content-Type": "application/magic-envelope+xml",
+            },
+            "payload": ready_payloads["diaspora"]["payload"],
+            "urls": ready_payloads["diaspora"]["urls"],
         })
 
     logger.debug("handle_send - %s", payloads)
@@ -269,7 +356,7 @@ def handle_send(
                     url,
                     payload["payload"],
                     auth=payload["auth"],
-                    headers={"Content-Type": payload["content_type"]},
+                    headers=payload["headers"],
                 )
             except Exception as ex:
                 logger.error("handle_send - failed to send payload to %s: %s, payload: %s", url, ex, payload["payload"])

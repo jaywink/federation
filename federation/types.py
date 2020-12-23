@@ -2,7 +2,9 @@ from enum import Enum
 from typing import Optional, Dict, Union
 
 import attr
+# noinspection PyPackageRequirements
 from Crypto.PublicKey import RSA
+# noinspection PyPackageRequirements
 from Crypto.PublicKey.RSA import RsaKey
 
 
@@ -26,6 +28,14 @@ class ReceiverVariant(Enum):
     FOLLOWERS = "followers"
 
 
+class UserVariant(Enum):
+    """
+    Indicates whether the user is local or remote.
+    """
+    LOCAL = "local"
+    REMOTE = "remote"
+
+
 @attr.s(frozen=True)
 class UserType:
     id: str = attr.ib()
@@ -35,6 +45,10 @@ class UserType:
     # Required only if sending to Diaspora protocol platforms
     handle: Optional[str] = attr.ib(default=None)
     guid: Optional[str] = attr.ib(default=None)
+
+    # Required only if sending to Matrix protocol
+    username: Optional[str] = attr.ib(default=None)
+    variant: Optional[UserVariant] = attr.ib(default=None)
 
     @property
     def rsa_private_key(self) -> RsaKey:
