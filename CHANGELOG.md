@@ -12,6 +12,9 @@
 
 * Added configuration for a Matrix appservice to be registered with a homeserver.
 
+* Added a Django view to push incoming Matrix appservice transactions into the congigured
+  payload processing function.
+
 ## [0.21.0] - 2020-12-20
 
 ### Added

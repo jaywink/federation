@@ -113,10 +113,7 @@ Appservice
 ..........
 
 To generate the appservice registration file you must ensure you've added the relevant
-configuration (see :ref:`usage-configuration`), at minimum providing the following:
-
-* ``base_url``
-* ``matrix_config_function``
+configuration (see :ref:`usage-configuration`).
 
 Then launch a Django shell inside your project and run the following:
 
