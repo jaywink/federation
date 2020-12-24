@@ -52,7 +52,7 @@ class MatrixProfile(Profile, MatrixEntityMixin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # We always require an mxid
-        self._required.add('mxid')
+        self._required.append('mxid')
 
     @property
     def localpart(self) -> str:
