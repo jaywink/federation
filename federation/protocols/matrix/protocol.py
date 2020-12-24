@@ -1,12 +1,9 @@
 import json
 import logging
 import re
-from typing import Callable, Tuple, Union, Dict
+from typing import Callable, Tuple, List, Dict
 
-# noinspection PyPackageRequirements
-from Crypto.PublicKey.RSA import RsaKey
-
-from federation.entities.mixins import BaseEntity
+from federation.entities.matrix.entities import MatrixEntityMixin
 from federation.types import UserType, RequestType
 from federation.utils.text import decode_if_bytes
 
@@ -45,17 +42,16 @@ class Protocol:
     request = None
     user = None
 
-    def build_send(self, entity: BaseEntity, from_user: UserType, to_user_key: RsaKey = None) -> Union[str, Dict]:
+    # noinspection PyUnusedLocal
+    @staticmethod
+    def build_send(entity: MatrixEntityMixin, *args, **kwargs) -> List[Dict]:
         """
         Build POST data for sending out to the homeserver.
 
         :param entity: The outbound ready entity for this protocol.
-        :param from_user: The user sending this payload. Must have ``private_key`` and ``id`` properties.
-        :param to_user_key: (Optional) Public key of user we're sending a private payload to.
-        :returns: dict or string depending on if private or public payload.
+        :returns: list of payloads
         """
-        # TODO TBD
-        return {}
+        return entity.payloads()
 
     def extract_actor(self):
         # TODO TBD
