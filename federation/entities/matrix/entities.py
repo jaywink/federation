@@ -67,13 +67,14 @@ class MatrixProfile(Profile, MatrixEntityMixin):
                 "payload": {
                     "username": f"{self.localpart}",
                     "type": "m.login.application_service",
-                }
+                },
             })
         payloads.append({
             "endpoint": f"{super().get_endpoint()}/profile/{self.mxid}/displayname",
             "payload": {
                 "displayname": self.name,
             },
+            "method": "put",
         })
         # TODO avatar url in mxc format
         return payloads

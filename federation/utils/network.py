@@ -157,7 +157,7 @@ def parse_http_date(date):
         raise ValueError("%r is not a valid date" % date) from exc
 
 
-def send_document(url, data, timeout=10, *args, **kwargs):
+def send_document(url, data, timeout=10, method="post", *args, **kwargs):
     """Helper method to send a document via POST.
 
     Additional ``*args`` and ``**kwargs`` will be passed on to ``requests.post``.
@@ -165,9 +165,10 @@ def send_document(url, data, timeout=10, *args, **kwargs):
     :arg url: Full url to send to, including protocol
     :arg data: Dictionary (will be form-encoded), bytes, or file-like object to send in the body
     :arg timeout: Seconds to wait for response (defaults to 10)
+    :arg method: Method to use, defaults to post
     :returns: Tuple of status code (int or None) and error (exception class instance or None)
     """
-    logger.debug("send_document: url=%s, data=%s, timeout=%s", url, data, timeout)
+    logger.debug("send_document: url=%s, data=%s, timeout=%s, method=%s", url, data, timeout, method)
     headers = CaseInsensitiveDict({
         'User-Agent': USER_AGENT,
     })
@@ -177,8 +178,9 @@ def send_document(url, data, timeout=10, *args, **kwargs):
     kwargs.update({
         "data": data, "timeout": timeout, "headers": headers
     })
+    request_func = getattr(requests, method)
     try:
-        response = requests.post(url, *args, **kwargs)
+        response = request_func(url, *args, **kwargs)
         logger.debug("send_document: response status code %s", response.status_code)
         return response.status_code, None
     except RequestException as ex:

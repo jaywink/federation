@@ -142,18 +142,21 @@ def handle_send(
             "headers": {},
             "payload": None,
             "urls": set(),
+            "method": None,
         },
         "diaspora": {
             "auth": None,
             "headers": {},
             "payload": None,
             "urls": set(),
+            "method": None,
         },
         "matrix": {
             "auth": None,
             "headers": {},
             "payload": None,
             "urls": set(),
+            "method": None,
         },
     }
     skip_ready_payload = {
@@ -288,7 +291,6 @@ def handle_send(
                 # Don't try to do anything with these entities currently
                 skip_ready_payload["matrix"] = True
                 continue
-            # noinspection PyBroadException
             payload_info = []
             # noinspection PyBroadException
             try:
@@ -314,6 +316,7 @@ def handle_send(
                         },
                         "payload": rendered_payload,
                         "urls": {payload["endpoint"]},
+                        "method": payload["method"],
                     })
             except Exception:
                 logger.error(
@@ -355,6 +358,7 @@ def handle_send(
                     payload["payload"],
                     auth=payload["auth"],
                     headers=payload["headers"],
+                    method=payload["method"],
                 )
             except Exception as ex:
                 logger.error("handle_send - failed to send payload to %s: %s, payload: %s", url, ex, payload["payload"])
