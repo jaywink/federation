@@ -27,7 +27,7 @@ class TestGetBaseAttributes:
             "created_at", "name", "email", "gender", "raw_content", "location", "public",
             "nsfw", "public_key", "image_urls", "tag_list", "signature", "url", "atom_url",
             "base_url", "id", "actor_id", "handle", "handle", "guid", "activity", "activity_id", "username",
-            "inboxes",
+            "inboxes", "mxid",
         }
 
 
