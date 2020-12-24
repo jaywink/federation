@@ -21,6 +21,7 @@ def get_outbound_entity(entity: BaseEntity, private_key):
     outbound = None
     cls = entity.__class__
     if cls in [
+        MatrixProfile,
         MatrixRoomMessage,
     ]:
         # Already fine

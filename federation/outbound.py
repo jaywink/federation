@@ -28,7 +28,7 @@ def handle_create_payload(
         to_user_key: RsaKey = None,
         parent_user: UserType = None,
         payload_logger: callable = None,
-) -> Union[str, dict]:
+) -> Union[str, Dict, List[Dict]]:
     """Create a payload with the given protocol.
 
     Any given user arguments must have ``private_key`` and ``handle`` attributes.
@@ -42,7 +42,7 @@ def handle_create_payload(
                       be generated. If given, the payload will be sent as this user.
     :arg payload_logger: (Optional) Function to log the payloads with.
 
-    :returns: Built payload (str or dict)
+    :returns: Built payload(s) (str or dict or list (of payloads))
     """
     mappers = importlib.import_module(f"federation.entities.{protocol_name}.mappers")
     protocol = importlib.import_module(f"federation.protocols.{protocol_name}.protocol")
@@ -289,20 +289,32 @@ def handle_send(
                 skip_ready_payload["matrix"] = True
                 continue
             # noinspection PyBroadException
+            payload_info = []
+            # noinspection PyBroadException
             try:
-                if not ready_payloads[protocol]["payload"]:
-                    try:
-                        # noinspection PyTypeChecker
-                        ready_payloads[protocol]["payload"] = handle_create_payload(
-                            entity, author_user, protocol, parent_user=parent_user, payload_logger=payload_logger,
-                        )
-                    except ValueError as ex:
-                        # No point continuing for this protocol
-                        skip_ready_payload["matrix"] = True
-                        logger.warning("handle_send - skipping matrix due to failure to generate payload: %s", ex)
-                        continue
-                payload = copy.copy(ready_payloads[protocol]["payload"])
-                rendered_payload = json.dumps(payload).encode("utf-8")
+                try:
+                    # For matrix we actually might get multiple payloads and endpoints
+                    payload_info = handle_create_payload(
+                        entity, author_user, protocol, parent_user=parent_user, payload_logger=payload_logger,
+                    )
+                except ValueError as ex:
+                    # No point continuing for this protocol
+                    skip_ready_payload["matrix"] = True
+                    logger.warning("handle_send - skipping matrix due to failure to generate payload: %s", ex)
+                    continue
+                if not matrix_config:
+                    matrix_config = get_matrix_configuration()
+                for payload in payload_info:
+                    rendered_payload = json.dumps(payload["payload"]).encode("utf-8")
+                    payloads.append({
+                        "auth": None,
+                        "headers": {
+                            "Authorization": f"Bearer {matrix_config['appservice']['token']}",
+                            "Content-Type": "application/json",
+                        },
+                        "payload": rendered_payload,
+                        "urls": {payload["endpoint"]},
+                    })
             except Exception:
                 logger.error(
                     "handle_send - failed to generate matrix payload for %s, %s: %s",
@@ -310,7 +322,7 @@ def handle_send(
                     extra={
                         "recipient": recipient,
                         "unique_recipients": list(unique_recipients),
-                        "payload": payload,
+                        "payload_info": payload_info,
                         "payloads": payloads,
                         "ready_payloads": ready_payloads,
                         "entity": entity,
@@ -319,20 +331,6 @@ def handle_send(
                     }
                 )
                 continue
-            if not matrix_config:
-                matrix_config = get_matrix_configuration()
-            # noinspection PyUnresolvedReferences
-            payloads.append({
-                "auth": None,
-                "headers": {
-                    "Authorization": f"Bearer {matrix_config['appservice']['token']}",
-                    "Content-Type": "application/json",
-                },
-                "payload": rendered_payload,
-                "urls": {
-                    entity.get_endpoint(fid=fid, user_id=author_user.mxid),
-                },
-            })
 
     # Add public diaspora payload
     if ready_payloads["diaspora"]["payload"]:
@@ -351,6 +349,7 @@ def handle_send(
     for payload in payloads:
         for url in payload["urls"]:
             try:
+                # TODO send_document and fetch_document need to handle rate limits
                 send_document(
                     url,
                     payload["payload"],
