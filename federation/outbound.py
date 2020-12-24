@@ -321,7 +321,6 @@ def handle_send(
                 continue
             if not matrix_config:
                 matrix_config = get_matrix_configuration()
-            user_id = f"@{author_user.username}:{matrix_config['homeserver_name']}"
             # noinspection PyUnresolvedReferences
             payloads.append({
                 "auth": None,
@@ -331,8 +330,7 @@ def handle_send(
                 },
                 "payload": rendered_payload,
                 "urls": {
-                    f"{endpoint}/_matrix/client/r0/rooms/{fid}/send/{entity.event_type}/{entity.txn_id}"
-                    f"?user_id={user_id}",
+                    entity.get_endpoint(fid=fid, user_id=author_user.mxid),
                 },
             })
 

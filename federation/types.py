@@ -28,6 +28,7 @@ class ReceiverVariant(Enum):
     FOLLOWERS = "followers"
 
 
+# TODO needed?
 class UserVariant(Enum):
     """
     Indicates whether the user is local or remote.
@@ -47,7 +48,8 @@ class UserType:
     guid: Optional[str] = attr.ib(default=None)
 
     # Required only if sending to Matrix protocol
-    username: Optional[str] = attr.ib(default=None)
+    mxid: Optional[str] = attr.ib(default=None)
+    # TODO needed?
     variant: Optional[UserVariant] = attr.ib(default=None)
 
     @property

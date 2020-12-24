@@ -22,6 +22,9 @@ class MatrixEntityMixin(BaseEntity):
         # noinspection PyArgumentList
         return cls(**get_base_attributes(entity))
 
+    def get_endpoint(self, *args, **kwargs) -> str:
+        return "/_matrix/client/r0/"
+
     @property
     def txn_id(self) -> str:
         return self._txn_id
@@ -30,6 +33,13 @@ class MatrixEntityMixin(BaseEntity):
 class MatrixRoomMessage(Post, MatrixEntityMixin):
     _event_type = EventType.ROOM_MESSAGE.value
 
+    def get_endpoint(self, fid: str, user_id: str) -> str:
+        endpoint = super().get_endpoint()
+        return f"{endpoint}rooms/{fid}/send/{self.event_type}/{self.txn_id}?user_id={user_id}"
+
 
 class MatrixProfile(Profile, MatrixEntityMixin):
-    pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # We always require an mxid
+        self._required.add('mxid')
