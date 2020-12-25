@@ -142,21 +142,18 @@ def handle_send(
             "headers": {},
             "payload": None,
             "urls": set(),
-            "method": None,
         },
         "diaspora": {
             "auth": None,
             "headers": {},
             "payload": None,
             "urls": set(),
-            "method": None,
         },
         "matrix": {
             "auth": None,
             "headers": {},
             "payload": None,
             "urls": set(),
-            "method": None,
         },
     }
     skip_ready_payload = {
@@ -356,9 +353,9 @@ def handle_send(
                 send_document(
                     url,
                     payload["payload"],
-                    auth=payload["auth"],
-                    headers=payload["headers"],
-                    method=payload["method"],
+                    auth=payload.get("auth"),
+                    headers=payload.get("headers"),
+                    method=payload.get("method"),
                 )
             except Exception as ex:
                 logger.error("handle_send - failed to send payload to %s: %s, payload: %s", url, ex, payload["payload"])
