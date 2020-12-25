@@ -70,7 +70,7 @@ class MatrixProfile(Profile, MatrixEntityMixin):
                 },
             })
         payloads.append({
-            "endpoint": f"{super().get_endpoint()}/profile/{self.mxid}/displayname",
+            "endpoint": f"{super().get_endpoint()}/profile/{self.mxid}/displayname?user_id={self.mxid}",
             "payload": {
                 "displayname": self.name,
             },
