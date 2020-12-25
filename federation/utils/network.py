@@ -169,6 +169,8 @@ def send_document(url, data, timeout=10, method="post", *args, **kwargs):
     :returns: Tuple of status code (int or None) and error (exception class instance or None)
     """
     logger.debug("send_document: url=%s, data=%s, timeout=%s, method=%s", url, data, timeout, method)
+    if not method:
+        method = "post"
     headers = CaseInsensitiveDict({
         'User-Agent': USER_AGENT,
     })
