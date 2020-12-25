@@ -23,19 +23,30 @@ def get_registration_config() -> Dict:
         "url": f"{config['base_url']}/matrix",
         "as_token": matrix_config["appservice"]["token"],
         "hs_token": matrix_config["appservice"]["token"],
-        "sender_localpart": matrix_config["appservice"]["sender_localpart"],
+        "sender_localpart": f'_{matrix_config["appservice"]["shortcode"]}',
         "namespaces": {
+            # We reserve two namespaces
+            # One is not exclusive, since we're interested in events of "real" users
+            # One is exclusive, the ones that represent "remote to us but managed by us towards Matrix"
             "users": [
                 {
                     "exclusive": False,
                     "regex": "@.*",
+                },
+                {
+                    "exclusive": True,
+                    "regex": f"@_{matrix_config['appservice']['shortcode']}_.*"
                 },
             ],
             "aliases": [
                 {
                     "exclusive": False,
                     "regex": "#.*",
-                }
+                },
+                {
+                    "exclusive": True,
+                    "regex": f"#_{matrix_config['appservice']['shortcode']}_.*"
+                },
             ],
             "rooms": [],
         }

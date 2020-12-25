@@ -15,12 +15,20 @@ def test_get_registration():
                     "exclusive": False,
                     "regex": "@.*",
                 },
+                {
+                    "exclusive": True,
+                    "regex": "@_myawesomeapp_.*",
+                },
             ],
             "aliases": [
                 {
                     "exclusive": False,
                     "regex": "#.*",
-                }
+                },
+                {
+                    "exclusive": True,
+                    "regex": "#_myawesomeapp_.*",
+                },
             ],
             "rooms": [],
         }

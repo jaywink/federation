@@ -235,12 +235,14 @@ Some settings need to be set in Django settings. An example is below:
       "homeserver_base_url": "https://matrix.domain.tld",
       # Homeserver domain and port (not server domain)
       "homeserver_domain_with_port": "matrix.domain.tld:443",
+      # Homeserver name
+      "homeserver_name": "domain.tld",
       # Appservice details
       "appservice": {
         # Unique ID to register with at the homeserver. Don't change this after creating.
         "id": "uniqueid",
-        # Appservice user localpart (lowercase, should ideally start with _)
-        "sender_localpart": "_myawesomeapp",
+        # Short code (a-z only), used for various things like namespacing
+        "shortcode": "federatedapp",
         # Secret token for communication
         "token": "secret_token",
       },

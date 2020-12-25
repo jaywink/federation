@@ -8,6 +8,13 @@ import requests
 from federation.utils.django import get_function_from_config
 
 
+def appservice_auth_header() -> Dict:
+    config = get_matrix_configuration()
+    return {
+        "Authorization": f"Bearer {config['appservice']['token']}",
+    }
+
+
 def generate_dendrite_mac(shared_secret: str, username: str, password: str, admin: bool) -> str:
     """
     Generate a MAC for using in registering users with Dendrite.
