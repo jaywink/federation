@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Dict, List
 
@@ -47,7 +48,9 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
 
 
 class MatrixProfile(Profile, MatrixEntityMixin):
-    _remote_create_needed = False
+    _profile_room_id = None
+    _remote_profile_create_needed = False
+    _remote_room_create_needed = False
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -61,12 +64,25 @@ class MatrixProfile(Profile, MatrixEntityMixin):
 
     def payloads(self) -> List[Dict]:
         payloads = super().payloads()
-        if self._remote_create_needed:
+        if self._remote_profile_create_needed:
             payloads.append({
                 "endpoint": f"{super().get_endpoint()}/register",
                 "payload": {
                     "username": f"{self.localpart}",
                     "type": "m.login.application_service",
+                },
+            })
+        if self._remote_room_create_needed:
+            payloads.append({
+                "endpoint": f"{super().get_endpoint()}/createRoom",
+                "payload": {
+                    "invite": [
+                        self.mxid,
+                    ],
+                    "name": self.name,
+                    "preset": "public_chat" if self.public else "private_chat",
+                    "room_alias_name": f"@{self.localpart}",
+                    "topic": f"Profile room of {self.url}",
                 },
             })
         payloads.append({
@@ -81,13 +97,25 @@ class MatrixProfile(Profile, MatrixEntityMixin):
 
     def pre_send(self):
         """
-        Check whether we need to create this user.
+        Check whether we need to create the user or their profile room.
         """
         doc, status, error = fetch_document(
             url=f"{super().get_endpoint()}/profile/{self.mxid}",
             extra_headers=appservice_auth_header(),
         )
-        if status == 200:
-            return
+        if status != 200:
+            self._remote_profile_create_needed = True
 
-        self._remote_create_needed = True
+        doc, status, error = fetch_document(
+            url=f"{super().get_endpoint()}/directory/room/{self.profile_room_alias}",
+            extra_headers=appservice_auth_header(),
+        )
+        if status != 200:
+            self._remote_room_create_needed = True
+        else:
+            data = json.loads(doc)
+            self._profile_room_id = data["room_id"]
+
+    @property
+    def profile_room_alias(self):
+        return f"#{self.mxid}"
