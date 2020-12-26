@@ -44,7 +44,7 @@ class MatrixEntityMixin(BaseEntity):
     def get_profile_room_id(self):
         # TODO: we should cache these.
         doc, status, error = fetch_document(
-            url=f"{self.get_endpoint()}/directory/room/{self.profile_room_alias}",
+            url=f"{self.get_endpoint()}/directory/room/{self.profile_room_alias_url_safe}",
             extra_headers=appservice_auth_header(),
         )
         if status == 200:
