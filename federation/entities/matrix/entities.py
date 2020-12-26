@@ -1,6 +1,7 @@
 import json
 import logging
 from typing import Dict, List
+from urllib.parse import quote
 from uuid import uuid4
 
 from federation.entities.base import Post, Profile
@@ -40,6 +41,17 @@ class MatrixEntityMixin(BaseEntity):
         config = get_matrix_configuration()
         return f"{config['homeserver_base_url']}/_matrix/client/r0"
 
+    def get_profile_room_id(self):
+        # TODO: we should cache these.
+        doc, status, error = fetch_document(
+            url=f"{self.get_endpoint()}/directory/room/{self.profile_room_alias}",
+            extra_headers=appservice_auth_header(),
+        )
+        if status == 200:
+            data = json.loads(doc)
+            self._profile_room_id = data["room_id"]
+        # TODO create?
+
     # noinspection PyMethodMayBeStatic
     def payloads(self) -> List[Dict]:
         return []
@@ -47,6 +59,10 @@ class MatrixEntityMixin(BaseEntity):
     @property
     def profile_room_alias(self):
         return f"#{self.mxid}"
+
+    @property
+    def profile_room_alias_url_safe(self):
+        return f"{quote(self.profile_room_alias)}"
 
     @property
     def txn_id(self) -> str:
@@ -73,16 +89,8 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
     def pre_send(self):
         """
         Get profile room ID.
-
-        TODO: we should cache these.
         """
-        doc, status, error = fetch_document(
-            url=f"{super().get_endpoint()}/directory/room/{self.profile_room_alias}",
-            extra_headers=appservice_auth_header(),
-        )
-        if status == 200:
-            data = json.loads(doc)
-            self._profile_room_id = data["room_id"]
+        self.get_profile_room_id()
 
 
 class MatrixProfile(Profile, MatrixEntityMixin):
@@ -137,13 +145,8 @@ class MatrixProfile(Profile, MatrixEntityMixin):
         )
         if status != 200:
             self._remote_profile_create_needed = True
-
-        doc, status, error = fetch_document(
-            url=f"{super().get_endpoint()}/directory/room/{self.profile_room_alias}",
-            extra_headers=appservice_auth_header(),
-        )
-        if status != 200:
-            self._remote_room_create_needed = True
         else:
-            data = json.loads(doc)
-            self._profile_room_id = data["room_id"]
+            self.get_profile_room_id()
+
+        if self._remote_profile_create_needed or not self._profile_room_id:
+            self._remote_room_create_needed = True
