@@ -313,7 +313,7 @@ def handle_send(
                         },
                         "payload": rendered_payload,
                         "urls": {payload["endpoint"]},
-                        "method": payload["method"],
+                        "method": payload.get("method"),
                     })
             except Exception:
                 logger.error(
