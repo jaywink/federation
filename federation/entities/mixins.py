@@ -29,6 +29,7 @@ class BaseEntity:
     guid: str = ""
     handle: str = ""
     id: str = ""
+    mxid: str = ""
     signature: str = ""
 
     def __init__(self, *args, **kwargs):

@@ -133,7 +133,6 @@ class Profile(CreatedAtMixin, OptionalRawContentMixin, PublicMixin, BaseEntity):
     url = ""
     username = ""
     inboxes: Dict = None
-    mxid = ""
 
     _allowed_children = (Image,)
 
