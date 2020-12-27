@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+# noinspection PyPackageRequirements
 from Crypto.PublicKey.RSA import RsaKey
 
 from federation.entities.activitypub.constants import (
@@ -350,6 +351,7 @@ class TestEntitiesConvertToAS2:
             'published': '2019-04-27T00:00:00',
         }
 
+    # noinspection PyUnusedLocal
     @patch("federation.entities.base.fetch_content_type", return_value="image/jpeg")
     def test_profile_to_as2(self, mock_fetch, activitypubprofile):
         result = activitypubprofile.to_as2()
@@ -385,6 +387,7 @@ class TestEntitiesConvertToAS2:
             }
         }
 
+    # noinspection PyUnusedLocal
     @patch("federation.entities.base.fetch_content_type", return_value="image/jpeg")
     def test_profile_to_as2__with_diaspora_guid(self, mock_fetch, activitypubprofile_diaspora_guid):
         result = activitypubprofile_diaspora_guid.to_as2()

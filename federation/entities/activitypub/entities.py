@@ -10,7 +10,7 @@ from federation.entities.activitypub.constants import (
     CONTEXT_LD_SIGNATURES, CONTEXT_DIASPORA)
 from federation.entities.activitypub.enums import ActorType, ObjectType, ActivityType
 from federation.entities.base import Profile, Post, Follow, Accept, Comment, Retraction, Share, Image
-from federation.entities.mixins import RawContentMixin, BaseEntity, PublicMixin
+from federation.entities.mixins import RawContentMixin, BaseEntity, PublicMixin, CreatedAtMixin
 from federation.entities.utils import get_base_attributes
 from federation.outbound import handle_send
 from federation.types import UserType
@@ -61,6 +61,7 @@ class CleanContentMixin(RawContentMixin):
         """
         super().post_receive()
 
+        # noinspection PyUnusedLocal
         def remove_tag_links(attrs, new=False):
             rel = (None, "rel")
             if attrs.get(rel) == "tag":
@@ -94,8 +95,9 @@ class ActivitypubAccept(ActivitypubEntityMixin, Accept):
         return as2
 
 
-class ActivitypubNoteMixin(AttachImagesMixin, CleanContentMixin, PublicMixin, ActivitypubEntityMixin):
+class ActivitypubNoteMixin(AttachImagesMixin, CleanContentMixin, PublicMixin, CreatedAtMixin, ActivitypubEntityMixin):
     _type = ObjectType.NOTE.value
+    url = ""
 
     def add_object_tags(self) -> List[Dict]:
         """
@@ -236,6 +238,7 @@ class ActivitypubFollow(ActivitypubEntityMixin, Follow):
             target_id=self.activity_id,
             object=self.to_as2(),
         )
+        # noinspection PyBroadException
         try:
             profile = retrieve_and_parse_profile(self.actor_id)
         except Exception:
@@ -243,6 +246,7 @@ class ActivitypubFollow(ActivitypubEntityMixin, Follow):
         if not profile:
             logger.warning("ActivitypubFollow.post_receive - Failed to fetch remote profile for sending back Accept")
             return
+        # noinspection PyBroadException
         try:
             handle_send(
                 accept,

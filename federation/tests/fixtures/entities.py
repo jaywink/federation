@@ -1,4 +1,5 @@
 import pytest
+# noinspection PyPackageRequirements
 from freezegun import freeze_time
 
 from federation.entities.activitypub.entities import (
