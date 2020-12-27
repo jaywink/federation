@@ -6,6 +6,11 @@
 
 * WIP Matrix support over an appservice.
 
+### Fixed
+
+* Fixed image delivery between platforms that send ActivityPub payloads with a markdown `source`,
+  caused by overenthusiastic linkifying of markdown.
+
 ## [0.21.0] - 2020-12-20
 
 ### Added
