@@ -481,6 +481,17 @@ class TestEntitiesPostReceive:
             "public": False,
         }]
 
+    @patch("federation.entities.activitypub.entities.bleach.linkify", autospec=True)
+    def test_post_post_receive__linkifies_if_not_markdown(self, mock_linkify, activitypubpost):
+        activitypubpost._media_type = 'text/html'
+        activitypubpost.post_receive()
+        mock_linkify.assert_called_once()
+
+    @patch("federation.entities.activitypub.entities.bleach.linkify", autospec=True)
+    def test_post_post_receive__skips_linkify_if_markdown(self, mock_linkify, activitypubpost):
+        activitypubpost.post_receive()
+        mock_linkify.assert_not_called()
+
 
 class TestEntitiesPreSend:
     def test_post_inline_images_are_attached(self, activitypubpost_embedded_images):

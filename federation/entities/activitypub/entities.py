@@ -67,6 +67,10 @@ class CleanContentMixin(RawContentMixin):
                 return
             return attrs
 
+        if self._media_type == "text/markdown":
+            # Skip when markdown
+            return
+
         self.raw_content = bleach.linkify(
             self.raw_content,
             callbacks=[remove_tag_links],
