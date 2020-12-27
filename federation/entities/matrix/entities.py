@@ -83,6 +83,7 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
                 "format": "org.matrix.custom.html",
                 "formatted_body": self.rendered_content,
             },
+            "method": "put",
         })
         return payloads
 
