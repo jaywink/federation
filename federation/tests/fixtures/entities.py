@@ -4,7 +4,7 @@ from freezegun import freeze_time
 from federation.entities.activitypub.entities import (
     ActivitypubPost, ActivitypubAccept, ActivitypubFollow, ActivitypubProfile, ActivitypubComment,
     ActivitypubRetraction, ActivitypubShare, ActivitypubImage)
-from federation.entities.base import Profile
+from federation.entities.base import Profile, Post
 from federation.entities.diaspora.entities import (
     DiasporaPost, DiasporaComment, DiasporaLike, DiasporaProfile, DiasporaRetraction,
     DiasporaContact, DiasporaReshare,
@@ -67,6 +67,7 @@ def activitypubpost():
             id=f"http://127.0.0.1:8000/post/123456/",
             activity_id=f"http://127.0.0.1:8000/post/123456/#create",
             actor_id=f"http://127.0.0.1:8000/profile/123456/",
+            _media_type="text/markdown",
         )
 
 
@@ -373,6 +374,21 @@ def diasporaretraction():
         target_id="target_guid",
         target_guid="target_guid",
         entity_type="Post",
+    )
+
+
+@pytest.fixture
+def post():
+    return Post(
+        raw_content="""One more test before sleep 😅 This time with an image.
+
+![](https://jasonrobinson.me/media/uploads/2020/12/27/1b2326c6-554c-4448-9da3-bdacddf2bb77.jpeg)""",
+        public=True,
+        provider_display_name="Socialhome",
+        id="guid",
+        guid="guid",
+        actor_id="alice@example.com",
+        handle="alice@example.com",
     )
 
 

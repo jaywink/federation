@@ -120,3 +120,9 @@ class TestShareEntity:
     def test_instance_creation(self):
         entity = ShareFactory()
         entity.validate()
+
+
+class TestRawContentMixin:
+    def test_rendered_content(self, post):
+        assert post.rendered_content == """<p>One more test before sleep 😅 This time with an image.</p>
+<p><img src="https://jasonrobinson.me/media/uploads/2020/12/27/1b2326c6-554c-4448-9da3-bdacddf2bb77.jpeg" alt=""></p>"""
