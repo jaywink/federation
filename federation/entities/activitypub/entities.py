@@ -1,5 +1,4 @@
 import logging
-import re
 import uuid
 from typing import Dict, List
 
@@ -26,16 +25,11 @@ class AttachImagesMixin(RawContentMixin):
         Attach any embedded images from raw_content.
         """
         super().pre_send()
-        if self._media_type != "text/markdown":
-            return
-        regex = r"!\[([\w ]*)\]\((https?://[\w\d\-\./]+\.[\w]*((?<=jpg)|(?<=gif)|(?<=png)|(?<=jpeg)))\)"
-        matches = re.finditer(regex, self.raw_content, re.MULTILINE | re.IGNORECASE)
-        for match in matches:
-            groups = match.groups()
+        for image in self.embedded_images:
             self._children.append(
                 ActivitypubImage(
-                    url=groups[1],
-                    name=groups[0] or "",
+                    url=image[0],
+                    name=image[1],
                     inline=True,
                 )
             )
