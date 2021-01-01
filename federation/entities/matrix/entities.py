@@ -144,6 +144,8 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
                 logger.warning("MatrixRoomMessage.pre_send | Failed to upload image %s: %s",
                                url, ex)
                 continue
+            finally:
+                os.unlink(image_file)
             # Replace in raw content
             try:
                 logger.debug("MatrixRoomMessage.pre_send | Got response %s", response.json())
