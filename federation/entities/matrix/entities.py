@@ -80,6 +80,38 @@ class MatrixEntityMixin(BaseEntity):
 
 class MatrixRoomMessage(Post, MatrixEntityMixin):
     _event_type = EventType.ROOM_MESSAGE.value
+    _thread_room_event_id: str = None
+    _thread_room_id: str = None
+
+    def create_thread_room(self):
+        headers = appservice_auth_header()
+        # Create the thread room
+        response = requests.post(
+            url=f"{super().get_endpoint()}/createRoom?user_id={self.mxid}",
+            json={
+                # TODO auto-invite recipients if private chat
+                "preset": "public_chat" if self.public else "private_chat",
+                "name": f"Thread by {self.mxid}",
+                "topic": self.url,
+            },
+            headers=headers,
+        )
+        response.raise_for_status()
+        self._thread_room_id = response.json()["room_id"]
+        # Send the thread message
+        response = requests.put(
+            url=f"{super().get_endpoint()}/rooms/{self._thread_room_id}/send/{self.event_type}/"
+                f"{str(uuid4())}?user_id={self.mxid}",
+            json={
+                "body": self.raw_content,
+                "msgtype": "m.text",
+                "format": "org.matrix.custom.html",
+                "formatted_body": self.rendered_content,
+            },
+            headers=headers,
+        )
+        response.raise_for_status()
+        self._thread_room_event_id = response.json()["event_id"]
 
     def payloads(self) -> List[Dict]:
         payloads = super().payloads()
@@ -91,6 +123,10 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
                 "msgtype": "m.text",
                 "format": "org.matrix.custom.html",
                 "formatted_body": self.rendered_content,
+                # Fields to emulate Cerulean
+                "org.matrix.cerulean.event_id": self._thread_room_event_id,
+                "org.matrix.cerulean.room_id": self._thread_room_id,
+                "org.matrix.cerulean.root": True,
             },
             "method": "put",
         })
@@ -105,6 +141,8 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
         self.get_profile_room_id()
         # Upload embedded images and replace the HTTP urls in the message with MXC urls so clients show the images
         self.upload_embedded_images()
+        # Create thread room
+        self.create_thread_room()
 
     def upload_embedded_images(self):
         """
