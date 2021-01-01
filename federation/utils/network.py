@@ -3,8 +3,9 @@ import datetime
 import logging
 import re
 import socket
-from typing import Optional
+from typing import Optional, Dict
 from urllib.parse import quote
+from uuid import uuid4
 
 import requests
 from requests.exceptions import RequestException, HTTPError, SSLError
@@ -107,6 +108,22 @@ def fetch_host_ip(host: str) -> str:
     return ip
 
 
+def fetch_file(url: str, timeout: int = 30, extra_headers: Dict = None) -> str:
+    """
+    Download a file with a temporary name and return the name.
+    """
+    headers = {'user-agent': USER_AGENT}
+    if extra_headers:
+        headers.update(extra_headers)
+    response = requests.get(url, timeout=timeout, headers=headers, stream=True)
+    response.raise_for_status()
+    name = f"/tmp/{str(uuid4())}"
+    with open(name, "wb") as f:
+        for chunk in response.iter_content(chunk_size=8192):
+            f.write(chunk)
+    return name
+
+
 def parse_http_date(date):
     """
     Parse a date format as specified by HTTP RFC7231 section 7.1.1.1.
@@ -185,6 +202,7 @@ def send_document(url, data, timeout=10, method="post", *args, **kwargs):
         response = request_func(url, *args, **kwargs)
         logger.debug("send_document: response status code %s", response.status_code)
         return response.status_code, None
+    # TODO support rate limit 429 code
     except RequestException as ex:
         logger.debug("send_document: exception %s", ex)
         return None, ex

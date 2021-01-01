@@ -2,7 +2,7 @@ import datetime
 import importlib
 import re
 import warnings
-from typing import List, Set, Union, Dict
+from typing import List, Set, Union, Dict, Tuple
 
 from commonmark import commonmark
 
@@ -201,6 +201,24 @@ class RawContentMixin(BaseEntity):
         self._mentions = set()
         super().__init__(*args, **kwargs)
         self._required += ["raw_content"]
+
+    @property
+    def embedded_images(self) -> List[Tuple[str, str]]:
+        """
+        Returns a list of images from the raw_content.
+        Currently only markdown supported.
+
+        Returns a Tuple of (url, filename).
+        """
+        images = []
+        if self._media_type != "text/markdown" or self.raw_content is None:
+            return images
+        regex = r"!\[([\w ]*)\]\((https?://[\w\d\-\./]+\.[\w]*((?<=jpg)|(?<=gif)|(?<=png)|(?<=jpeg)))\)"
+        matches = re.finditer(regex, self.raw_content, re.MULTILINE | re.IGNORECASE)
+        for match in matches:
+            groups = match.groups()
+            images.append((groups[1], groups[0] or ""))
+        return images
 
     @property
     def rendered_content(self) -> str:
