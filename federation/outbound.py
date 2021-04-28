@@ -223,7 +223,7 @@ def handle_send(
                         "ready_payloads": ready_payloads,
                         "entity": entity,
                         "author": author_user.id,
-                        "parent_user": parent_user.id,
+                        "parent_user": parent_user.id if parent_user else None,
                     }
                 )
                 continue
@@ -327,7 +327,7 @@ def handle_send(
                         "ready_payloads": ready_payloads,
                         "entity": entity,
                         "author": author_user.id,
-                        "parent_user": parent_user.id,
+                        "parent_user": parent_user.id if parent_user else None,
                     }
                 )
                 continue
