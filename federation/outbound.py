@@ -161,10 +161,12 @@ def handle_send(
         "diaspora": False,
         "matrix": False,
     }
-
+    logger.debug('handle_send - length of recipients: %s', len(recipients))
     # Flatten to unique recipients
     # TODO supply a callable that empties "fid" in the case that public=True
     unique_recipients = unique_everseen(recipients)
+    logger.debug('handle_send - length of unique_recipients: %s', len(unique_recipients))
+    logger.debug('handle_send / unique_recipients - %s', unique_recipients)
 
     matrix_config = None
 
@@ -181,10 +183,12 @@ def handle_send(
 
         if protocol == "activitypub":
             if skip_ready_payload["activitypub"]:
+                logger.debug('Skipping activitypub payload as skip_ready_payload set')
                 continue
             if entity.__class__.__name__.startswith("Diaspora") or entity.__class__.__name__.startswith("Matrix"):
                 # Don't try to do anything with these entities currently
                 skip_ready_payload["activitypub"] = True
+                logger.debug('Skipping activitypub payload as payload is diaspora or matrix')
                 continue
             # noinspection PyBroadException
             try:
@@ -239,9 +243,11 @@ def handle_send(
             if entity.__class__.__name__.startswith("Activitypub") or entity.__class__.__name__.startswith("Matrix"):
                 # Don't try to do anything with these entities currently
                 skip_ready_payload["diaspora"] = True
+                logger.debug('Skipping diaspora payload as payload is activitypub or matrix')
                 continue
             if public:
                 if skip_ready_payload["diaspora"]:
+                    logger.debug('Skipping diaspora payload as skip_ready_payload set')
                     continue
                 if public_key:
                     logger.warning("handle_send - Diaspora recipient cannot be public and use encrypted delivery")
@@ -283,10 +289,12 @@ def handle_send(
                 })
         elif protocol == "matrix":
             if skip_ready_payload["matrix"]:
+                logger.debug('Skipping matrix payload as skip_ready_payload set')
                 continue
             if entity.__class__.__name__.startswith("Activitypub") or entity.__class__.__name__.startswith("Diaspora"):
                 # Don't try to do anything with these entities currently
                 skip_ready_payload["matrix"] = True
+                logger.debug('Skipping matrix payload as payload is activitypub or diaspora')
                 continue
             payload_info = []
             # noinspection PyBroadException
@@ -330,6 +338,7 @@ def handle_send(
                         "parent_user": parent_user.id if parent_user else None,
                     }
                 )
+                logger.debug('Continuing from matrix payload after error')
                 continue
 
     # Add public diaspora payload
