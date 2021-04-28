@@ -10,6 +10,8 @@
 
 * Fixed image delivery between platforms that send ActivityPub payloads with a markdown `source`,
   caused by overenthusiastic linkifying of markdown.
+  
+* Fix a crash in `outbound.handle_send` when payload failed to be generated and `parent_user` was not given.
 
 ## [0.21.0] - 2020-12-20
 
