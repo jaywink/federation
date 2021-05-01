@@ -95,15 +95,30 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
             url=f"{super().get_endpoint()}/createRoom?user_id={self.mxid}",
             json={
                 # TODO auto-invite other recipients if private chat
-                "invite": [
-                    self.mxid,
-                ],
                 "preset": "public_chat" if self.public else "private_chat",
                 "name": f"Thread by {self.mxid}",
                 "topic": self.url,
             },
             headers=headers,
         )
+        """
+        WAT
+        
+        ERROR 2021-05-02 02:25:28,299 outbound 14919 140545779672896 handle_send - failed to generate matrix payload for @forgelog:jasonrobinson.me, https://matrix.jasonrobinson.me: Traceback (most recent call last):
+          File "/home/jasonrobinson/venv/src/federation/federation/outbound.py", line 305, in handle_send
+            entity, author_user, protocol, parent_user=parent_user, payload_logger=payload_logger,
+          File "/home/jasonrobinson/venv/src/federation/federation/outbound.py", line 52, in handle_create_payload
+            outbound_entity = mappers.get_outbound_entity(entity, author_user.rsa_private_key)
+          File "/home/jasonrobinson/venv/src/federation/federation/entities/matrix/mappers.py", line 36, in get_outbound_entity
+            outbound.pre_send()
+          File "/home/jasonrobinson/venv/src/federation/federation/entities/matrix/entities.py", line 185, in pre_send
+            self.create_thread_room()
+          File "/home/jasonrobinson/venv/src/federation/federation/entities/matrix/entities.py", line 107, in create_thread_room
+            response.raise_for_status()
+          File "/home/jasonrobinson/venv/lib/python3.6/site-packages/requests/models.py", line 943, in raise_for_status
+            raise HTTPError(http_error_msg, response=self)
+        requests.exceptions.HTTPError: 403 Client Error: Forbidden for url: https://matrix.jasonrobinson.me/_matrix/client/r0/createRoom?user_id=@forgelog:jasonrobinson.me
+        """
         response.raise_for_status()
         self._thread_room_id = response.json()["room_id"]
         # Send the thread message
