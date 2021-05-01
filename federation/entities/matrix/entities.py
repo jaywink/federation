@@ -136,9 +136,9 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
     def payloads(self) -> List[Dict]:
         payloads = super().payloads()
         # Ensure we're joined to the profile room
-        # TODO remove this after a bit
+        # TODO remove this after a bit, once the auto-join on creation works
         payloads.append({
-            "endpoint": f"{super().get_endpoint()}/join/%23{self.mxid}?user_id={self.mxid}",
+            "endpoint": f"{super().get_endpoint()}/rooms/{self._profile_room_id}/join?user_id={self.mxid}",
             "payload": {},
         })
         payloads.append({
@@ -158,7 +158,7 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
         })
         # Join the thread room
         payloads.append({
-            "endpoint": f"{super().get_endpoint()}/join/{self._thread_room_id}?user_id={self.mxid}",
+            "endpoint": f"{super().get_endpoint()}/rooms/{self._thread_room_id}/join?user_id={self.mxid}",
             "payload": {},
         })
         # Tag the thread room as low priority
@@ -238,6 +238,24 @@ class MatrixProfile(Profile, MatrixEntityMixin):
     _remote_profile_create_needed = False
     _remote_room_create_needed = False
 
+    def create_profile_room(self):
+        headers = appservice_auth_header()
+        response = requests.post(
+            url=f"{super().get_endpoint()}/createRoom",
+            json={
+                "invite": [
+                    self.mxid,
+                ],
+                "name": self.name,
+                "preset": "public_chat" if self.public else "private_chat",
+                "room_alias_name": f"@{self.localpart}",
+                "topic": f"Profile room of {self.url}",
+            },
+            headers=headers,
+        )
+        response.raise_for_status()
+        self._profile_room_id = response.json()["room_id"]
+
     def register_user(self):
         headers = appservice_auth_header()
         response = requests.post(
@@ -259,21 +277,10 @@ class MatrixProfile(Profile, MatrixEntityMixin):
         if self._remote_profile_create_needed:
             self.register_user()
         if self._remote_room_create_needed:
-            payloads.append({
-                "endpoint": f"{super().get_endpoint()}/createRoom",
-                "payload": {
-                    "invite": [
-                        self.mxid,
-                    ],
-                    "name": self.name,
-                    "preset": "public_chat" if self.public else "private_chat",
-                    "room_alias_name": f"@{self.localpart}",
-                    "topic": f"Profile room of {self.url}",
-                },
-            })
+            self.create_profile_room()
         # Ensure we're joined to the profile room
         payloads.append({
-            "endpoint": f"{super().get_endpoint()}/join/%23{self.mxid}?user_id={self.mxid}",
+            "endpoint": f"{super().get_endpoint()}/rooms/{self._profile_room_id}/join?user_id={self.mxid}",
             "payload": {},
         })
         payloads.append({
