@@ -84,7 +84,6 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
     _thread_room_id: str = None
 
     def create_thread_room(self):
-        # TODO don't do this immediately here, append to payloads for later pushing out
         headers = appservice_auth_header()
         # Create the thread room
         response = requests.post(
@@ -210,6 +209,18 @@ class MatrixProfile(Profile, MatrixEntityMixin):
     _remote_profile_create_needed = False
     _remote_room_create_needed = False
 
+    def register_user(self):
+        headers = appservice_auth_header()
+        response = requests.post(
+            url=f"{super().get_endpoint()}/register",
+            json={
+                "username": f"{self.localpart}",
+                "type": "m.login.application_service",
+            },
+            headers=headers,
+        )
+        response.raise_for_status()
+
     @property
     def localpart(self) -> str:
         config = get_matrix_configuration()
@@ -218,13 +229,7 @@ class MatrixProfile(Profile, MatrixEntityMixin):
     def payloads(self) -> List[Dict]:
         payloads = super().payloads()
         if self._remote_profile_create_needed:
-            payloads.append({
-                "endpoint": f"{super().get_endpoint()}/register",
-                "payload": {
-                    "username": f"{self.localpart}",
-                    "type": "m.login.application_service",
-                },
-            })
+            self.register_user()
         if self._remote_room_create_needed:
             payloads.append({
                 "endpoint": f"{super().get_endpoint()}/createRoom",
