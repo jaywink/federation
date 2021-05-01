@@ -74,6 +74,11 @@ class MatrixEntityMixin(BaseEntity):
         return f"{quote(self.profile_room_alias)}"
 
     @property
+    def server_name(self) -> str:
+        config = get_matrix_configuration()
+        return config['homeserver_name']
+
+    @property
     def txn_id(self) -> str:
         return self._txn_id
 
@@ -89,7 +94,10 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
         response = requests.post(
             url=f"{super().get_endpoint()}/createRoom?user_id={self.mxid}",
             json={
-                # TODO auto-invite recipients if private chat
+                # TODO auto-invite other recipients if private chat
+                "invite": [
+                    self.mxid,
+                ],
                 "preset": "public_chat" if self.public else "private_chat",
                 "name": f"Thread by {self.mxid}",
                 "topic": self.url,
@@ -99,6 +107,7 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
         response.raise_for_status()
         self._thread_room_id = response.json()["room_id"]
         # Send the thread message
+        # TODO move this to a payload
         response = requests.put(
             url=f"{super().get_endpoint()}/rooms/{self._thread_room_id}/send/{self.event_type}/"
                 f"{str(uuid4())}?user_id={self.mxid}",
@@ -126,6 +135,12 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
 
     def payloads(self) -> List[Dict]:
         payloads = super().payloads()
+        # Ensure we're joined to the profile room
+        # TODO remove this after a bit
+        payloads.append({
+            "endpoint": f"{super().get_endpoint()}/join/%23{self.mxid}?user_id={self.mxid}",
+            "payload": {},
+        })
         payloads.append({
             "endpoint": f"{super().get_endpoint()}/rooms/{self._profile_room_id}/send/{self.event_type}/"
                         f"{self.txn_id}?user_id={self.mxid}",
@@ -141,6 +156,12 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
             },
             "method": "put",
         })
+        # Join the thread room
+        payloads.append({
+            "endpoint": f"{super().get_endpoint()}/join/{self._thread_room_id}?user_id={self.mxid}",
+            "payload": {},
+        })
+
         return payloads
 
     def pre_send(self):
@@ -223,8 +244,7 @@ class MatrixProfile(Profile, MatrixEntityMixin):
 
     @property
     def localpart(self) -> str:
-        config = get_matrix_configuration()
-        return self.mxid.replace("@", "").replace(f":{config['homeserver_name']}", "")
+        return self.mxid.replace("@", "").replace(f":{self.server_name}", "")
 
     def payloads(self) -> List[Dict]:
         payloads = super().payloads()
@@ -243,6 +263,11 @@ class MatrixProfile(Profile, MatrixEntityMixin):
                     "topic": f"Profile room of {self.url}",
                 },
             })
+        # Ensure we're joined to the profile room
+        payloads.append({
+            "endpoint": f"{super().get_endpoint()}/join/%23{self.mxid}?user_id={self.mxid}",
+            "payload": {},
+        })
         payloads.append({
             "endpoint": f"{super().get_endpoint()}/profile/{self.mxid}/displayname?user_id={self.mxid}",
             "payload": {
