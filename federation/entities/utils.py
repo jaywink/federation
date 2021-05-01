@@ -1,5 +1,8 @@
 import inspect
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from federation.entities.base import Profile
 
 
 def get_base_attributes(entity):
@@ -34,5 +37,22 @@ def get_name_for_profile(fid: str) -> Optional[str]:
             return profile.username
         else:
             return profile.name
+    except Exception:
+        pass
+
+
+def get_profile(fid):
+    # type: (str) -> Profile
+    """
+    Get a profile via the configured profile getter.
+
+    Currently only works with Django configuration.
+    """
+    try:
+        from federation.utils.django import get_function_from_config
+        profile_func = get_function_from_config("get_profile_function")
+        if not profile_func:
+            return
+        return profile_func(fid=fid)
     except Exception:
         pass

@@ -11,7 +11,7 @@ import requests
 from federation.entities.base import Post, Profile
 from federation.entities.matrix.enums import EventType
 from federation.entities.mixins import BaseEntity
-from federation.entities.utils import get_base_attributes
+from federation.entities.utils import get_base_attributes, get_profile
 from federation.utils.matrix import get_matrix_configuration, appservice_auth_header
 from federation.utils.network import fetch_document, fetch_file
 
@@ -20,6 +20,7 @@ logger = logging.getLogger("federation")
 
 class MatrixEntityMixin(BaseEntity):
     _event_type: str = None
+    _payloads: List[Dict] = []
     _profile_room_id = None
     _txn_id: str = None
 
@@ -59,11 +60,10 @@ class MatrixEntityMixin(BaseEntity):
         if status == 200:
             data = json.loads(doc)
             self._profile_room_id = data["room_id"]
-        # TODO create?
 
     # noinspection PyMethodMayBeStatic
     def payloads(self) -> List[Dict]:
-        return []
+        return self._payloads
 
     @property
     def profile_room_alias(self):
@@ -84,6 +84,7 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
     _thread_room_id: str = None
 
     def create_thread_room(self):
+        # TODO don't do this immediately here, append to payloads for later pushing out
         headers = appservice_auth_header()
         # Create the thread room
         response = requests.post(
@@ -112,6 +113,17 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
         )
         response.raise_for_status()
         self._thread_room_event_id = response.json()["event_id"]
+
+    def get_profile_room_id(self):
+        super().get_profile_room_id()
+        if not self._profile_room_id:
+            from federation.entities.matrix.mappers import get_outbound_entity
+            # Need to also create the profile
+            profile = get_profile(self.actor_id)
+            profile_entity = get_outbound_entity(profile, None)
+            payloads = profile_entity.payloads()
+            if payloads:
+                self._payloads.extend(payloads)
 
     def payloads(self) -> List[Dict]:
         payloads = super().payloads()
