@@ -161,7 +161,15 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
             "endpoint": f"{super().get_endpoint()}/join/{self._thread_room_id}?user_id={self.mxid}",
             "payload": {},
         })
-
+        # Tag the thread room as low priority
+        payloads.append({
+            "endpoint": f"{super().get_endpoint()}/user/{self.mxid}/rooms/{self._thread_room_id}/tags/m.lowpriority"
+                        f"?user_id={self.mxid}",
+            "payload": {
+                "order": 0,
+            },
+            "method": "put",
+        })
         return payloads
 
     def pre_send(self):
