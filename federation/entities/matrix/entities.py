@@ -104,7 +104,6 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
         response.raise_for_status()
         self._thread_room_id = response.json()["room_id"]
         # Send the thread message
-        # TODO move this to a payload
         response = requests.put(
             url=f"{super().get_endpoint()}/rooms/{self._thread_room_id}/send/{self.event_type}/"
                 f"{str(uuid4())}?user_id={self.mxid}",
@@ -132,12 +131,6 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
 
     def payloads(self) -> List[Dict]:
         payloads = super().payloads()
-        # Ensure we're joined to the profile room
-        # TODO remove this after a bit, once the auto-join on creation works
-        payloads.append({
-            "endpoint": f"{super().get_endpoint()}/rooms/{self._profile_room_id}/join?user_id={self.mxid}",
-            "payload": {},
-        })
         payloads.append({
             "endpoint": f"{super().get_endpoint()}/rooms/{self._profile_room_id}/send/{self.event_type}/"
                         f"{self.txn_id}?user_id={self.mxid}",
@@ -152,11 +145,6 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
                 "org.matrix.cerulean.root": True,
             },
             "method": "put",
-        })
-        # Join the thread room
-        payloads.append({
-            "endpoint": f"{super().get_endpoint()}/rooms/{self._thread_room_id}/join?user_id={self.mxid}",
-            "payload": {},
         })
         # Tag the thread room as low priority
         payloads.append({
@@ -238,11 +226,8 @@ class MatrixProfile(Profile, MatrixEntityMixin):
     def create_profile_room(self):
         headers = appservice_auth_header()
         response = requests.post(
-            url=f"{super().get_endpoint()}/createRoom",
+            url=f"{super().get_endpoint()}/createRoom?user_id={self.mxid}",
             json={
-                "invite": [
-                    self.mxid,
-                ],
                 "name": self.name,
                 "preset": "public_chat" if self.public else "private_chat",
                 "room_alias_name": f"@{self.localpart}",
@@ -275,11 +260,6 @@ class MatrixProfile(Profile, MatrixEntityMixin):
             self.register_user()
         if self._remote_room_create_needed:
             self.create_profile_room()
-        # Ensure we're joined to the profile room
-        payloads.append({
-            "endpoint": f"{super().get_endpoint()}/rooms/{self._profile_room_id}/join?user_id={self.mxid}",
-            "payload": {},
-        })
         payloads.append({
             "endpoint": f"{super().get_endpoint()}/profile/{self.mxid}/displayname?user_id={self.mxid}",
             "payload": {
