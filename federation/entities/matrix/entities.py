@@ -11,7 +11,7 @@ import requests
 from federation.entities.base import Post, Profile
 from federation.entities.matrix.enums import EventType
 from federation.entities.mixins import BaseEntity
-from federation.entities.utils import get_base_attributes
+from federation.entities.utils import get_base_attributes, get_profile
 from federation.utils.matrix import get_matrix_configuration, appservice_auth_header
 from federation.utils.network import fetch_document, fetch_file
 
@@ -20,6 +20,7 @@ logger = logging.getLogger("federation")
 
 class MatrixEntityMixin(BaseEntity):
     _event_type: str = None
+    _payloads: List[Dict] = []
     _profile_room_id = None
     _txn_id: str = None
 
@@ -59,11 +60,10 @@ class MatrixEntityMixin(BaseEntity):
         if status == 200:
             data = json.loads(doc)
             self._profile_room_id = data["room_id"]
-        # TODO create?
 
     # noinspection PyMethodMayBeStatic
     def payloads(self) -> List[Dict]:
-        return []
+        return self._payloads
 
     @property
     def profile_room_alias(self):
@@ -72,6 +72,11 @@ class MatrixEntityMixin(BaseEntity):
     @property
     def profile_room_alias_url_safe(self):
         return f"{quote(self.profile_room_alias)}"
+
+    @property
+    def server_name(self) -> str:
+        config = get_matrix_configuration()
+        return config['homeserver_name']
 
     @property
     def txn_id(self) -> str:
@@ -89,7 +94,7 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
         response = requests.post(
             url=f"{super().get_endpoint()}/createRoom?user_id={self.mxid}",
             json={
-                # TODO auto-invite recipients if private chat
+                # TODO auto-invite other recipients if private chat
                 "preset": "public_chat" if self.public else "private_chat",
                 "name": f"Thread by {self.mxid}",
                 "topic": self.url,
@@ -113,6 +118,17 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
         response.raise_for_status()
         self._thread_room_event_id = response.json()["event_id"]
 
+    def get_profile_room_id(self):
+        super().get_profile_room_id()
+        if not self._profile_room_id:
+            from federation.entities.matrix.mappers import get_outbound_entity
+            # Need to also create the profile
+            profile = get_profile(self.actor_id)
+            profile_entity = get_outbound_entity(profile, None)
+            payloads = profile_entity.payloads()
+            if payloads:
+                self._payloads.extend(payloads)
+
     def payloads(self) -> List[Dict]:
         payloads = super().payloads()
         payloads.append({
@@ -127,6 +143,15 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
                 "org.matrix.cerulean.event_id": self._thread_room_event_id,
                 "org.matrix.cerulean.room_id": self._thread_room_id,
                 "org.matrix.cerulean.root": True,
+            },
+            "method": "put",
+        })
+        # Tag the thread room as low priority
+        payloads.append({
+            "endpoint": f"{super().get_endpoint()}/user/{self.mxid}/rooms/{self._thread_room_id}/tags/m.lowpriority"
+                        f"?user_id={self.mxid}",
+            "payload": {
+                "order": 0,
             },
             "method": "put",
         })
@@ -198,34 +223,43 @@ class MatrixProfile(Profile, MatrixEntityMixin):
     _remote_profile_create_needed = False
     _remote_room_create_needed = False
 
+    def create_profile_room(self):
+        headers = appservice_auth_header()
+        response = requests.post(
+            url=f"{super().get_endpoint()}/createRoom?user_id={self.mxid}",
+            json={
+                "name": self.name,
+                "preset": "public_chat" if self.public else "private_chat",
+                "room_alias_name": f"@{self.localpart}",
+                "topic": f"Profile room of {self.url}",
+            },
+            headers=headers,
+        )
+        response.raise_for_status()
+        self._profile_room_id = response.json()["room_id"]
+
+    def register_user(self):
+        headers = appservice_auth_header()
+        response = requests.post(
+            url=f"{super().get_endpoint()}/register",
+            json={
+                "username": f"{self.localpart}",
+                "type": "m.login.application_service",
+            },
+            headers=headers,
+        )
+        response.raise_for_status()
+
     @property
     def localpart(self) -> str:
-        config = get_matrix_configuration()
-        return self.mxid.replace("@", "").replace(f":{config['homeserver_name']}", "")
+        return self.mxid.replace("@", "").replace(f":{self.server_name}", "")
 
     def payloads(self) -> List[Dict]:
         payloads = super().payloads()
         if self._remote_profile_create_needed:
-            payloads.append({
-                "endpoint": f"{super().get_endpoint()}/register",
-                "payload": {
-                    "username": f"{self.localpart}",
-                    "type": "m.login.application_service",
-                },
-            })
+            self.register_user()
         if self._remote_room_create_needed:
-            payloads.append({
-                "endpoint": f"{super().get_endpoint()}/createRoom",
-                "payload": {
-                    "invite": [
-                        self.mxid,
-                    ],
-                    "name": self.name,
-                    "preset": "public_chat" if self.public else "private_chat",
-                    "room_alias_name": f"@{self.localpart}",
-                    "topic": f"Profile room of {self.url}",
-                },
-            })
+            self.create_profile_room()
         payloads.append({
             "endpoint": f"{super().get_endpoint()}/profile/{self.mxid}/displayname?user_id={self.mxid}",
             "payload": {
