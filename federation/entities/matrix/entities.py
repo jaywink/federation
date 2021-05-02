@@ -2,11 +2,13 @@ import json
 import logging
 import mimetypes
 import os
-from typing import Dict, List
+from typing import Dict, List, Optional
 from urllib.parse import quote
 from uuid import uuid4
 
 import requests
+# noinspection PyPackageRequirements
+from slugify import slugify
 
 from federation.entities.base import Post, Profile
 from federation.entities.matrix.enums import EventType
@@ -88,6 +90,42 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
     _thread_room_event_id: str = None
     _thread_room_id: str = None
 
+    def add_tag_room_payloads(self, tag_room_id: str):
+        self._payloads.append({
+            "endpoint": f"{super().get_endpoint()}/rooms/{tag_room_id}/join?user_id={self.mxid}",
+            "payload": {},
+        })
+        self._payloads.append({
+            # TODO at some point we'll need to track the event_id's, for now just random
+            # When we start listening to events from the other side, we'll need to filter
+            # the ones we sent. Additionally if there is going to be some kind of symlink MSC,
+            # we're going to want to stop carbon copying to many rooms.
+            "endpoint": f"{super().get_endpoint()}/rooms/{tag_room_id}/send/{self.event_type}/"
+                        f"{str(uuid4())}?user_id={self.mxid}",
+            "payload": {
+                "body": self.raw_content,
+                "msgtype": "m.text",
+                "format": "org.matrix.custom.html",
+                "formatted_body": self.rendered_content,
+            },
+            "method": "put",
+        })
+
+    def create_tag_room(self, tag: str) -> str:
+        headers = appservice_auth_header()
+        config = get_matrix_configuration()
+        response = requests.post(
+            url=f"{super().get_endpoint()}/createRoom",
+            json={
+                "preset": "public_chat",
+                "name": f"#{tag} ({config['appservice']['shortcode']} | {config['homeserver_name']})",
+                "topic": f"Content for the tag #{tag}",
+            },
+            headers=headers,
+        )
+        response.raise_for_status()
+        return response.json()["room_id"]
+
     def create_thread_room(self):
         headers = appservice_auth_header()
         # Create the thread room
@@ -129,6 +167,24 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
             if payloads:
                 self._payloads.extend(payloads)
 
+    @staticmethod
+    def get_tag_room_alias(tag: str) -> str:
+        config = get_matrix_configuration()
+        return f"#_{config['appservice']['shortcode']}_#{slugify(tag)}"
+
+    def get_tag_room_alias_url_safe(self, tag: str) -> str:
+        return f"{quote(self.get_tag_room_alias(tag))}"
+
+    def get_tag_room_id(self, tag: str) -> Optional[str]:
+        # TODO: we should cache these.
+        doc, status, error = fetch_document(
+            url=f"{self.get_endpoint()}/directory/room/{self.get_tag_room_alias_url_safe(tag)}",
+            extra_headers=appservice_auth_header(),
+        )
+        if status == 200:
+            data = json.loads(doc)
+            return data["room_id"]
+
     def payloads(self) -> List[Dict]:
         payloads = super().payloads()
         payloads.append({
@@ -168,6 +224,18 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
         self.upload_embedded_images()
         # Create thread room
         self.create_thread_room()
+        # Process tags if public post
+        if self.public:
+            for tag in self.tags:
+                tag_room_id = self.get_tag_room_id(tag)
+                if not tag_room_id:
+                    # noinspection PyBroadException
+                    try:
+                        tag_room_id = self.create_tag_room(tag)
+                    except Exception as ex:
+                        logger.warning("Failed to create tag room for tag %s for post %s: %s", tag, self.id, ex)
+                        continue
+                self.add_tag_room_payloads(tag_room_id)
 
     def upload_embedded_images(self):
         """
