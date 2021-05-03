@@ -14,6 +14,7 @@ from federation.entities.base import Post, Profile
 from federation.entities.matrix.enums import EventType
 from federation.entities.mixins import BaseEntity
 from federation.entities.utils import get_base_attributes, get_profile
+from federation.utils.django import get_configuration
 from federation.utils.matrix import get_matrix_configuration, appservice_auth_header
 from federation.utils.network import fetch_document, fetch_file
 
@@ -113,13 +114,18 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
 
     def create_tag_room(self, tag: str) -> str:
         headers = appservice_auth_header()
-        config = get_matrix_configuration()
+        config = get_configuration()
+        topic = f"Content for the tag #{tag}."
+        if config.get("tags_path"):
+            topic += f" Mirrored from {config['base_url']}{config['tags_path'].replace(':tag:', slugify(tag))}"
+        matrix_config = get_matrix_configuration()
         response = requests.post(
             url=f"{super().get_endpoint()}/createRoom",
             json={
                 "preset": "public_chat",
-                "name": f"#{tag} ({config['appservice']['shortcode']} | {config['homeserver_name']})",
-                "topic": f"Content for the tag #{tag}",
+                "name": f"#{tag} ({matrix_config['appservice']['shortcode']} | {matrix_config['homeserver_name']})",
+                "room_alias_name": self.get_tag_room_alias(tag).strip('#'),
+                "topic": topic,
             },
             headers=headers,
         )
