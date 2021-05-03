@@ -130,7 +130,15 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
             headers=headers,
         )
         response.raise_for_status()
-        return response.json()["room_id"]
+        room_id = response.json()["room_id"]
+        self._payloads.append({
+            "endpoint": f"{super().get_endpoint()}/directory/list/room/{room_id}",
+            "payload": {
+                "visibility": "public",
+            },
+            "method": "put",
+        })
+        return room_id
 
     def create_thread_room(self):
         headers = appservice_auth_header()
