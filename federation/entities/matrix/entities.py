@@ -181,10 +181,9 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
             if payloads:
                 self._payloads.extend(payloads)
 
-    @staticmethod
-    def get_tag_room_alias(tag: str) -> str:
+    def get_tag_room_alias(self, tag: str) -> str:
         config = get_matrix_configuration()
-        return f"#_{config['appservice']['shortcode']}_#{slugify(tag)}"
+        return f"#_{config['appservice']['shortcode']}_#{slugify(tag)}:{self.server_name}"
 
     def get_tag_room_alias_url_safe(self, tag: str) -> str:
         return f"{quote(self.get_tag_room_alias(tag))}"
