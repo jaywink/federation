@@ -124,7 +124,7 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
             json={
                 "preset": "public_chat",
                 "name": f"#{tag} ({matrix_config['appservice']['shortcode']} | {matrix_config['homeserver_name']})",
-                "room_alias_name": self.get_tag_room_alias(tag).strip('#'),
+                "room_alias_name": self.get_tag_room_alias_localpart(tag).strip('#'),
                 "topic": topic,
             },
             headers=headers,
@@ -181,12 +181,13 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
             if payloads:
                 self._payloads.extend(payloads)
 
-    def get_tag_room_alias(self, tag: str) -> str:
+    @staticmethod
+    def get_tag_room_alias_localpart(tag: str) -> str:
         config = get_matrix_configuration()
-        return f"#_{config['appservice']['shortcode']}_#{slugify(tag)}:{self.server_name}"
+        return f"#_{config['appservice']['shortcode']}_#{slugify(tag)}"
 
     def get_tag_room_alias_url_safe(self, tag: str) -> str:
-        return f"{quote(self.get_tag_room_alias(tag))}"
+        return quote(f"{self.get_tag_room_alias_localpart(tag)}:{self.server_name}")
 
     def get_tag_room_id(self, tag: str) -> Optional[str]:
         # TODO: we should cache these.
