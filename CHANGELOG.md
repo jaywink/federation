@@ -1,10 +1,15 @@
 # Changelog
 
-## [unreleased]
+## [0.22.0] - 2021-08-15
 
 ### Added
 
-* WIP Matrix support over an appservice.
+* Work in progress Matrix support over an appservice 😻
+
+  Currently requires Django support. Tested on Dendrite and up to version v0.3.11 only. Features so far:
+
+    * Register local users on the configured Matrix server.
+    * Post local user public posts into Matrix side to their profile timeline rooms and to each hashtag room.
 
 ### Fixed
 

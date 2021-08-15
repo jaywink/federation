@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 from federation import __version__
 
 
-description = 'Python library to abstract social web federation protocols like ActivityPub and Diaspora.'
+description = 'Python library to abstract social web federation protocols like ActivityPub, Matrix and Diaspora.'
 
 
 def get_long_description():
