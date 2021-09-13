@@ -35,7 +35,7 @@ def fetch_matrix_document(host: str) -> Optional[Dict]:
 
 def fetch_misskey_document(host: str, mastodon_document: Dict=None) -> Optional[Dict]:
     try:
-        response = requests.post(f'https://{host}/api/meta')  # ¯\_(ツ)_/¯
+        response = requests.post(f'https://{host}/api/meta', timeout=2)  # ¯\_(ツ)_/¯
     except Exception:
         return
     try:
