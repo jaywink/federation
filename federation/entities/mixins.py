@@ -37,13 +37,20 @@ class BaseEntity:
         self._children = []
         self._mentions = set()
         self._receivers = []
-        for key, value in kwargs.items():
-            if hasattr(self, key):
+
+        # make the assumption that if a schema is being used, the payload
+        # is deserialized and validated properly
+        if kwargs.get('schema'):
+            for key, value in kwargs.items():
                 setattr(self, key, value)
-            else:
-                warnings.warn("%s.__init__ got parameter %s which this class does not support - ignoring." % (
-                    self.__class__.__name__, key
-                ))
+        else:
+            for key, value in kwargs.items():
+                if hasattr(self, key):
+                    setattr(self, key, value)
+                else:
+                    warnings.warn("%s.__init__ got parameter %s which this class does not support - ignoring." % (
+                        self.__class__.__name__, key
+                    ))
         if not self.activity:
             # Fill a default activity if not given and type of entity class has one
             self.activity = getattr(self, "_default_activity", None)
