@@ -8,6 +8,7 @@ from federation.entities.activitypub.entities import (
 from federation.entities.base import Follow, Profile, Accept, Post, Comment, Retraction, Share, Image
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType, ReceiverVariant
+from federation.entities.activitypub.schemas import schema_to_objects
 
 logger = logging.getLogger("federation")
 
@@ -52,6 +53,19 @@ def element_to_objects(payload: Dict) -> List:
     """
     cls = None
     entities = []
+
+    # Initial attempt at handling json-ld with calamus
+    # Fall back to legacy if AP payload is not supported yet
+    entity = schema_to_objects(payload)
+    if entity:
+        logger.warning("Entity %s handled through the json-ld processor", entity)
+        entity._source_protocol = "activitypub"
+        entity._source_payload = payload
+        entity._receivers = extract_receivers(payload)
+        if hasattr(entity, "post_receive"):
+            entity.post_receive()
+        return [entity]
+
     is_object = True if payload.get('type') in OBJECTS else False
     if payload.get('type') == "Delete":
         cls = ActivitypubRetraction

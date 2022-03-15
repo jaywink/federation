@@ -1,4 +1,5 @@
 from typing import Dict, Tuple
+from mimetypes import guess_type
 
 from dirty_validators.basic import Email
 
@@ -43,7 +44,7 @@ class Image(OptionalRawContentMixin, CreatedAtMixin, BaseEntity):
             self.media_type = self.get_media_type()
 
     def get_media_type(self) -> str:
-        media_type = fetch_content_type(self.url)
+        media_type = guess_type(self.url)[0] or fetch_content_type(self.url)
         if media_type in self._valid_media_types:
             return media_type
         return ""
