@@ -220,17 +220,24 @@ class ActivitypubFollow(ActivitypubEntityMixin, Follow):
         Post receive hook - send back follow ack.
         """
         super().post_receive()
+
+        # If json-ld processed.
+        # This is assuming Follow can only be the object of an Undo activity. Lazy.
+        if hasattr(self, 'schema') and self.activity != self: 
+            self.following = False
+            print(self.schema, self.activity, self)
+
         if not self.following:
             return
 
         from federation.utils.activitypub import retrieve_and_parse_profile  # Circulars
         try:
             from federation.utils.django import get_function_from_config
-        except ImportError:
+            get_private_key_function = get_function_from_config("get_private_key_function")
+        except (ImportError, AttributeError):
             logger.warning("ActivitypubFollow.post_receive - Unable to send automatic Accept back, only supported on "
                            "Django currently")
             return
-        get_private_key_function = get_function_from_config("get_private_key_function")
         key = get_private_key_function(self.target_id)
         if not key:
             logger.warning("ActivitypubFollow.post_receive - Failed to send automatic Accept back: could not find "

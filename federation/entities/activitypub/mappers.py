@@ -60,10 +60,12 @@ def element_to_objects(payload: Dict) -> List:
     if entity:
         logger.warning("Entity %s handled through the json-ld processor", entity)
         entity._source_protocol = "activitypub"
-        entity._source_payload = payload
+        entity._source_object = payload
         entity._receivers = extract_receivers(payload)
         if hasattr(entity, "post_receive"):
             entity.post_receive()
+        if hasattr(entity, "extract_mentions"):
+            entity.extract_mentions()
         return [entity]
 
     is_object = True if payload.get('type') in OBJECTS else False
