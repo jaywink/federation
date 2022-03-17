@@ -137,6 +137,9 @@ class Create(Entity):
 class Update(Entity):
     pass
 
+class Undo(Entity):
+    pass
+
 
 # A node without an id isn't true json-ld, but many payloads have
 # id-less nodes. Since calamus forces random ids on such nodes, 
@@ -291,6 +294,7 @@ class PropertyValueSchema(NoIdMixin, JsonLDSchema):
         model = PropertyValue
 
 class ActorSchema(ObjectMixin, JsonLDSchema):
+    id = fields.Id()
     attachment = fields.Nested(as2.attachment, nested=[PropertyValueSchema], many=True)
     inbox = IRI(ldp.inbox)
     outbox = IRI(as2.outbox)
@@ -319,7 +323,7 @@ class ProfileSchema(ActorSchema): # why isn't the as2 Profile object used by the
     discoverable = fields.Boolean(toot.discoverable)
     devices = IRI(toot.devices)
     publicKey = fields.Dict(sec.publicKey)
-    #guid = fields.String(diaspora.guid)
+    guid = fields.String(diaspora.guid)
     handle = fields.String(diaspora.handle)
 
     class Meta:
@@ -390,12 +394,10 @@ class SignatureSchema(NoIdMixin, JsonLDSchema):
 
 class ActivityMixin(ObjectMixin):
     actor_id = IRI(as2.actor)
-    #object will be defined in pre_load
     #target_id = IRI(as2.target)
     #result
     #origin
     instrument = fields.Dict(as2.instrument)
-    signature = fields.Nested(sec.signature, nested = SignatureSchema)
 
     @pre_load
     def pre_load(self, data, **kwargs):
@@ -404,7 +406,7 @@ class ActivityMixin(ObjectMixin):
         # AP activities may be signed, but some platforms don't
         # define RsaSignature2017. add it to the context
         ctx = data.get('@context')
-        if ctx:
+        if isinstance(ctx, list):
             w3id = 'https://w3id.org/security/v1'
             if w3id not in ctx: ctx.insert(0,w3id)
             idx = [i for i,v in enumerate(ctx) if isinstance(v, dict)]
@@ -439,10 +441,12 @@ OBJECTS = [
 
 class ActivitySchema(ActivityMixin, JsonLDSchema):
     object_ = fields.Nested(as2.object, nested=OBJECTS)
+    # don't have a clear idea of which activities are signed and which are not
+    signature = fields.Nested(sec.signature, nested = SignatureSchema)
 
-
+# inbound Accept is a noop...
 class AcceptSchema(ActivitySchema):
-    target_id = fields.Id()
+    activity_id = fields.Id()
 
     class Meta:
         rdf_type = as2.Accept
@@ -462,6 +466,13 @@ class UpdateSchema(ActivitySchema):
         rdf_type = as2.Update
         model = Update
 
+class UndoSchema(ActivitySchema):
+    activity_id = fields.Id()
+
+    class Meta:
+        rdf_type = as2.Undo
+        model = Undo
+
 SCHEMAMAP = {
         "Accept": AcceptSchema,
 #        "Announce": AnnounceSchema
@@ -474,17 +485,18 @@ SCHEMAMAP = {
         "Page": PageSchema,
         "Person": ProfileSchema,
 #        "Tombstone": TombstoneSchema
-#        "Undo": UndoSchema
+        "Undo": UndoSchema,
         "Update": UpdateSchema,
 #        "View": ViewSchema
 }
 
 def schema_to_objects(payload):
     entity = None
-    schema = SCHEMAMAP.get(payload['type'])
+    schema = SCHEMAMAP.get(payload.get('type'))
     if schema:
         schema_instance = schema(context=payload['@context'])
         entity = schema_instance.load(payload)
+        entity.activity = entity
 
         if hasattr(entity, 'object_') and isinstance(entity.object_, BaseEntity):
             entity.object_.activity = entity
