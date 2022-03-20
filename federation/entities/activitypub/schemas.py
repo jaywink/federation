@@ -8,9 +8,7 @@ import json
 import requests_cache
 
 from federation.entities.mixins import BaseEntity
-from federation.entities.activitypub.entities import ActivitypubAccept, ActivitypubPost, ActivitypubComment, ActivitypubProfile, ActivitypubImage, ActivitypubFollow
-
-from pprint import pprint
+from federation.entities.activitypub.entities import ActivitypubAccept, ActivitypubPost, ActivitypubComment, ActivitypubProfile, ActivitypubImage, ActivitypubFollow, ActivitypubShare, ActivitypubRetraction
 
 # This is required to workaround a bug in pyld that has the Accept header
 # accept other content types. From what I understand, precedence handling
@@ -98,34 +96,67 @@ class LanguageMap(fields.Dict):
             ret[lang] = [c]
         return super()._deserialize(ret, attr, data, **kwargs)
 
+class MixedField(fields.Nested):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.iri = IRI(self.field_name, add_value_types=False)
+
+    def _bind_to_schema(self, field_name, schema):
+        super()._bind_to_schema(field_name, schema)
+        self.iri.parent = self.parent
+
+    def _serialize(self, value, attr, obj, **kwargs):
+        if isinstance(value, str):
+            return self.iri._serialize(value, attr, obj, **kwargs)
+        else:
+            return super()._serialize(value, attr, obj, **kwargs)
+
+    def _deserialize(self, value, attr, data, **kwargs):
+        if isinstance(value, list) and value[0].get('@type'):
+            return super()._deserialize(value, attr, data, **kwargs)
+        else:
+            return self.iri._deserialize(value, attr, data, **kwargs)
+        
+
 class Entity:
     def __init__(self, *args, **kwargs):
         for k, v in kwargs.items():
             setattr(self, k, v)
 
-    '''
-    Handle cases where an AP object type matches multiple
-    classes depending on the existence/value of specific
-    propertie(s).
-    calamus Nested field can't handle using the same model
-    or the same type in multiple schemas
-    '''
-    def copy(self):
-        if self.__class__.__name__ in ('Note', 'Page', 'Article'):
-            return ActivitypubComment(**self.__dict__) if hasattr(self, 'target_id') else ActivitypubPost(**self.__dict__)
-
+    # noop to avoid isinstance tests
+    def set_instance(self):
         return self
 
 class Link(Entity):
     pass
 
-class Note(Entity, BaseEntity):
+'''
+The set_instance method is used to handle cases where an AP object type matches multiple
+classes depending on the existence/value of specific propertie(s) or
+when the same class is used both as an object or an activity or
+when a property can't be directly deserialized from the payload.
+calamus Nested field can't handle using the same model
+or the same type in multiple schemas
+'''
+class Note(Entity):
+    def set_instance(self):
+        entity = ActivitypubComment(**self.__dict__) if hasattr(self, 'target_id') else ActivitypubPost(**self.__dict__)
+
+        if hasattr(self, 'content_map'):
+            entity._rendered_content = self.content_map['orig'].strip()
+            if hasattr(self, 'source') and self.source.get('mediaType') == 'text/markdown':
+                entity._media_type = self.source['mediaType']
+                entity.raw_content = self.source.get('content').strip()
+            else:
+                entity._media_type = 'text/html'
+                entity.raw_content = self.content_map['orig']
+
+        return entity
+
+class Article(Note):
     pass
 
-class Article(Entity, BaseEntity):
-    pass
-
-class Page(Entity, BaseEntity):
+class Page(Note):
     pass
 
 class Video(Entity):
@@ -194,7 +225,7 @@ class ObjectMixin:
                 # don't want expanded IRIs to be exposed as dict keys
                 data[k] = jsonld.compact(v, self.context)
                 data[k].pop('@context')
-        data['schema'] = self
+        data['schema'] = self.__class__
         return super().make_instance(data, **kwargs)
     
 # This mimics that federation currently handles AP Document as AP Image
@@ -293,7 +324,7 @@ class PropertyValueSchema(NoIdMixin, JsonLDSchema):
         rdf_type = schema.PropertyValue
         model = PropertyValue
 
-class ActorSchema(ObjectMixin, JsonLDSchema):
+class ActorMixin(ObjectMixin):
     id = fields.Id()
     attachment = fields.Nested(as2.attachment, nested=[PropertyValueSchema], many=True)
     inbox = IRI(ldp.inbox)
@@ -313,9 +344,6 @@ class ActorSchema(ObjectMixin, JsonLDSchema):
     icon = fields.Nested(as2.icon, nested=ImageSchema, many=True)
     image = fields.Nested(as2.image, nested=ImageSchema, many=True)
     tag_list = fields.Nested(as2.tag, nested=[HashtagSchema], many=True)
-
-
-class ProfileSchema(ActorSchema): # why isn't the as2 Profile object used by the various platforms?
     playlists = IRI(pt.playlists)
     featured = IRI(toot.featured)
     featuredTags = IRI(toot.featuredTags)
@@ -326,25 +354,58 @@ class ProfileSchema(ActorSchema): # why isn't the as2 Profile object used by the
     guid = fields.String(diaspora.guid)
     handle = fields.String(diaspora.handle)
 
-    class Meta:
-        rdf_type = as2.Person
-        model = ActivitypubProfile
-
 class Person(Entity):
-    pass
+    def set_instance(self):
+        entity = ActivitypubProfile(**self.__dict__)
+        entity.inboxes = {'private': self.inbox, 'public':self.endpoints['sharedInbox']}
+        entity.public_key = self.publicKey['publicKeyPem']
+        entity.image_urls = {}
+        if hasattr(self, 'icon'):
+            entity.image_urls = {
+                'small': self.icon[0].url,
+                'medium': self.icon[0].url,
+                'large': self.icon[0].url
+                }
 
-class PersonSchema(ActorSchema):
+        return entity
+
+
+class PersonSchema(ActorMixin, JsonLDSchema):
     class Meta:
         rdf_type = as2.Person
         model = Person
 
-class Group(Entity):
+class Group(Person):
     pass
 
-class GroupSchema(ActorSchema):
+class GroupSchema(ActorMixin, JsonLDSchema):
     class Meta:
         rdf_type = as2.Group
         model = Group
+
+class Application(Person):
+    pass
+
+class ApplicationSchema(ActorMixin, JsonLDSchema):
+    class Meta:
+        rdf_type = as2.Application
+        model = Application
+
+class Organization(Person):
+    pass
+
+class OrganizationSchema(ActorMixin, JsonLDSchema):
+    class Meta:
+        rdf_type = as2.Organization
+        model = Organization
+
+class Service(Person):
+    pass
+
+class ServiceSchema(ActorMixin, JsonLDSchema):
+    class Meta:
+        rdf_type = as2.Service
+        model = Service
 
 class NoteMixin:
     actor_id = IRI(as2.attributedTo, many=True)
@@ -392,12 +453,25 @@ class SignatureSchema(NoIdMixin, JsonLDSchema):
         rdf_type = sec.RsaSignature2017
         model = Signature
 
+OBJECTS = [
+        'AnnounceSchema',
+        'ArticleSchema',
+        'FollowSchema',
+        'LikeSchema',
+        'NoteSchema',
+        'PageSchema',
+        'TombstoneSchema',
+        'VideoSchema'
+]
+
 class ActivityMixin(ObjectMixin):
     actor_id = IRI(as2.actor)
     #target_id = IRI(as2.target)
     #result
     #origin
     instrument = fields.Dict(as2.instrument)
+    # don't have a clear idea of which activities are signed and which are not
+    signature = fields.Nested(sec.signature, nested = SignatureSchema)
 
     @pre_load
     def pre_load(self, data, **kwargs):
@@ -405,8 +479,10 @@ class ActivityMixin(ObjectMixin):
         
         # AP activities may be signed, but some platforms don't
         # define RsaSignature2017. add it to the context
-        ctx = data.get('@context')
-        if isinstance(ctx, list):
+        if data.get('signature'):
+            ctx = data.get('@context')
+            if not isinstance(ctx, list):
+                ctx = [ctx, {}]
             w3id = 'https://w3id.org/security/v1'
             if w3id not in ctx: ctx.insert(0,w3id)
             idx = [i for i,v in enumerate(ctx) if isinstance(v, dict)]
@@ -416,9 +492,24 @@ class ActivityMixin(ObjectMixin):
                     found = True
                     break
             if not found: ctx[idx[0]]['RsaSignature2017'] = 'sec:RsaSignature2017'
-            self.context = data['@context'] = ctx
+            data['@context'] = ctx
 
         return data
+
+    @post_load
+    def make_instance(self, data, **kwargs):
+        entity = super().make_instance(data, **kwargs)
+        entity.activity = entity
+        return entity
+    
+class Follow(Entity):
+    def set_instance(self):
+        entity = ActivitypubFollow(**self.__dict__)
+        # This is assuming Follow can only be the object of an Undo activity. Lazy.
+        if self.activity != self: 
+            entity.following = False
+
+        return entity
 
 class FollowSchema(ActivityMixin, JsonLDSchema):
     activity_id = fields.Id()
@@ -426,83 +517,133 @@ class FollowSchema(ActivityMixin, JsonLDSchema):
 
     class Meta:
         rdf_type = as2.Follow
-        model = ActivitypubFollow
+        model = Follow
 
-OBJECTS = [
-        ArticleSchema,
-        FollowSchema,
-#        "Like": LikeSchema
-#        "View": ViewSchema
-        NoteSchema,
-        PageSchema,
-#        "Tombstone": TombstoneSchema
-        VideoSchema
-]
+class Announce(Entity):
+    def set_instance(self):
+        if self.activity == self:
+            return ActivitypubShare(**self.__dict__)
+        else:
+            return ActivitypubRetraction(**self.__dict__)
 
-class ActivitySchema(ActivityMixin, JsonLDSchema):
-    object_ = fields.Nested(as2.object, nested=OBJECTS)
-    # don't have a clear idea of which activities are signed and which are not
-    signature = fields.Nested(sec.signature, nested = SignatureSchema)
+class AnnounceSchema(ActivityMixin, JsonLDSchema):
+    id = fields.Id()
+    target_id = IRI(as2.object)
+
+    class Meta:
+        rdf_type = as2.Announce
+        model = Announce
+    
+class Tombstone(Entity):
+    def set_instance(self):
+        return ActivitypubRetraction(**self.__dict__)
+
+class TombstoneSchema(ObjectMixin, JsonLDSchema):
+    target_id = fields.Id()
+
+    class Meta:
+        rdf_type = as2.Tombstone
+        model = Tombstone
+
+class ActivityObjectMixin(ActivityMixin):
+    object_ = MixedField(as2.object, nested=OBJECTS)
+
+class Like(Entity):
+    pass
+
+class LikeSchema(ActivityObjectMixin, JsonLDSchema):
+    activity_id = fields.Id()
+    like = fields.String(diaspora.like)
+
+    class Meta:
+        rdf_type = as2.Like
+        model = Like
 
 # inbound Accept is a noop...
-class AcceptSchema(ActivitySchema):
+class Accept(Entity):
+    def set_instance(self):
+        del self.object_
+        return ActivitypubAccept(**self.__dict__)
+
+class AcceptSchema(ActivityObjectMixin, JsonLDSchema):
     activity_id = fields.Id()
 
     class Meta:
         rdf_type = as2.Accept
-        model = ActivitypubAccept
+        model = Accept
 
-class CreateSchema(ActivitySchema):
+class CreateSchema(ActivityObjectMixin, JsonLDSchema):
     activity_id = fields.Id()
 
     class Meta:
         rdf_type = as2.Create
         model = Create
 
-class UpdateSchema(ActivitySchema):
+class Delete(Entity):
+    def set_instance(self):
+        if hasattr(self, 'object_') and not isinstance(self.object_, Entity):
+            self.target_id = self.object_
+            return ActivitypubRetraction(**self.__dict__)
+
+class DeleteSchema(ActivityObjectMixin, JsonLDSchema):
+    activity_id = fields.Id()
+
+    class Meta:
+        rdf_type = as2.Delete
+        model = Delete
+
+class UpdateSchema(ActivityObjectMixin, JsonLDSchema):
     activity_id = fields.Id()
 
     class Meta:
         rdf_type = as2.Update
         model = Update
 
-class UndoSchema(ActivitySchema):
+class UndoSchema(ActivityObjectMixin, JsonLDSchema):
     activity_id = fields.Id()
 
     class Meta:
         rdf_type = as2.Undo
         model = Undo
 
+class View(Entity):
+    pass
+
+class ViewSchema(ActivityObjectMixin, JsonLDSchema):
+
+    class Meta:
+        rdf_type = as2.View
+        model = View
+
 SCHEMAMAP = {
         "Accept": AcceptSchema,
-#        "Announce": AnnounceSchema
+        "Announce": AnnounceSchema,
+        "Application": ApplicationSchema,
         "Article": ArticleSchema,
         "Create": CreateSchema,
-#        "Delete": DeleteSchema
+        "Delete": DeleteSchema,
+        "Group": GroupSchema,
         "Follow": FollowSchema,
-#        "Like": LikeSchema
+        "Like": LikeSchema,
         "Note": NoteSchema,
+        "Organization": OrganizationSchema,
         "Page": PageSchema,
-        "Person": ProfileSchema,
-#        "Tombstone": TombstoneSchema
+        "Person": PersonSchema,
+        "Service": ServiceSchema,
         "Undo": UndoSchema,
         "Update": UpdateSchema,
-#        "View": ViewSchema
+        "View": ViewSchema
 }
 
 def schema_to_objects(payload):
-    entity = None
     schema = SCHEMAMAP.get(payload.get('type'))
     if schema:
-        schema_instance = schema(context=payload['@context'])
-        entity = schema_instance.load(payload)
-        entity.activity = entity
+        entity = schema(context=payload.get('@context')).load(payload)
 
-        if hasattr(entity, 'object_') and isinstance(entity.object_, BaseEntity):
+        if hasattr(entity, 'object_') and isinstance(entity.object_, Entity):
             entity.object_.activity = entity
-            entity = entity.object_.copy() if hasattr(entity.object_, 'copy') else entity.object_
-        elif not isinstance(entity, BaseEntity):
-            # payload not supported yet
-            entity = None
+            entity = entity.object_
     
-    return entity
+        entity = entity.set_instance()
+        return entity
+    return None

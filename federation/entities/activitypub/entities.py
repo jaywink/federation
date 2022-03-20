@@ -62,16 +62,6 @@ class CleanContentMixin(RawContentMixin):
                 return
             return attrs
 
-        # payload went through the json-ld processor
-        if hasattr(self, 'content_map'):
-            self._rendered_content = self.content_map['orig'].strip()
-            if hasattr(self, 'source') and self.source.get('mediaType') == 'text/markdown':
-                self._media_type = self.source['mediaType']
-                self.raw_content = self.source.get('content').strip()
-            else:
-                self._media_type = 'text/html'
-                self.raw_content = self.content_map['orig']
-
         if self._media_type == "text/markdown":
             # Skip when markdown
             return
@@ -221,12 +211,6 @@ class ActivitypubFollow(ActivitypubEntityMixin, Follow):
         """
         super().post_receive()
 
-        # If json-ld processed.
-        # This is assuming Follow can only be the object of an Undo activity. Lazy.
-        if hasattr(self, 'schema') and self.activity != self: 
-            self.following = False
-            print(self.schema, self.activity, self)
-
         if not self.following:
             return
 
@@ -320,17 +304,6 @@ class ActivitypubProfile(ActivitypubEntityMixin, Profile):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        if hasattr(self, 'schema'):
-            self.inboxes = {'private': self.inbox, 'public':self.endpoints['sharedInbox']}
-            self.public_key = self.publicKey['publicKeyPem']
-            self.image_urls = {}
-            if hasattr(self, 'icon'):
-                self.image_urls = {
-                    'small': self.icon[0].url,
-                    'medium': self.icon[0].url,
-                    'large': self.icon[0].url
-                    }
 
     def to_as2(self) -> Dict:
         as2 = {
