@@ -118,63 +118,28 @@ class MixedField(fields.Nested):
             return self.iri._deserialize(value, attr, data, **kwargs)
         
 
-class Entity:
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-
-    # noop to avoid isinstance tests
-    def set_instance(self):
-        return self
-
-class Link(Entity):
-    pass
-
 '''
-The set_instance method is used to handle cases where an AP object type matches multiple
+The fed_instance method is used to handle cases where an AP object type matches multiple
 classes depending on the existence/value of specific propertie(s) or
 when the same class is used both as an object or an activity or
 when a property can't be directly deserialized from the payload.
 calamus Nested field can't handle using the same model
 or the same type in multiple schemas
 '''
-class Note(Entity):
-    def set_instance(self):
-        entity = ActivitypubComment(**self.__dict__) if hasattr(self, 'target_id') else ActivitypubPost(**self.__dict__)
+class Entity:
+    def __init__(self, *args, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
-        if hasattr(self, 'content_map'):
-            entity._rendered_content = self.content_map['orig'].strip()
-            if hasattr(self, 'source') and self.source.get('mediaType') == 'text/markdown':
-                entity._media_type = self.source['mediaType']
-                entity.raw_content = self.source.get('content').strip()
-            else:
-                entity._media_type = 'text/html'
-                entity.raw_content = self.content_map['orig']
+    # noop to avoid isinstance tests
+    def fed_instance(self):
+        return self
 
-        return entity
-
-class Article(Note):
-    pass
-
-class Page(Note):
-    pass
-
-class Video(Entity):
-    pass
-
-class Create(Entity):
-    pass
-
-class Update(Entity):
-    pass
-
-class Undo(Entity):
-    pass
-
-
-# A node without an id isn't true json-ld, but many payloads have
-# id-less nodes. Since calamus forces random ids on such nodes, 
-# this class removes it.
+'''
+A node without an id isn't true json-ld, but many payloads have
+id-less nodes. Since calamus forces random ids on such nodes, 
+this mixin removes it.
+'''
 class NoIdMixin:
     def dump(self, obj):
         ret = super().dump(obj)
@@ -226,10 +191,10 @@ class ObjectMixin:
                 data[k] = jsonld.compact(v, self.context)
                 data[k].pop('@context')
         data['schema'] = self.__class__
-        return super().make_instance(data, **kwargs)
+        return super().make_instance(data, **kwargs).fed_instance()
     
 # This mimics that federation currently handles AP Document as AP Image
-# May need to be exanded
+# May need to be extended
 class DocumentMixin(ObjectMixin):
     inline = fields.Boolean(pyfed.inlineImage)
     height = Integer(as2.height, flavor=xsd.nonNegativeInteger, add_value_types=True)
@@ -237,13 +202,20 @@ class DocumentMixin(ObjectMixin):
     url = IRI(as2.url)
     blurhash = fields.String(toot.blurhash)
 
+class Document(Entity):
+    def fed_instance(self):
+        return ActivitypubImage(**self.__dict__)
+
 class DocumentSchema(DocumentMixin, NoIdMixin, JsonLDSchema):
 
     class Meta:
         #fields = ('inline', 'url', 'media_type', 'name')
         unknown = 'INCLUDE'
         rdf_type = as2.Document
-        model = ActivitypubImage
+        model = Document
+
+class Image(Document):
+    pass
 
 class ImageSchema(DocumentMixin, NoIdMixin, JsonLDSchema):
 
@@ -251,7 +223,7 @@ class ImageSchema(DocumentMixin, NoIdMixin, JsonLDSchema):
         fields = ('inline', 'url', 'media_type', 'name')
         unknown = 'INCLUDE'
         rdf_type = as2.Image
-        model = ActivitypubImage
+        model = Image
 
 class Infohash(Entity):
     pass
@@ -275,14 +247,11 @@ class LinkMixin:
     size = Integer(pt.size, flavor=schema.Number, add_value_types=True)
     #preview : variable type?
     
-class TaglinkSchema(LinkMixin, NoIdMixin, JsonLDSchema):
-
-    class Meta:
-        rdf_type = as2.Link
-        model = Link
+class Link(Entity):
+    pass
 
 class LinkSchema(LinkMixin, NoIdMixin, JsonLDSchema):
-    tag = fields.Nested(as2.tag, nested=[InfohashSchema, TaglinkSchema], many=True)
+    tag = fields.Nested(as2.tag, nested=[InfohashSchema, 'LinkSchema'], many=True)
 
     class Meta:
         rdf_type = as2.Link
@@ -355,10 +324,11 @@ class ActorMixin(ObjectMixin):
     handle = fields.String(diaspora.handle)
 
 class Person(Entity):
-    def set_instance(self):
+    def fed_instance(self):
         entity = ActivitypubProfile(**self.__dict__)
-        entity.inboxes = {'private': self.inbox, 'public':self.endpoints['sharedInbox']}
-        entity.public_key = self.publicKey['publicKeyPem']
+        if hasattr(self, 'inbox'):
+            entity.inboxes = {'private': self.inbox, 'public':self.endpoints['sharedInbox']}
+            entity.public_key = self.publicKey['publicKeyPem']
         entity.image_urls = {}
         if hasattr(self, 'icon'):
             entity.image_urls = {
@@ -415,20 +385,44 @@ class NoteMixin:
     inReplyToAtomUri = IRI(ostatus.inReplyToAtomUri)
     url = IRI(as2.url)
 
+class Note(Entity):
+    def fed_instance(self):
+        entity = ActivitypubComment(**self.__dict__) if hasattr(self, 'target_id') else ActivitypubPost(**self.__dict__)
+
+        if hasattr(self, 'content_map'):
+            entity._rendered_content = self.content_map['orig'].strip()
+            if hasattr(self, 'source') and self.source.get('mediaType') == 'text/markdown':
+                entity._media_type = self.source['mediaType']
+                entity.raw_content = self.source.get('content').strip()
+            else:
+                entity._media_type = 'text/html'
+                entity.raw_content = self.content_map['orig']
+
+        return entity
+
 class NoteSchema(NoteMixin, ObjectSchema):
     class Meta:
         rdf_type = as2.Note
         model = Note
+
+class Page(Note):
+    pass
 
 class PageSchema(NoteMixin, ObjectSchema):
     class Meta:
         rdf_type = as2.Page
         model = Page
 
+class Article(Note):
+    pass
+
 class ArticleSchema(NoteMixin, ObjectSchema):
     class Meta:
         rdf_type = as2.Article
         model = Article
+
+class Video(Entity):
+    pass
 
 # peertube uses a lot of properties differently...
 class VideoSchema(ObjectSchema):
@@ -464,6 +458,11 @@ OBJECTS = [
         'VideoSchema'
 ]
 
+class Activity(Entity):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.activity = self
+
 class ActivityMixin(ObjectMixin):
     actor_id = IRI(as2.actor)
     #target_id = IRI(as2.target)
@@ -496,14 +495,8 @@ class ActivityMixin(ObjectMixin):
 
         return data
 
-    @post_load
-    def make_instance(self, data, **kwargs):
-        entity = super().make_instance(data, **kwargs)
-        entity.activity = entity
-        return entity
-    
-class Follow(Entity):
-    def set_instance(self):
+class Follow(Activity):
+    def fed_instance(self):
         entity = ActivitypubFollow(**self.__dict__)
         # This is assuming Follow can only be the object of an Undo activity. Lazy.
         if self.activity != self: 
@@ -519,8 +512,8 @@ class FollowSchema(ActivityMixin, JsonLDSchema):
         rdf_type = as2.Follow
         model = Follow
 
-class Announce(Entity):
-    def set_instance(self):
+class Announce(Activity):
+    def fed_instance(self):
         if self.activity == self:
             return ActivitypubShare(**self.__dict__)
         else:
@@ -535,7 +528,7 @@ class AnnounceSchema(ActivityMixin, JsonLDSchema):
         model = Announce
     
 class Tombstone(Entity):
-    def set_instance(self):
+    def fed_instance(self):
         return ActivitypubRetraction(**self.__dict__)
 
 class TombstoneSchema(ObjectMixin, JsonLDSchema):
@@ -548,7 +541,7 @@ class TombstoneSchema(ObjectMixin, JsonLDSchema):
 class ActivityObjectMixin(ActivityMixin):
     object_ = MixedField(as2.object, nested=OBJECTS)
 
-class Like(Entity):
+class Like(Activity):
     pass
 
 class LikeSchema(ActivityObjectMixin, JsonLDSchema):
@@ -560,8 +553,8 @@ class LikeSchema(ActivityObjectMixin, JsonLDSchema):
         model = Like
 
 # inbound Accept is a noop...
-class Accept(Entity):
-    def set_instance(self):
+class Accept(Activity):
+    def fed_instance(self):
         del self.object_
         return ActivitypubAccept(**self.__dict__)
 
@@ -572,6 +565,9 @@ class AcceptSchema(ActivityObjectMixin, JsonLDSchema):
         rdf_type = as2.Accept
         model = Accept
 
+class Create(Activity):
+    pass
+
 class CreateSchema(ActivityObjectMixin, JsonLDSchema):
     activity_id = fields.Id()
 
@@ -579,8 +575,8 @@ class CreateSchema(ActivityObjectMixin, JsonLDSchema):
         rdf_type = as2.Create
         model = Create
 
-class Delete(Entity):
-    def set_instance(self):
+class Delete(Activity):
+    def fed_instance(self):
         if hasattr(self, 'object_') and not isinstance(self.object_, Entity):
             self.target_id = self.object_
             return ActivitypubRetraction(**self.__dict__)
@@ -592,12 +588,18 @@ class DeleteSchema(ActivityObjectMixin, JsonLDSchema):
         rdf_type = as2.Delete
         model = Delete
 
+class Update(Activity):
+    pass
+
 class UpdateSchema(ActivityObjectMixin, JsonLDSchema):
     activity_id = fields.Id()
 
     class Meta:
         rdf_type = as2.Update
         model = Update
+
+class Undo(Activity):
+    pass
 
 class UndoSchema(ActivityObjectMixin, JsonLDSchema):
     activity_id = fields.Id()
@@ -606,7 +608,7 @@ class UndoSchema(ActivityObjectMixin, JsonLDSchema):
         rdf_type = as2.Undo
         model = Undo
 
-class View(Entity):
+class View(Activity):
     pass
 
 class ViewSchema(ActivityObjectMixin, JsonLDSchema):
@@ -640,10 +642,9 @@ def schema_to_objects(payload):
     if schema:
         entity = schema(context=payload.get('@context')).load(payload)
 
-        if hasattr(entity, 'object_') and isinstance(entity.object_, Entity):
+        if hasattr(entity, 'object_') and (isinstance(entity.object_, Entity) or isinstance(entity.object_, BaseEntity)):
             entity.object_.activity = entity
             entity = entity.object_
     
-        entity = entity.set_instance()
         return entity
     return None
