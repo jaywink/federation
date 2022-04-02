@@ -40,7 +40,7 @@ class BaseEntity:
 
         # make the assumption that if a schema is being used, the payload
         # is deserialized and validated properly
-        if kwargs.get('schema'):
+        if kwargs.get('has_schema'):
             for key, value in kwargs.items():
                 setattr(self, key, value)
         else:
