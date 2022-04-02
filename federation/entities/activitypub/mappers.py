@@ -8,7 +8,7 @@ from federation.entities.activitypub.entities import (
 from federation.entities.base import Follow, Profile, Accept, Post, Comment, Retraction, Share, Image
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType, ReceiverVariant
-from federation.entities.activitypub.schemas import schema_to_objects
+from federation.entities.activitypub.models import model_to_objects
 
 logger = logging.getLogger("federation")
 
@@ -56,7 +56,7 @@ def element_to_objects(payload: Dict) -> List:
 
     # Initial attempt at handling json-ld with calamus
     # Fall back to legacy if AP payload is not supported yet
-    entity = schema_to_objects(payload)
+    entity = model_to_objects(payload)
     if entity and isinstance(entity, BaseEntity):
         logger.warning('Entity type "%s" was handled through the json-ld processor', entity.__class__.__name__)
         entity._source_protocol = "activitypub"
