@@ -1,6 +1,8 @@
-from unittest.mock import Mock
+from unittest.mock import Mock, DEFAULT
 
 import pytest
+import inspect
+import requests
 
 # noinspection PyUnresolvedReferences
 from federation.tests.fixtures.entities import *
@@ -21,7 +23,14 @@ def disable_network_calls(monkeypatch):
         def raise_for_status():
             pass
 
-    monkeypatch.setattr("requests.get", Mock(return_value=MockResponse))
+    saved_get = requests.get
+    def side_effect(*args, **kwargs):
+        if "pyld/documentloader" in inspect.stack()[4][1]:
+            return saved_get(*args, **kwargs)
+        return DEFAULT
+
+    #monkeypatch.setattr("requests.get", Mock(return_value=MockResponse))
+    monkeypatch.setattr("requests.get", Mock(return_value=MockResponse, side_effect=side_effect))
 
 
 @pytest.fixture
