@@ -7,7 +7,6 @@ from marshmallow.fields import Integer
 from pyld import jsonld, documentloader
 import json
 import requests_cache
-from pprint import pprint
 
 from federation.entities.mixins import BaseEntity
 from federation.entities.base import Image as BaseImage
@@ -21,7 +20,6 @@ logger = logging.getLogger("federation")
 # accept other content types. From what I understand, precedence handling
 # is broken
 def myloader(*args, **kwargs):
-    requests_cache.install_cache('ld_cache', backend='redis') # this will require some configuration mechanism
     requests_loader = documentloader.requests.requests_document_loader(*args, **kwargs)
     
     def loader(url, options={}):
@@ -29,6 +27,12 @@ def myloader(*args, **kwargs):
         return requests_loader(url, options)
     
     return loader
+'''
+By default, request_cache creates a sqlite cache.
+A redis backend is available, Should we fetch the
+redis config params from django, if available?
+'''
+requests_cache.install_cache('ld_cache')
 jsonld.set_document_loader(myloader())
 
 class AddedSchemaOpts(JsonLDSchemaOpts):
@@ -142,7 +146,6 @@ class MixedField(fields.Nested):
             return super()._serialize(value, attr, obj, **kwargs)
 
     def _deserialize(self, value, attr, data, **kwargs):
-        print(value,attr)
         if isinstance(value, list):
             # this is just so the ACTIVITYPUB_POST_OBJECT_IMAGES test payload passes
             if len(value) > 0 and value[0] == {}:
@@ -218,7 +221,6 @@ class Object(metaclass=JsonLDAnnotation):
             s = json.dumps(data.get('@context'))
             if 'python-federation"' in s:
                 data['@context'] = json.loads(s.replace('python-federation', 'python-federation#', 1))
-            pprint(data)
             return data
 
         '''
@@ -431,6 +433,7 @@ class Note(Object):
     target_id = IRI(as2.inReplyTo)
     conversation = fields.String(ostatus.conversation)
     inReplyToAtomUri = IRI(ostatus.inReplyToAtomUri)
+    summary = fields.String(as2.summary)
     url = IRI(as2.url)
 
     def to_base(self):
@@ -548,7 +551,6 @@ class Announce(Activity):
     target_id = IRI(as2.object)
 
     def to_base(self):
-        print(self.__dict__)
         if self.activity == self:
             entity = ActivitypubShare(**self.__dict__)
         else:
@@ -622,7 +624,6 @@ class View(Create):
 
 def model_to_objects(payload):
     model = globals().get(payload.get('type'))
-    print(model)
     if model and issubclass(model, Object):
         try:
             entity = model.schema().load(payload)
