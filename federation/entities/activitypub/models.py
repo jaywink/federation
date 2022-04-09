@@ -60,9 +60,10 @@ diaspora = fields.Namespace("https://diasporafoundation.org/ns/")
 # Maybe this is food for an issue with calamus. pyld expands IRIs in an array,
 # marshmallow then barfs with an invalid string value.
 # Workaround: get rid of the array.
+# Also, this implements the many attribute for IRI fields, sort of
 class IRI(fields.IRI):
     def _deserialize(self, value, attr, data, **kwargs):
-        if isinstance(value, list) and len(value) == 0: return None
+        if isinstance(value, list) and len(value) == 0: return value
         value = normalize_value(value)
         if isinstance(value, list):
             # no call to super() in list comprehensions...
@@ -140,20 +141,20 @@ class MixedField(fields.Nested):
         self.iri.parent = self.parent
 
     def _serialize(self, value, attr, obj, **kwargs):
-        if isinstance(value, str):
+        if isinstance(value, str) or (
+                isinstance(value, list) and len(value) > 0 and isinstance(value[0], str)):
             return self.iri._serialize(value, attr, obj, **kwargs)
         else:
             return super()._serialize(value, attr, obj, **kwargs)
 
     def _deserialize(self, value, attr, data, **kwargs):
-        if isinstance(value, list):
-            # this is just so the ACTIVITYPUB_POST_OBJECT_IMAGES test payload passes
-            if len(value) > 0 and value[0] == {}:
-                return None
-            else:
-                return super()._deserialize(value, attr, data, **kwargs)
-        else:
-            return self.iri._deserialize(value, attr, data, **kwargs)
+        # this is just so the ACTIVITYPUB_POST_OBJECT_IMAGES test payload passes
+        if len(value) == 0: return value
+
+        if value[0] == {}: return None
+        if value[0].get('@type'):
+            return super()._deserialize(value, attr, data, **kwargs)
+        return self.iri._deserialize(value, attr, data, **kwargs)
         
 OBJECTS = [
         'AnnounceSchema',
@@ -192,9 +193,9 @@ class Object(metaclass=JsonLDAnnotation):
     replies = MixedField(as2.replies, nested='CollectionSchema')
     startTime = fields.DateTime(as2.startTime, add_value_types=True)
     updated = fields.DateTime(as2.updated, add_value_types=True)
-    to = IRI(as2.to, many=True)
+    to = IRI(as2.to)
     #bto
-    cc = IRI(as2.cc, many=True)
+    cc = IRI(as2.cc)
     #bcc
     media_type = fields.String(as2.mediaType)
     #duration
@@ -264,7 +265,7 @@ class Document(Object):
     inline = fields.Boolean(pyfed.inlineImage)
     height = Integer(as2.height, flavor=xsd.nonNegativeInteger, add_value_types=True)
     width = Integer(as2.width, flavor=xsd.nonNegativeInteger, add_value_types=True)
-    url = IRI(as2.url)
+    url = MixedField(as2.url, nested='LinkSchema', many=True)
     blurhash = fields.String(toot.blurhash)
 
     def to_base(self):
@@ -429,7 +430,7 @@ or the same type in multiple schemas
 '''
 class Note(Object):
     id = fields.Id()
-    actor_id = IRI(as2.attributedTo, many=True)
+    actor_id = IRI(as2.attributedTo)
     target_id = IRI(as2.inReplyTo)
     conversation = fields.String(ostatus.conversation)
     inReplyToAtomUri = IRI(ostatus.inReplyToAtomUri)
@@ -448,11 +449,12 @@ class Note(Object):
                 entity._media_type = 'text/html'
                 entity.raw_content = self.content_map.get('orig', "")
 
-        children = []
-        for child in entity._children:
-            img = child.to_base()
-            if img: children.append(img)
-        entity._children = children
+        if isinstance(getattr(entity, '_children', None), list):
+            children = []
+            for child in entity._children:
+                img = child.to_base()
+                if img: children.append(img)
+            entity._children = children
 
         set_public(entity)
         return entity
@@ -469,13 +471,15 @@ class Page(Note):
         rdf_type = as2.Page
 
 # peertube uses a lot of properties differently...
-class Video(Object):
-    urls = MixedField(as2.url, nested='LinkSchema', many=True)
+class Video(Document):
     actor_id = MixedField(as2.attributedTo, nested=['PersonSchema', 'GroupSchema'], many=True)
 
     class Meta:
         unknown = 'EXCLUDE' # required until all the pt fields are defined
         rdf_type = as2.Video
+
+    def to_base(self):
+        return self
 
 class Signature(Object):
     created = fields.DateTime(dc.created, add_value_types=True)
@@ -590,7 +594,6 @@ class Like(Create):
 
 # inbound Accept is a noop...
 class Accept(Create):
-
     def to_base(self):
         del self.object_
         return ActivitypubAccept(**self.__dict__)
@@ -599,7 +602,6 @@ class Accept(Create):
         rdf_type = as2.Accept
 
 class Delete(Create):
-
     def to_base(self):
         if hasattr(self, 'object_') and not isinstance(self.object_, Tombstone):
             self.target_id = self.object_
@@ -609,12 +611,10 @@ class Delete(Create):
         rdf_type = as2.Delete
 
 class Update(Create):
-
     class Meta:
         rdf_type = as2.Update
 
 class Undo(Create):
-
     class Meta:
         rdf_type = as2.Undo
 
