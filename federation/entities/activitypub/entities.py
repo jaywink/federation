@@ -8,7 +8,7 @@ from federation.entities.activitypub.constants import (
     CONTEXTS_DEFAULT, CONTEXT_MANUALLY_APPROVES_FOLLOWERS, CONTEXT_SENSITIVE, CONTEXT_HASHTAG,
     CONTEXT_LD_SIGNATURES, CONTEXT_DIASPORA)
 from federation.entities.activitypub.enums import ActorType, ObjectType, ActivityType
-from federation.entities.base import Profile, Post, Follow, Accept, Comment, Retraction, Share, Image
+from federation.entities.base import Profile, Post, Follow, Accept, Comment, Retraction, Share, Image, Audio, Video
 from federation.entities.mixins import RawContentMixin, BaseEntity, PublicMixin, CreatedAtMixin
 from federation.entities.utils import get_base_attributes
 from federation.outbound import handle_send
@@ -293,6 +293,11 @@ class ActivitypubImage(ActivitypubEntityMixin, Image):
             "pyfed:inlineImage": self.inline,
         }
 
+class ActivitypubAudio(ActivitypubEntityMixin, Audio):
+    pass
+
+class ActivitypubVideo(ActivitypubEntityMixin, Video):
+    pass
 
 class ActivitypubPost(ActivitypubNoteMixin, Post):
     pass

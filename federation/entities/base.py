@@ -50,6 +50,12 @@ class Image(OptionalRawContentMixin, CreatedAtMixin, BaseEntity):
         return ""
 
 
+class Audio(OptionalRawContentMixin, CreatedAtMixin, BaseEntity):
+    pass
+
+class Video(OptionalRawContentMixin, CreatedAtMixin, BaseEntity):
+    pass
+
 class Comment(RawContentMixin, ParticipationMixin, CreatedAtMixin, RootTargetIDMixin, BaseEntity):
     """Represents a comment, linked to another object."""
     participation = "comment"
