@@ -55,6 +55,7 @@ vcard = fields.Namespace("http://www.w3.org/2006/vcard/ns#")
 pt = fields.Namespace("https://joinpeertube.org/ns#")
 pyfed = fields.Namespace("https://docs.jasonrobinson.me/ns/python-federation#")
 diaspora = fields.Namespace("https://diasporafoundation.org/ns/")
+zot = fields.Namespace("https://hub.skoddie.de/apschema#")
 
 
 # Maybe this is food for an issue with calamus. pyld expands IRIs in an array,
@@ -177,7 +178,7 @@ class Object(metaclass=JsonLDAnnotation):
     atom_url = fields.String(ostatus.atomUri)
     icon = MixedField(as2.icon, nested='ImageSchema', many=True)
     image = MixedField(as2.image, nested='ImageSchema', many=True)
-    tag_list = MixedField(as2.tag, nested=['HashtagSchema','MentionSchema'], many=True)
+    tag_list = MixedField(as2.tag, nested=['HashtagSchema','MentionSchema','PropertyValueSchema'], many=True)
     _children = MixedField(as2.attachment, nested=['ImageSchema', 'DocumentSchema','PropertyValueSchema'], many=True)
     #audience
     content_map = LanguageMap(as2.content) # language maps are not implemented in calamus
@@ -190,7 +191,8 @@ class Object(metaclass=JsonLDAnnotation):
     #location
     #preview
     created_at = fields.DateTime(as2.published, add_value_types=True)
-    replies = MixedField(as2.replies, nested='CollectionSchema')
+    replies = MixedField(as2.replies, nested=['CollectionSchema','OrderedCollectionSchema'])
+    signature = MixedField(sec.signature, nested = 'SignatureSchema')
     startTime = fields.DateTime(as2.startTime, add_value_types=True)
     updated = fields.DateTime(as2.updated, add_value_types=True)
     to = IRI(as2.to)
@@ -222,6 +224,29 @@ class Object(metaclass=JsonLDAnnotation):
             s = json.dumps(data.get('@context'))
             if 'python-federation"' in s:
                 data['@context'] = json.loads(s.replace('python-federation', 'python-federation#', 1))
+        
+            # AP activities may be signed, but some platforms don't
+            # define RsaSignature2017. add it to the context
+            if data.get('signature'):
+                ctx = data.get('@context')
+                if not isinstance(ctx, list):
+                    ctx = [ctx, {}]
+                w3id = 'https://w3id.org/security/v1'
+                if w3id not in ctx: ctx.insert(0,w3id)
+                idx = [i for i,v in enumerate(ctx) if isinstance(v, dict)]
+                found = False
+                for i in idx:
+                    if ctx[i].get('RsaSignature2017'):
+                        found = True
+                        break
+                if not found: 
+                    if len(idx) == 0:
+                        ctx.append({'RsaSignature2017':'sec:RsaSignature2017'})
+                    else:
+                        ctx[idx[0]]['RsaSignature2017'] = 'sec:RsaSignature2017'
+                print(ctx)
+                data['@context'] = ctx
+
             return data
 
         '''
@@ -242,15 +267,25 @@ class Home(metaclass=JsonLDAnnotation):
     class Meta:
         rdf_type = vcard.Home
 
+class List(fields.List):
+    def _deserialize(self,value, attr, data, **kwargs):
+        value = normalize_value(value)
+        return super()._deserialize(value,attr,data,**kwargs)
+
 class Collection(Object):
-    items = MixedField(as2.items, nested=OBJECTS, many=True)
-    first = MixedField(as2.first, nested='CollectionPageSchema')
+    #items = MixedField(as2.items, nested=OBJECTS, many=True)
+    items = List(as2.items, cls_or_instance=IRI())
+    first = MixedField(as2.first, nested=['CollectionPageSchema', 'OrderedCollectionPageSchema'])
     current = IRI(as2.current)
     last = IRI(as2.last)
     totalItems = Integer(as2.totalItems, flavor=xsd.nonNegativeInteger, add_value_types=True)
 
     class Meta:
         rdf_type = as2.Collection
+
+class OrderedCollection(Collection):
+    class Meta:
+        rdf_type = as2.OrderedCollection
 
 class CollectionPage(Collection):
     partOf = IRI(as2.partOf)
@@ -259,14 +294,24 @@ class CollectionPage(Collection):
 
     class Meta:
         rdf_type = as2.CollectionPage
+
+class OrderedCollectionPage(CollectionPage):
+    #orderedItems = MixedField(as2.orderedItems, nested=OBJECTS, many=True)
+    #orderedItems = fields.List(as2.orderedItems, cls_or_instance=MixedField(as2.items, nested=OBJECTS), ordered=True)
+    startIndex = Integer(as2.startIndex, flavor=xsd.nonNegativeInteger, add_value_types=True)
+
+    class Meta:
+        rdf_type = as2.OrderedCollectionPage
         
 # This mimics that federation currently handles AP Document as AP Image
+# AP defines [Ii]mage and [Aa]udio objects/properties, but only a Video object
+# seen with Peertube payloads only so far
 class Document(Object):
     inline = fields.Boolean(pyfed.inlineImage)
     height = Integer(as2.height, flavor=xsd.nonNegativeInteger, add_value_types=True)
     width = Integer(as2.width, flavor=xsd.nonNegativeInteger, add_value_types=True)
-    url = MixedField(as2.url, nested='LinkSchema', many=True)
     blurhash = fields.String(toot.blurhash)
+    url = IRI(as2.url)
 
     def to_base(self):
         if getattr(self, 'media_type', None) in BaseImage._valid_media_types:
@@ -293,7 +338,7 @@ class Infohash(Object):
 class Link(metaclass=JsonLDAnnotation):
     href = IRI(as2.href)
     rel = fields.List(as2.rel, cls_or_instance=fields.String(as2.rel))
-    mediaType = fields.String(as2.mediaType)
+    media_type = fields.String(as2.mediaType)
     name = fields.String(as2.name)
     hrefLang = fields.String(as2.hrefLang)
     height = Integer(as2.height, flavor=xsd.nonNegativeInteger, add_value_types=True)
@@ -497,7 +542,6 @@ class Activity(Object):
     #origin
     instrument = MixedField(as2.instrument, nested='ServiceSchema')
     # don't have a clear idea of which activities are signed and which are not
-    signature = MixedField(sec.signature, nested = 'SignatureSchema')
 
     def __init__(self, *args, **kwargs):
         self.activity = self
@@ -505,29 +549,6 @@ class Activity(Object):
 
     class Meta:
         rdf_type = as2.Activity
-
-        @pre_load
-        def pre_load(self, data, **kwargs):
-            data = super().pre_load(data, **kwargs)
-        
-            # AP activities may be signed, but some platforms don't
-            # define RsaSignature2017. add it to the context
-            if data.get('signature'):
-                ctx = data.get('@context')
-                if not isinstance(ctx, list):
-                    ctx = [ctx, {}]
-                w3id = 'https://w3id.org/security/v1'
-                if w3id not in ctx: ctx.insert(0,w3id)
-                idx = [i for i,v in enumerate(ctx) if isinstance(v, dict)]
-                found = False
-                for i in idx:
-                    if ctx[i].get('RsaSignature2017'):
-                        found = True
-                        break
-                if not found: ctx[idx[0]]['RsaSignature2017'] = 'sec:RsaSignature2017'
-                data['@context'] = ctx
-
-            return data
 
 #        @post_load
 #        def make_instance(self, data, **kwargs):
