@@ -10,9 +10,10 @@ from marshmallow.fields import Integer
 from pyld import jsonld, documentloader
 
 from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
-from federation.entities.activitypub.entities import (ActivitypubAccept, ActivitypubPost, ActivitypubComment, 
-        ActivitypubProfile, ActivitypubImage, ActivitypubFollow, ActivitypubShare, ActivitypubRetraction)
-from federation.entities.base import Image as BaseImage
+from federation.entities.activitypub.entities import (
+        ActivitypubAccept, ActivitypubPost, ActivitypubComment, ActivitypubProfile, 
+        ActivitypubImage, ActivitypubAudio, ActivitypubVideo, ActivitypubFollow, 
+        ActivitypubShare, ActivitypubRetraction)
 from federation.entities.mixins import BaseEntity
 from federation.utils.text import with_slash, validate_handle
 
@@ -192,7 +193,7 @@ class Object(metaclass=JsonLDAnnotation):
     icon = MixedField(as2.icon, nested='ImageSchema', many=True)
     image = MixedField(as2.image, nested='ImageSchema', many=True)
     tag_list = MixedField(as2.tag, nested=['HashtagSchema','MentionSchema','PropertyValueSchema','EmojiSchema'], many=True)
-    _children = MixedField(as2.attachment, nested=['ImageSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'], many=True)
+    _children = MixedField(as2.attachment, nested=['ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'], many=True)
     #audience
     content_map = LanguageMap(as2.content)  # language maps are not implemented in calamus
     context = IRI(as2.context)
@@ -347,9 +348,13 @@ class Document(Object):
     url = MixedField(as2.url, nested='LinkSchema', many=True)
 
     def to_base(self):
-        if getattr(self, 'media_type', None) in BaseImage._valid_media_types:
+        if self.media_type.startswith('image'):
             return ActivitypubImage(**self.__dict__)
-        return None # until more medias are supported
+        if self.media_type.startswith('audio'):
+            return ActivitypubAudio(**self.__dict__)
+        if self.media_type.startswith('video'):
+            return ActivitypubVideo(**self.__dict__)
+        return self # what was that?
         
     class Meta:
         rdf_type = as2.Document
@@ -363,6 +368,14 @@ class Image(Document):
     class Meta:
         rdf_type = as2.Image
 
+# haven't seen this one so far..
+class Audio(Document):
+    @classmethod
+    def from_base(cls, entity):
+        return cls(**entity.__dict__)
+
+    class Meta:
+        rdf_type = as2.Audio
 
 class Infohash(Object):
     name = fields.String(as2.name)
@@ -585,15 +598,49 @@ class Page(Note):
 
 
 # peertube uses a lot of properties differently...
-class Video(Document):
+class Video(Object):
+    id = fields.Id()
     actor_id = MixedField(as2.attributedTo, nested=['PersonSchema', 'GroupSchema'], many=True)
+    url = MixedField(as2.url, nested='LinkSchema', many=True)
 
     class Meta:
         unknown = 'EXCLUDE' # required until all the pt fields are defined
         rdf_type = as2.Video
 
     def to_base(self):
-        return self
+        """Turn Peertube Video object into a Post
+        Currently assumes Video objects with a content_map
+        come from Peertube, but that's a bit weak
+        """
+        
+        if hasattr(self, 'content_map'):
+            text = self.content_map['orig']
+            if getattr(self, 'media_type', None) == 'text/markdown':
+                url = ""
+                for u in self.url:
+                    if getattr(u, 'media_type', None) == 'text/html':
+                        url = u.href
+                        break
+                text = f'[{self.name}]({url})\n\n'+text
+                self.raw_content = text.strip()
+                self._media_type = self.media_type
+
+            if hasattr(self, 'actor_id'):
+                act = self.actor_id
+                new_act = []
+                if not isinstance(act, list): act = [act]
+                for a in act:
+                    if type(a) == Person:
+                        new_act.append(a.id)
+                # TODO: fix extract_receivers which can't handle multiple actors!
+                self.actor_id = new_act[0]
+
+            entity = ActivitypubPost(**self.__dict__)
+            set_public(entity)
+            return entity
+        #Some Video object
+        else:
+            return ActivitypubVideo(**self.__dict__)
 
 
 class Signature(Object):
