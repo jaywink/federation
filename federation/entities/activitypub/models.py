@@ -1,4 +1,5 @@
 import logging
+from copy import copy
 from calamus import fields
 from calamus.schema import JsonLDAnnotation, JsonLDSchema, JsonLDSchemaOpts
 from calamus.utils import normalize_value
@@ -55,7 +56,9 @@ vcard = fields.Namespace("http://www.w3.org/2006/vcard/ns#")
 pt = fields.Namespace("https://joinpeertube.org/ns#")
 pyfed = fields.Namespace("https://docs.jasonrobinson.me/ns/python-federation#")
 diaspora = fields.Namespace("https://diasporafoundation.org/ns/")
-zot = fields.Namespace("https://hub.skoddie.de/apschema#")
+zot = fields.Namespace("https://hubzilla.org/apschema#")
+litepub = fields.Namespace("http://litepub.social/ns#")
+misskey = fields.Namespace("https://misskey-hub.net/ns#")
 
 
 # Maybe this is food for an issue with calamus. pyld expands IRIs in an array,
@@ -176,10 +179,11 @@ def set_public(entity):
 
 class Object(metaclass=JsonLDAnnotation):
     atom_url = fields.String(ostatus.atomUri)
+    also_known_as = IRI(as2.alsoKnownAs)
     icon = MixedField(as2.icon, nested='ImageSchema', many=True)
     image = MixedField(as2.image, nested='ImageSchema', many=True)
-    tag_list = MixedField(as2.tag, nested=['HashtagSchema','MentionSchema','PropertyValueSchema'], many=True)
-    _children = MixedField(as2.attachment, nested=['ImageSchema', 'DocumentSchema','PropertyValueSchema'], many=True)
+    tag_list = MixedField(as2.tag, nested=['HashtagSchema','MentionSchema','PropertyValueSchema','EmojiSchema'], many=True)
+    _children = MixedField(as2.attachment, nested=['ImageSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'], many=True)
     #audience
     content_map = LanguageMap(as2.content) # language maps are not implemented in calamus
     context = IRI(as2.context)
@@ -193,7 +197,7 @@ class Object(metaclass=JsonLDAnnotation):
     created_at = fields.DateTime(as2.published, add_value_types=True)
     replies = MixedField(as2.replies, nested=['CollectionSchema','OrderedCollectionSchema'])
     signature = MixedField(sec.signature, nested = 'SignatureSchema')
-    startTime = fields.DateTime(as2.startTime, add_value_types=True)
+    start_time = fields.DateTime(as2.startTime, add_value_types=True)
     updated = fields.DateTime(as2.updated, add_value_types=True)
     to = IRI(as2.to)
     #bto
@@ -218,35 +222,49 @@ class Object(metaclass=JsonLDAnnotation):
         rdf_type = as2.Object
 
         @pre_load
-        def pre_load(self, data, **kwargs):
+        def update_context(self, data, **kwargs):
+            if not data.get('@context'): return data
+            ctx = data['@context']
+
             # add a # at the end of the python-federation string
             # for socialhome payloads
-            s = json.dumps(data.get('@context'))
+            s = json.dumps(ctx)
             if 'python-federation"' in s:
-                data['@context'] = json.loads(s.replace('python-federation', 'python-federation#', 1))
-        
-            # AP activities may be signed, but some platforms don't
-            # define RsaSignature2017. add it to the context
-            if data.get('signature'):
-                ctx = data.get('@context')
-                if not isinstance(ctx, list):
-                    ctx = [ctx, {}]
-                w3id = 'https://w3id.org/security/v1'
-                if w3id not in ctx: ctx.insert(0,w3id)
-                idx = [i for i,v in enumerate(ctx) if isinstance(v, dict)]
-                found = False
-                for i in idx:
-                    if ctx[i].get('RsaSignature2017'):
-                        found = True
-                        break
-                if not found: 
-                    if len(idx) == 0:
-                        ctx.append({'RsaSignature2017':'sec:RsaSignature2017'})
-                    else:
-                        ctx[idx[0]]['RsaSignature2017'] = 'sec:RsaSignature2017'
-                print(ctx)
+                ctx = json.loads(s.replace('python-federation', 'python-federation#', 1))
                 data['@context'] = ctx
+        
+            if not isinstance(ctx, list):
+                ctx = [ctx, {}]
+            saved_ctx = copy(ctx)
 
+            # AP activities may be signed, but most platforms don't
+            # define RsaSignature2017. add it to the context
+            # hubzilla doesn't define the discoverable property in its context
+            to_add = {'signature': ['https://w3id.org/security/v1', {'sec':'https://w3id.org/security#','RsaSignature2017':'sec:RsaSignature2017'}],
+                    'discoverable': [{'toot':'http://joinmastodon.org/ns#','discoverable': 'toot:discoverable'}], #for hubzilla
+                    'copiedTo': [{'toot':'http://joinmastodon.org/ns#','copiedTo': 'toot:copiedTo'}], #for hubzilla
+                    'featured': [{'toot':'http://joinmastodon.org/ns#','featured': 'toot:featured'}] #for litepub
+                    }
+
+            idx = [i for i,v in enumerate(ctx) if isinstance(v, dict)]
+
+            for key,val in to_add.items():
+                if not data.get(key): continue
+                for item in val:
+                    if isinstance(item, str) and item not in ctx:
+                        ctx.append(item)
+                    elif isinstance(item, dict):
+                        for akey, aval in item.items():
+                            found = False
+                            for i in idx:
+                                if ctx[i].get(aval):
+                                    found = True
+                                    break
+                            if not found: 
+                                ctx[idx[0]][akey] = aval
+
+            if saved_ctx != ctx: 
+                data['@context'] = ctx
             return data
 
         '''
@@ -278,7 +296,7 @@ class Collection(Object):
     first = MixedField(as2.first, nested=['CollectionPageSchema', 'OrderedCollectionPageSchema'])
     current = IRI(as2.current)
     last = IRI(as2.last)
-    totalItems = Integer(as2.totalItems, flavor=xsd.nonNegativeInteger, add_value_types=True)
+    total_items = Integer(as2.totalItems, flavor=xsd.nonNegativeInteger, add_value_types=True)
 
     class Meta:
         rdf_type = as2.Collection
@@ -288,7 +306,7 @@ class OrderedCollection(Collection):
         rdf_type = as2.OrderedCollection
 
 class CollectionPage(Collection):
-    partOf = IRI(as2.partOf)
+    part_of = IRI(as2.partOf)
     next_ = IRI(as2.next)
     prev = IRI(as2.prev)
 
@@ -298,7 +316,7 @@ class CollectionPage(Collection):
 class OrderedCollectionPage(CollectionPage):
     #orderedItems = MixedField(as2.orderedItems, nested=OBJECTS, many=True)
     #orderedItems = fields.List(as2.orderedItems, cls_or_instance=MixedField(as2.items, nested=OBJECTS), ordered=True)
-    startIndex = Integer(as2.startIndex, flavor=xsd.nonNegativeInteger, add_value_types=True)
+    start_index = Integer(as2.startIndex, flavor=xsd.nonNegativeInteger, add_value_types=True)
 
     class Meta:
         rdf_type = as2.OrderedCollectionPage
@@ -311,7 +329,7 @@ class Document(Object):
     height = Integer(as2.height, flavor=xsd.nonNegativeInteger, add_value_types=True)
     width = Integer(as2.width, flavor=xsd.nonNegativeInteger, add_value_types=True)
     blurhash = fields.String(toot.blurhash)
-    url = IRI(as2.url)
+    url = MixedField(as2.url, nested='LinkSchema', many=True)
 
     def to_base(self):
         if getattr(self, 'media_type', None) in BaseImage._valid_media_types:
@@ -340,7 +358,7 @@ class Link(metaclass=JsonLDAnnotation):
     rel = fields.List(as2.rel, cls_or_instance=fields.String(as2.rel))
     media_type = fields.String(as2.mediaType)
     name = fields.String(as2.name)
-    hrefLang = fields.String(as2.hrefLang)
+    href_lang = fields.String(as2.hrefLang)
     height = Integer(as2.height, flavor=xsd.nonNegativeInteger, add_value_types=True)
     width = Integer(as2.width, flavor=xsd.nonNegativeInteger, add_value_types=True)
     fps = Integer(pt.fps, flavor=schema.Number, add_value_types=True)
@@ -373,6 +391,18 @@ class PropertyValue(Object):
     class Meta:
         rdf_type = schema.PropertyValue
 
+class IdentityProof(Object):
+    signature_value = fields.String(sec.signatureValue)
+    signing_algorithm = fields.String(sec.signingAlgorithm)
+
+    class Meta:
+        rdf_type = toot.IdentityProof
+
+class Emoji(Object):
+
+    class Meta:
+        rdf_type = toot.Emoji
+
 class Person(Object):
     id = fields.Id()
     inbox = IRI(ldp.inbox)
@@ -383,6 +413,7 @@ class Person(Object):
     #streams
     username = fields.String(as2.preferredUsername)
     endpoints = Dict(as2.endpoints)
+    shared_inbox = IRI(as2.sharedInbox) # misskey adds this
     #proxyUrl
     #oauthAuthorizationEndpoint
     #oauthTokenEndpoint
@@ -395,11 +426,17 @@ class Person(Object):
     manuallyApprovesFollowers = fields.Boolean(as2.manuallyApprovesFollowers, dump_default=False)
     discoverable = fields.Boolean(toot.discoverable)
     devices = IRI(toot.devices)
-    publicKey = Dict(sec.publicKey)
+    public_key_dict = Dict(sec.publicKey)
     guid = fields.String(diaspora.guid)
     handle = fields.String(diaspora.handle)
     raw_content = fields.String(as2.summary)
     has_address = MixedField(vcard.hasAddress, nested='HomeSchema')
+    has_instant_message = fields.List(vcard.hasInstantMessage, cls_or_instance=fields.String)
+    address = fields.String(vcard.Address)
+    is_cat = fields.Boolean(misskey.isCat)
+    moved_to = IRI(as2.movedTo)
+    copied_to = IRI(toot.copiedTo)
+    capabilities = Dict(litepub.capabilities)
 
     @classmethod
     def from_base(cls, entity):
@@ -411,7 +448,7 @@ class Person(Object):
         ret.followers = f"{with_slash(ret.id)}followers/"
         ret.following = f"{with_slash(ret.id)}following/"
         ret.endpoints = {'sharedInbox': entity.inboxes["public"]}
-        ret.publicKey = {
+        ret.public_key_dict = {
                 "id": f"{ret.id}#main-key",
                 "owner": ret.id,
                 "publicKeyPem": entity.public_key
@@ -430,9 +467,9 @@ class Person(Object):
         entity = ActivitypubProfile(**self.__dict__)
         entity.inboxes = {
                 'private': getattr(self, 'inbox', None), 
-                'public': getattr(self,'endpoints',None).get('sharedInbox', None)
+                'public': getattr(self,'endpoints',None).get('sharedInbox', None) or getattr(self,'shared_inbox',None)
                 }
-        entity.public_key = getattr(self,'publicKey',None).get('publicKeyPem', None)
+        entity.public_key = getattr(self,'public_key_dict',None).get('publicKeyPem', None)
         entity.image_urls = {}
         if hasattr(self, 'icon') and isinstance(self.icon, list):
             entity.image_urls = {
@@ -478,7 +515,7 @@ class Note(Object):
     actor_id = IRI(as2.attributedTo)
     target_id = IRI(as2.inReplyTo)
     conversation = fields.String(ostatus.conversation)
-    inReplyToAtomUri = IRI(ostatus.inReplyToAtomUri)
+    in_reply_to_atom_uri = IRI(ostatus.inReplyToAtomUri)
     summary = fields.String(as2.summary)
     url = IRI(as2.url)
 
