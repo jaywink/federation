@@ -1,25 +1,29 @@
-import logging
 from copy import copy
+import json
+import logging
+
 from calamus import fields
 from calamus.schema import JsonLDAnnotation, JsonLDSchema, JsonLDSchemaOpts
 from calamus.utils import normalize_value
 from marshmallow import pre_load, post_load, pre_dump, post_dump
 from marshmallow.fields import Integer
 from pyld import jsonld, documentloader
-import json
 import requests_cache
 
-from federation.entities.mixins import BaseEntity
-from federation.entities.base import Image as BaseImage
-from federation.entities.activitypub.entities import ActivitypubAccept, ActivitypubPost, ActivitypubComment, ActivitypubProfile, ActivitypubImage, ActivitypubFollow, ActivitypubShare, ActivitypubRetraction
-from federation.utils.text import with_slash, validate_handle
 from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
+from federation.entities.activitypub.entities import (ActivitypubAccept, ActivitypubPost, ActivitypubComment, 
+        ActivitypubProfile, ActivitypubImage, ActivitypubFollow, ActivitypubShare, ActivitypubRetraction)
+from federation.entities.base import Image as BaseImage
+from federation.entities.mixins import BaseEntity
+from federation.utils.text import with_slash, validate_handle
 
 logger = logging.getLogger("federation")
+
 
 # This is required to workaround a bug in pyld that has the Accept header
 # accept other content types. From what I understand, precedence handling
 # is broken
+# from https://github.com/digitalbazaar/pyld/issues/133
 def myloader(*args, **kwargs):
     requests_loader = documentloader.requests.requests_document_loader(*args, **kwargs)
     
@@ -28,13 +32,14 @@ def myloader(*args, **kwargs):
         return requests_loader(url, options)
     
     return loader
-'''
-By default, request_cache creates a sqlite cache.
-A redis backend is available, Should we fetch the
-redis config params from django, if available?
-'''
-requests_cache.install_cache('ld_cache')
+
 jsonld.set_document_loader(myloader())
+
+#By default, request_cache creates a sqlite cache.
+#A redis backend is available, Should we fetch the
+#redis config params from django, if available?
+requests_cache.install_cache('ld_cache')
+
 
 class AddedSchemaOpts(JsonLDSchemaOpts):
     def __init__(self, meta, *args, **kwargs):
@@ -43,22 +48,23 @@ class AddedSchemaOpts(JsonLDSchemaOpts):
 
 JsonLDSchema.OPTIONS_CLASS = AddedSchemaOpts
 
+
 # Not sure how exhaustive this needs to be...
 as2 = fields.Namespace("https://www.w3.org/ns/activitystreams#")
-toot = fields.Namespace("http://joinmastodon.org/ns#")
-ostatus = fields.Namespace("http://ostatus.org#")
-schema = fields.Namespace("http://schema.org#")
-sec = fields.Namespace("https://w3id.org/security#")
 dc = fields.Namespace("http://purl.org/dc/terms/")
-xsd = fields.Namespace("http://www.w3.org/2001/XMLSchema#")
-ldp = fields.Namespace("http://www.w3.org/ns/ldp#")
-vcard = fields.Namespace("http://www.w3.org/2006/vcard/ns#")
-pt = fields.Namespace("https://joinpeertube.org/ns#")
-pyfed = fields.Namespace("https://docs.jasonrobinson.me/ns/python-federation#")
 diaspora = fields.Namespace("https://diasporafoundation.org/ns/")
-zot = fields.Namespace("https://hubzilla.org/apschema#")
+ldp = fields.Namespace("http://www.w3.org/ns/ldp#")
 litepub = fields.Namespace("http://litepub.social/ns#")
 misskey = fields.Namespace("https://misskey-hub.net/ns#")
+ostatus = fields.Namespace("http://ostatus.org#")
+pt = fields.Namespace("https://joinpeertube.org/ns#")
+pyfed = fields.Namespace("https://docs.jasonrobinson.me/ns/python-federation#")
+schema = fields.Namespace("http://schema.org#")
+sec = fields.Namespace("https://w3id.org/security#")
+toot = fields.Namespace("http://joinmastodon.org/ns#")
+vcard = fields.Namespace("http://www.w3.org/2006/vcard/ns#")
+xsd = fields.Namespace("http://www.w3.org/2001/XMLSchema#")
+zot = fields.Namespace("https://hubzilla.org/apschema#")
 
 
 # Maybe this is food for an issue with calamus. pyld expands IRIs in an array,
@@ -79,6 +85,7 @@ class IRI(fields.IRI):
 
         return super()._deserialize(value, attr, data, **kwargs)
 
+
 # Don't want expanded IRIs to be exposed as dict keys
 class Dict(fields.Dict):
     ctx = ["https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"]
@@ -96,11 +103,12 @@ class Dict(fields.Dict):
         ret.pop('@context')
         return ret
 
+
 # calamus sets a XMLSchema#integer type, but different definitions
 # maybe used, hence the flavor property
 # TODO: handle non negative types
 class Integer(fields._JsonLDField, Integer):
-    flavor = None # add fields.IRIReference type hint 
+    flavor = None  # add fields.IRIReference type hint 
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -112,6 +120,7 @@ class Integer(fields._JsonLDField, Integer):
         if self.parent.opts.add_value_types or self.add_value_types:
             value = {"@value": value, "@type": flavor}
         return value
+
 
 # calamus doesn't implement json-ld langage maps
 class LanguageMap(Dict):
@@ -134,6 +143,7 @@ class LanguageMap(Dict):
             lang = '_:'+lang if lang else '_:orig' 
             ret[lang] = [c]
         return super()._deserialize(ret, attr, data, **kwargs)
+
 
 class MixedField(fields.Nested):
     def __init__(self, *args, **kwargs):
@@ -160,6 +170,7 @@ class MixedField(fields.Nested):
             return super()._deserialize(value, attr, data, **kwargs)
         return self.iri._deserialize(value, attr, data, **kwargs)
         
+
 OBJECTS = [
         'AnnounceSchema',
         'ArticleSchema',
@@ -171,11 +182,13 @@ OBJECTS = [
         'VideoSchema'
 ]
 
+
 def set_public(entity):
     for attr in [getattr(entity, 'to', []), getattr(entity, 'cc' ,[])]:
         if isinstance(attr, list):
             if NAMESPACE_PUBLIC in attr: entity.public = True
         elif attr == NAMESPACE_PUBLIC: entity.public = True
+
 
 class Object(metaclass=JsonLDAnnotation):
     atom_url = fields.String(ostatus.atomUri)
@@ -185,7 +198,7 @@ class Object(metaclass=JsonLDAnnotation):
     tag_list = MixedField(as2.tag, nested=['HashtagSchema','MentionSchema','PropertyValueSchema','EmojiSchema'], many=True)
     _children = MixedField(as2.attachment, nested=['ImageSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'], many=True)
     #audience
-    content_map = LanguageMap(as2.content) # language maps are not implemented in calamus
+    content_map = LanguageMap(as2.content)  # language maps are not implemented in calamus
     context = IRI(as2.context)
     guid = fields.String(diaspora.guid)
     name = fields.String(as2.name)
@@ -267,15 +280,14 @@ class Object(metaclass=JsonLDAnnotation):
                 data['@context'] = ctx
             return data
 
-        '''
-        A node without an id isn't true json-ld, but many payloads have
-        id-less nodes. Since calamus forces random ids on such nodes, 
-        this removes it.
-        '''
+        # A node without an id isn't true json-ld, but many payloads have
+        # id-less nodes. Since calamus forces random ids on such nodes, 
+        # this removes it.
         @post_dump
         def noid(self, data, **kwargs):
             if data['@id'].startswith('_:'): data.pop('@id')
             return data
+
 
 class Home(metaclass=JsonLDAnnotation):
     country_name = fields.String(fields.IRIReference("http://www.w3.org/2006/vcard/ns#","country-name"))
@@ -285,10 +297,12 @@ class Home(metaclass=JsonLDAnnotation):
     class Meta:
         rdf_type = vcard.Home
 
+
 class List(fields.List):
     def _deserialize(self,value, attr, data, **kwargs):
         value = normalize_value(value)
         return super()._deserialize(value,attr,data,**kwargs)
+
 
 class Collection(Object):
     #items = MixedField(as2.items, nested=OBJECTS, many=True)
@@ -301,9 +315,11 @@ class Collection(Object):
     class Meta:
         rdf_type = as2.Collection
 
+
 class OrderedCollection(Collection):
     class Meta:
         rdf_type = as2.OrderedCollection
+
 
 class CollectionPage(Collection):
     part_of = IRI(as2.partOf)
@@ -313,6 +329,7 @@ class CollectionPage(Collection):
     class Meta:
         rdf_type = as2.CollectionPage
 
+
 class OrderedCollectionPage(CollectionPage):
     #orderedItems = MixedField(as2.orderedItems, nested=OBJECTS, many=True)
     #orderedItems = fields.List(as2.orderedItems, cls_or_instance=MixedField(as2.items, nested=OBJECTS), ordered=True)
@@ -321,6 +338,7 @@ class OrderedCollectionPage(CollectionPage):
     class Meta:
         rdf_type = as2.OrderedCollectionPage
         
+
 # This mimics that federation currently handles AP Document as AP Image
 # AP defines [Ii]mage and [Aa]udio objects/properties, but only a Video object
 # seen with Peertube payloads only so far
@@ -339,6 +357,7 @@ class Document(Object):
     class Meta:
         rdf_type = as2.Document
 
+
 class Image(Document):
     @classmethod
     def from_base(cls, entity):
@@ -347,11 +366,13 @@ class Image(Document):
     class Meta:
         rdf_type = as2.Image
 
+
 class Infohash(Object):
     name = fields.String(as2.name)
 
     class Meta:
         rdf_type = pt.Infohash
+
 
 class Link(metaclass=JsonLDAnnotation):
     href = IRI(as2.href)
@@ -374,15 +395,18 @@ class Link(metaclass=JsonLDAnnotation):
             data.pop('@id', None)
             return super().make_instance(data, **kwargs)
 
+
 class Hashtag(Link):
 
     class Meta:
         rdf_type = as2.Hashtag
 
+
 class Mention(Link):
 
     class Meta:
         rdf_type = as2.Mention
+
 
 class PropertyValue(Object):
     name = fields.String(as2.name)
@@ -391,6 +415,7 @@ class PropertyValue(Object):
     class Meta:
         rdf_type = schema.PropertyValue
 
+
 class IdentityProof(Object):
     signature_value = fields.String(sec.signatureValue)
     signing_algorithm = fields.String(sec.signingAlgorithm)
@@ -398,10 +423,12 @@ class IdentityProof(Object):
     class Meta:
         rdf_type = toot.IdentityProof
 
+
 class Emoji(Object):
 
     class Meta:
         rdf_type = toot.Emoji
+
 
 class Person(Object):
     id = fields.Id()
@@ -490,26 +517,28 @@ class Group(Person):
     class Meta:
         rdf_type = as2.Group
 
+
 class Application(Person):
     class Meta:
         rdf_type = as2.Application
+
 
 class Organization(Person):
     class Meta:
         rdf_type = as2.Organization
 
+
 class Service(Person):
     class Meta:
         rdf_type = as2.Service
 
-'''
-The to_base method is used to handle cases where an AP object type matches multiple
-classes depending on the existence/value of specific propertie(s) or
-when the same class is used both as an object or an activity or
-when a property can't be directly deserialized from the payload.
-calamus Nested field can't handle using the same model
-or the same type in multiple schemas
-'''
+
+# The to_base method is used to handle cases where an AP object type matches multiple
+# classes depending on the existence/value of specific propertie(s) or
+# when the same class is used both as an object or an activity or
+# when a property can't be directly deserialized from the payload.
+# calamus Nested field can't handle using the same model
+# or the same type in multiple schemas
 class Note(Object):
     id = fields.Id()
     actor_id = IRI(as2.attributedTo)
@@ -544,13 +573,16 @@ class Note(Object):
     class Meta:
         rdf_type = as2.Note
 
+
 class Article(Note):
     class Meta:
         rdf_type = as2.Article
 
+
 class Page(Note):
     class Meta:
         rdf_type = as2.Page
+
 
 # peertube uses a lot of properties differently...
 class Video(Document):
@@ -563,6 +595,7 @@ class Video(Document):
     def to_base(self):
         return self
 
+
 class Signature(Object):
     created = fields.DateTime(dc.created, add_value_types=True)
     creator = IRI(dc.creator)
@@ -572,13 +605,13 @@ class Signature(Object):
     class Meta:
         rdf_type = sec.RsaSignature2017
 
+
 class Activity(Object):
     actor_id = IRI(as2.actor)
     #target_id = IRI(as2.target)
     #result
     #origin
     instrument = MixedField(as2.instrument, nested='ServiceSchema')
-    # don't have a clear idea of which activities are signed and which are not
 
     def __init__(self, *args, **kwargs):
         self.activity = self
@@ -587,11 +620,6 @@ class Activity(Object):
     class Meta:
         rdf_type = as2.Activity
 
-#        @post_load
-#        def make_instance(self, data, **kwargs):
-#            data['activity'] = entity
-#            entity = super().make_instance(data, **kwargs)
-#            return entity
     
 class Follow(Activity):
     activity_id = fields.Id()
@@ -607,6 +635,7 @@ class Follow(Activity):
 
     class Meta:
         rdf_type = as2.Follow
+
 
 class Announce(Activity):
     id = fields.Id()
@@ -626,6 +655,7 @@ class Announce(Activity):
     class Meta:
         rdf_type = as2.Announce
     
+
 class Tombstone(Object):
     target_id = fields.Id()
 
@@ -637,6 +667,7 @@ class Tombstone(Object):
     class Meta:
         rdf_type = as2.Tombstone
 
+
 class Create(Activity):
     activity_id = fields.Id()
     object_ = MixedField(as2.object, nested=OBJECTS)
@@ -644,11 +675,13 @@ class Create(Activity):
     class Meta:
         rdf_type = as2.Create
 
+
 class Like(Create):
     like = fields.String(diaspora.like)
 
     class Meta:
         rdf_type = as2.Like
+
 
 # inbound Accept is a noop...
 class Accept(Create):
@@ -659,6 +692,7 @@ class Accept(Create):
     class Meta:
         rdf_type = as2.Accept
 
+
 class Delete(Create):
     def to_base(self):
         if hasattr(self, 'object_') and not isinstance(self.object_, Tombstone):
@@ -668,24 +702,28 @@ class Delete(Create):
     class Meta:
         rdf_type = as2.Delete
 
+
 class Update(Create):
     class Meta:
         rdf_type = as2.Update
+
 
 class Undo(Create):
     class Meta:
         rdf_type = as2.Undo
 
+
 class View(Create):
     class Meta:
         rdf_type = as2.View
+
 
 def model_to_objects(payload):
     model = globals().get(payload.get('type'))
     if model and issubclass(model, Object):
         try:
             entity = model.schema().load(payload)
-        except jsonld.JsonLdError: # Just give u for now. This must be made robust
+        except jsonld.JsonLdError:  # Just give up for now. This must be made robust
             logger.warning("Invalid jsonld payload, falling through mappers for now")
             return None
 
