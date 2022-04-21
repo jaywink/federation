@@ -1,4 +1,5 @@
 from unittest.mock import patch
+from pprint import pprint
 
 # noinspection PyPackageRequirements
 from Crypto.PublicKey.RSA import RsaKey
@@ -165,6 +166,8 @@ class TestEntitiesConvertToAS2:
     def test_post_to_as2__with_mentions(self, activitypubpost_mentions):
         activitypubpost_mentions.pre_send()
         result = activitypubpost_mentions.to_as2()
+        with open('/tmp/test.out','w') as f:
+            pprint(result, stream=f)
         assert result == {
             '@context': [
                 'https://www.w3.org/ns/activitystreams',

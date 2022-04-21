@@ -70,8 +70,8 @@ class TestActivitypubEntityMappersReceive:
         assert post.raw_content == '<p><span class="h-card"><a class="u-url mention" ' \
                                    'href="https://dev.jasonrobinson.me/u/jaywink/">' \
                                    '@<span>jaywink</span></a></span> boom</p>'
-        assert post.rendered_content == '<p><span class="h-card"><a href="https://dev.jasonrobinson.me/u/jaywink/" ' \
-                                        'class="u-url mention">@<span>jaywink</span></a></span> boom</p>'
+        assert post.rendered_content == '<p><span class="h-card"><a class="u-url mention" href="https://dev.jasonrobinson.me/u/jaywink/">' \
+                                        '@<span>jaywink</span></a></span> boom</p>'
         assert post.id == "https://diaspodon.fr/users/jaywink/statuses/102356911717767237"
         assert post.actor_id == "https://diaspodon.fr/users/jaywink"
         assert post.public is True
@@ -101,8 +101,8 @@ class TestActivitypubEntityMappersReceive:
         post = entities[0]
         assert isinstance(post, ActivitypubPost)
         assert isinstance(post, Post)
-        assert post.rendered_content == '<p><span class="h-card"><a href="https://dev.jasonrobinson.me/u/jaywink/" ' \
-                                        'class="u-url mention">@<span>jaywink</span></a></span> boom</p>'
+        assert post.rendered_content == '<p><span class="h-card"><a class="u-url mention" href="https://dev.jasonrobinson.me/u/jaywink/">' \
+                                        '@<span>jaywink</span></a></span> boom</p>'
         assert post.raw_content == '<p><span class="h-card"><a class="u-url mention" ' \
                                    'href="https://dev.jasonrobinson.me/u/jaywink/">' \
                                    '@<span>jaywink</span></a></span> boom</p>'
