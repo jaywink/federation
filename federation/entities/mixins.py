@@ -235,8 +235,9 @@ class RawContentMixin(BaseEntity):
             config = get_configuration()
             if config["tags_path"]:
                 def linkifier(tag: str) -> str:
-                    return f'<a href="{config["base_url"]}{config["tags_path"].replace(":tag:", tag.lower())}" ' \
-                           f'class="mention hashtag" rel="noopener noreferrer">' \
+                    return f'<a class="mention hashtag" ' \
+                           f' href="{config["base_url"]}{config["tags_path"].replace(":tag:", tag.lower())}" ' \
+                           f'rel="noopener noreferrer">' \
                            f'#<span>{tag}</span></a>'
             else:
                 linkifier = None
@@ -261,7 +262,7 @@ class RawContentMixin(BaseEntity):
                         display_name = mention
                     rendered = rendered.replace(
                         "@{%s}" % mention,
-                        f'@<a href="{mention}" class="mention"><span>{display_name}</span></a>',
+                        f'@<a class="mention" href="{mention}"><span>{display_name}</span></a>',
                     )
             # Finally linkify remaining URL's that are not links
             rendered = process_text_links(rendered)
