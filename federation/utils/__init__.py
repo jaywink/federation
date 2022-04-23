@@ -2,6 +2,8 @@ import logging
 
 from requests_cache import install_cache, RedisCache, SQLiteCache
 
+from federation.utils.django import get_configuration
+
 logger = logging.getLogger("federation")
 
 # try to obtain redis config from django
