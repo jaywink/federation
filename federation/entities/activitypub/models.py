@@ -8,7 +8,6 @@ from calamus.utils import normalize_value
 from marshmallow import pre_load, post_load, pre_dump, post_dump
 from marshmallow.fields import Integer
 from pyld import jsonld, documentloader
-import requests_cache
 
 from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
 from federation.entities.activitypub.entities import (ActivitypubAccept, ActivitypubPost, ActivitypubComment, 
@@ -34,11 +33,6 @@ def myloader(*args, **kwargs):
     return loader
 
 jsonld.set_document_loader(myloader())
-
-#By default, request_cache creates a sqlite cache.
-#A redis backend is available, Should we fetch the
-#redis config params from django, if available?
-requests_cache.install_cache('ld_cache')
 
 
 class AddedSchemaOpts(JsonLDSchemaOpts):

@@ -58,7 +58,7 @@ def element_to_objects(payload: Dict) -> List:
     # Fall back to legacy if AP payload is not supported yet
     entity = model_to_objects(payload)
     if entity and isinstance(entity, BaseEntity):
-        logger.warning('Entity type "%s" was handled through the json-ld processor', entity.__class__.__name__)
+        logger.info('Entity type "%s" was handled through the json-ld processor', entity.__class__.__name__)
         entity._source_protocol = "activitypub"
         entity._source_object = payload
         entity._receivers = extract_receivers(payload)
@@ -68,7 +68,7 @@ def element_to_objects(payload: Dict) -> List:
             entity.extract_mentions()
         return [entity]
     elif entity:
-        logger.warning('Entity type "%s" was handled through the json-ld processor but is not implemented by federation', entity.__class__.__name__)
+        logger.info('Entity type "%s" was handled through the json-ld processor but is not implemented by federation', entity.__class__.__name__)
         return entities
     else:
         logger.warning("Payload not implemented by the json-ld processor, falling through mappers")
