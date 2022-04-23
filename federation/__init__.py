@@ -1,9 +1,6 @@
 import importlib
-import logging
 from types import ModuleType
 from typing import Union, TYPE_CHECKING
-
-from requests_cache import install_cache, RedisCache, SQLiteCache
 
 from federation.exceptions import NoSuitableProtocolFoundError
 from federation.utils.django import get_configuration
@@ -18,17 +15,6 @@ PROTOCOLS = (
     "diaspora",
     "matrix",
 )
-
-logger = logging.getLogger("federation")
-
-# try to obtain redis config from django
-cfg = get_configuration()
-if cfg.get('redis'):
-    backend = RedisCache(namespace='fed_cache', **cfg['redis'])
-else:
-    backend = SQLiteCache(db_path='fed_cache')
-install_cache(backend=backend)
-logger.info(f'requests_cache backend set to {type(backend).__name__}')
 
 
 def identify_protocol(method, value):
