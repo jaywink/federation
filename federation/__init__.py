@@ -3,7 +3,6 @@ from types import ModuleType
 from typing import Union, TYPE_CHECKING
 
 from federation.exceptions import NoSuitableProtocolFoundError
-from federation.utils.django import get_configuration
 
 if TYPE_CHECKING:
     from federation.types import RequestType
