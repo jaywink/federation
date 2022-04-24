@@ -233,49 +233,49 @@ class Object(metaclass=JsonLDAnnotation):
         @pre_load
         def update_context(self, data, **kwargs):
             if not data.get('@context'): return data
-            ctx = data['@context']
+            ctx = copy(data['@context'])
 
             # add a # at the end of the python-federation string
             # for socialhome payloads
             s = json.dumps(ctx)
             if 'python-federation"' in s:
                 ctx = json.loads(s.replace('python-federation', 'python-federation#', 1))
-                data['@context'] = ctx
         
             # AP activities may be signed, but most platforms don't
             # define RsaSignature2017. add it to the context
             # hubzilla doesn't define the discoverable property in its context
-            to_add = {'signature': ['https://w3id.org/security/v1', {'sec':'https://w3id.org/security#','RsaSignature2017':'sec:RsaSignature2017'}],
+            may_add = {'signature': ['https://w3id.org/security/v1', {'sec':'https://w3id.org/security#','RsaSignature2017':'sec:RsaSignature2017'}],
                     'discoverable': [{'toot':'http://joinmastodon.org/ns#','discoverable': 'toot:discoverable'}], #for hubzilla
                     'copiedTo': [{'toot':'http://joinmastodon.org/ns#','copiedTo': 'toot:copiedTo'}], #for hubzilla
                     'featured': [{'toot':'http://joinmastodon.org/ns#','featured': 'toot:featured'}] #for litepub
                     }
 
-            if not isinstance(ctx, list):
-                ctx = [ctx, {}]
-            idx = [i for i,v in enumerate(ctx) if isinstance(v, dict)]
-            if len(idx) == 0:
-                ctx.append({})
-                idx = [len(ctx)-1]
-            saved_ctx = copy(ctx)
+            to_add = [val for key,val in may_add.items() if data.get(key)]
+            if to_add:
+                idx = [i for i,v in enumerate(ctx) if isinstance(v, dict)]
+                if idx:
+                    upd = ctx[idx[0]]
+                    # merge context dicts
+                    if len(idx) > 1:
+                        idx.reverse()
+                        for i in idx[:-1]:
+                            upd.update(ctx[i])
+                            ctx.pop(i)
+                else:
+                    upd = {}
 
-            for key,val in to_add.items():
-                if not data.get(key): continue
-                for item in val:
-                    if isinstance(item, str) and item not in ctx:
-                        ctx.append(item)
-                    elif isinstance(item, dict):
-                        for akey, aval in item.items():
-                            found = False
-                            for i in idx:
-                                if ctx[i].get(aval):
-                                    found = True
-                                    break
-                            if not found: 
-                                ctx[idx[0]][akey] = aval
-
-            if saved_ctx != ctx: 
-                data['@context'] = ctx
+                for add in to_add:
+                    for val in add:
+                        if isinstance(val, str) and val not in ctx:
+                            try:
+                                ctx.append(val)
+                            except AttributeError:
+                                ctx = [ctx, val]
+                        if isinstance(val, dict):
+                            upd.update(val)
+                if not idx and upd: ctx.append(upd)
+            
+            data['@context'] = ctx
             return data
 
         # A node without an id isn't true json-ld, but many payloads have
@@ -503,6 +503,8 @@ class Person(Object):
                 'large': self.icon[0].url
                 }
 
+        entity._allowed_children += (PropertyValue, IdentityProof)
+
         set_public(entity)
         return entity
 
@@ -640,6 +642,7 @@ class Announce(Activity):
     target_id = IRI(as2.object)
 
     def to_base(self):
+
         if self.activity == self:
             entity = ActivitypubShare(**self.__dict__)
         else:
@@ -695,6 +698,7 @@ class Delete(Create):
     def to_base(self):
         if hasattr(self, 'object_') and not isinstance(self.object_, Tombstone):
             self.target_id = self.object_
+            self.entity_type = 'Object'
             return ActivitypubRetraction(**self.__dict__)
 
     class Meta:

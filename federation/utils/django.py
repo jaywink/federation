@@ -2,6 +2,7 @@ import importlib
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from federation.types import UserType
 
 
 def get_configuration():
@@ -27,6 +28,7 @@ def get_configuration():
         "get_private_key_function" in configuration,
         "get_profile_function" in configuration,
         "base_url" in configuration,
+        "federation_id" in configuration,
     ]):
         raise ImproperlyConfigured("Missing required FEDERATION settings, please check documentation.")
     return configuration
@@ -42,3 +44,18 @@ def get_function_from_config(item):
     module = importlib.import_module(module_path)
     func = getattr(module, func_name)
     return func
+
+def get_admin_user():
+    config = get_configuration()
+    if not config.get('federation_id'): return None
+
+    try:
+        get_key = get_function_from_config("get_private_key_function")
+    except AttributeError:
+        return None
+
+    key = get_key(config['federation_id'])
+    if not key: return None
+
+    return UserType(id=config['federation_id'], private_key=key)
+
