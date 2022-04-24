@@ -39,6 +39,7 @@ class AddedSchemaOpts(JsonLDSchemaOpts):
     def __init__(self, meta, *args, **kwargs):
         super().__init__(meta, *args, **kwargs)
         self.inherit_parent_types = False
+        self.unknown = 'EXCLUDE'
 
 JsonLDSchema.OPTIONS_CLASS = AddedSchemaOpts
 
@@ -159,8 +160,9 @@ class MixedField(fields.Nested):
         # this is just so the ACTIVITYPUB_POST_OBJECT_IMAGES test payload passes
         if len(value) == 0: return value
 
-        if value[0] == {}: return None
-        if value[0].get('@type'):
+        if isinstance(value, list) and value[0] == {}: return {}
+
+        if (isinstance(value, list) and value[0].get('@type')) or (isinstance(value, dict) and value.get('@type')):
             return super()._deserialize(value, attr, data, **kwargs)
         return self.iri._deserialize(value, attr, data, **kwargs)
         
@@ -240,10 +242,6 @@ class Object(metaclass=JsonLDAnnotation):
                 ctx = json.loads(s.replace('python-federation', 'python-federation#', 1))
                 data['@context'] = ctx
         
-            if not isinstance(ctx, list):
-                ctx = [ctx, {}]
-            saved_ctx = copy(ctx)
-
             # AP activities may be signed, but most platforms don't
             # define RsaSignature2017. add it to the context
             # hubzilla doesn't define the discoverable property in its context
@@ -253,7 +251,13 @@ class Object(metaclass=JsonLDAnnotation):
                     'featured': [{'toot':'http://joinmastodon.org/ns#','featured': 'toot:featured'}] #for litepub
                     }
 
+            if not isinstance(ctx, list):
+                ctx = [ctx, {}]
             idx = [i for i,v in enumerate(ctx) if isinstance(v, dict)]
+            if len(idx) == 0:
+                ctx.append({})
+                idx = [len(ctx)-1]
+            saved_ctx = copy(ctx)
 
             for key,val in to_add.items():
                 if not data.get(key): continue
@@ -299,8 +303,7 @@ class List(fields.List):
 
 
 class Collection(Object):
-    #items = MixedField(as2.items, nested=OBJECTS, many=True)
-    items = List(as2.items, cls_or_instance=IRI())
+    items = MixedField(as2.items, nested=OBJECTS, many=True)
     first = MixedField(as2.first, nested=['CollectionPageSchema', 'OrderedCollectionPageSchema'])
     current = IRI(as2.current)
     last = IRI(as2.last)
@@ -311,6 +314,8 @@ class Collection(Object):
 
 
 class OrderedCollection(Collection):
+    items = List(as2.items, cls_or_instance=MixedField(as2.items, nested=OBJECTS, many=True))
+
     class Meta:
         rdf_type = as2.OrderedCollection
 
@@ -324,9 +329,7 @@ class CollectionPage(Collection):
         rdf_type = as2.CollectionPage
 
 
-class OrderedCollectionPage(CollectionPage):
-    #orderedItems = MixedField(as2.orderedItems, nested=OBJECTS, many=True)
-    #orderedItems = fields.List(as2.orderedItems, cls_or_instance=MixedField(as2.items, nested=OBJECTS), ordered=True)
+class OrderedCollectionPage(OrderedCollection, CollectionPage):
     start_index = Integer(as2.startIndex, flavor=xsd.nonNegativeInteger, add_value_types=True)
 
     class Meta:
@@ -458,6 +461,7 @@ class Person(Object):
     moved_to = IRI(as2.movedTo)
     copied_to = IRI(toot.copiedTo)
     capabilities = Dict(litepub.capabilities)
+    suspended = fields.Boolean(toot.suspended)
 
     @classmethod
     def from_base(cls, entity):
