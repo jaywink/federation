@@ -64,6 +64,13 @@ def element_to_objects(payload: Dict) -> List:
         entity._receivers = extract_receivers(payload)
         if hasattr(entity, "post_receive"):
             entity.post_receive()
+        try:
+            entity.validate()
+        except ValueError as ex:
+            logger.error("Failed to validate entity %s: %s", entity, ex, extra={
+                "transformed": transformed,
+            })
+            return []
         if hasattr(entity, "extract_mentions"):
             entity.extract_mentions()
         return [entity]
