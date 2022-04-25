@@ -13,7 +13,7 @@ logger = logging.getLogger('federation')
 try:
     from federation.utils.django import get_admin_user
     admin_user = get_admin_user()
-except ImportError:
+except (ImportError, AttributeError):
     admin_user = None
     logger.warning("django is required for requests signing")
 
