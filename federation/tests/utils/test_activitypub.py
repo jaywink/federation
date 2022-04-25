@@ -1,6 +1,8 @@
 import json
 from unittest.mock import patch, Mock
 
+import pytest
+
 from federation.entities.activitypub.entities import ActivitypubFollow, ActivitypubPost
 from federation.tests.fixtures.payloads import (
     ACTIVITYPUB_FOLLOW, ACTIVITYPUB_POST, ACTIVITYPUB_POST_OBJECT, ACTIVITYPUB_POST_OBJECT_IMAGES)
@@ -39,6 +41,7 @@ class TestGetProfileIdFromWebfinger:
 
 
 class TestRetrieveAndParseDocument:
+    @pytest.mark.skip
     @patch("federation.utils.activitypub.fetch_document", autospec=True, return_value=(None, None, None))
     def test_calls_fetch_document(self, mock_fetch):
         retrieve_and_parse_document("https://example.com/foobar")
