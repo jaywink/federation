@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.23.0] - unreleased
+
+### Added
+
+* Inbound Activitypub payloads are now processed by calamus (https://github.com/SwissDataScienceCenter/calamus),
+  which is a jsonld processor based on marshmallow.
+
+* For performance, requests_cache has been added. It pulls a redis configuration from django if one exists or
+  falls back to a sqlite backend.
+
+* GET requests are now signed if the django configuration includes FEDERATION_USER which is used to fetch that
+  user's private key.
+
+### Fixed
+
+* Signatures are not verified and the corresponding payload is dropped is no public key is found.
+
 ## [0.22.0] - 2021-08-15
 
 ### Added
