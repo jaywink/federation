@@ -122,13 +122,20 @@ class ActivitypubNoteMixin(AttachImagesMixin, CleanContentMixin, PublicMixin, Cr
         Extract mentions from the source object.
         """
         super().extract_mentions()
-        if not isinstance(self._source_object, dict):
-            return
-        source = self._source_object.get('object') if isinstance(self._source_object.get('object'), dict) else \
-            self._source_object
-        for tag in source.get('tag', []):
-            if tag.get('type') == "Mention" and tag.get('href'):
-                self._mentions.add(tag.get('href'))
+
+        from federation.entities.activitypub.models import Mention # Circulars
+        tag_list = self.tag_list if isinstance(self.tag_list, list) else [self.tag_list]
+        for tag in tag_list:
+            if isinstance(tag, Mention):
+                self._mentions.add(tag.href)
+
+        #if not isinstance(self._source_object, dict):
+        #    return
+        #source = self._source_object.get('object') if isinstance(self._source_object.get('object'), dict) else \
+        #    self._source_object
+        #for tag in source.get('tag', []):
+        #    if tag.get('type') == "Mention" and tag.get('href'):
+        #        self._mentions.add(tag.get('href'))
 
     def pre_send(self):
         super().pre_send()
@@ -196,6 +203,8 @@ class ActivitypubNoteMixin(AttachImagesMixin, CleanContentMixin, PublicMixin, Cr
 
 
 class ActivitypubComment(ActivitypubNoteMixin, Comment):
+    entity_type = "Comment"
+
     def to_as2(self) -> Dict:
         as2 = super().to_as2()
         as2["object"]["inReplyTo"] = self.target_id

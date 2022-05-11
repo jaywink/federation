@@ -1,11 +1,12 @@
 from copy import copy
 import json
 import logging
+from typing import List, Callable, Dict, Union, Optional
 
 from calamus import fields
 from calamus.schema import JsonLDAnnotation, JsonLDSchema, JsonLDSchemaOpts
 from calamus.utils import normalize_value
-from marshmallow import pre_load, post_load, pre_dump, post_dump
+from marshmallow import exceptions, pre_load, post_load, pre_dump, post_dump
 from marshmallow.fields import Integer
 from pyld import jsonld, documentloader
 
@@ -15,6 +16,8 @@ from federation.entities.activitypub.entities import (
         ActivitypubImage, ActivitypubAudio, ActivitypubVideo, ActivitypubFollow, 
         ActivitypubShare, ActivitypubRetraction)
 from federation.entities.mixins import BaseEntity
+from federation.types import UserType, ReceiverVariant
+from federation.utils.activitypub import retrieve_and_parse_document
 from federation.utils.text import with_slash, validate_handle
 
 logger = logging.getLogger("federation")
@@ -163,9 +166,15 @@ class MixedField(fields.Nested):
 
         if isinstance(value, list) and value[0] == {}: return {}
 
-        if (isinstance(value, list) and value[0].get('@type')) or (isinstance(value, dict) and value.get('@type')):
-            return super()._deserialize(value, attr, data, **kwargs)
-        return self.iri._deserialize(value, attr, data, **kwargs)
+        ret = []
+        for item in value:
+            if item.get('@type'):
+                res = super()._deserialize(item, attr, data, **kwargs)
+                ret.append(res)
+            else:
+                ret.append(self.iri._deserialize(item, attr, data, **kwargs))
+
+        return ret if len(ret) > 1 else ret[0]
         
 
 OBJECTS = [
@@ -190,10 +199,11 @@ def set_public(entity):
 class Object(metaclass=JsonLDAnnotation):
     atom_url = fields.String(ostatus.atomUri)
     also_known_as = IRI(as2.alsoKnownAs)
-    icon = MixedField(as2.icon, nested='ImageSchema', many=True)
-    image = MixedField(as2.image, nested='ImageSchema', many=True)
-    tag_list = MixedField(as2.tag, nested=['HashtagSchema','MentionSchema','PropertyValueSchema','EmojiSchema'], many=True)
-    _children = MixedField(as2.attachment, nested=['ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'], many=True)
+    icon = MixedField(as2.icon, nested='ImageSchema')
+    image = MixedField(as2.image, nested='ImageSchema')
+    tag_list = MixedField(as2.tag, nested=['HashtagSchema','MentionSchema','PropertyValueSchema','EmojiSchema'])
+    _children = fields.Nested(as2.attachment, nested=['ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'], many=True)
+    #_children = MixedField(as2.attachment, nested=['ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'])
     #audience
     content_map = LanguageMap(as2.content)  # language maps are not implemented in calamus
     context = IRI(as2.context)
@@ -241,14 +251,26 @@ class Object(metaclass=JsonLDAnnotation):
             s = json.dumps(ctx)
             if 'python-federation"' in s:
                 ctx = json.loads(s.replace('python-federation', 'python-federation#', 1))
-        
+
+            # remove @language in context since this directive is not
+            # processed by calamus. Pleroma adds a useless @language: 'und'
+            # which is discouraged in best practices and in some cases makes 
+            # calamus return dict where str is expected.
+            # see https://www.rfc-editor.org/rfc/rfc5646, page 56
+            idx = []
+            for i,v in enumerate(ctx):
+                if isinstance(v, dict): 
+                    v.pop('@language',None)
+                    if len(v) == 0: idx.insert(0, i)
+            for i in idx: ctx.pop(i)
+
             # AP activities may be signed, but most platforms don't
             # define RsaSignature2017. add it to the context
             # hubzilla doesn't define the discoverable property in its context
             may_add = {'signature': ['https://w3id.org/security/v1', {'sec':'https://w3id.org/security#','RsaSignature2017':'sec:RsaSignature2017'}],
                     'discoverable': [{'toot':'http://joinmastodon.org/ns#','discoverable': 'toot:discoverable'}], #for hubzilla
                     'copiedTo': [{'toot':'http://joinmastodon.org/ns#','copiedTo': 'toot:copiedTo'}], #for hubzilla
-                    'featured': [{'toot':'http://joinmastodon.org/ns#','featured': 'toot:featured'}] #for litepub
+                    'featured': [{'toot':'http://joinmastodon.org/ns#','featured': 'toot:featured'}] #for litepub and pleroma
                     }
 
             to_add = [val for key,val in may_add.items() if data.get(key)]
@@ -304,7 +326,8 @@ class List(fields.List):
 
 
 class Collection(Object):
-    items = MixedField(as2.items, nested=OBJECTS, many=True)
+    id = fields.Id()
+    items = MixedField(as2.items, nested=OBJECTS)
     first = MixedField(as2.first, nested=['CollectionPageSchema', 'OrderedCollectionPageSchema'])
     current = IRI(as2.current)
     last = IRI(as2.last)
@@ -315,7 +338,7 @@ class Collection(Object):
 
 
 class OrderedCollection(Collection):
-    items = List(as2.items, cls_or_instance=MixedField(as2.items, nested=OBJECTS, many=True))
+    items = List(as2.items, cls_or_instance=MixedField(as2.items, nested=OBJECTS))
 
     class Meta:
         rdf_type = as2.OrderedCollection
@@ -345,7 +368,7 @@ class Document(Object):
     height = Integer(as2.height, flavor=xsd.nonNegativeInteger, add_value_types=True)
     width = Integer(as2.width, flavor=xsd.nonNegativeInteger, add_value_types=True)
     blurhash = fields.String(toot.blurhash)
-    url = MixedField(as2.url, nested='LinkSchema', many=True)
+    url = MixedField(as2.url, nested='LinkSchema')
 
     def to_base(self):
         if self.media_type.startswith('image'):
@@ -395,7 +418,7 @@ class Link(metaclass=JsonLDAnnotation):
     fps = Integer(pt.fps, flavor=schema.Number, add_value_types=True)
     size = Integer(pt.size, flavor=schema.Number, add_value_types=True)
     #preview : variable type?
-    tag = MixedField(as2.tag, nested=['InfohashSchema', 'LinkSchema'], many=True)
+    tag = MixedField(as2.tag, nested=['InfohashSchema', 'LinkSchema'])
 
     class Meta:
         rdf_type = as2.Link
@@ -508,12 +531,12 @@ class Person(Object):
                 'public': getattr(self,'endpoints',None).get('sharedInbox', None) or getattr(self,'shared_inbox',None)
                 }
         entity.public_key = getattr(self,'public_key_dict',None).get('publicKeyPem', None)
-        entity.image_urls = {}
-        if hasattr(self, 'icon') and isinstance(self.icon, list):
+        if getattr(self, 'icon', None):
+            icon = self.icon if not isinstance(self.icon, list) else self.icon[0]
             entity.image_urls = {
-                'small': self.icon[0].url,
-                'medium': self.icon[0].url,
-                'large': self.icon[0].url
+                'small': icon.url,
+                'medium': icon.url,
+                'large': icon.url
                 }
 
         entity._allowed_children += (PropertyValue, IdentityProof)
@@ -580,6 +603,8 @@ class Note(Object):
                 if img: children.append(img)
             entity._children = children
 
+        entity._allowed_children += (ActivitypubAudio, ActivitypubVideo)
+
         set_public(entity)
         return entity
 
@@ -600,8 +625,8 @@ class Page(Note):
 # peertube uses a lot of properties differently...
 class Video(Object):
     id = fields.Id()
-    actor_id = MixedField(as2.attributedTo, nested=['PersonSchema', 'GroupSchema'], many=True)
-    url = MixedField(as2.url, nested='LinkSchema', many=True)
+    actor_id = MixedField(as2.attributedTo, nested=['PersonSchema', 'GroupSchema'])
+    url = MixedField(as2.url, nested='LinkSchema')
 
     class Meta:
         unknown = 'EXCLUDE' # required until all the pt fields are defined
@@ -724,8 +749,11 @@ class Create(Activity):
         rdf_type = as2.Create
 
 
-class Like(Create):
+class Like(Announce):
     like = fields.String(diaspora.like)
+
+    def to_base(self):
+        return self
 
     class Meta:
         rdf_type = as2.Like
@@ -767,18 +795,150 @@ class View(Create):
         rdf_type = as2.View
 
 
+def process_followers(obj, base_url):
+    pass
+
+def extract_receiver(entity, receiver):
+    """
+    Transform a single receiver ID to a UserType.
+    """
+
+    if receiver == NAMESPACE_PUBLIC:
+        # Ignore since we already store "public" as a boolean on the entity
+        return []
+
+
+    #obj = retrieve_and_parse_document(receiver)
+    #if isinstance(obj, ActivitypubProfile):
+    #    return [UserType(id=receiver, receiver_variant=ReceiverVariant.ACTOR)]
+
+    #if isinstance(obj, Collection) and base_url:
+    #    return process_followers(obj, base_url)
+
+
+    actor = getattr(entity, 'actor_id', None) or ""
+    # Check for this being a list reference to followers of an actor?
+    # TODO: terrible hack! the way some platforms deliver to sharedInbox using just
+    #   the followers collection as a target is annoying to us since we would have to
+    #   store the followers collection references on application side, which we don't
+    #   want to do since it would make application development another step more complex.
+    #   So for now we're going to do a terrible assumption that
+    #     1) if "followers" in ID and
+    #     2) if ID starts with actor ID
+    #     then; assume this is the followers collection of said actor ID.
+    #   When we have a caching system, just fetch each receiver and check what it is.
+    #   Without caching this would be too expensive to do.
+    if receiver.find("followers") > -1 and receiver.startswith(actor):
+        return [UserType(id=actor, receiver_variant=ReceiverVariant.FOLLOWERS)]
+    # Assume actor ID
+    return [UserType(id=receiver, receiver_variant=ReceiverVariant.ACTOR)]
+
+
+def extract_receivers(entity):
+    """
+    Extract receivers from a payload.
+    """
+    receivers = []
+    for attr in ("to", "cc"):
+        receiver = getattr(entity, attr, None)
+        if isinstance(receiver, list):
+            for item in receiver:
+                extracted = extract_receiver(entity, item)
+                if extracted:
+                    receivers += extracted
+        elif isinstance(receiver, str):
+            extracted = extract_receiver(entity, receiver)
+            if extracted:
+                receivers += extracted
+    return receivers
+
+
+def extract_and_validate(entity):
+    # Add protocol name
+    entity._source_protocol = "activitypub"
+    # Extract receivers
+    entity._receivers = extract_receivers(entity)
+    if hasattr(entity, "post_receive"):
+        entity.post_receive()
+
+    if hasattr(entity, 'validate'): entity.validate()
+
+    # Extract mentions
+    if hasattr(entity, "extract_mentions"):
+        entity.extract_mentions()
+
+
+
+visited = [] # to prevent infinite loops
+def process_reply_collection(replies):
+    global visited
+    objs = []
+    items = getattr(replies, 'items', [])
+    if items and not isinstance(items, list): items = [items]
+    print('items = ', items)
+    for item in items:
+        if isinstance(item, Object):
+            objs += element_to_base_entities(item, True)
+        else:
+            objs += retrieve_and_parse_document(item, True)
+    print('added items = ', objs)
+    if hasattr(replies, 'next_'):
+        print('next = ', replies.next_)
+        if replies.next_ and (replies.id != replies.next_) and (replies.next_ not in visited):
+            resp = retrieve_and_parse_document(replies.next_, True)
+            if resp:
+                visited.append(replies.next_)
+                objs += process_reply_collection(resp[0])
+    print('len objs = ', len(objs))
+    return objs
+
+
+def element_to_base_entities(element: Union[Dict, Object], found_parent: bool = False) -> List:
+    """
+    Transform an Element to a list of entities.
+    """
+    entities = []
+
+    # json-ld handling with calamus
+    # Skips unimplemented payloads
+    # TODO: remove unused code
+    entity = model_to_objects(element) if not isinstance(element, Object) else element
+    print('target_id = ', getattr(entity, 'target_id', None), 'entity = ', entity)
+    if entity: entity = entity.to_base()
+    if entity and isinstance(entity, BaseEntity):
+        logger.info('Entity type "%s" was handled through the json-ld processor', entity.__class__.__name__)
+        try:
+            extract_and_validate(entity)
+        except ValueError:
+            logger.error("Failed to validate entity %s: %s", entity, ex)
+            return None
+        entities.append(entity)
+        if not found_parent and getattr(entity, 'target_id', None):
+            entities = retrieve_and_parse_document(entity.target_id) + entities
+        if getattr(entity, 'replies', None):
+            print('enter process_reply_collection for ', entity.id)
+            entities += process_reply_collection(getattr(entity.replies,'first', None))
+        return entities
+    elif entity:
+        logger.info('Entity type "%s" was handled through the json-ld processor but is not a base entity', entity.__class__.__name__)
+        return [entity]
+    else:
+        logger.warning("Payload not implemented by the json-ld processor, skipping")
+        return []
+
+
 def model_to_objects(payload):
     model = globals().get(payload.get('type'))
     if model and issubclass(model, Object):
         try:
             entity = model.schema().load(payload)
-        except jsonld.JsonLdError:  # Just give up for now. This must be made robust
-            logger.warning("Invalid jsonld payload, falling through mappers for now")
+        except (jsonld.JsonLdError, exceptions.ValidationError) as exc :  # Just give up for now. This must be made robust
+            logger.warning(f"Invalid jsonld payload, skipping ({exc})")
             return None
 
-        if hasattr(entity, 'object_') and (isinstance(entity.object_, Object) or isinstance(entity.object_, BaseEntity)):
+        if isinstance(getattr(entity, 'object_', None), Object):
             entity.object_.activity = entity
             entity = entity.object_
     
-        return entity.to_base()
+        return entity
     return None

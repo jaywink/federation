@@ -3,7 +3,6 @@ import logging
 from typing import Optional, Any
 
 from federation.entities.activitypub.entities import ActivitypubProfile
-from federation.entities.activitypub.mappers import message_to_objects
 from federation.protocols.activitypub.signing import get_http_authentication
 from federation.utils.network import fetch_document, try_retrieve_webfinger_document
 from federation.utils.text import decode_if_bytes, validate_handle
@@ -15,7 +14,7 @@ try:
     admin_user = get_admin_user()
 except (ImportError, AttributeError):
     admin_user = None
-    logger.warning("django is required for requests signing")
+    logger.warning("django is required for get requests signing")
 
 def get_profile_id_from_webfinger(handle: str) -> Optional[str]:
     """
@@ -39,20 +38,21 @@ def retrieve_and_parse_content(**kwargs) -> Optional[Any]:
     return retrieve_and_parse_document(kwargs.get("id"))
 
 
-def retrieve_and_parse_document(fid: str) -> Optional[Any]:
+def retrieve_and_parse_document(fid: str, found_parent: bool = False) -> Optional[Any]:
     """
     Retrieve remote document by ID and return the entity.
     """
+    from federation.entities.activitypub.models import element_to_base_entities # Circulars
     document, status_code, ex = fetch_document(fid, 
             extra_headers={'accept': 'application/activity+json'}, 
             auth=get_http_authentication(admin_user.rsa_private_key,f'{admin_user.id}#main-key') if admin_user else None)
     if document:
         document = json.loads(decode_if_bytes(document))
-        entities = message_to_objects(document, fid)
-        logger.info("retrieve_and_parse_document - found %s entities", len(entities))
-        if entities:
-            logger.info("retrieve_and_parse_document - using first entity: %s", entities[0])
-            return entities[0]
+        entity = element_to_base_entities(document, found_parent)
+        if entity:
+            logger.info("retrieve_and_parse_document - found %d entity", len(entity))
+            return entity
+    return []    
 
 
 def retrieve_and_parse_profile(fid: str) -> Optional[ActivitypubProfile]:
@@ -68,6 +68,7 @@ def retrieve_and_parse_profile(fid: str) -> Optional[ActivitypubProfile]:
     profile = retrieve_and_parse_document(profile_id)
     if not profile:
         return
+    profile = profile[0]
     try:
         profile.validate()
     except ValueError as ex:
@@ -75,3 +76,4 @@ def retrieve_and_parse_profile(fid: str) -> Optional[ActivitypubProfile]:
                        profile, ex)
         return
     return profile
+
