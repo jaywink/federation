@@ -5,10 +5,10 @@ from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
 from federation.entities.activitypub.entities import (
     ActivitypubFollow, ActivitypubProfile, ActivitypubAccept, ActivitypubPost, ActivitypubComment,
     ActivitypubRetraction, ActivitypubShare, ActivitypubImage)
+from federation.entities.activitypub.models import element_to_base_entities
 from federation.entities.base import Follow, Profile, Accept, Post, Comment, Retraction, Share, Image
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType, ReceiverVariant
-from federation.entities.activitypub.models import model_to_objects
 
 logger = logging.getLogger("federation")
 
@@ -54,32 +54,6 @@ def element_to_objects(payload: Dict) -> List:
     cls = None
     entities = []
 
-    # Initial attempt at handling json-ld with calamus
-    # Fall back to legacy if AP payload is not supported yet
-    entity = model_to_objects(payload)
-    if entity and isinstance(entity, BaseEntity):
-        logger.info('Entity type "%s" was handled through the json-ld processor', entity.__class__.__name__)
-        entity._source_protocol = "activitypub"
-        entity._source_object = payload
-        entity._receivers = extract_receivers(payload)
-        if hasattr(entity, "post_receive"):
-            entity.post_receive()
-        try:
-            entity.validate()
-        except ValueError as ex:
-            logger.error("Failed to validate entity %s: %s", entity, ex, extra={
-                "transformed": transformed,
-            })
-            return []
-        if hasattr(entity, "extract_mentions"):
-            entity.extract_mentions()
-        return [entity]
-    elif entity:
-        logger.info('Entity type "%s" was handled through the json-ld processor but is not implemented by federation', entity.__class__.__name__)
-        return entities
-    else:
-        logger.warning("Payload not implemented by the json-ld processor, falling through mappers")
-
     is_object = True if payload.get('type') in OBJECTS else False
     if payload.get('type') == "Delete":
         cls = ActivitypubRetraction
@@ -98,12 +72,6 @@ def element_to_objects(payload: Dict) -> List:
 
     transformed = transform_attributes(payload, cls, is_object=is_object)
     entity = cls(**transformed)
-    # Add protocol name
-    entity._source_protocol = "activitypub"
-    # Save element object to entity for possible later use
-    entity._source_object = payload
-    # Extract receivers
-    entity._receivers = extract_receivers(payload)
     # Extract children
     if payload.get("object") and isinstance(payload.get("object"), dict):
         # Try object if exists
@@ -111,20 +79,6 @@ def element_to_objects(payload: Dict) -> List:
     else:
         # Try payload itself
         entity._children = extract_attachments(payload)
-
-    if hasattr(entity, "post_receive"):
-        entity.post_receive()
-
-    try:
-        entity.validate()
-    except ValueError as ex:
-        logger.error("Failed to validate entity %s: %s", entity, ex, extra={
-            "transformed": transformed,
-        })
-        return []
-    # Extract mentions
-    if hasattr(entity, "extract_mentions"):
-        entity.extract_mentions()
 
     entities.append(entity)
 
@@ -152,50 +106,6 @@ def extract_attachments(payload: Dict) -> List[Image]:
                 )
             )
     return attachments
-
-
-def extract_receiver(payload: Dict, receiver: str) -> Optional[UserType]:
-    """
-    Transform a single receiver ID to a UserType.
-    """
-    actor = payload.get("actor") or payload.get("attributedTo") or ""
-    if receiver == NAMESPACE_PUBLIC:
-        # Ignore since we already store "public" as a boolean on the entity
-        return
-    # Check for this being a list reference to followers of an actor?
-    # TODO: terrible hack! the way some platforms deliver to sharedInbox using just
-    #   the followers collection as a target is annoying to us since we would have to
-    #   store the followers collection references on application side, which we don't
-    #   want to do since it would make application development another step more complex.
-    #   So for now we're going to do a terrible assumption that
-    #     1) if "followers" in ID and
-    #     2) if ID starts with actor ID
-    #     then; assume this is the followers collection of said actor ID.
-    #   When we have a caching system, just fetch each receiver and check what it is.
-    #   Without caching this would be too expensive to do.
-    elif receiver.find("followers") > -1 and receiver.startswith(actor):
-        return UserType(id=actor, receiver_variant=ReceiverVariant.FOLLOWERS)
-    # Assume actor ID
-    return UserType(id=receiver, receiver_variant=ReceiverVariant.ACTOR)
-
-
-def extract_receivers(payload: Dict) -> List[UserType]:
-    """
-    Exctract receivers from a payload.
-    """
-    receivers = []
-    for key in ("to", "cc"):
-        receiver = payload.get(key)
-        if isinstance(receiver, list):
-            for item in receiver:
-                extracted = extract_receiver(payload, item)
-                if extracted:
-                    receivers.append(extracted)
-        elif isinstance(receiver, str):
-            extracted = extract_receiver(payload, receiver)
-            if extracted:
-                receivers.append(extracted)
-    return receivers
 
 
 def get_outbound_entity(entity: BaseEntity, private_key):
@@ -261,7 +171,7 @@ def message_to_objects(
     Takes in a message extracted by a protocol and maps it to entities.
     """
     # We only really expect one element here for ActivityPub.
-    return element_to_objects(message)
+    return element_to_base_entities(message)
 
 
 def transform_attribute(

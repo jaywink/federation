@@ -183,7 +183,7 @@ def retrieve_and_parse_content(
             logger.warning("retrieve_and_parse_content - more than one entity parsed from remote even though we"
                            "expected only one! ID %s", guid)
         if entities:
-            return entities[0]
+            return entities[0:1]
         return
     elif status_code == 404:
         logger.warning("retrieve_and_parse_content - remote content %s not found", guid)
