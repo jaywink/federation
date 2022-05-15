@@ -38,21 +38,20 @@ def retrieve_and_parse_content(**kwargs) -> Optional[Any]:
     return retrieve_and_parse_document(kwargs.get("id"))
 
 
-def retrieve_and_parse_document(fid: str, found_parent: bool = False) -> Optional[Any]:
+def retrieve_and_parse_document(fid: str) -> Optional[Any]:
     """
     Retrieve remote document by ID and return the entity.
     """
-    from federation.entities.activitypub.models import element_to_base_entities # Circulars
+    from federation.entities.activitypub.models import element_to_objects # Circulars
     document, status_code, ex = fetch_document(fid, 
             extra_headers={'accept': 'application/activity+json'}, 
             auth=get_http_authentication(admin_user.rsa_private_key,f'{admin_user.id}#main-key') if admin_user else None)
     if document:
         document = json.loads(decode_if_bytes(document))
-        entity = element_to_base_entities(document, found_parent)
-        if entity:
-            logger.info("retrieve_and_parse_document - found %d entity", len(entity))
-            return entity
-    return []    
+        entities = element_to_objects(document)
+        if entities:
+            logger.info("retrieve_and_parse_document - using first entity: %s", entities[0])
+            return entities[0]
 
 
 def retrieve_and_parse_profile(fid: str) -> Optional[ActivitypubProfile]:
@@ -68,7 +67,6 @@ def retrieve_and_parse_profile(fid: str) -> Optional[ActivitypubProfile]:
     profile = retrieve_and_parse_document(profile_id)
     if not profile:
         return
-    profile = profile[0]
     try:
         profile.validate()
     except ValueError as ex:

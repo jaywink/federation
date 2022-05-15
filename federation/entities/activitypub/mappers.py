@@ -5,7 +5,7 @@ from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
 from federation.entities.activitypub.entities import (
     ActivitypubFollow, ActivitypubProfile, ActivitypubAccept, ActivitypubPost, ActivitypubComment,
     ActivitypubRetraction, ActivitypubShare, ActivitypubImage)
-from federation.entities.activitypub.models import element_to_base_entities
+from federation.entities.activitypub.models import element_to_objects
 from federation.entities.base import Follow, Profile, Accept, Post, Comment, Retraction, Share, Image
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType, ReceiverVariant
@@ -47,7 +47,7 @@ UNDO_MAPPINGS = {
 }
 
 
-def element_to_objects(payload: Dict) -> List:
+def element_to_objects_orig(payload: Dict) -> List:
     """
     Transform an Element to a list of entities.
     """
@@ -171,7 +171,7 @@ def message_to_objects(
     Takes in a message extracted by a protocol and maps it to entities.
     """
     # We only really expect one element here for ActivityPub.
-    return element_to_base_entities(message)
+    return element_to_objects(message)
 
 
 def transform_attribute(
