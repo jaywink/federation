@@ -867,33 +867,31 @@ def extract_and_validate(entity):
     if hasattr(entity, "extract_mentions"):
         entity.extract_mentions()
 
+    # Extract reply ids
+    if getattr(entity, 'replies', None):
+        entity._replies = extract_reply_ids(getattr(entity.replies, 'first', []))
 
 
-visited = [] # to prevent infinite loops
-def process_reply_collection(replies):
-    global visited
+
+def extract_reply_ids(replies, visited=[]):
     objs = []
     items = getattr(replies, 'items', [])
     if items and not isinstance(items, list): items = [items]
-    print('items = ', items)
     for item in items:
         if isinstance(item, Object):
-            objs += element_to_base_entities(item, True)
+            objs.append(item.id)
         else:
-            objs += retrieve_and_parse_document(item, True)
-    print('added items = ', objs)
+            objs.append(item)
     if hasattr(replies, 'next_'):
-        print('next = ', replies.next_)
         if replies.next_ and (replies.id != replies.next_) and (replies.next_ not in visited):
-            resp = retrieve_and_parse_document(replies.next_, True)
+            resp = retrieve_and_parse_document(replies.next_)
             if resp:
                 visited.append(replies.next_)
-                objs += process_reply_collection(resp[0])
-    print('len objs = ', len(objs))
+                objs += extract_reply_ids(resp, visited)
     return objs
 
 
-def element_to_base_entities(element: Union[Dict, Object], found_parent: bool = False) -> List:
+def element_to_objects(element: Union[Dict, Object]) -> List:
     """
     Transform an Element to a list of entities.
     """
@@ -903,7 +901,6 @@ def element_to_base_entities(element: Union[Dict, Object], found_parent: bool = 
     # Skips unimplemented payloads
     # TODO: remove unused code
     entity = model_to_objects(element) if not isinstance(element, Object) else element
-    print('target_id = ', getattr(entity, 'target_id', None), 'entity = ', entity)
     if entity: entity = entity.to_base()
     if entity and isinstance(entity, BaseEntity):
         logger.info('Entity type "%s" was handled through the json-ld processor', entity.__class__.__name__)
@@ -913,11 +910,10 @@ def element_to_base_entities(element: Union[Dict, Object], found_parent: bool = 
             logger.error("Failed to validate entity %s: %s", entity, ex)
             return None
         entities.append(entity)
-        if not found_parent and getattr(entity, 'target_id', None):
-            entities = retrieve_and_parse_document(entity.target_id) + entities
-        if getattr(entity, 'replies', None):
-            print('enter process_reply_collection for ', entity.id)
-            entities += process_reply_collection(getattr(entity.replies,'first', None))
+        #if not found_parent and getattr(entity, 'target_id', None):
+        #    entities = retrieve_and_parse_document(entity.target_id) + entities
+        #if getattr(entity, 'replies', None):
+        #    entities += process_reply_collection(getattr(entity.replies,'first', None))
         return entities
     elif entity:
         logger.info('Entity type "%s" was handled through the json-ld processor but is not a base entity', entity.__class__.__name__)
