@@ -76,6 +76,7 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
         try:
             response = session.get(url, timeout=timeout, headers=headers, **kwargs)
             logger.debug("fetch_document: found document, code %s", response.status_code)
+            logger.debug("fetch_document cache: hit = %s, expired = %s", response.from_cache, response.is_expired)
             response.raise_for_status()
             return response.text, response.status_code, None
         except RequestException as ex:
