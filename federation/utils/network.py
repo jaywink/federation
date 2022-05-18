@@ -11,7 +11,7 @@ import requests
 from requests.exceptions import RequestException, HTTPError, SSLError
 from requests.exceptions import ConnectionError
 from requests.structures import CaseInsensitiveDict
-from requests_cache import CachedSession, RedisCache, SQLiteCache
+from requests_cache import install_cache, RedisCache, SQLiteCache
 
 from federation import __version__
 
@@ -28,7 +28,7 @@ try:
 except ImportError:
     backend = SQLiteCache(db_path='fed_cache')
 
-session = CachedSession(backend=backend, expire_after=1800)
+install_cache(backend=backend, expire_after=7200)
 
 USER_AGENT = "python/federation/%s" % __version__
 
@@ -38,14 +38,14 @@ def fetch_content_type(url: str) -> Optional[str]:
     Fetch the HEAD of the remote url to determine the content type.
     """
     try:
-        response = session.head(url, headers={'user-agent': USER_AGENT}, timeout=10)
+        response = requests.head(url, headers={'user-agent': USER_AGENT}, timeout=10)
     except RequestException as ex:
         logger.warning("fetch_content_type - %s when fetching url %s", ex, url)
     else:
         return response.headers.get('Content-Type')
 
 
-def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=True, extra_headers=None, **kwargs):
+def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=True, extra_headers=None, cache=True, **kwargs):
     """Helper method to fetch remote document.
 
     Must be given either the ``url`` or ``host``.
@@ -65,8 +65,8 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
     if not url and not host:
         raise ValueError("Need url or host.")
 
-    logger.debug("fetch_document: url=%s, host=%s, path=%s, timeout=%s, raise_ssl_errors=%s",
-                 url, host, path, timeout, raise_ssl_errors)
+    logger.debug("fetch_document: url=%s, host=%s, path=%s, timeout=%s, raise_ssl_errors=%s, cache=%s",
+                 url, host, path, timeout, raise_ssl_errors, cache)
     headers = {'user-agent': USER_AGENT}
     if extra_headers:
         headers.update(extra_headers)
@@ -74,9 +74,12 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
         # Use url since it was given
         logger.debug("fetch_document: trying %s", url)
         try:
-            response = session.get(url, timeout=timeout, headers=headers, **kwargs)
+            if cache:
+                response = requests.get(url, timeout=timeout, headers=headers, **kwargs)
+            else:
+                with requests_cache.disabled():
+                    response = requests.get(url, timeout=timeout, headers=headers, **kwargs)
             logger.debug("fetch_document: found document, code %s", response.status_code)
-            logger.debug("fetch_document cache: hit = %s, expired = %s", response.from_cache, response.is_expired)
             response.raise_for_status()
             return response.text, response.status_code, None
         except RequestException as ex:
@@ -88,7 +91,7 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
     url = "https://%s%s" % (host_string, path_string)
     logger.debug("fetch_document: trying %s", url)
     try:
-        response = session.get(url, timeout=timeout, headers=headers)
+        response = requests.get(url, timeout=timeout, headers=headers)
         logger.debug("fetch_document: found document, code %s", response.status_code)
         response.raise_for_status()
         return response.text, response.status_code, None
@@ -100,7 +103,7 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
         url = url.replace("https://", "http://")
         logger.debug("fetch_document: trying %s", url)
         try:
-            response = session.get(url, timeout=timeout, headers=headers)
+            response = requests.get(url, timeout=timeout, headers=headers)
             logger.debug("fetch_document: found document, code %s", response.status_code)
             response.raise_for_status()
             return response.text, response.status_code, None
@@ -131,7 +134,7 @@ def fetch_file(url: str, timeout: int = 30, extra_headers: Dict = None) -> str:
     headers = {'user-agent': USER_AGENT}
     if extra_headers:
         headers.update(extra_headers)
-    response = session.get(url, timeout=timeout, headers=headers, stream=True)
+    response = requests.get(url, timeout=timeout, headers=headers, stream=True)
     response.raise_for_status()
     name = f"/tmp/{str(uuid4())}"
     with open(name, "wb") as f:
@@ -213,7 +216,7 @@ def send_document(url, data, timeout=10, method="post", *args, **kwargs):
     kwargs.update({
         "data": data, "timeout": timeout, "headers": headers
     })
-    request_func = getattr(session, method)
+    request_func = getattr(requests, method)
     try:
         response = request_func(url, *args, **kwargs)
         logger.debug("send_document: response status code %s", response.status_code)
