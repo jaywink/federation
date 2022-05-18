@@ -97,6 +97,11 @@ class Dict(fields.Dict):
         return super()._serialize(value, attr, obj, **kwargs)
 
     def _deserialize(self, value, attr, data, **kwargs):
+        # HACK: "promote" a Pleroma source field by adding content
+        # and mediaType as2 properties
+        if attr == str(as2.source):
+            if isinstance(value, list) and str(as2.content) not in value[0].keys():
+                value = [{str(as2.content): value, str(as2.mediaType): 'text/plain'}]
         ret = super()._deserialize(value, attr, data, **kwargs)
         ret = jsonld.compact(ret, self.ctx)
         ret.pop('@context')
@@ -579,7 +584,7 @@ class Note(Object):
     id = fields.Id()
     actor_id = IRI(as2.attributedTo)
     target_id = IRI(as2.inReplyTo)
-    conversation = fields.String(ostatus.conversation)
+    conversation = fields.RawJsonLD(ostatus.conversation)
     in_reply_to_atom_uri = IRI(ostatus.inReplyToAtomUri)
     summary = fields.String(as2.summary)
     url = IRI(as2.url)
