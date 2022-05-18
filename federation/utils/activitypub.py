@@ -35,15 +35,15 @@ def get_profile_id_from_webfinger(handle: str) -> Optional[str]:
 
 
 def retrieve_and_parse_content(**kwargs) -> Optional[Any]:
-    return retrieve_and_parse_document(kwargs.get("id"))
+    return retrieve_and_parse_document(kwargs.get("id"), cache=kwargs.get("cache"))
 
 
-def retrieve_and_parse_document(fid: str) -> Optional[Any]:
+def retrieve_and_parse_document(fid: str, cache: bool = True) -> Optional[Any]:
     """
     Retrieve remote document by ID and return the entity.
     """
     from federation.entities.activitypub.models import element_to_objects # Circulars
-    document, status_code, ex = fetch_document(fid, 
+    document, status_code, ex = fetch_document(fid, cache=cache,
             extra_headers={'accept': 'application/activity+json'}, 
             auth=get_http_authentication(admin_user.rsa_private_key,f'{admin_user.id}#main-key') if admin_user else None)
     if document:
