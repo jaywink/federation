@@ -13,7 +13,7 @@ logger = logging.getLogger("federation")
 
 def retrieve_remote_content(
         id: str, guid: str = None, handle: str = None, entity_type: str = None,
-        sender_key_fetcher: Callable[[str], str] = None,
+        sender_key_fetcher: Callable[[str], str] = None, cache: bool=True,
 ):
     """Retrieve remote content and return an Entity object.
 
