@@ -900,7 +900,6 @@ def element_to_objects(element: Union[Dict, Object]) -> List:
     """
     Transform an Element to a list of entities.
     """
-    entities = []
 
     # json-ld handling with calamus
     # Skips unimplemented payloads
@@ -914,14 +913,14 @@ def element_to_objects(element: Union[Dict, Object]) -> List:
         except ValueError:
             logger.error("Failed to validate entity %s: %s", entity, ex)
             return None
-        entities.append(entity)
         #if not found_parent and getattr(entity, 'target_id', None):
         #    entities = retrieve_and_parse_document(entity.target_id) + entities
         #if getattr(entity, 'replies', None):
         #    entities += process_reply_collection(getattr(entity.replies,'first', None))
-        return entities
+        return [entity]
     elif entity:
         logger.info('Entity type "%s" was handled through the json-ld processor but is not a base entity', entity.__class__.__name__)
+        entity._receivers = extract_receivers(entity)
         return [entity]
     else:
         logger.warning("Payload not implemented by the json-ld processor, skipping")
@@ -933,8 +932,8 @@ def model_to_objects(payload):
     if model and issubclass(model, Object):
         try:
             entity = model.schema().load(payload)
-        except (jsonld.JsonLdError, exceptions.ValidationError) as exc :  # Just give up for now. This must be made robust
-            logger.warning(f"Invalid jsonld payload, skipping ({exc})")
+        except (KeyError, jsonld.JsonLdError, exceptions.ValidationError) as exc :  # Just give up for now. This must be made robust
+            logger.warning(f"Error parsing  jsonld payload ({exc})")
             return None
 
         if isinstance(getattr(entity, 'object_', None), Object):

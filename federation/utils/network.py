@@ -11,7 +11,7 @@ import requests
 from requests.exceptions import RequestException, HTTPError, SSLError
 from requests.exceptions import ConnectionError
 from requests.structures import CaseInsensitiveDict
-from requests_cache import install_cache, RedisCache, SQLiteCache
+import requests_cache as rc
 
 from federation import __version__
 
@@ -22,13 +22,13 @@ try:
     from federation.utils.django import get_configuration
     cfg = get_configuration()
     if cfg.get('redis'):
-        backend = RedisCache(namespace='fed_cache', **cfg['redis'])
+        backend = rc.RedisCache(namespace='fed_cache', **cfg['redis'])
     else:
-        backend = SQLiteCache(db_path='fed_cache')
+        backend = rc.SQLiteCache(db_path='fed_cache')
 except ImportError:
-    backend = SQLiteCache(db_path='fed_cache')
+    backend = rc.SQLiteCache(db_path='fed_cache')
 
-install_cache(backend=backend, expire_after=7200)
+rc.install_cache(backend=backend, expire_after=7200)
 
 USER_AGENT = "python/federation/%s" % __version__
 
@@ -77,7 +77,7 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
             if cache:
                 response = requests.get(url, timeout=timeout, headers=headers, **kwargs)
             else:
-                with requests_cache.disabled():
+                with rc.disabled():
                     response = requests.get(url, timeout=timeout, headers=headers, **kwargs)
             logger.debug("fetch_document: found document, code %s", response.status_code)
             response.raise_for_status()
