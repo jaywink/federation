@@ -275,7 +275,8 @@ class Object(metaclass=JsonLDAnnotation):
             may_add = {'signature': ['https://w3id.org/security/v1', {'sec':'https://w3id.org/security#','RsaSignature2017':'sec:RsaSignature2017'}],
                     'discoverable': [{'toot':'http://joinmastodon.org/ns#','discoverable': 'toot:discoverable'}], #for hubzilla
                     'copiedTo': [{'toot':'http://joinmastodon.org/ns#','copiedTo': 'toot:copiedTo'}], #for hubzilla
-                    'featured': [{'toot':'http://joinmastodon.org/ns#','featured': 'toot:featured'}] #for litepub and pleroma
+                    'featured': [{'toot':'http://joinmastodon.org/ns#','featured': 'toot:featured'}], #for litepub and pleroma
+                    'tag': [{'Hashtag': 'as:Hashtag'}] #for epicyon
                     }
 
             to_add = [val for key,val in may_add.items() if data.get(key)]
@@ -605,7 +606,10 @@ class Note(Object):
             children = []
             for child in entity._children:
                 img = child.to_base()
-                if img: children.append(img)
+                if img:
+                    if isinstance(img, ActivitypubImage) and img.inline:
+                        continue
+                    children.append(img)
             entity._children = children
 
         entity._allowed_children += (ActivitypubAudio, ActivitypubVideo)
