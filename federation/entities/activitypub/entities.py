@@ -123,11 +123,12 @@ class ActivitypubNoteMixin(AttachImagesMixin, CleanContentMixin, PublicMixin, Cr
         """
         super().extract_mentions()
 
-        from federation.entities.activitypub.models import Mention # Circulars
-        tag_list = self.tag_list if isinstance(self.tag_list, list) else [self.tag_list]
-        for tag in tag_list:
-            if isinstance(tag, Mention):
-                self._mentions.add(tag.href)
+        if getattr(self, 'tag_list', None):
+            from federation.entities.activitypub.models import Mention # Circulars
+            tag_list = self.tag_list if isinstance(self.tag_list, list) else [self.tag_list]
+            for tag in tag_list:
+                if isinstance(tag, Mention):
+                    self._mentions.add(tag.href)
 
         #if not isinstance(self._source_object, dict):
         #    return
