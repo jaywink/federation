@@ -184,11 +184,16 @@ class MixedField(fields.Nested):
 
 OBJECTS = [
         'AnnounceSchema',
+        'ApplicationSchema',
         'ArticleSchema',
         'FollowSchema',
+        'GroupSchema',
         'LikeSchema',
         'NoteSchema',
+        'OrganizationSchema',
         'PageSchema',
+        'PersonSchema',
+        'ServiceSchema',
         'TombstoneSchema',
         'VideoSchema'
 ]
