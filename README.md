@@ -1,4 +1,4 @@
-[![pipeline status](https://git.feneas.org/jaywink/federation/badges/master/pipeline.svg)](https://git.feneas.org/jaywink/federation/commits/master) [![codecov.io](https://codecov.io/github/jaywink/federation/coverage.svg?branch=master)](https://codecov.io/github/jaywink/federation?branch=master) [![issue tracker](https://img.shields.io/badge/issue%20tracker-gitlab-orange.svg)](https://git.feneas.org/jaywink/federation/issues)
+[![pipeline status](https://gitlab.com/jaywink/federation/badges/master/pipeline.svg)](https://gitlab.com/jaywink/federation) [![issue tracker](https://img.shields.io/badge/issue%20tracker-gitlab-orange.svg)](https://gitlab.com/jaywink/federation/-/issues)
 
 [![PyPI version](https://badge.fury.io/py/federation.svg)](https://pypi.python.org/pypi/federation)  [![Documentation Status](http://readthedocs.org/projects/federation/badge/?version=latest)](http://federation.readthedocs.io/en/latest/?badge=latest) [![PyPI](https://img.shields.io/pypi/pyversions/federation.svg?maxAge=2592000)](https://pypi.python.org/pypi/federation) [![PyPI](https://img.shields.io/pypi/l/federation.svg?maxAge=2592000)](https://pypi.python.org/pypi/federation)
 
@@ -48,4 +48,4 @@ See [development and support documentation](http://federation.readthedocs.io/en/
 
 ### Author
 
-Jason Robinson / https://jasonrobinson.me / https://git.feneas.org/jaywink / https://github.com/jaywink 
+Jason Robinson / https://jasonrobinson.me / https://gitlab.com/jaywink / https://github.com/jaywink 

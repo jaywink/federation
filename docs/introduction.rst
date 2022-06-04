@@ -48,5 +48,5 @@ License
 Author
 ......
 
-Jason Robinson / `jasonrobinson.me <https://jasonrobinson.me>`_ / `@jaywink:federator.dev <https://matrix.to/#/@jaywink:federator.dev>`_ / `GitLab <https://git.feneas.org/jaywink>`_ / `GitHub <https://github.com/jaywink>`_
+Jason Robinson / `jasonrobinson.me <https://jasonrobinson.me>`_ / `@jaywink:federator.dev <https://matrix.to/#/@jaywink:federator.dev>`_ / `GitLab <https://gitlab.com/jaywink>`_ / `GitHub <https://github.com/jaywink>`_
 

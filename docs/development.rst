@@ -3,9 +3,8 @@ Development
 
 Help is more than welcome to extend this library. Please see the following resources.
 
-* `Source code repo <https://git.feneas.org/jaywink/federation>`_
-* `Issue tracker <https://git.feneas.org/jaywink/federation/issues>`_
-* `Kanban board <https://git.feneas.org/jaywink/federation/boards>`_
+* `Source code repo <https://gitlab.com/jaywink/federation>`_
+* `Issue tracker <https://gitlab.com/jaywink/federation/-/issues>`_
 
 Environment setup
 -----------------
@@ -34,7 +33,6 @@ Built documentation is available at ``docs/_build/html/index.html``.
 Contact for help
 ----------------
 
-Easiest via Matrix on room ``#socialhome:feneas.org``. There is a bridged
-Freenode channel as well found at ``#socialhome``.
+Easiest via Matrix on room ``#socialhome:federator.dev``.
 
 You can also ask questions or give feedback via issues.
