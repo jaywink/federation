@@ -45,7 +45,7 @@ def get_function_from_config(item):
     func = getattr(module, func_name)
     return func
 
-def get_admin_user():
+def get_federation_user():
     config = get_configuration()
     if not config.get('federation_id'): return None
 

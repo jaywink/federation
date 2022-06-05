@@ -29,7 +29,6 @@ def disable_network_calls(monkeypatch):
             return saved_get(*args, **kwargs)
         return DEFAULT
 
-    #monkeypatch.setattr("requests.get", Mock(return_value=MockResponse))
     monkeypatch.setattr("requests.get", Mock(return_value=MockResponse, side_effect=side_effect))
 
 

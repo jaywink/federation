@@ -11,10 +11,10 @@ from federation.utils.text import decode_if_bytes, validate_handle
 logger = logging.getLogger('federation')
 
 try:
-    from federation.utils.django import get_admin_user
-    admin_user = get_admin_user()
+    from federation.utils.django import get_federation_user
+    federation_user = get_federation_user()
 except (ImportError, AttributeError):
-    admin_user = None
+    federation_user = None
     logger.warning("django is required for requests signing")
 
 def get_profile_id_from_webfinger(handle: str) -> Optional[str]:
@@ -45,7 +45,7 @@ def retrieve_and_parse_document(fid: str) -> Optional[Any]:
     """
     document, status_code, ex = fetch_document(fid, 
             extra_headers={'accept': 'application/activity+json'}, 
-            auth=get_http_authentication(admin_user.rsa_private_key,f'{admin_user.id}#main-key') if admin_user else None)
+            auth=get_http_authentication(federation_user.rsa_private_key,f'{federation_user.id}#main-key') if federation_user else None)
     if document:
         document = json.loads(decode_if_bytes(document))
         entities = message_to_objects(document, fid)
