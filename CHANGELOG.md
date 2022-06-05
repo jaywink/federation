@@ -17,6 +17,10 @@
 
 * Signatures are not verified and the corresponding payload is dropped is no public key is found.
 
+### Internal changes
+
+* Dropped python 3.6 support.
+
 ## [0.22.0] - 2021-08-15
 
 ### Added
