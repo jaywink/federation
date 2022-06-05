@@ -7,6 +7,7 @@ from calamus.schema import JsonLDAnnotation, JsonLDSchema, JsonLDSchemaOpts
 from calamus.utils import normalize_value
 from marshmallow import pre_load, post_load, pre_dump, post_dump
 from marshmallow.fields import Integer
+from marshmallow.utils import EXCLUDE
 from pyld import jsonld, documentloader
 
 from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
@@ -39,7 +40,7 @@ class AddedSchemaOpts(JsonLDSchemaOpts):
     def __init__(self, meta, *args, **kwargs):
         super().__init__(meta, *args, **kwargs)
         self.inherit_parent_types = False
-        self.unknown = 'EXCLUDE'
+        self.unknown = EXCLUDE
 
 JsonLDSchema.OPTIONS_CLASS = AddedSchemaOpts
 
@@ -589,7 +590,7 @@ class Video(Document):
     actor_id = MixedField(as2.attributedTo, nested=['PersonSchema', 'GroupSchema'], many=True)
 
     class Meta:
-        unknown = 'EXCLUDE' # required until all the pt fields are defined
+        unknown = EXCLUDE # required until all the pt fields are defined
         rdf_type = as2.Video
 
     def to_base(self):
