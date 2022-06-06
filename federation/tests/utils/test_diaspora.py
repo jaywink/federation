@@ -127,7 +127,7 @@ class TestRetrieveAndParseContent:
     @patch("federation.utils.diaspora.get_fetch_content_endpoint", return_value="https://example.com/fetch/spam/eggs")
     def test_calls_fetch_document(self, mock_get, mock_fetch):
         retrieve_and_parse_content(id="eggs", guid="eggs", handle="user@example.com", entity_type="spam")
-        mock_fetch.assert_called_once_with("https://example.com/fetch/spam/eggs")
+        mock_fetch.assert_called_once_with("https://example.com/fetch/spam/eggs", cache=True)
 
     @patch("federation.utils.diaspora.fetch_document", return_value=(None, 404, None))
     @patch("federation.utils.diaspora.get_fetch_content_endpoint")

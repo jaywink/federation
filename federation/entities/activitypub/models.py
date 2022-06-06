@@ -943,7 +943,7 @@ def model_to_objects(payload):
         try:
             entity = model.schema().load(payload)
         except (KeyError, jsonld.JsonLdError, exceptions.ValidationError) as exc :  # Just give up for now. This must be made robust
-            logger.warning(f"Error parsing  jsonld payload ({exc})")
+            logger.error(f"Error parsing  jsonld payload ({exc})")
             return None
 
         if isinstance(getattr(entity, 'object_', None), Object):
