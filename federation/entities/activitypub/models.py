@@ -263,6 +263,14 @@ class Object(metaclass=JsonLDAnnotation):
             if 'python-federation"' in s:
                 ctx = json.loads(s.replace('python-federation', 'python-federation#', 1))
 
+            # gotosocial has http://joinmastodon.com/ns in @context. This
+            # is not a json-ld document.
+            try:
+                ctx.pop(ctx.index('http://joinmastodon.org/ns'))
+            except:
+                pass
+
+            print(ctx)
             # remove @language in context since this directive is not
             # processed by calamus. Pleroma adds a useless @language: 'und'
             # which is discouraged in best practices and in some cases makes 
@@ -540,9 +548,14 @@ class Person(Object):
         entity = ActivitypubProfile(**self.__dict__)
         entity.inboxes = {
                 'private': getattr(self, 'inbox', None), 
-                'public': getattr(self,'endpoints',None).get('sharedInbox', None) or getattr(self,'shared_inbox',None)
+                'public': None
                 }
-        entity.public_key = getattr(self,'public_key_dict',None).get('publicKeyPem', None)
+        if hasattr(self, 'endpoints') and isinstance(self.endpoints, dict):
+            entity.inboxes['public'] = self.endpoints.get('sharedInbox', None)
+        else:
+            entity.inboxes['public'] = getattr(self,'shared_inbox',None)
+        if hasattr(self, 'public_key_dict') and isinstance(self.public_key_dict, dict):
+            entity.public_key = self.public_key_dict.get('publicKeyPem', None)
         if getattr(self, 'icon', None):
             icon = self.icon if not isinstance(self.icon, list) else self.icon[0]
             entity.image_urls = {
@@ -606,7 +619,9 @@ class Note(Object):
                 entity.raw_content = self.source.get('content').strip()
             else:
                 entity._media_type = 'text/html'
-                entity.raw_content = self.content_map.get('orig', "")
+                entity.raw_content = self.content_map.get('orig')
+            # to allow for posts/replies with medias only.
+            if not entity.raw_content: entity.raw_content = "<div></div>"
 
         if isinstance(getattr(entity, '_children', None), list):
             children = []
@@ -920,7 +935,7 @@ def element_to_objects(element: Union[Dict, Object]) -> List:
         logger.info('Entity type "%s" was handled through the json-ld processor', entity.__class__.__name__)
         try:
             extract_and_validate(entity)
-        except ValueError:
+        except ValueError as ex:
             logger.error("Failed to validate entity %s: %s", entity, ex)
             return None
         #if not found_parent and getattr(entity, 'target_id', None):
