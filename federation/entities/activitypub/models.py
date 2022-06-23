@@ -270,7 +270,6 @@ class Object(metaclass=JsonLDAnnotation):
             except:
                 pass
 
-            print(ctx)
             # remove @language in context since this directive is not
             # processed by calamus. Pleroma adds a useless @language: 'und'
             # which is discouraged in best practices and in some cases makes 
