@@ -9,7 +9,8 @@ from calamus.utils import normalize_value
 from marshmallow import exceptions, pre_load, post_load, pre_dump, post_dump
 from marshmallow.fields import Integer
 from marshmallow.utils import EXCLUDE
-from pyld import jsonld, documentloader
+from pyld import jsonld
+import requests_cache as rc
 
 from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
 from federation.entities.activitypub.entities import (
@@ -28,16 +29,29 @@ logger = logging.getLogger("federation")
 # accept other content types. From what I understand, precedence handling
 # is broken
 # from https://github.com/digitalbazaar/pyld/issues/133
-def myloader(*args, **kwargs):
-    requests_loader = documentloader.requests.requests_document_loader(*args, **kwargs)
+def get_loader(*args, **kwargs):
+    # try to obtain redis config from django
+    try:
+        from federation.utils.django import get_configuration
+        cfg = get_configuration()
+        if cfg.get('redis'):
+            backend = rc.RedisCache(namespace='fed_cache', **cfg['redis'])
+        else:
+            backend = rc.SQLiteCache(db_path='fed_cache')
+    except ImportError:
+        backend = rc.SQLiteCache(db_path='fed_cache')
+    logger.info('Using %s for requests_cache', type(backend))
+    
+    requests_loader = jsonld.requests_document_loader(*args, **kwargs)
     
     def loader(url, options={}):
         options['headers']['Accept'] = 'application/ld+json'
-        return requests_loader(url, options)
+        with rc.enabled(cache_name='fed_cache', backend=backend):
+            return requests_loader(url, options)
     
     return loader
 
-jsonld.set_document_loader(myloader())
+jsonld.set_document_loader(get_loader())
 
 
 class AddedSchemaOpts(JsonLDSchemaOpts):
