@@ -11,24 +11,10 @@ import requests
 from requests.exceptions import RequestException, HTTPError, SSLError
 from requests.exceptions import ConnectionError
 from requests.structures import CaseInsensitiveDict
-import requests_cache as rc
 
 from federation import __version__
 
 logger = logging.getLogger("federation")
-
-# try to obtain redis config from django
-try:
-    from federation.utils.django import get_configuration
-    cfg = get_configuration()
-    if cfg.get('redis'):
-        backend = rc.RedisCache(namespace='fed_cache', **cfg['redis'])
-    else:
-        backend = rc.SQLiteCache(db_path='fed_cache')
-except ImportError:
-    backend = rc.SQLiteCache(db_path='fed_cache')
-
-rc.install_cache(backend=backend, expire_after=7200)
 
 USER_AGENT = "python/federation/%s" % __version__
 
@@ -45,7 +31,7 @@ def fetch_content_type(url: str) -> Optional[str]:
         return response.headers.get('Content-Type')
 
 
-def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=True, extra_headers=None, cache=True, **kwargs):
+def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=True, extra_headers=None, **kwargs):
     """Helper method to fetch remote document.
 
     Must be given either the ``url`` or ``host``.
@@ -65,8 +51,8 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
     if not url and not host:
         raise ValueError("Need url or host.")
 
-    logger.debug("fetch_document: url=%s, host=%s, path=%s, timeout=%s, raise_ssl_errors=%s, cache=%s",
-                 url, host, path, timeout, raise_ssl_errors, cache)
+    logger.debug("fetch_document: url=%s, host=%s, path=%s, timeout=%s, raise_ssl_errors=%s",
+                 url, host, path, timeout, raise_ssl_errors)
     headers = {'user-agent': USER_AGENT}
     if extra_headers:
         headers.update(extra_headers)
@@ -74,11 +60,7 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
         # Use url since it was given
         logger.debug("fetch_document: trying %s", url)
         try:
-            if cache:
-                response = requests.get(url, timeout=timeout, headers=headers, **kwargs)
-            else:
-                with rc.disabled():
-                    response = requests.get(url, timeout=timeout, headers=headers, **kwargs)
+            response = requests.get(url, timeout=timeout, headers=headers, **kwargs)
             logger.debug("fetch_document: found document, code %s", response.status_code)
             response.raise_for_status()
             return response.text, response.status_code, None

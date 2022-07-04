@@ -161,9 +161,7 @@ def parse_profile_from_hcard(hcard: str, handle: str):
 
 
 def retrieve_and_parse_content(
-        id: str, guid: str, handle: str, entity_type: str, sender_key_fetcher: Callable[[str], str]=None,
-        cache: bool=True,
-):
+        id: str, guid: str, handle: str, entity_type: str, sender_key_fetcher: Callable[[str], str]=None):
     """Retrieve remote content and return an Entity class instance.
 
     This is basically the inverse of receiving an entity. Instead, we fetch it, then call "handle_receive".
@@ -176,7 +174,7 @@ def retrieve_and_parse_content(
         return
     _username, domain = handle.split("@")
     url = get_fetch_content_endpoint(domain, entity_type.lower(), guid)
-    document, status_code, error = fetch_document(url, cache=cache)
+    document, status_code, error = fetch_document(url)
     if status_code == 200:
         request = RequestType(body=document)
         _sender, _protocol, entities = handle_receive(request, sender_key_fetcher=sender_key_fetcher)
