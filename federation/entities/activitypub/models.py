@@ -86,6 +86,17 @@ zot = fields.Namespace("https://hubzilla.org/apschema#")
 # Workaround: get rid of the array.
 # Also, this implements the many attribute for IRI fields, sort of
 class IRI(fields.IRI):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.dump_derived = kwargs.get('dump_derived')
+
+    def _serialize(self, value, attr, data, **kwargs):
+        if not value and isinstance(self.dump_derived, dict):
+            fields = {f: getattr(data, f) for f in self.dump_derived['fields']}
+            value = self.dump_derived['fmt'].format(**fields)
+
+        return super()._serialize(value, attr, data, **kwargs)
+
     def _deserialize(self, value, attr, data, **kwargs):
         if isinstance(value, list) and len(value) == 0: return value
         value = normalize_value(value)
@@ -499,9 +510,9 @@ class Emoji(Object):
 class Person(Object):
     id = fields.Id()
     inbox = IRI(ldp.inbox)
-    outbox = IRI(as2.outbox)
-    following = IRI(as2.following)
-    followers = IRI(as2.followers)
+    outbox = IRI(as2.outbox, dump_derived={'fmt': '{id}outbox/', 'fields': ['id']})
+    following = IRI(as2.following, dump_derived={'fmt': '{id}following/', 'fields': ['id']})
+    followers = IRI(as2.followers, dump_derived={'fmt': '{id}followers/', 'fields': ['id']})
     #liked is a collection
     #streams
     username = fields.String(as2.preferredUsername)
@@ -516,7 +527,7 @@ class Person(Object):
     playlists = IRI(pt.playlists)
     featured = IRI(toot.featured)
     featuredTags = IRI(toot.featuredTags)
-    manuallyApprovesFollowers = fields.Boolean(as2.manuallyApprovesFollowers, dump_default=False)
+    manuallyApprovesFollowers = fields.Boolean(as2.manuallyApprovesFollowers, default=False)
     discoverable = fields.Boolean(toot.discoverable)
     devices = IRI(toot.devices)
     public_key_dict = Dict(sec.publicKey)
@@ -626,13 +637,19 @@ class Note(Object):
         entity = ActivitypubComment(**self.__dict__) if getattr(self, 'target_id') else ActivitypubPost(**self.__dict__)
 
         if hasattr(self, 'content_map'):
-            entity._rendered_content = self.content_map.get('orig', "").strip()
+            orig = self.content_map.pop('orig')
+            if len(self.content_map.keys()) > 1:
+                logger.warning('Language selection not implemented, falling back to default')
+                entity._rendered_content = orig.strip()
+            else:
+                entity._rendered_content = orig.strip() if len(self.content_map.keys()) == 0 else next(iter(self.content_map.values())).strip()
+
             if getattr(self, 'source') and self.source.get('mediaType') == 'text/markdown':
                 entity._media_type = self.source['mediaType']
                 entity.raw_content = self.source.get('content').strip()
             else:
                 entity._media_type = 'text/html'
-                entity.raw_content = self.content_map.get('orig')
+                entity.raw_content = entity._rendered_content
             # to allow for posts/replies with medias only.
             if not entity.raw_content: entity.raw_content = "<div></div>"
 
@@ -951,10 +968,6 @@ def element_to_objects(element: Union[Dict, Object]) -> List:
         except ValueError as ex:
             logger.error("Failed to validate entity %s: %s", entity, ex)
             return None
-        #if not found_parent and getattr(entity, 'target_id', None):
-        #    entities = retrieve_and_parse_document(entity.target_id) + entities
-        #if getattr(entity, 'replies', None):
-        #    entities += process_reply_collection(getattr(entity.replies,'first', None))
         return [entity]
     elif entity:
         logger.info('Entity type "%s" was handled through the json-ld processor but is not a base entity', entity.__class__.__name__)
