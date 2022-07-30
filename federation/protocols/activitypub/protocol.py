@@ -5,6 +5,7 @@ from typing import Callable, Tuple, Union, Dict
 
 from cryptography.exceptions import InvalidSignature
 from Crypto.PublicKey.RSA import RsaKey
+from requests_http_signature import HTTPSignatureHeaderAuth
 
 from federation.entities.activitypub.enums import ActorType
 from federation.entities.mixins import BaseEntity
@@ -94,7 +95,9 @@ class Protocol:
 
     def verify_signature(self):
         # Verify the HTTP signature
-        key = self.get_contact_key(self.actor)
+        sig = HTTPSignatureHeaderAuth.get_sig_struct(self.request)
+        signer = sig.get('keyId', '').split('#')[0] if sig.get('keyId') else self.actor
+        key = self.get_contact_key(signer)
         if self.request.headers.get('Signature') and not key:
-            raise KeyError(f'No public key found for {self.actor}')
-        verify_request_signature(self.request, self.get_contact_key(self.actor))
+            raise KeyError(f'No public key found for {signer}')
+        verify_request_signature(self.request, key)
