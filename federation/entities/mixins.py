@@ -37,13 +37,20 @@ class BaseEntity:
         self._children = []
         self._mentions = set()
         self._receivers = []
-        for key, value in kwargs.items():
-            if hasattr(self, key):
+
+        # make the assumption that if a schema is being used, the payload
+        # is deserialized and validated properly
+        if kwargs.get('has_schema'):
+            for key, value in kwargs.items():
                 setattr(self, key, value)
-            else:
-                warnings.warn("%s.__init__ got parameter %s which this class does not support - ignoring." % (
-                    self.__class__.__name__, key
-                ))
+        else:
+            for key, value in kwargs.items():
+                if hasattr(self, key):
+                    setattr(self, key, value)
+                else:
+                    warnings.warn("%s.__init__ got parameter %s which this class does not support - ignoring." % (
+                        self.__class__.__name__, key
+                    ))
         if not self.activity:
             # Fill a default activity if not given and type of entity class has one
             self.activity = getattr(self, "_default_activity", None)
@@ -228,8 +235,9 @@ class RawContentMixin(BaseEntity):
             config = get_configuration()
             if config["tags_path"]:
                 def linkifier(tag: str) -> str:
-                    return f'<a href="{config["base_url"]}{config["tags_path"].replace(":tag:", tag.lower())}" ' \
-                           f'class="mention hashtag" rel="noopener noreferrer">' \
+                    return f'<a class="mention hashtag" ' \
+                           f' href="{config["base_url"]}{config["tags_path"].replace(":tag:", tag.lower())}" ' \
+                           f'rel="noopener noreferrer">' \
                            f'#<span>{tag}</span></a>'
             else:
                 linkifier = None
@@ -254,7 +262,7 @@ class RawContentMixin(BaseEntity):
                         display_name = mention
                     rendered = rendered.replace(
                         "@{%s}" % mention,
-                        f'@<a href="{mention}" class="mention"><span>{display_name}</span></a>',
+                        f'@<a class="mention" href="{mention}"><span>{display_name}</span></a>',
                     )
             # Finally linkify remaining URL's that are not links
             rendered = process_text_links(rendered)

@@ -38,7 +38,7 @@ def verify_request_signature(request: RequestType, public_key: Union[str, bytes]
     key = encode_if_text(public_key)
     date_header = request.headers.get("Date")
     if not date_header:
-        raise ValueError("Rquest Date header is missing")
+        raise ValueError("Request Date header is missing")
 
     ts = parse_http_date(date_header)
     dt = datetime.datetime.utcfromtimestamp(ts).replace(tzinfo=pytz.utc)

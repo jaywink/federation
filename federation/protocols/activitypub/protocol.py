@@ -3,7 +3,9 @@ import logging
 import re
 from typing import Callable, Tuple, Union, Dict
 
+from cryptography.exceptions import InvalidSignature
 from Crypto.PublicKey.RSA import RsaKey
+from requests_http_signature import HTTPSignatureHeaderAuth
 
 from federation.entities.activitypub.enums import ActorType
 from federation.entities.mixins import BaseEntity
@@ -84,9 +86,18 @@ class Protocol:
         self.extract_actor()
         # Verify the message is from who it claims to be
         if not skip_author_verification:
-            self.verify_signature()
+            try:
+                self.verify_signature()
+            except (KeyError, InvalidSignature) as exc:
+                logger.warning(f'Signature verification failed: {exc}')
+                return self.actor, {}
         return self.actor, self.payload
 
     def verify_signature(self):
         # Verify the HTTP signature
-        verify_request_signature(self.request, self.get_contact_key(self.actor))
+        sig = HTTPSignatureHeaderAuth.get_sig_struct(self.request)
+        signer = sig.get('keyId', '').split('#')[0] if sig.get('keyId') else self.actor
+        key = self.get_contact_key(signer)
+        if self.request.headers.get('Signature') and not key:
+            raise KeyError(f'No public key found for {signer}')
+        verify_request_signature(self.request, key)

@@ -37,7 +37,7 @@ passed back to the caller.
 For sending messages out, either base or protocol specific entities can be passed
 to the outbound senders.
 
-If you need the correct protocol speficic entity class from the base entity,
+If you need the correct protocol specific entity class from the base entity,
 each protocol will define a ``get_outbound_entity`` function.
 
 .. autofunction:: federation.entities.activitypub.mappers.get_outbound_entity
@@ -212,6 +212,7 @@ Some settings need to be set in Django settings. An example is below:
 
     FEDERATION = {
         "base_url": "https://myserver.domain.tld,
+        "federation_id": "https://example.com/u/john/",
         "get_object_function": "myproject.utils.get_object",
         "get_private_key_function": "myproject.utils.get_private_key",
         "get_profile_function": "myproject.utils.get_profile",
@@ -223,6 +224,7 @@ Some settings need to be set in Django settings. An example is below:
     }
 
 * ``base_url`` is the base URL of the server, ie protocol://domain.tld.
+* ``federation_id`` is a valid ActivityPub local profile id whose private key will be used to create the HTTP signature for GET requests to ActivityPub platforms.
 * ``get_object_function`` should be the full path to a function that will return the object matching the ActivityPub ID for the request object passed to this function.
 * ``get_private_key_function`` should be the full path to a function that will accept a federation ID (url, handle or guid) and return the private key of the user (as an RSA object). Required for example to sign outbound messages in some cases.
 * ``get_profile_function`` should be the full path to a function that should return a ``Profile`` entity. The function should take one or more keyword arguments: ``fid``, ``handle``, ``guid`` or ``request``. It should look up a profile with one or more of the provided parameters.

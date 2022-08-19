@@ -70,8 +70,8 @@ class TestActivitypubEntityMappersReceive:
         assert post.raw_content == '<p><span class="h-card"><a class="u-url mention" ' \
                                    'href="https://dev.jasonrobinson.me/u/jaywink/">' \
                                    '@<span>jaywink</span></a></span> boom</p>'
-        assert post.rendered_content == '<p><span class="h-card"><a href="https://dev.jasonrobinson.me/u/jaywink/" ' \
-                                        'class="u-url mention">@<span>jaywink</span></a></span> boom</p>'
+        assert post.rendered_content == '<p><span class="h-card"><a class="u-url mention" href="https://dev.jasonrobinson.me/u/jaywink/">' \
+                                        '@<span>jaywink</span></a></span> boom</p>'
         assert post.id == "https://diaspodon.fr/users/jaywink/statuses/102356911717767237"
         assert post.actor_id == "https://diaspodon.fr/users/jaywink"
         assert post.public is True
@@ -101,8 +101,8 @@ class TestActivitypubEntityMappersReceive:
         post = entities[0]
         assert isinstance(post, ActivitypubPost)
         assert isinstance(post, Post)
-        assert post.rendered_content == '<p><span class="h-card"><a href="https://dev.jasonrobinson.me/u/jaywink/" ' \
-                                        'class="u-url mention">@<span>jaywink</span></a></span> boom</p>'
+        assert post.rendered_content == '<p><span class="h-card"><a class="u-url mention" href="https://dev.jasonrobinson.me/u/jaywink/">' \
+                                        '@<span>jaywink</span></a></span> boom</p>'
         assert post.raw_content == '<p><span class="h-card"><a class="u-url mention" ' \
                                    'href="https://dev.jasonrobinson.me/u/jaywink/">' \
                                    '@<span>jaywink</span></a></span> boom</p>'
@@ -127,7 +127,8 @@ class TestActivitypubEntityMappersReceive:
         assert len(entities) == 1
         post = entities[0]
         assert isinstance(post, ActivitypubPost)
-        assert len(post._children) == 1
+        # TODO: test video and audio attachment
+        assert len(post._children) == 2
         photo = post._children[0]
         assert isinstance(photo, Image)
         assert photo.url == "https://files.mastodon.social/media_attachments/files/017/642/079/original/" \
@@ -270,6 +271,8 @@ class TestActivitypubEntityMappersReceive:
         entities = message_to_objects(ACTIVITYPUB_PROFILE, "http://example.com/1234")
         assert entities[0]._source_protocol == "activitypub"
 
+    @pytest.mark.skip
+    # since calamus turns the whole payload into objects, the source payload is not kept
     def test_source_object(self):
         entities = message_to_objects(ACTIVITYPUB_PROFILE, "http://example.com/1234")
         entity = entities[0]
