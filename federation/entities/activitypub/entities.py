@@ -130,14 +130,6 @@ class ActivitypubNoteMixin(AttachImagesMixin, CleanContentMixin, PublicMixin, Cr
                 if isinstance(tag, Mention):
                     self._mentions.add(tag.href)
 
-        #if not isinstance(self._source_object, dict):
-        #    return
-        #source = self._source_object.get('object') if isinstance(self._source_object.get('object'), dict) else \
-        #    self._source_object
-        #for tag in source.get('tag', []):
-        #    if tag.get('type') == "Mention" and tag.get('href'):
-        #        self._mentions.add(tag.get('href'))
-
     def pre_send(self):
         super().pre_send()
         self.extract_mentions()

@@ -40,7 +40,7 @@ def get_loader(*args, **kwargs):
             backend = rc.SQLiteCache(db_path='fed_cache')
     except ImportError:
         backend = rc.SQLiteCache(db_path='fed_cache')
-    logger.info('Using %s for requests_cache', type(backend))
+    logger.debug('Using %s for requests_cache', type(backend))
     
     requests_loader = jsonld.requests_document_loader(*args, **kwargs)
     
@@ -239,30 +239,30 @@ class Object(metaclass=JsonLDAnnotation):
     image = MixedField(as2.image, nested='ImageSchema')
     tag_list = MixedField(as2.tag, nested=['HashtagSchema','MentionSchema','PropertyValueSchema','EmojiSchema'])
     _children = fields.Nested(as2.attachment, nested=['ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'], many=True)
-    #_children = MixedField(as2.attachment, nested=['ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'])
-    #audience
     content_map = LanguageMap(as2.content)  # language maps are not implemented in calamus
     context = IRI(as2.context)
     guid = fields.String(diaspora.guid)
     name = fields.String(as2.name)
-    #endtime
     generator = MixedField(as2.generator, nested='ServiceSchema')
-    #generator = Dict(as2.generator)
-    #location
-    #preview
     created_at = fields.DateTime(as2.published, add_value_types=True)
     replies = MixedField(as2.replies, nested=['CollectionSchema','OrderedCollectionSchema'])
     signature = MixedField(sec.signature, nested = 'SignatureSchema')
     start_time = fields.DateTime(as2.startTime, add_value_types=True)
     updated = fields.DateTime(as2.updated, add_value_types=True)
     to = IRI(as2.to)
-    #bto
     cc = IRI(as2.cc)
-    #bcc
     media_type = fields.String(as2.mediaType)
-    #duration
     sensitive = fields.Boolean(as2.sensitive)
     source = Dict(as2.source)
+
+    # The following properties are defined by some platforms, but are not implemented yet
+    #audience
+    #endtime
+    #location
+    #preview
+    #bto
+    #bcc
+    #duration
 
     def __init__(self, *args, **kwargs):
         for k, v in kwargs.items():
@@ -461,8 +461,9 @@ class Link(metaclass=JsonLDAnnotation):
     width = Integer(as2.width, flavor=xsd.nonNegativeInteger, add_value_types=True)
     fps = Integer(pt.fps, flavor=schema.Number, add_value_types=True)
     size = Integer(pt.size, flavor=schema.Number, add_value_types=True)
-    #preview : variable type?
     tag = MixedField(as2.tag, nested=['InfohashSchema', 'LinkSchema'])
+    # Not implemented yet
+    #preview : variable type?
 
     class Meta:
         rdf_type = as2.Link
@@ -513,16 +514,9 @@ class Person(Object):
     outbox = IRI(as2.outbox, dump_derived={'fmt': '{id}outbox/', 'fields': ['id']})
     following = IRI(as2.following, dump_derived={'fmt': '{id}following/', 'fields': ['id']})
     followers = IRI(as2.followers, dump_derived={'fmt': '{id}followers/', 'fields': ['id']})
-    #liked is a collection
-    #streams
     username = fields.String(as2.preferredUsername)
     endpoints = Dict(as2.endpoints)
     shared_inbox = IRI(as2.sharedInbox) # misskey adds this
-    #proxyUrl
-    #oauthAuthorizationEndpoint
-    #oauthTokenEndpoint
-    #provideClientKey
-    #signClientKey
     url = IRI(as2.url)
     playlists = IRI(pt.playlists)
     featured = IRI(toot.featured)
@@ -542,6 +536,14 @@ class Person(Object):
     copied_to = IRI(toot.copiedTo)
     capabilities = Dict(litepub.capabilities)
     suspended = fields.Boolean(toot.suspended)
+    # Not implemented yet
+    #liked is a collection
+    #streams
+    #proxyUrl
+    #oauthAuthorizationEndpoint
+    #oauthTokenEndpoint
+    #provideClientKey
+    #signClientKey
 
     @classmethod
     def from_base(cls, entity):
@@ -717,7 +719,7 @@ class Video(Object):
                 for a in act:
                     if type(a) == Person:
                         new_act.append(a.id)
-                # TODO: fix extract_receivers which can't handle multiple actors!
+                # TODO: fix extract_receivers which doesn't handle multiple actors!
                 self.actor_id = new_act[0]
 
             entity = ActivitypubPost(**self.__dict__)
@@ -740,10 +742,10 @@ class Signature(Object):
 
 class Activity(Object):
     actor_id = IRI(as2.actor)
-    #target_id = IRI(as2.target)
+    instrument = MixedField(as2.instrument, nested='ServiceSchema')
+    # Not implemented yet
     #result
     #origin
-    instrument = MixedField(as2.instrument, nested='ServiceSchema')
 
     def __init__(self, *args, **kwargs):
         self.activity = self
@@ -868,10 +870,10 @@ def extract_receiver(entity, receiver):
         return []
 
 
+    # Work in progress
     #obj = retrieve_and_parse_document(receiver)
     #if isinstance(obj, ActivitypubProfile):
     #    return [UserType(id=receiver, receiver_variant=ReceiverVariant.ACTOR)]
-
     #if isinstance(obj, Collection) and base_url:
     #    return process_followers(obj, base_url)
 
