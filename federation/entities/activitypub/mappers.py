@@ -5,10 +5,11 @@ from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
 from federation.entities.activitypub.entities import (
     ActivitypubFollow, ActivitypubProfile, ActivitypubAccept, ActivitypubPost, ActivitypubComment,
     ActivitypubRetraction, ActivitypubShare, ActivitypubImage)
-from federation.entities.activitypub.models import element_to_objects
+from federation.entities.activitypub.models import element_to_objects, Note
 from federation.entities.base import Follow, Profile, Accept, Post, Comment, Retraction, Share, Image
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType, ReceiverVariant
+import federation.entities.activitypub.models as models
 
 logger = logging.getLogger("federation")
 
@@ -137,15 +138,15 @@ def get_outbound_entity(entity: BaseEntity, private_key):
     elif cls == Follow:
         outbound = ActivitypubFollow.from_base(entity)
     elif cls == Post:
-        outbound = ActivitypubPost.from_base(entity)
+        outbound = models.Note.from_base(entity)
     elif cls == Profile:
-        outbound = ActivitypubProfile.from_base(entity)
+        outbound = models.Person.from_base(entity)
     elif cls == Retraction:
         outbound = ActivitypubRetraction.from_base(entity)
     elif cls == Comment:
-        outbound = ActivitypubComment.from_base(entity)
+        outbound = models.Note.from_base(entity)
     elif cls == Share:
-        outbound = ActivitypubShare.from_base(entity)
+        outbound = models.Announce.from_base(entity)
     if not outbound:
         raise ValueError("Don't know how to convert this base entity to ActivityPub protocol entities.")
     # TODO LDS signing

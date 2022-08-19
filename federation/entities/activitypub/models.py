@@ -12,15 +12,13 @@ from marshmallow.utils import EXCLUDE
 from pyld import jsonld
 import requests_cache as rc
 
-from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
-from federation.entities.activitypub.entities import (
-        ActivitypubAccept, ActivitypubPost, ActivitypubComment, ActivitypubProfile, 
-        ActivitypubImage, ActivitypubAudio, ActivitypubVideo, ActivitypubFollow, 
-        ActivitypubShare, ActivitypubRetraction)
+from federation.entities.activitypub.constants import CONTEXT, NAMESPACE_PUBLIC
+from federation.entities.activitypub.entities import ActivitypubNoteMixin, ActivitypubEntityMixin
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType, ReceiverVariant
 from federation.utils.activitypub import retrieve_and_parse_document
 from federation.utils.text import with_slash, validate_handle
+import federation.entities.base as base
 
 logger = logging.getLogger("federation")
 
@@ -159,8 +157,8 @@ class LanguageMap(Dict):
         if not ret: return ret
         value = []
         for k,v in ret.items():
-            if k == 'orig':
-                value.append({'@value':v})
+            if k == '_:orig':
+                value.append(v)
             else:
                 value.append({'@language': k, '@value':v})
 
@@ -185,10 +183,14 @@ class MixedField(fields.Nested):
         self.iri.parent = self.parent
 
     def _serialize(self, value, attr, obj, **kwargs):
+        print('MixedField -> ', value, attr)
         if isinstance(value, str) or (
                 isinstance(value, list) and len(value) > 0 and isinstance(value[0], str)):
             return self.iri._serialize(value, attr, obj, **kwargs)
         else:
+            value = value[0] if isinstance(value, list) and len(value) > 0 else value
+            if isinstance(value, list) and len(value) == 0: value = None
+            print('value = ', value)
             return super()._serialize(value, attr, obj, **kwargs)
 
     def _deserialize(self, value, attr, data, **kwargs):
@@ -232,18 +234,28 @@ def set_public(entity):
         elif attr == NAMESPACE_PUBLIC: entity.public = True
 
 
-class Object(metaclass=JsonLDAnnotation):
+def add_props_to_attrs(obj, props):
+    attrs = copy(obj.__dict__)
+    for prop in props:
+        attrs.update({prop: getattr(obj, prop, None)})
+        attrs.pop('_'+prop, None)
+    attrs.update({'schema': True})
+    return attrs
+
+
+class Object(BaseEntity, metaclass=JsonLDAnnotation):
     atom_url = fields.String(ostatus.atomUri)
     also_known_as = IRI(as2.alsoKnownAs)
     icon = MixedField(as2.icon, nested='ImageSchema')
     image = MixedField(as2.image, nested='ImageSchema')
     tag_list = MixedField(as2.tag, nested=['HashtagSchema','MentionSchema','PropertyValueSchema','EmojiSchema'])
-    _children = fields.Nested(as2.attachment, nested=['ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'], many=True)
+    attachment = fields.Nested(as2.attachment, nested=['ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'], many=True)
     #_children = MixedField(as2.attachment, nested=['ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'])
     #audience
     content_map = LanguageMap(as2.content)  # language maps are not implemented in calamus
     context = IRI(as2.context)
     guid = fields.String(diaspora.guid)
+    handle = fields.String(diaspora.handle)
     name = fields.String(as2.name)
     #endtime
     generator = MixedField(as2.generator, nested='ServiceSchema')
@@ -263,16 +275,18 @@ class Object(metaclass=JsonLDAnnotation):
     #duration
     sensitive = fields.Boolean(as2.sensitive)
     source = Dict(as2.source)
+    maps_to_base = False
 
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            if hasattr(self, k): 
-                setattr(self, k, v)
-        self.has_schema = True
+    #def __init__(self, *args, **kwargs):
+    #    self.has_schema = True
+    #    super().__init__(*args, **kwargs)
 
     # noop to avoid isinstance tests
     def to_base(self):
         return self
+
+    def compact(self):
+        return jsonld.compact(self.dump(), CONTEXT)
 
     class Meta:
         rdf_type = as2.Object
@@ -407,7 +421,7 @@ class OrderedCollectionPage(OrderedCollection, CollectionPage):
 # This mimics that federation currently handles AP Document as AP Image
 # AP defines [Ii]mage and [Aa]udio objects/properties, but only a Video object
 # seen with Peertube payloads only so far
-class Document(Object):
+class Document(ActivitypubEntityMixin, Object):
     inline = fields.Boolean(pyfed.inlineImage)
     height = Integer(as2.height, flavor=xsd.nonNegativeInteger, add_value_types=True)
     width = Integer(as2.width, flavor=xsd.nonNegativeInteger, add_value_types=True)
@@ -416,33 +430,30 @@ class Document(Object):
 
     def to_base(self):
         if self.media_type.startswith('image'):
-            return ActivitypubImage(**self.__dict__)
+            return base.Image(**self.__dict__)
         if self.media_type.startswith('audio'):
-            return ActivitypubAudio(**self.__dict__)
+            return base.Audio(**self.__dict__)
         if self.media_type.startswith('video'):
-            return ActivitypubVideo(**self.__dict__)
+            return base.Video(**self.__dict__)
         return self # what was that?
         
     class Meta:
         rdf_type = as2.Document
+        fields = ('url', 'name', 'media_type', 'inline')
 
 
 class Image(Document):
-    @classmethod
-    def from_base(cls, entity):
-        return cls(**entity.__dict__)
 
     class Meta:
         rdf_type = as2.Image
+        fields = ('url', 'name', 'media_type', 'inline')
 
 # haven't seen this one so far..
 class Audio(Document):
-    @classmethod
-    def from_base(cls, entity):
-        return cls(**entity.__dict__)
 
     class Meta:
         rdf_type = as2.Audio
+        fields = ('url', 'name', 'media_type', 'inline')
 
 class Infohash(Object):
     name = fields.String(as2.name)
@@ -507,7 +518,7 @@ class Emoji(Object):
         rdf_type = toot.Emoji
 
 
-class Person(Object):
+class Person(ActivitypubEntityMixin, Object):
     id = fields.Id()
     inbox = IRI(ldp.inbox)
     outbox = IRI(as2.outbox, dump_derived={'fmt': '{id}outbox/', 'fields': ['id']})
@@ -531,8 +542,6 @@ class Person(Object):
     discoverable = fields.Boolean(toot.discoverable)
     devices = IRI(toot.devices)
     public_key_dict = Dict(sec.publicKey)
-    guid = fields.String(diaspora.guid)
-    handle = fields.String(diaspora.handle)
     raw_content = fields.String(as2.summary)
     has_address = MixedField(vcard.hasAddress, nested='HomeSchema')
     has_instant_message = fields.List(vcard.hasInstantMessage, cls_or_instance=fields.String)
@@ -542,59 +551,84 @@ class Person(Object):
     copied_to = IRI(toot.copiedTo)
     capabilities = Dict(litepub.capabilities)
     suspended = fields.Boolean(toot.suspended)
+    _inboxes = None
+    _public_key = None
+    _image_urls = None
+    maps_to_base = True
 
-    @classmethod
-    def from_base(cls, entity):
-        ret = cls(**entity.__dict__)
-        if not hasattr(entity, 'inboxes'): return ret
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._allowed_children += (PropertyValue, IdentityProof)
 
-        ret.inbox = entity.inboxes["private"]
-        ret.outbox = f"{with_slash(ret.id)}outbox/"
-        ret.followers = f"{with_slash(ret.id)}followers/"
-        ret.following = f"{with_slash(ret.id)}following/"
-        ret.endpoints = {'sharedInbox': entity.inboxes["public"]}
-        ret.public_key_dict = {
-                "id": f"{ret.id}#main-key",
-                "owner": ret.id,
-                "publicKeyPem": entity.public_key
-                }
-        if entity.image_urls.get('large'):
-            try:
-                profile_icon = ActivitypubImage(url=entity.image_urls.get('large'))
-                if profile_icon.media_type:
-                    ret.icon = [Image.from_base(profile_icon)]
-            except Exception as ex:
-                logger.warning("ActivitypubProfile.to_as2 - failed to set profile icon: %s", ex)
+    @property
+    def inboxes(self):
+        if self._inboxes: return self._inboxes
 
-        return ret
-
-    def to_base(self):
-        entity = ActivitypubProfile(**self.__dict__)
-        entity.inboxes = {
+        self._inboxes = {
                 'private': getattr(self, 'inbox', None), 
                 'public': None
                 }
         if hasattr(self, 'endpoints') and isinstance(self.endpoints, dict):
-            entity.inboxes['public'] = self.endpoints.get('sharedInbox', None)
+            self._inboxes['public'] = self.endpoints.get('sharedInbox', None)
         else:
-            entity.inboxes['public'] = getattr(self,'shared_inbox',None)
+            self._inboxes['public'] = getattr(self,'shared_inbox',None)
+        return self._inboxes
+
+    @inboxes.setter
+    def inboxes(self, value):
+        self._inboxes = value
+        if isinstance(value, dict):
+            self.inbox = value.get('private', None)
+            self.endpoints = {'sharedInbox': value.get('public', None)}
+
+    @property
+    def public_key(self):
+        if self._public_key: return self._public_key
+
         if hasattr(self, 'public_key_dict') and isinstance(self.public_key_dict, dict):
-            entity.public_key = self.public_key_dict.get('publicKeyPem', None)
+            self._public_key = self.public_key_dict.get('publicKeyPem', None)
+
+        return self._public_key
+
+    @public_key.setter
+    def public_key(self, value):
+        self._public_key = value
+        self.public_key_dict = {'id': self.id+'#main-key', 'owner': self.id, 'publicKeyPem': value}
+
+    @property
+    def image_urls(self):
+        if self._image_urls: return self._image_urls
+
         if getattr(self, 'icon', None):
             icon = self.icon if not isinstance(self.icon, list) else self.icon[0]
-            entity.image_urls = {
+            self._image_urls = {
                 'small': icon.url,
                 'medium': icon.url,
                 'large': icon.url
                 }
+        return self._image_urls
 
-        entity._allowed_children += (PropertyValue, IdentityProof)
+    @image_urls.setter
+    def image_urls(self, value):
+        self._image_urls = value
+        if value.get('large'):
+            try:
+                profile_icon = base.Image(url=value.get('large'))
+                if profile_icon.media_type:
+                    self.icon = [Image.from_base(profile_icon)]
+            except Exception as ex:
+                logger.warning("models.Person - failed to set profile icon: %s", ex)
+
+    def to_base(self):
+        kwargs = add_props_to_attrs(self, ('inboxes', 'public_key', 'image_urls'))
+        entity = base.Profile(**kwargs)
 
         set_public(entity)
         return entity
 
     class Meta:
         rdf_type = as2.Person
+        exclude = ('atom_url',)
 
 
 class Group(Person):
@@ -624,7 +658,7 @@ class Service(Person):
 # when a property can't be directly deserialized from the payload.
 # calamus Nested field can't handle using the same model
 # or the same type in multiple schemas
-class Note(Object):
+class Note(ActivitypubNoteMixin, Object):
     id = fields.Id()
     actor_id = IRI(as2.attributedTo)
     target_id = IRI(as2.inReplyTo)
@@ -632,41 +666,73 @@ class Note(Object):
     in_reply_to_atom_uri = IRI(ostatus.inReplyToAtomUri)
     summary = fields.String(as2.summary)
     url = IRI(as2.url)
+    _raw_content = None
+    __children = []
+    maps_to_base = True
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._allowed_children += (base.Image, base.Audio, base.Video)
 
     def to_base(self):
-        entity = ActivitypubComment(**self.__dict__) if getattr(self, 'target_id') else ActivitypubPost(**self.__dict__)
-
-        if hasattr(self, 'content_map'):
-            orig = self.content_map.pop('orig')
-            if len(self.content_map.keys()) > 1:
-                logger.warning('Language selection not implemented, falling back to default')
-                entity._rendered_content = orig.strip()
-            else:
-                entity._rendered_content = orig.strip() if len(self.content_map.keys()) == 0 else next(iter(self.content_map.values())).strip()
-
-            if getattr(self, 'source') and self.source.get('mediaType') == 'text/markdown':
-                entity._media_type = self.source['mediaType']
-                entity.raw_content = self.source.get('content').strip()
-            else:
-                entity._media_type = 'text/html'
-                entity.raw_content = entity._rendered_content
-            # to allow for posts/replies with medias only.
-            if not entity.raw_content: entity.raw_content = "<div></div>"
-
-        if isinstance(getattr(entity, '_children', None), list):
-            children = []
-            for child in entity._children:
-                img = child.to_base()
-                if img:
-                    if isinstance(img, ActivitypubImage) and img.inline:
-                        continue
-                    children.append(img)
-            entity._children = children
-
-        entity._allowed_children += (ActivitypubAudio, ActivitypubVideo)
+        kwargs = add_props_to_attrs(self, ('_children', 'raw_content'))
+        entity = base.Comment(**kwargs) if getattr(self, 'target_id') else base.Post(**kwargs)
 
         set_public(entity)
         return entity
+
+    @property
+    def raw_content(self):
+
+        if self._raw_content: return self._raw_content
+        if self.content_map:
+            orig = self.content_map.pop('orig')
+            if len(self.content_map.keys()) > 1:
+                logger.warning('Language selection not implemented, falling back to default')
+                self._rendered_content = orig.strip()
+            else:
+                self._rendered_content = orig.strip() if len(self.content_map.keys()) == 0 else next(iter(self.content_map.values())).strip()
+            self.content_map['orig'] = orig
+
+            if isinstance(self.source, dict) and self.source.get('mediaType') == 'text/markdown':
+                self._media_type = self.source['mediaType']
+                self._raw_content = self.source.get('content').strip()
+            else:
+                self._media_type = 'text/html'
+                self._raw_content = self._rendered_content
+            # to allow for posts/replies with medias only.
+            if not self._raw_content: self._raw_content = "<div></div>"
+            print('raw_content = ', self._raw_content)
+            return self._raw_content
+    
+    @raw_content.setter
+    def raw_content(self, value):
+        self._raw_content = value
+        if self._media_type == 'text/markdown':
+            self.source = {'content': value, 'mediaType': self._media_type}
+        self.content_map = {'orig': self.rendered_content}
+
+    @property
+    def _children(self):
+        if self.__children: return self.__children
+
+        if isinstance(getattr(self, 'attachment', None), list):
+            children = []
+            for child in self.attachment:
+                obj = child.to_base()
+                if obj:
+                    if isinstance(obj, base.Image) and obj.inline:
+                        continue
+                    children.append(obj)
+            self.__children = children
+
+        return self.__children
+    
+    @_children.setter
+    def _children(self, value):
+        self.__children = value
+        self.attachment = [Image.from_base(i) for i in value]
+
 
     class Meta:
         rdf_type = as2.Note
@@ -720,12 +786,12 @@ class Video(Object):
                 # TODO: fix extract_receivers which can't handle multiple actors!
                 self.actor_id = new_act[0]
 
-            entity = ActivitypubPost(**self.__dict__)
+            entity = base.Post(**self.__dict__)
             set_public(entity)
             return entity
         #Some Video object
         else:
-            return ActivitypubVideo(**self.__dict__)
+            return base.Video(**self.__dict__)
 
 
 class Signature(Object):
@@ -758,7 +824,7 @@ class Follow(Activity):
     target_id = IRI(as2.object)
 
     def to_base(self):
-        entity = ActivitypubFollow(**self.__dict__)
+        entity = base.Follow(**self.__dict__)
         # This is assuming Follow can only be the object of an Undo activity. Lazy.
         if self.activity != self: 
             entity.following = False
@@ -769,18 +835,19 @@ class Follow(Activity):
         rdf_type = as2.Follow
 
 
-class Announce(Activity):
+class Announce(ActivitypubEntityMixin, Activity):
     id = fields.Id()
     target_id = IRI(as2.object)
+    maps_to_base = True
 
     def to_base(self):
 
         if self.activity == self:
-            entity = ActivitypubShare(**self.__dict__)
+            entity = base.Share(**self.__dict__)
         else:
             self.target_id = self.id
             self.entity_type = 'Object'
-            entity = ActivitypubRetraction(**self.__dict__)
+            entity = base.Retraction(**self.__dict__)
 
         set_public(entity)
         return entity
@@ -795,7 +862,7 @@ class Tombstone(Object):
     def to_base(self):
         if self.activity != self: self.actor_id = self.activity.actor_id
         self.entity_type = 'Object'
-        return ActivitypubRetraction(**self.__dict__)
+        return base.Retraction(**self.__dict__)
 
     class Meta:
         rdf_type = as2.Tombstone
@@ -823,7 +890,7 @@ class Like(Announce):
 class Accept(Create):
     def to_base(self):
         del self.object_
-        return ActivitypubAccept(**self.__dict__)
+        return base.Accept(**self.__dict__)
 
     class Meta:
         rdf_type = as2.Accept
@@ -834,7 +901,7 @@ class Delete(Create):
         if hasattr(self, 'object_') and not isinstance(self.object_, Tombstone):
             self.target_id = self.object_
             self.entity_type = 'Object'
-            return ActivitypubRetraction(**self.__dict__)
+            return base.Retraction(**self.__dict__)
 
     class Meta:
         rdf_type = as2.Delete
@@ -960,14 +1027,15 @@ def element_to_objects(element: Union[Dict, Object]) -> List:
     # Skips unimplemented payloads
     # TODO: remove unused code
     entity = model_to_objects(element) if not isinstance(element, Object) else element
-    if entity: entity = entity.to_base()
-    if entity and isinstance(entity, BaseEntity):
-        logger.info('Entity type "%s" was handled through the json-ld processor', entity.__class__.__name__)
+    #if entity: entity = entity.to_base()
+    if entity and entity.maps_to_base:
+        entity = entity.to_base()
         try:
             extract_and_validate(entity)
         except ValueError as ex:
             logger.error("Failed to validate entity %s: %s", entity, ex)
             return None
+        logger.info('Entity type "%s" was handled through the json-ld processor', entity.__class__.__name__)
         return [entity]
     elif entity:
         logger.info('Entity type "%s" was handled through the json-ld processor but is not a base entity', entity.__class__.__name__)

@@ -39,8 +39,8 @@ class BaseEntity:
         self._receivers = []
 
         # make the assumption that if a schema is being used, the payload
-        # is deserialized and validated properly
-        if kwargs.get('has_schema'):
+        # is (de)serialized and validated properly
+        if hasattr(self, 'schema') or kwargs.get('schema'):
             for key, value in kwargs.items():
                 setattr(self, key, value)
         else:
@@ -198,7 +198,7 @@ class CreatedAtMixin(BaseEntity):
             self.created_at = datetime.datetime.now()
 
 
-class RawContentMixin(BaseEntity):
+class RawContentMixin:
     _media_type: str = "text/markdown"
     _mentions: Set = None
     _rendered_content: str = ""

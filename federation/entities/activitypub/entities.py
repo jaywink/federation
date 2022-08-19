@@ -25,17 +25,16 @@ class AttachImagesMixin(RawContentMixin):
         Attach any embedded images from raw_content.
         """
         super().pre_send()
-        for image in self.embedded_images:
-            self._children.append(
+        self._children += [
                 ActivitypubImage(
                     url=image[0],
                     name=image[1],
                     inline=True,
-                )
-            )
+                ) for image in self.embedded_images
+                ]
 
 
-class ActivitypubEntityMixin(BaseEntity):
+class ActivitypubEntityMixin():
     _type = None
 
     @classmethod
