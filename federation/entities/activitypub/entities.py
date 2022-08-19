@@ -8,7 +8,7 @@ from federation.entities.activitypub.constants import (
     CONTEXTS_DEFAULT, CONTEXT_MANUALLY_APPROVES_FOLLOWERS, CONTEXT_SENSITIVE, CONTEXT_HASHTAG,
     CONTEXT_LD_SIGNATURES, CONTEXT_DIASPORA)
 from federation.entities.activitypub.enums import ActorType, ObjectType, ActivityType
-from federation.entities.base import Profile, Post, Follow, Accept, Comment, Retraction, Share, Image
+from federation.entities.base import Profile, Post, Follow, Accept, Comment, Retraction, Share, Image, Audio, Video
 from federation.entities.mixins import RawContentMixin, BaseEntity, PublicMixin, CreatedAtMixin
 from federation.entities.utils import get_base_attributes
 from federation.outbound import handle_send
@@ -122,13 +122,13 @@ class ActivitypubNoteMixin(AttachImagesMixin, CleanContentMixin, PublicMixin, Cr
         Extract mentions from the source object.
         """
         super().extract_mentions()
-        if not isinstance(self._source_object, dict):
-            return
-        source = self._source_object.get('object') if isinstance(self._source_object.get('object'), dict) else \
-            self._source_object
-        for tag in source.get('tag', []):
-            if tag.get('type') == "Mention" and tag.get('href'):
-                self._mentions.add(tag.get('href'))
+
+        if getattr(self, 'tag_list', None):
+            from federation.entities.activitypub.models import Mention # Circulars
+            tag_list = self.tag_list if isinstance(self.tag_list, list) else [self.tag_list]
+            for tag in tag_list:
+                if isinstance(tag, Mention):
+                    self._mentions.add(tag.href)
 
     def pre_send(self):
         super().pre_send()
@@ -196,6 +196,8 @@ class ActivitypubNoteMixin(AttachImagesMixin, CleanContentMixin, PublicMixin, Cr
 
 
 class ActivitypubComment(ActivitypubNoteMixin, Comment):
+    entity_type = "Comment"
+
     def to_as2(self) -> Dict:
         as2 = super().to_as2()
         as2["object"]["inReplyTo"] = self.target_id
@@ -210,17 +212,18 @@ class ActivitypubFollow(ActivitypubEntityMixin, Follow):
         Post receive hook - send back follow ack.
         """
         super().post_receive()
+
         if not self.following:
             return
 
         from federation.utils.activitypub import retrieve_and_parse_profile  # Circulars
         try:
             from federation.utils.django import get_function_from_config
-        except ImportError:
+            get_private_key_function = get_function_from_config("get_private_key_function")
+        except (ImportError, AttributeError):
             logger.warning("ActivitypubFollow.post_receive - Unable to send automatic Accept back, only supported on "
                            "Django currently")
             return
-        get_private_key_function = get_function_from_config("get_private_key_function")
         key = get_private_key_function(self.target_id)
         if not key:
             logger.warning("ActivitypubFollow.post_receive - Failed to send automatic Accept back: could not find "
@@ -292,6 +295,11 @@ class ActivitypubImage(ActivitypubEntityMixin, Image):
             "pyfed:inlineImage": self.inline,
         }
 
+class ActivitypubAudio(ActivitypubEntityMixin, Audio):
+    pass
+
+class ActivitypubVideo(ActivitypubEntityMixin, Video):
+    pass
 
 class ActivitypubPost(ActivitypubNoteMixin, Post):
     pass
@@ -300,6 +308,9 @@ class ActivitypubPost(ActivitypubNoteMixin, Post):
 class ActivitypubProfile(ActivitypubEntityMixin, Profile):
     _type = ActorType.PERSON.value
     public = True
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def to_as2(self) -> Dict:
         as2 = {

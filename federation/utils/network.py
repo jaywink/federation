@@ -31,7 +31,7 @@ def fetch_content_type(url: str) -> Optional[str]:
         return response.headers.get('Content-Type')
 
 
-def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=True, extra_headers=None):
+def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=True, extra_headers=None, **kwargs):
     """Helper method to fetch remote document.
 
     Must be given either the ``url`` or ``host``.
@@ -44,6 +44,7 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
     :arg timeout: Seconds to wait for response (defaults to 10)
     :arg raise_ssl_errors: Pass False if you want to try HTTP even for sites with SSL errors (default True)
     :arg extra_headers: Optional extra headers dictionary to add to requests
+    :arg kwargs holds extra args passed to requests.get
     :returns: Tuple of document (str or None), status code (int or None) and error (an exception class instance or None)
     :raises ValueError: If neither url nor host are given as parameters
     """
@@ -59,7 +60,7 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
         # Use url since it was given
         logger.debug("fetch_document: trying %s", url)
         try:
-            response = requests.get(url, timeout=timeout, headers=headers)
+            response = requests.get(url, timeout=timeout, headers=headers, **kwargs)
             logger.debug("fetch_document: found document, code %s", response.status_code)
             response.raise_for_status()
             return response.text, response.status_code, None

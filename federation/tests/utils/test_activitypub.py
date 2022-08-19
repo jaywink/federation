@@ -1,6 +1,8 @@
 import json
 from unittest.mock import patch, Mock
 
+import pytest
+
 from federation.entities.activitypub.entities import ActivitypubFollow, ActivitypubPost
 from federation.tests.fixtures.payloads import (
     ACTIVITYPUB_FOLLOW, ACTIVITYPUB_POST, ACTIVITYPUB_POST_OBJECT, ACTIVITYPUB_POST_OBJECT_IMAGES)
@@ -42,8 +44,10 @@ class TestRetrieveAndParseDocument:
     @patch("federation.utils.activitypub.fetch_document", autospec=True, return_value=(None, None, None))
     def test_calls_fetch_document(self, mock_fetch):
         retrieve_and_parse_document("https://example.com/foobar")
+        # auth argument is passed with kwargs
+        auth = mock_fetch.call_args.kwargs.get('auth', None)
         mock_fetch.assert_called_once_with(
-            "https://example.com/foobar", extra_headers={'accept': 'application/activity+json'},
+            "https://example.com/foobar", extra_headers={'accept': 'application/activity+json'}, auth=auth,
         )
 
     @patch("federation.utils.activitypub.fetch_document", autospec=True, return_value=(

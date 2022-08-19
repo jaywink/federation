@@ -29,6 +29,7 @@ setup(
     install_requires=[
         "attrs",
         "bleach>3.0",
+        "calamus",
         "commonmark",
         "cryptography",
         "cssselect>=0.9.2",
@@ -43,6 +44,7 @@ setup(
         "pytz",
         "PyYAML",
         "requests>=2.8.0",
+        "requests-cache",
         "requests-http-signature-jaywink>=0.1.0.dev0",
     ],
     include_package_data=True,

@@ -31,8 +31,8 @@ ACTIVITYPUB_COMMENT = {
   'atomUri': 'https://diaspodon.fr/users/jaywink/statuses/102356911717767237',
   'inReplyToAtomUri': 'https://dev.jasonrobinson.me/content/653bad70-41b3-42c9-89cb-c4ee587e68e4/',
   'conversation': 'tag:diaspodon.fr,2019-06-28:objectId=2347687:objectType=Conversation',
-  'content': '<p><span class="h-card"><a href="https://dev.jasonrobinson.me/u/jaywink/" class="u-url mention">@<span>jaywink</span></a></span> boom</p>',
-  'contentMap': {'en': '<p><span class="h-card"><a href="https://dev.jasonrobinson.me/u/jaywink/" class="u-url mention">@<span>jaywink</span></a></span> boom</p>'},
+  'content': '<p><span class="h-card"><a class="u-url mention" href="https://dev.jasonrobinson.me/u/jaywink/">@<span>jaywink</span></a></span> boom</p>',
+  'contentMap': {'en': '<p><span class="h-card"><a class="u-url mention" href="https://dev.jasonrobinson.me/u/jaywink/">@<span>jaywink</span></a></span> boom</p>'},
   'attachment': [],
   'tag': [{'type': 'Mention',
     'href': 'https://dev.jasonrobinson.me/p/d4574854-a5d7-42be-bfac-f70c16fcaa97/',
@@ -235,7 +235,8 @@ ACTIVITYPUB_RETRACTION = {
     },
 }
 
-ACTIVITYPUB_RETRACTION_SHARE = {'@context': 'https://www.w3.org/ns/activitystreams',
+ACTIVITYPUB_RETRACTION_SHARE = {
+ '@context': ['https://www.w3.org/ns/activitystreams',{"ostatus":"http://ostatus.org#","atomUri":"ostatus:atomUri"}],
  'id': 'https://mastodon.social/users/jaywink#announces/102571932479036987/undo',
  'type': 'Undo',
  'actor': 'https://mastodon.social/users/jaywink',
@@ -255,7 +256,7 @@ ACTIVITYPUB_RETRACTION_SHARE = {'@context': 'https://www.w3.org/ns/activitystrea
   'signatureValue': 'erI90OrrLqK1DiTqb4OO72XLcE7m74Fs4cH6s0plKKELHa7BZFQmtQYXKEgA9LwIUdSRrIurAUiaDWAw2sQZDg7opYo9x3z+GJDMZ3KxhBND7iHO8ZeGhV1ZBBKUMuBb3BfhOkd3ADp+RQ/fHcw6kOcViV2VsQduinAgQRpiutmGCLd/7eshqSF/aL4tFoAOyCskkm/5JDMNp2nnHNoXXJ+SZf7a8C6YPNDxWd7GzyQNeWkTBBdCJBPvS4HI0wQrTWemBvy6uP8k5QQ7FnqrrRrk/7zrcibFSInuYxiRTRV++rQ3irIbXNtoLhWQd36Iu5U22BclmkS1AAVBDUIj8w=='}}
 
 ACTIVITYPUB_SHARE = {
-    '@context': 'https://www.w3.org/ns/activitystreams',
+    '@context': ['https://www.w3.org/ns/activitystreams',{"ostatus":"http://ostatus.org#","atomUri":"ostatus:atomUri"}],
     'id': 'https://mastodon.social/users/jaywink/statuses/102560701449465612/activity',
     'type': 'Announce',
     'actor': 'https://mastodon.social/users/jaywink',
@@ -327,8 +328,8 @@ ACTIVITYPUB_POST = {
   'atomUri': 'https://diaspodon.fr/users/jaywink/statuses/102356911717767237',
   'inReplyToAtomUri': None,
   'conversation': 'tag:diaspodon.fr,2019-06-28:objectId=2347687:objectType=Conversation',
-  'content': '<p><span class="h-card"><a href="https://dev.jasonrobinson.me/u/jaywink/" class="u-url mention">@<span>jaywink</span></a></span> boom</p>',
-  'contentMap': {'en': '<p><span class="h-card"><a href="https://dev.jasonrobinson.me/u/jaywink/" class="u-url mention">@<span>jaywink</span></a></span> boom</p>'},
+  'content': '<p><span class="h-card"><a class="u-url mention" href="https://dev.jasonrobinson.me/u/jaywink/">@<span>jaywink</span></a></span> boom</p>',
+  'contentMap': {'en': '<p><span class="h-card"><a class="u-url mention" href="https://dev.jasonrobinson.me/u/jaywink/">@<span>jaywink</span></a></span> boom</p>'},
   'attachment': [],
   'tag': [{'type': 'Mention',
     'href': 'https://dev.jasonrobinson.me/p/d4574854-a5d7-42be-bfac-f70c16fcaa97/',
@@ -524,12 +525,12 @@ ACTIVITYPUB_POST_WITH_SOURCE_BBCODE = {
   'atomUri': 'https://diaspodon.fr/users/jaywink/statuses/102356911717767237',
   'inReplyToAtomUri': None,
   'conversation': 'tag:diaspodon.fr,2019-06-28:objectId=2347687:objectType=Conversation',
-  'content': '<p><span class="h-card"><a href="https://dev.jasonrobinson.me/u/jaywink/" class="u-url mention">@<span>jaywink</span></a></span> boom</p>',
+  'content': '<p><span class="h-card"><a class="u-url mention" href="https://dev.jasonrobinson.me/u/jaywink/">@<span>jaywink</span></a></span> boom</p>',
   'source': {
       'content': "[url=https://example.com]jaywink[/url] boom",
       'mediaType': "text/bbcode",
   },
-  'contentMap': {'en': '<p><span class="h-card"><a href="https://dev.jasonrobinson.me/u/jaywink/" class="u-url mention">@<span>jaywink</span></a></span> boom</p>'},
+  'contentMap': {'en': '<p><span class="h-card"><a class="u-url mention" href="https://dev.jasonrobinson.me/u/jaywink/">@<span>jaywink</span></a></span> boom</p>'},
   'attachment': [],
   'tag': [{'type': 'Mention',
     'href': 'https://dev.jasonrobinson.me/p/d4574854-a5d7-42be-bfac-f70c16fcaa97/',
@@ -545,7 +546,17 @@ ACTIVITYPUB_POST_WITH_SOURCE_BBCODE = {
   'signatureValue': 'SjDACS7Z/Cb1SEC3AtxEokID5SHAYl7kpys/hhmaRbpXuFKCxfj2P9BmH8QhLnuam3sENZlrnBOcB5NlcBhIfwo/Xh242RZBmPQf+edTVYVCe1j19dihcftNCHtnqAcKwp/51dNM/OlKu2730FrwvOUXVIPtB7iVqkseO9TRzDYIDj+zBTksnR/NAYtq6SUpmefXfON0uW3N3Uq6PGfExJaS+aeqRf8cPGkZFSIUQZwOLXbIpb7BFjJ1+y1OMOAJueqvikUprAit3v6BiNWurAvSQpC7WWMFUKyA79/xtkO9kIPA/Q4C9ryqdzxZJ0jDhXiaIIQj2JZfIADdjLZHJA=='}
 }
 
-ACTIVITYPUB_POST_OBJECT = {
+ACTIVITYPUB_POST_OBJECT = {'@context': ['https://www.w3.org/ns/activitystreams',
+      {'ostatus': 'http://ostatus.org#',
+       'atomUri': 'ostatus:atomUri',
+       'inReplyToAtomUri': 'ostatus:inReplyToAtomUri',
+       'conversation': 'ostatus:conversation',
+       'sensitive': 'as:sensitive',
+       'Hashtag': 'as:Hashtag',
+       'toot': 'http://joinmastodon.org/ns#',
+       'Emoji': 'toot:Emoji',
+       'focalPoint': {'@container': '@list', '@id': 'toot:focalPoint'},
+       'blurhash': 'toot:blurhash'}],
     'id': 'https://diaspodon.fr/users/jaywink/statuses/102356911717767237',
     'type': 'Note',
     'summary': None,

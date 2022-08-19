@@ -48,9 +48,15 @@ Features currently supported:
    * Actor (Person outbound, Person, Organization, Service inbound)
    * Note, Article and Page (Create, Delete, Update)
      * These become a ``Post`` or ``Comment`` depending on ``inReplyTo``.
-   * Attachment images from the above objects
+   * Attachment images, (inbound only for audios and videos) from the above objects
    * Follow, Accept Follow, Undo Follow
    * Announce
+   * Inbound Peertube Video objects translated as ``Post``.
+     
+* Inbound processing of reply collections, for platforms that implement it.
+* Link, Like, View, Signature, PropertyValue, IdentityProof and Emojis objects are only processed for inbound
+  payloads currently. Outbound processing requires support by the client
+  application.
 
 Namespace
 .........
@@ -71,23 +77,26 @@ The following keys will be set on the entity based on the ``source`` property ex
   * ``_rendered_content`` will be the object ``content``
   * ``raw_content`` will object ``content`` run through a HTML2Markdown renderer
 
+The ``contentMap`` property is processed but content language selection is not implemented yet.
+
 For outbound entities, ``raw_content`` is expected to be in ``text/markdown``,
 specifically CommonMark. When sending payloads, ``raw_content`` will be rendered via
 the ``commonmark`` library into ``object.content``. The original ``raw_content``
 will be added to the ``object.source`` property.
 
-Images
+Medias
 ......
 
 Any images referenced in the ``raw_content`` of outbound entities will be extracted
-into ``object.attachment`` objects, for receivers that don't support inline images.
-These attachments will have a ``pyfed:inlineImage`` property set to ``true`` to
-indicate the image has been extrated from the content. Receivers should ignore the
+into ``object.attachment`` object. For receivers that don't support inline images,
+image attachments will have a ``pyfed:inlineImage`` property set to ``true`` to
+indicate the image has been extracted from the content. Receivers should ignore the
 inline image attachments if they support showing ``<img>`` HTML tags or the markdown
-content in ``object.source``.
+content in ``object.source``. Outbound audio and video attachments currently lack  
+support from client applications.
 
-For inbound entities we do this automatically by not including received attachments in
-the entity ``_children`` attribute.
+For inbound entities we do this automatically by not including received image attachments in
+the entity ``_children`` attribute. Audio and video are passed through the client application.
 
 .. _matrix:
 
