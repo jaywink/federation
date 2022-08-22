@@ -14,7 +14,7 @@ try:
     federation_user = get_federation_user()
 except (ImportError, AttributeError):
     federation_user = None
-    logger.warning("django is required for requests signing")
+    logger.warning("django is required for get requests signing")
 
 def get_profile_id_from_webfinger(handle: str) -> Optional[str]:
     """

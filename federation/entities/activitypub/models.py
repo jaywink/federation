@@ -183,14 +183,12 @@ class MixedField(fields.Nested):
         self.iri.parent = self.parent
 
     def _serialize(self, value, attr, obj, **kwargs):
-        print('MixedField -> ', value, attr)
         if isinstance(value, str) or (
                 isinstance(value, list) and len(value) > 0 and isinstance(value[0], str)):
             return self.iri._serialize(value, attr, obj, **kwargs)
         else:
             value = value[0] if isinstance(value, list) and len(value) > 0 else value
             if isinstance(value, list) and len(value) == 0: value = None
-            print('value = ', value)
             return super()._serialize(value, attr, obj, **kwargs)
 
     def _deserialize(self, value, attr, data, **kwargs):
@@ -249,33 +247,31 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     icon = MixedField(as2.icon, nested='ImageSchema')
     image = MixedField(as2.image, nested='ImageSchema')
     tag_list = MixedField(as2.tag, nested=['HashtagSchema','MentionSchema','PropertyValueSchema','EmojiSchema'])
-    attachment = fields.Nested(as2.attachment, nested=['ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'], many=True)
-    #_children = MixedField(as2.attachment, nested=['ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'])
-    #audience
+    _children = fields.Nested(as2.attachment, nested=['ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'], many=True)
     content_map = LanguageMap(as2.content)  # language maps are not implemented in calamus
     context = IRI(as2.context)
     guid = fields.String(diaspora.guid)
-    handle = fields.String(diaspora.handle)
     name = fields.String(as2.name)
-    #endtime
     generator = MixedField(as2.generator, nested='ServiceSchema')
-    #generator = Dict(as2.generator)
-    #location
-    #preview
     created_at = fields.DateTime(as2.published, add_value_types=True)
     replies = MixedField(as2.replies, nested=['CollectionSchema','OrderedCollectionSchema'])
     signature = MixedField(sec.signature, nested = 'SignatureSchema')
     start_time = fields.DateTime(as2.startTime, add_value_types=True)
     updated = fields.DateTime(as2.updated, add_value_types=True)
     to = IRI(as2.to)
-    #bto
     cc = IRI(as2.cc)
-    #bcc
     media_type = fields.String(as2.mediaType)
-    #duration
     sensitive = fields.Boolean(as2.sensitive)
     source = Dict(as2.source)
-    maps_to_base = False
+
+    # The following properties are defined by some platforms, but are not implemented yet
+    #audience
+    #endtime
+    #location
+    #preview
+    #bto
+    #bcc
+    #duration
 
     #def __init__(self, *args, **kwargs):
     #    self.has_schema = True
@@ -472,8 +468,9 @@ class Link(metaclass=JsonLDAnnotation):
     width = Integer(as2.width, flavor=xsd.nonNegativeInteger, add_value_types=True)
     fps = Integer(pt.fps, flavor=schema.Number, add_value_types=True)
     size = Integer(pt.size, flavor=schema.Number, add_value_types=True)
-    #preview : variable type?
     tag = MixedField(as2.tag, nested=['InfohashSchema', 'LinkSchema'])
+    # Not implemented yet
+    #preview : variable type?
 
     class Meta:
         rdf_type = as2.Link
@@ -524,16 +521,9 @@ class Person(ActivitypubEntityMixin, Object):
     outbox = IRI(as2.outbox, dump_derived={'fmt': '{id}outbox/', 'fields': ['id']})
     following = IRI(as2.following, dump_derived={'fmt': '{id}following/', 'fields': ['id']})
     followers = IRI(as2.followers, dump_derived={'fmt': '{id}followers/', 'fields': ['id']})
-    #liked is a collection
-    #streams
     username = fields.String(as2.preferredUsername)
     endpoints = Dict(as2.endpoints)
     shared_inbox = IRI(as2.sharedInbox) # misskey adds this
-    #proxyUrl
-    #oauthAuthorizationEndpoint
-    #oauthTokenEndpoint
-    #provideClientKey
-    #signClientKey
     url = IRI(as2.url)
     playlists = IRI(pt.playlists)
     featured = IRI(toot.featured)
@@ -542,6 +532,8 @@ class Person(ActivitypubEntityMixin, Object):
     discoverable = fields.Boolean(toot.discoverable)
     devices = IRI(toot.devices)
     public_key_dict = Dict(sec.publicKey)
+    guid = fields.String(diaspora.guid)
+    handle = fields.String(diaspora.handle)
     raw_content = fields.String(as2.summary)
     has_address = MixedField(vcard.hasAddress, nested='HomeSchema')
     has_instant_message = fields.List(vcard.hasInstantMessage, cls_or_instance=fields.String)
@@ -555,6 +547,15 @@ class Person(ActivitypubEntityMixin, Object):
     _public_key = None
     _image_urls = None
     maps_to_base = True
+
+    # Not implemented yet
+    #liked is a collection
+    #streams
+    #proxyUrl
+    #oauthAuthorizationEndpoint
+    #oauthTokenEndpoint
+    #provideClientKey
+    #signClientKey
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -806,10 +807,10 @@ class Signature(Object):
 
 class Activity(Object):
     actor_id = IRI(as2.actor)
-    #target_id = IRI(as2.target)
+    instrument = MixedField(as2.instrument, nested='ServiceSchema')
+    # Not implemented yet
     #result
     #origin
-    instrument = MixedField(as2.instrument, nested='ServiceSchema')
 
     def __init__(self, *args, **kwargs):
         self.activity = self
@@ -935,10 +936,10 @@ def extract_receiver(entity, receiver):
         return []
 
 
+    # Work in progress
     #obj = retrieve_and_parse_document(receiver)
     #if isinstance(obj, ActivitypubProfile):
     #    return [UserType(id=receiver, receiver_variant=ReceiverVariant.ACTOR)]
-
     #if isinstance(obj, Collection) and base_url:
     #    return process_followers(obj, base_url)
 

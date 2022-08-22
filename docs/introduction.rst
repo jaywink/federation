@@ -14,9 +14,8 @@ Status
 Currently three protocols are being focused on.
 
 * Diaspora is considered to be stable with most of the protocol implemented.
-* ActivityPub support should be considered as alpha - all the basic
-  things work but there are likely to be a lot of compatibility issues with other ActivityPub
-  implementations.
+* ActivityPub support should be considered as beta - inbound payload are
+  handled by a jsonld processor (calamus)
 * Matrix support cannot be considered usable as of yet.
 
 The code base is well tested and in use in several projects. Backward incompatible changes

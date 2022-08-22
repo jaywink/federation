@@ -13,13 +13,13 @@
 * GET requests are now signed if the django configuration includes FEDERATION_USER which is used to fetch that
   user's private key.
 
-* Added Video and Audio objects.
+* Added Video and Audio objects. Inbound support only.
 
 * Process Activitypub reply collections.
 
 ### Fixed
 
-* Signatures are not verified and the corresponding payload is dropped is no public key is found.
+* Signatures are not verified and the corresponding payload is dropped if no public key is found.
 
 ### Internal changes
 
