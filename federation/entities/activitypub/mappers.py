@@ -134,9 +134,9 @@ def get_outbound_entity(entity: BaseEntity, private_key):
         # Already fine
         outbound = entity
     elif cls == Accept:
-        outbound = ActivitypubAccept.from_base(entity)
+        outbound = models.Accept.from_base(entity)
     elif cls == Follow:
-        outbound = ActivitypubFollow.from_base(entity)
+        outbound = models.Follow.from_base(entity)
     elif cls == Post:
         outbound = models.Note.from_base(entity)
     elif cls == Profile:

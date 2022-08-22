@@ -38,7 +38,7 @@ def get_loader(*args, **kwargs):
             backend = rc.SQLiteCache(db_path='fed_cache')
     except ImportError:
         backend = rc.SQLiteCache(db_path='fed_cache')
-    logger.info('Using %s for requests_cache', type(backend))
+    logger.debug('Using %s for requests_cache', type(backend))
     
     requests_loader = jsonld.requests_document_loader(*args, **kwargs)
     
