@@ -133,7 +133,7 @@ class ActivitypubNoteMixin(AttachImagesMixin, CleanContentMixin, PublicMixin, Cr
         super().pre_send()
         self.extract_mentions()
 
-    def to_as2(self) -> Dict:
+    def to_as2_orig(self) -> Dict:
         as2 = {
             "@context": CONTEXTS_DEFAULT + [
                 CONTEXT_HASHTAG,

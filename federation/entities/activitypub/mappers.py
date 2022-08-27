@@ -5,7 +5,7 @@ from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
 from federation.entities.activitypub.entities import (
     ActivitypubFollow, ActivitypubProfile, ActivitypubAccept, ActivitypubPost, ActivitypubComment,
     ActivitypubRetraction, ActivitypubShare, ActivitypubImage)
-from federation.entities.activitypub.models import element_to_objects
+from federation.entities.activitypub.models import element_to_objects, make_content_class
 from federation.entities.base import Follow, Profile, Accept, Post, Comment, Retraction, Share, Image
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType, ReceiverVariant
@@ -127,24 +127,23 @@ def get_outbound_entity(entity: BaseEntity, private_key):
         return entity
     outbound = None
     cls = entity.__class__
-    if cls in [
-        ActivitypubAccept, ActivitypubFollow, ActivitypubProfile, ActivitypubPost, ActivitypubComment,
-        ActivitypubRetraction, ActivitypubShare,
-    ]:
-        # Already fine
-        outbound = entity
-    elif cls == Accept:
+    if cls == Accept:
         outbound = models.Accept.from_base(entity)
     elif cls == Follow:
         outbound = models.Follow.from_base(entity)
-    elif cls == Post:
-        outbound = models.Note.from_base(entity)
+    elif cls == Post or cls == Comment:
+        outbound = make_content_class(cls).from_base(entity)
     elif cls == Profile:
         outbound = models.Person.from_base(entity)
     elif cls == Retraction:
-        outbound = ActivitypubRetraction.from_base(entity)
-    elif cls == Comment:
-        outbound = models.Note.from_base(entity)
+        if entity.entity_type in ('Post', 'Comment'):
+            outbound = models.Tombstone.from_base(entity)
+            outbound.activity = models.Delete
+        elif entity.entity_type == 'Share':
+            outbound = models.Announce.from_base(entity)
+            outbound.activity = models.Undo
+        elif entity.entity_type == 'Profile':
+            outbound = models.Delete.from_base(entity)
     elif cls == Share:
         outbound = models.Announce.from_base(entity)
     if not outbound:

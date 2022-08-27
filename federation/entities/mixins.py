@@ -55,10 +55,11 @@ class BaseEntity:
             # Fill a default activity if not given and type of entity class has one
             self.activity = getattr(self, "_default_activity", None)
 
-    def as_protocol(self, protocol):
-        entities = importlib.import_module(f"federation.entities.{protocol}.entities")
-        klass = getattr(entities, f"{protocol.title()}{self.__class__.__name__}")
-        return klass.from_base(self)
+    # This is now broken, but only used by the activitypub django decorator
+    #def as_protocol(self, protocol):
+    #    entities = importlib.import_module(f"federation.entities.{protocol}.entities")
+    #    klass = getattr(entities, f"{protocol.title()}{self.__class__.__name__}")
+    #    return klass.from_base(self)
 
     def post_receive(self):
         """
@@ -190,6 +191,7 @@ class ParticipationMixin(TargetIDMixin):
 
 class CreatedAtMixin(BaseEntity):
     created_at = None
+    times: dict = {}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -198,7 +200,7 @@ class CreatedAtMixin(BaseEntity):
             self.created_at = datetime.datetime.now()
 
 
-class RawContentMixin:
+class RawContentMixin(BaseEntity):
     _media_type: str = "text/markdown"
     _mentions: Set = None
     _rendered_content: str = ""

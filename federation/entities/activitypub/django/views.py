@@ -1,5 +1,6 @@
 from django.http import JsonResponse, HttpResponse, HttpResponseNotFound
 
+from federation.entities.activitypub.mappers import get_outbound_entity
 from federation.utils.django import get_function_from_config
 
 
@@ -31,7 +32,7 @@ def activitypub_object_view(func):
             if not obj:
                 return HttpResponseNotFound()
 
-            as2_obj = obj.as_protocol('activitypub')
+            as2_obj = get_outbound_entity(obj, None)
             return JsonResponse(as2_obj.to_as2(), content_type='application/activity+json')
 
         def post(request, *args, **kwargs):

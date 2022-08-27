@@ -1,7 +1,9 @@
 from copy import copy
+from functools import cache
 import json
 import logging
 from typing import List, Callable, Dict, Union, Optional
+import uuid
 
 from calamus import fields
 from calamus.schema import JsonLDAnnotation, JsonLDSchema, JsonLDSchemaOpts
@@ -13,8 +15,8 @@ from pyld import jsonld
 import requests_cache as rc
 
 from federation.entities.activitypub.constants import CONTEXT, NAMESPACE_PUBLIC
-from federation.entities.activitypub.entities import ActivitypubNoteMixin, ActivitypubEntityMixin
 from federation.entities.mixins import BaseEntity
+from federation.entities.utils import get_base_attributes
 from federation.types import UserType, ReceiverVariant
 from federation.utils.activitypub import retrieve_and_parse_document
 from federation.utils.text import with_slash, validate_handle
@@ -59,6 +61,11 @@ class AddedSchemaOpts(JsonLDSchemaOpts):
         self.unknown = EXCLUDE
 
 JsonLDSchema.OPTIONS_CLASS = AddedSchemaOpts
+
+
+def isoformat(value):
+    return value.isoformat(timespec='seconds')
+fields.DateTime.SERIALIZATION_FUNCS['iso'] = isoformat
 
 
 # Not sure how exhaustive this needs to be...
@@ -110,12 +117,12 @@ class IRI(fields.IRI):
 
 
 # Don't want expanded IRIs to be exposed as dict keys
-class Dict(fields.Dict):
+class CompactedDict(fields.Dict):
     ctx = ["https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"]
 
     # may or may not be needed
     def _serialize(self, value, attr, obj, **kwargs):
-        if isinstance(value, dict):
+        if value and isinstance(value, dict):
             value['@context'] = self.ctx
             value = jsonld.expand(value)[0]
         return super()._serialize(value, attr, obj, **kwargs)
@@ -151,7 +158,7 @@ class Integer(fields._JsonLDField, Integer):
 
 
 # calamus doesn't implement json-ld langage maps
-class LanguageMap(Dict):
+class LanguageMap(CompactedDict):
     def _serialize(self, value, attr, obj, **kwargs):
         ret = super()._serialize(value, attr, obj, **kwargs)
         if not ret: return ret
@@ -181,6 +188,9 @@ class MixedField(fields.Nested):
     def _bind_to_schema(self, field_name, schema):
         super()._bind_to_schema(field_name, schema)
         self.iri.parent = self.parent
+
+    def _serialize_single_obj(self, obj, **kwargs):
+        return super()._serialize_single_obj(obj, **kwargs)
 
     def _serialize(self, value, attr, obj, **kwargs):
         if isinstance(value, str) or (
@@ -247,7 +257,7 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     icon = MixedField(as2.icon, nested='ImageSchema')
     image = MixedField(as2.image, nested='ImageSchema')
     tag_list = MixedField(as2.tag, nested=['HashtagSchema','MentionSchema','PropertyValueSchema','EmojiSchema'])
-    _children = fields.Nested(as2.attachment, nested=['ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'], many=True)
+    attachment = fields.Nested(as2.attachment, nested=['ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'], many=True)
     content_map = LanguageMap(as2.content)  # language maps are not implemented in calamus
     context = IRI(as2.context)
     guid = fields.String(diaspora.guid)
@@ -262,7 +272,7 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     cc = IRI(as2.cc)
     media_type = fields.String(as2.mediaType)
     sensitive = fields.Boolean(as2.sensitive)
-    source = Dict(as2.source)
+    source = CompactedDict(as2.source)
 
     # The following properties are defined by some platforms, but are not implemented yet
     #audience
@@ -273,16 +283,20 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     #bcc
     #duration
 
-    #def __init__(self, *args, **kwargs):
-    #    self.has_schema = True
-    #    super().__init__(*args, **kwargs)
+    def to_as2(self):
+        obj = self.activity if isinstance(self.activity, Activity) else self
+        ld = obj.dump()
+        #print(ld)
+        return jsonld.compact(ld, CONTEXT)
 
-    # noop to avoid isinstance tests
-    def to_base(self):
-        return self
+    @classmethod
+    def from_base(cls, entity):
+        # noinspection PyArgumentList
+        return cls(**get_base_attributes(entity))
 
-    def compact(self):
-        return jsonld.compact(self.dump(), CONTEXT)
+    def to_string(self):
+        # noinspection PyUnresolvedReferences
+        return str(self.to_as2())
 
     class Meta:
         rdf_type = as2.Object
@@ -363,6 +377,9 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
             if data['@id'].startswith('_:'): data.pop('@id')
             return data
 
+        @post_dump
+        def sanitize(self, data, **kwargs):
+            return {k: v for k,v in data.items() if v}
 
 class Home(metaclass=JsonLDAnnotation):
     country_name = fields.String(fields.IRIReference("http://www.w3.org/2006/vcard/ns#","country-name"))
@@ -373,7 +390,7 @@ class Home(metaclass=JsonLDAnnotation):
         rdf_type = vcard.Home
 
 
-class List(fields.List):
+class NormalizedList(fields.List):
     def _deserialize(self,value, attr, data, **kwargs):
         value = normalize_value(value)
         return super()._deserialize(value,attr,data,**kwargs)
@@ -392,7 +409,7 @@ class Collection(Object):
 
 
 class OrderedCollection(Collection):
-    items = List(as2.items, cls_or_instance=MixedField(as2.items, nested=OBJECTS))
+    items = NormalizedList(as2.items, cls_or_instance=MixedField(as2.items, nested=OBJECTS))
 
     class Meta:
         rdf_type = as2.OrderedCollection
@@ -417,7 +434,7 @@ class OrderedCollectionPage(OrderedCollection, CollectionPage):
 # This mimics that federation currently handles AP Document as AP Image
 # AP defines [Ii]mage and [Aa]udio objects/properties, but only a Video object
 # seen with Peertube payloads only so far
-class Document(ActivitypubEntityMixin, Object):
+class Document(Object):
     inline = fields.Boolean(pyfed.inlineImage)
     height = Integer(as2.height, flavor=xsd.nonNegativeInteger, add_value_types=True)
     width = Integer(as2.width, flavor=xsd.nonNegativeInteger, add_value_types=True)
@@ -425,6 +442,7 @@ class Document(ActivitypubEntityMixin, Object):
     url = MixedField(as2.url, nested='LinkSchema')
 
     def to_base(self):
+        self.__dict__.update({'schema': True})
         if self.media_type.startswith('image'):
             return base.Image(**self.__dict__)
         if self.media_type.startswith('audio'):
@@ -438,14 +456,14 @@ class Document(ActivitypubEntityMixin, Object):
         fields = ('url', 'name', 'media_type', 'inline')
 
 
-class Image(Document):
+class Image(Document, base.Image):
 
     class Meta:
         rdf_type = as2.Image
         fields = ('url', 'name', 'media_type', 'inline')
 
 # haven't seen this one so far..
-class Audio(Document):
+class Audio(Document, base.Audio):
 
     class Meta:
         rdf_type = as2.Audio
@@ -515,14 +533,14 @@ class Emoji(Object):
         rdf_type = toot.Emoji
 
 
-class Person(ActivitypubEntityMixin, Object):
+class Person(Object, base.Profile):
     id = fields.Id()
     inbox = IRI(ldp.inbox)
     outbox = IRI(as2.outbox, dump_derived={'fmt': '{id}outbox/', 'fields': ['id']})
     following = IRI(as2.following, dump_derived={'fmt': '{id}following/', 'fields': ['id']})
     followers = IRI(as2.followers, dump_derived={'fmt': '{id}followers/', 'fields': ['id']})
     username = fields.String(as2.preferredUsername)
-    endpoints = Dict(as2.endpoints)
+    endpoints = CompactedDict(as2.endpoints)
     shared_inbox = IRI(as2.sharedInbox) # misskey adds this
     url = IRI(as2.url)
     playlists = IRI(pt.playlists)
@@ -531,7 +549,7 @@ class Person(ActivitypubEntityMixin, Object):
     manuallyApprovesFollowers = fields.Boolean(as2.manuallyApprovesFollowers, default=False)
     discoverable = fields.Boolean(toot.discoverable)
     devices = IRI(toot.devices)
-    public_key_dict = Dict(sec.publicKey)
+    public_key_dict = CompactedDict(sec.publicKey)
     guid = fields.String(diaspora.guid)
     handle = fields.String(diaspora.handle)
     raw_content = fields.String(as2.summary)
@@ -541,12 +559,11 @@ class Person(ActivitypubEntityMixin, Object):
     is_cat = fields.Boolean(misskey.isCat)
     moved_to = IRI(as2.movedTo)
     copied_to = IRI(toot.copiedTo)
-    capabilities = Dict(litepub.capabilities)
+    capabilities = CompactedDict(litepub.capabilities)
     suspended = fields.Boolean(toot.suspended)
     _inboxes = None
     _public_key = None
     _image_urls = None
-    maps_to_base = True
 
     # Not implemented yet
     #liked is a collection
@@ -621,11 +638,11 @@ class Person(ActivitypubEntityMixin, Object):
                 logger.warning("models.Person - failed to set profile icon: %s", ex)
 
     def to_base(self):
-        kwargs = add_props_to_attrs(self, ('inboxes', 'public_key', 'image_urls'))
-        entity = base.Profile(**kwargs)
+        #kwargs = add_props_to_attrs(self, ('inboxes', 'public_key', 'image_urls'))
+        #entity = base.Profile(**kwargs)
 
-        set_public(entity)
-        return entity
+        set_public(self)
+        return self
 
     class Meta:
         rdf_type = as2.Person
@@ -659,7 +676,7 @@ class Service(Person):
 # when a property can't be directly deserialized from the payload.
 # calamus Nested field can't handle using the same model
 # or the same type in multiple schemas
-class Note(ActivitypubNoteMixin, Object):
+class Note(Object):
     id = fields.Id()
     actor_id = IRI(as2.attributedTo)
     target_id = IRI(as2.inReplyTo)
@@ -669,18 +686,111 @@ class Note(ActivitypubNoteMixin, Object):
     url = IRI(as2.url)
     _raw_content = None
     __children = []
-    maps_to_base = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._allowed_children += (base.Image, base.Audio, base.Video)
 
+    def to_as2(self):
+        if self.activity_id:
+            activity = Create
+            if hasattr(self, 'times'):
+                self.created_at = self.times['created']
+                if self.times['edited']:
+                    self.updated = self.times['modified']
+                    activity = Update
+            activity.schema().declared_fields['object_'].schema['to'][type(self)] = Note.schema()
+            self.activity=activity(
+                    activity_id=self.activity_id, 
+                    created_at=self.created_at, 
+                    actor_id=self.actor_id,
+                    object_ = self
+                    )
+        as2 = super().to_as2()
+        if self.activity_id: del activity.schema().declared_fields['object_'].schema['to'][type(self)]
+        return as2
+
     def to_base(self):
         kwargs = add_props_to_attrs(self, ('_children', 'raw_content'))
-        entity = base.Comment(**kwargs) if getattr(self, 'target_id') else base.Post(**kwargs)
+        entity = make_content_class(base.Comment)(**kwargs) if getattr(self, 'target_id') else make_content_class(base.Post)(**kwargs)
 
         set_public(entity)
         return entity
+
+    def pre_send(self) -> None:
+        """
+        Attach any embedded images from raw_content.
+        """
+        super().pre_send()
+        self._children += [
+                base.Image(
+                    url=image[0],
+                    name=image[1],
+                    inline=True,
+                ) for image in self.embedded_images
+                ]
+        self.extract_mentions()
+
+    def post_receive(self) -> None:
+        """
+        Make linkified tags normal tags.
+        """
+        super().post_receive()
+
+        # noinspection PyUnusedLocal
+        def remove_tag_links(attrs, new=False):
+            rel = (None, "rel")
+            if attrs.get(rel) == "tag":
+                return
+            return attrs
+
+        if self._media_type == "text/markdown":
+            # Skip when markdown
+            return
+
+        self.raw_content = bleach.linkify(
+            self.raw_content,
+            callbacks=[remove_tag_links],
+            parse_email=False,
+            skip_tags=["code", "pre"],
+        )
+
+    def add_object_tags(self) -> List[Dict]:
+        """
+        Populate tags to the object.tag list.
+        """
+        tags = []
+        try:
+            config = get_configuration()
+        except ImportError:
+            tags_path = None
+        else:
+            if config["tags_path"]:
+                tags_path = f"{config['base_url']}{config['tags_path']}"
+            else:
+                tags_path = None
+        for tag in self.tags:
+            _tag = {
+                'type': 'Hashtag',
+                'name': f'#{tag}',
+            }
+            if tags_path:
+                _tag["href"] = tags_path.replace(":tag:", tag)
+            tags.append(_tag)
+        return tags
+
+    def extract_mentions(self):
+        """
+        Extract mentions from the source object.
+        """
+        super().extract_mentions()
+
+        if getattr(self, 'tag_list', None):
+            from federation.entities.activitypub.models import Mention # Circulars
+            tag_list = self.tag_list if isinstance(self.tag_list, list) else [self.tag_list]
+            for tag in tag_list:
+                if isinstance(tag, Mention):
+                    self._mentions.add(tag.href)
 
     @property
     def raw_content(self):
@@ -703,7 +813,6 @@ class Note(ActivitypubNoteMixin, Object):
                 self._raw_content = self._rendered_content
             # to allow for posts/replies with medias only.
             if not self._raw_content: self._raw_content = "<div></div>"
-            print('raw_content = ', self._raw_content)
             return self._raw_content
     
     @raw_content.setter
@@ -739,6 +848,14 @@ class Note(ActivitypubNoteMixin, Object):
         rdf_type = as2.Note
 
 
+@cache
+def make_content_class(base):
+    class Content(Note, base):
+        class Meta:
+            rdf_type = as2.Note
+    return Content
+
+
 class Article(Note):
     class Meta:
         rdf_type = as2.Article
@@ -765,6 +882,7 @@ class Video(Object):
         come from Peertube, but that's a bit weak
         """
         
+        self.__dict__.update({'schema': True})
         if hasattr(self, 'content_map'):
             text = self.content_map['orig']
             if getattr(self, 'media_type', None) == 'text/markdown':
@@ -786,7 +904,7 @@ class Video(Object):
                         new_act.append(a.id)
                 # TODO: fix extract_receivers which can't handle multiple actors!
                 self.actor_id = new_act[0]
-
+            
             entity = base.Post(**self.__dict__)
             set_public(entity)
             return entity
@@ -815,39 +933,113 @@ class Activity(Object):
     def __init__(self, *args, **kwargs):
         self.activity = self
         super().__init__(*args, **kwargs)
+        self.attachment = None
 
     class Meta:
         rdf_type = as2.Activity
 
     
-class Follow(Activity):
+class Follow(Activity, base.Follow):
     activity_id = fields.Id()
     target_id = IRI(as2.object)
 
+    def to_as2(self):
+        if not self.following:
+            self.activity = Undo(
+                    activity_id = self.activity_id,
+                    actor_id = self.actor_id,
+                    object_ = self
+                    )
+            self.activity_id = f"{self.actor_id}#follow-{uuid.uuid4()}"
+            print('activity_id = ', self.activity_id)
+
+        return super().to_as2()
+
     def to_base(self):
-        entity = base.Follow(**self.__dict__)
         # This is assuming Follow can only be the object of an Undo activity. Lazy.
         if self.activity != self: 
-            entity.following = False
+            self.following = False
 
-        return entity
+        return self
+
+    def post_receive(self) -> None:
+        """
+        Post receive hook - send back follow ack.
+        """
+        super().post_receive()
+
+        if not self.following:
+            return
+
+        from federation.utils.activitypub import retrieve_and_parse_profile  # Circulars
+        try:
+            from federation.utils.django import get_function_from_config
+            get_private_key_function = get_function_from_config("get_private_key_function")
+        except (ImportError, AttributeError):
+            logger.warning("ActivitypubFollow.post_receive - Unable to send automatic Accept back, only supported on "
+                           "Django currently")
+            return
+        key = get_private_key_function(self.target_id)
+        if not key:
+            logger.warning("ActivitypubFollow.post_receive - Failed to send automatic Accept back: could not find "
+                           "profile to sign it with")
+            return
+        accept = Accept(
+            activity_id=f"{self.target_id}#accept-{uuid.uuid4()}",
+            actor_id=self.target_id,
+            target_id=self.activity_id,
+            object=self.to_as2(),
+        )
+        # noinspection PyBroadException
+        try:
+            profile = retrieve_and_parse_profile(self.actor_id)
+        except Exception:
+            profile = None
+        if not profile:
+            logger.warning("ActivitypubFollow.post_receive - Failed to fetch remote profile for sending back Accept")
+            return
+        # noinspection PyBroadException
+        try:
+            handle_send(
+                accept,
+                UserType(id=self.target_id, private_key=key),
+                recipients=[{
+                    "endpoint": profile.inboxes["private"],
+                    "fid": self.actor_id,
+                    "protocol": "activitypub",
+                    "public": False,
+                }],
+            )
+        except Exception:
+            logger.exception("ActivitypubFollow.post_receive - Failed to send Accept back")
 
     class Meta:
         rdf_type = as2.Follow
 
 
-class Announce(ActivitypubEntityMixin, Activity):
-    id = fields.Id()
+class Announce(Activity, base.Share):
+    id = fields.Id(default="unused") # needed for validation with undo
     target_id = IRI(as2.object)
-    maps_to_base = True
+
+    def to_as2(self):
+        if isinstance(self.activity, type):
+            self.activity = self.activity(
+                activity_id = f"{self.actor_id}#share-{uuid.uuid4()}",
+                actor_id = self.actor_id,
+                created_at = self.created_at,
+                object_ = self.target_id
+                )
+
+        return super().to_as2()
 
     def to_base(self):
 
         if self.activity == self:
-            entity = base.Share(**self.__dict__)
+            entity = self
         else:
             self.target_id = self.id
             self.entity_type = 'Object'
+            self.__dict__.update({'schema': True})
             entity = base.Retraction(**self.__dict__)
 
         set_public(entity)
@@ -857,16 +1049,29 @@ class Announce(ActivitypubEntityMixin, Activity):
         rdf_type = as2.Announce
     
 
-class Tombstone(Object):
+class Tombstone(Object, base.Retraction):
     target_id = fields.Id()
+
+    def to_as2(self):
+        if not isinstance(self.activity, type): return None
+        self.activity = self.activity(
+                activity_id = f"{self.actor_id}#delete-{uuid.uuid4()}",
+                actor_id = self.actor_id,
+                created_at = self.created_at,
+                object_ = self,
+                )
+
+        return super().to_as2()
+                    
 
     def to_base(self):
         if self.activity != self: self.actor_id = self.activity.actor_id
         self.entity_type = 'Object'
-        return base.Retraction(**self.__dict__)
+        return self
 
     class Meta:
         rdf_type = as2.Tombstone
+        exclude = ('created_at',)
 
 
 class Create(Activity):
@@ -888,21 +1093,21 @@ class Like(Announce):
 
 
 # inbound Accept is a noop...
-class Accept(Create):
+class Accept(Create, base.Accept):
     def to_base(self):
         del self.object_
-        return base.Accept(**self.__dict__)
+        return self
 
     class Meta:
         rdf_type = as2.Accept
 
 
-class Delete(Create):
+class Delete(Create, base.Retraction):
     def to_base(self):
         if hasattr(self, 'object_') and not isinstance(self.object_, Tombstone):
             self.target_id = self.object_
             self.entity_type = 'Object'
-            return base.Retraction(**self.__dict__)
+        return self
 
     class Meta:
         rdf_type = as2.Delete
@@ -1029,7 +1234,7 @@ def element_to_objects(element: Union[Dict, Object]) -> List:
     # TODO: remove unused code
     entity = model_to_objects(element) if not isinstance(element, Object) else element
     #if entity: entity = entity.to_base()
-    if entity and entity.maps_to_base:
+    if entity and hasattr(entity, 'to_base'):
         entity = entity.to_base()
         try:
             extract_and_validate(entity)

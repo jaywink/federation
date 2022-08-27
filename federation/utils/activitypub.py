@@ -2,7 +2,6 @@ import json
 import logging
 from typing import Optional, Any
 
-from federation.entities.activitypub.entities import ActivitypubProfile
 from federation.protocols.activitypub.signing import get_http_authentication
 from federation.utils.network import fetch_document, try_retrieve_webfinger_document
 from federation.utils.text import decode_if_bytes, validate_handle
@@ -53,7 +52,7 @@ def retrieve_and_parse_document(fid: str) -> Optional[Any]:
             return entities[0]
 
 
-def retrieve_and_parse_profile(fid: str) -> Optional[ActivitypubProfile]:
+def retrieve_and_parse_profile(fid: str) -> Optional[Any]:
     """
     Retrieve the remote fid and return a Profile object.
     """
