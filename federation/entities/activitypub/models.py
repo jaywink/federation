@@ -18,11 +18,25 @@ from federation.entities.activitypub.constants import CONTEXT, NAMESPACE_PUBLIC
 from federation.entities.mixins import BaseEntity
 from federation.entities.utils import get_base_attributes
 from federation.types import UserType, ReceiverVariant
-from federation.utils.activitypub import retrieve_and_parse_document
+from federation.utils.activitypub import retrieve_and_parse_document, retrieve_and_parse_profile
 from federation.utils.text import with_slash, validate_handle
 import federation.entities.base as base
 
 logger = logging.getLogger("federation")
+    
+# try to obtain redis config from django and use as
+# requests_cache backend if available
+try:
+    from federation.utils.django import get_configuration
+    cfg = get_configuration()
+    if cfg.get('redis'):
+        backend = rc.RedisCache(namespace='fed_cache', **cfg['redis'])
+    else:
+        backend = rc.SQLiteCache(db_path='fed_cache')
+except ImportError:
+    backend = rc.SQLiteCache(db_path='fed_cache')
+logger.info('Using %s for requests_cache', type(backend))
+    
 
 
 # This is required to workaround a bug in pyld that has the Accept header
@@ -30,18 +44,6 @@ logger = logging.getLogger("federation")
 # is broken
 # from https://github.com/digitalbazaar/pyld/issues/133
 def get_loader(*args, **kwargs):
-    # try to obtain redis config from django
-    try:
-        from federation.utils.django import get_configuration
-        cfg = get_configuration()
-        if cfg.get('redis'):
-            backend = rc.RedisCache(namespace='fed_cache', **cfg['redis'])
-        else:
-            backend = rc.SQLiteCache(db_path='fed_cache')
-    except ImportError:
-        backend = rc.SQLiteCache(db_path='fed_cache')
-    logger.debug('Using %s for requests_cache', type(backend))
-    
     requests_loader = jsonld.requests_document_loader(*args, **kwargs)
     
     def loader(url, options={}):
@@ -285,9 +287,7 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
 
     def to_as2(self):
         obj = self.activity if isinstance(self.activity, Activity) else self
-        ld = obj.dump()
-        #print(ld)
-        return jsonld.compact(ld, CONTEXT)
+        return jsonld.compact(obj.dump(), CONTEXT)
 
     @classmethod
     def from_base(cls, entity):
@@ -552,7 +552,7 @@ class Person(Object, base.Profile):
     public_key_dict = CompactedDict(sec.publicKey)
     guid = fields.String(diaspora.guid)
     handle = fields.String(diaspora.handle)
-    raw_content = fields.String(as2.summary)
+    raw_content = fields.String(as2.summary, default="") # None fails in extract_mentions
     has_address = MixedField(vcard.hasAddress, nested='HomeSchema')
     has_instant_message = fields.List(vcard.hasInstantMessage, cls_or_instance=fields.String)
     address = fields.String(vcard.Address)
@@ -638,9 +638,6 @@ class Person(Object, base.Profile):
                 logger.warning("models.Person - failed to set profile icon: %s", ex)
 
     def to_base(self):
-        #kwargs = add_props_to_attrs(self, ('inboxes', 'public_key', 'image_urls'))
-        #entity = base.Profile(**kwargs)
-
         set_public(self)
         return self
 
@@ -900,12 +897,13 @@ class Video(Object):
                 new_act = []
                 if not isinstance(act, list): act = [act]
                 for a in act:
-                    if type(a) == Person:
+                    if isinstance(a, Person):
                         new_act.append(a.id)
                 # TODO: fix extract_receivers which can't handle multiple actors!
                 self.actor_id = new_act[0]
             
-            entity = base.Post(**self.__dict__)
+            kwargs = add_props_to_attrs(self, ('_children', 'raw_content'))
+            entity = base.Post(**kwargs)
             set_public(entity)
             return entity
         #Some Video object
@@ -951,7 +949,6 @@ class Follow(Activity, base.Follow):
                     object_ = self
                     )
             self.activity_id = f"{self.actor_id}#follow-{uuid.uuid4()}"
-            print('activity_id = ', self.activity_id)
 
         return super().to_as2()
 
@@ -971,17 +968,16 @@ class Follow(Activity, base.Follow):
         if not self.following:
             return
 
-        from federation.utils.activitypub import retrieve_and_parse_profile  # Circulars
         try:
             from federation.utils.django import get_function_from_config
             get_private_key_function = get_function_from_config("get_private_key_function")
         except (ImportError, AttributeError):
-            logger.warning("ActivitypubFollow.post_receive - Unable to send automatic Accept back, only supported on "
+            logger.warning("Activitypub Follow.post_receive - Unable to send automatic Accept back, only supported on "
                            "Django currently")
             return
         key = get_private_key_function(self.target_id)
         if not key:
-            logger.warning("ActivitypubFollow.post_receive - Failed to send automatic Accept back: could not find "
+            logger.warning("Activitypub Follow.post_receive - Failed to send automatic Accept back: could not find "
                            "profile to sign it with")
             return
         accept = Accept(
@@ -996,7 +992,7 @@ class Follow(Activity, base.Follow):
         except Exception:
             profile = None
         if not profile:
-            logger.warning("ActivitypubFollow.post_receive - Failed to fetch remote profile for sending back Accept")
+            logger.warning("Activitypub Follow.post_receive - Failed to fetch remote profile for sending back Accept")
             return
         # noinspection PyBroadException
         try:
@@ -1011,7 +1007,7 @@ class Follow(Activity, base.Follow):
                 }],
             )
         except Exception:
-            logger.exception("ActivitypubFollow.post_receive - Failed to send Accept back")
+            logger.exception("Activitypub Follow.post_receive - Failed to send Accept back")
 
     class Meta:
         rdf_type = as2.Follow
@@ -1131,7 +1127,7 @@ class View(Create):
 def process_followers(obj, base_url):
     pass
 
-def extract_receiver(entity, receiver):
+def extract_receiver(profile, receiver):
     """
     Transform a single receiver ID to a UserType.
     """
@@ -1140,31 +1136,14 @@ def extract_receiver(entity, receiver):
         # Ignore since we already store "public" as a boolean on the entity
         return []
 
-
-    # Work in progress
-    #obj = retrieve_and_parse_document(receiver)
-    #if isinstance(obj, ActivitypubProfile):
-    #    return [UserType(id=receiver, receiver_variant=ReceiverVariant.ACTOR)]
-    #if isinstance(obj, Collection) and base_url:
-    #    return process_followers(obj, base_url)
-
-
-    actor = getattr(entity, 'actor_id', None) or ""
-    # Check for this being a list reference to followers of an actor?
-    # TODO: terrible hack! the way some platforms deliver to sharedInbox using just
-    #   the followers collection as a target is annoying to us since we would have to
-    #   store the followers collection references on application side, which we don't
-    #   want to do since it would make application development another step more complex.
-    #   So for now we're going to do a terrible assumption that
-    #     1) if "followers" in ID and
-    #     2) if ID starts with actor ID
-    #     then; assume this is the followers collection of said actor ID.
-    #   When we have a caching system, just fetch each receiver and check what it is.
-    #   Without caching this would be too expensive to do.
-    if receiver.find("followers") > -1 and receiver.startswith(actor):
-        return [UserType(id=actor, receiver_variant=ReceiverVariant.FOLLOWERS)]
-    # Assume actor ID
-    return [UserType(id=receiver, receiver_variant=ReceiverVariant.ACTOR)]
+    with rc.enabled(cache_name='fed_cache', backend=backend):
+        obj = retrieve_and_parse_document(receiver)
+    if isinstance(obj, base.Profile):
+        return [UserType(id=receiver, receiver_variant=ReceiverVariant.ACTOR)]
+    # This doesn't handle cases where the actor is sending to other actors
+    # followers (seen on PeerTube)
+    if profile.followers == receiver:
+        return [UserType(id=profile.id, receiver_variant=ReceiverVariant.FOLLOWERS)]
 
 
 def extract_receivers(entity):
@@ -1172,17 +1151,21 @@ def extract_receivers(entity):
     Extract receivers from a payload.
     """
     receivers = []
+    profile = None
+    # don't care about receivers for payloads without an actor_id
+    with rc.enabled(cache_name='fed_cache', backend=backend):
+        if getattr(entity, 'actor_id'):
+            profile = retrieve_and_parse_profile(entity.actor_id)
+    if not profile: return receivers
+    
     for attr in ("to", "cc"):
         receiver = getattr(entity, attr, None)
+        if isinstance(receiver, str): receiver = [receiver]
         if isinstance(receiver, list):
             for item in receiver:
-                extracted = extract_receiver(entity, item)
+                extracted = extract_receiver(profile, item)
                 if extracted:
                     receivers += extracted
-        elif isinstance(receiver, str):
-            extracted = extract_receiver(entity, receiver)
-            if extracted:
-                receivers += extracted
     return receivers
 
 
