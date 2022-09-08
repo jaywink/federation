@@ -5,6 +5,7 @@ import logging
 from typing import List, Callable, Dict, Union, Optional
 import uuid
 
+import bleach
 from calamus import fields
 from calamus.schema import JsonLDAnnotation, JsonLDSchema, JsonLDSchemaOpts
 from calamus.utils import normalize_value
@@ -15,8 +16,9 @@ from pyld import jsonld
 import requests_cache as rc
 
 from federation.entities.activitypub.constants import CONTEXT, NAMESPACE_PUBLIC
-from federation.entities.mixins import BaseEntity
+from federation.entities.mixins import BaseEntity, RawContentMixin
 from federation.entities.utils import get_base_attributes
+from federation.outbound import handle_send
 from federation.types import UserType, ReceiverVariant
 from federation.utils.activitypub import retrieve_and_parse_document, retrieve_and_parse_profile
 from federation.utils.text import with_slash, validate_handle
@@ -199,15 +201,20 @@ class MixedField(fields.Nested):
                 isinstance(value, list) and len(value) > 0 and isinstance(value[0], str)):
             return self.iri._serialize(value, attr, obj, **kwargs)
         else:
-            value = value[0] if isinstance(value, list) and len(value) > 0 else value
+            value = value[0] if isinstance(value, list) and len(value) == 1 else value
             if isinstance(value, list) and len(value) == 0: value = None
             return super()._serialize(value, attr, obj, **kwargs)
 
     def _deserialize(self, value, attr, data, **kwargs):
+        print(attr, value, type(value))
         # this is just so the ACTIVITYPUB_POST_OBJECT_IMAGES test payload passes
         if len(value) == 0: return value
 
-        if isinstance(value, list) and value[0] == {}: return {}
+        if isinstance(value, list):
+            if value[0] == {}: return {}
+        else:
+            value = [value]
+
 
         ret = []
         for item in value:
@@ -258,13 +265,13 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     also_known_as = IRI(as2.alsoKnownAs)
     icon = MixedField(as2.icon, nested='ImageSchema')
     image = MixedField(as2.image, nested='ImageSchema')
-    tag_list = MixedField(as2.tag, nested=['HashtagSchema','MentionSchema','PropertyValueSchema','EmojiSchema'])
+    tag_objects = MixedField(as2.tag, nested=['HashtagSchema','MentionSchema','PropertyValueSchema','EmojiSchema'], many=True)
     attachment = fields.Nested(as2.attachment, nested=['ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'], many=True)
     content_map = LanguageMap(as2.content)  # language maps are not implemented in calamus
     context = IRI(as2.context)
     guid = fields.String(diaspora.guid)
     name = fields.String(as2.name)
-    generator = MixedField(as2.generator, nested='ServiceSchema')
+    generator = MixedField(as2.generator, nested=['ApplicationSchema','ServiceSchema'])
     created_at = fields.DateTime(as2.published, add_value_types=True)
     replies = MixedField(as2.replies, nested=['CollectionSchema','OrderedCollectionSchema'])
     signature = MixedField(sec.signature, nested = 'SignatureSchema')
@@ -273,7 +280,6 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     to = IRI(as2.to)
     cc = IRI(as2.cc)
     media_type = fields.String(as2.mediaType)
-    sensitive = fields.Boolean(as2.sensitive)
     source = CompactedDict(as2.source)
 
     # The following properties are defined by some platforms, but are not implemented yet
@@ -287,6 +293,7 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
 
     def to_as2(self):
         obj = self.activity if isinstance(self.activity, Activity) else self
+        print('to_as2', obj, getattr(obj, 'tag_objects', None))
         return jsonld.compact(obj.dump(), CONTEXT)
 
     @classmethod
@@ -379,7 +386,7 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
 
         @post_dump
         def sanitize(self, data, **kwargs):
-            return {k: v for k,v in data.items() if v}
+            return {k: v for k,v in data.items() if v or isinstance(v, bool)}
 
 class Home(metaclass=JsonLDAnnotation):
     country_name = fields.String(fields.IRIReference("http://www.w3.org/2006/vcard/ns#","country-name"))
@@ -392,8 +399,11 @@ class Home(metaclass=JsonLDAnnotation):
 
 class NormalizedList(fields.List):
     def _deserialize(self,value, attr, data, **kwargs):
+        print('List', attr, value)
         value = normalize_value(value)
-        return super()._deserialize(value,attr,data,**kwargs)
+        ret = super()._deserialize(value,attr,data,**kwargs)
+        print('List after', ret)
+        return ret
 
 
 class Collection(Object):
@@ -435,7 +445,7 @@ class OrderedCollectionPage(OrderedCollection, CollectionPage):
 # AP defines [Ii]mage and [Aa]udio objects/properties, but only a Video object
 # seen with Peertube payloads only so far
 class Document(Object):
-    inline = fields.Boolean(pyfed.inlineImage)
+    inline = fields.Boolean(pyfed.inlineImage, default=False)
     height = Integer(as2.height, flavor=xsd.nonNegativeInteger, add_value_types=True)
     width = Integer(as2.width, flavor=xsd.nonNegativeInteger, add_value_types=True)
     blurhash = fields.String(toot.blurhash)
@@ -490,8 +500,17 @@ class Link(metaclass=JsonLDAnnotation):
     # Not implemented yet
     #preview : variable type?
 
+    def __init__(self, *args, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
     class Meta:
         rdf_type = as2.Link
+
+        @post_dump
+        def noid(self, data, **kwargs):
+            if data['@id'].startswith('_:'): data.pop('@id')
+            return data
 
         @post_load
         def make_instance(self, data, **kwargs):
@@ -536,9 +555,9 @@ class Emoji(Object):
 class Person(Object, base.Profile):
     id = fields.Id()
     inbox = IRI(ldp.inbox)
-    outbox = IRI(as2.outbox, dump_derived={'fmt': '{id}outbox/', 'fields': ['id']})
-    following = IRI(as2.following, dump_derived={'fmt': '{id}following/', 'fields': ['id']})
-    followers = IRI(as2.followers, dump_derived={'fmt': '{id}followers/', 'fields': ['id']})
+    outbox = IRI(as2.outbox, dump_derived={'fmt': '{id}/outbox/', 'fields': ['id']})
+    following = IRI(as2.following, dump_derived={'fmt': '{id}/following/', 'fields': ['id']})
+    followers = IRI(as2.followers, dump_derived={'fmt': '{id}/followers/', 'fields': ['id']})
     username = fields.String(as2.preferredUsername)
     endpoints = CompactedDict(as2.endpoints)
     shared_inbox = IRI(as2.sharedInbox) # misskey adds this
@@ -578,6 +597,10 @@ class Person(Object, base.Profile):
         super().__init__(*args, **kwargs)
         self._allowed_children += (PropertyValue, IdentityProof)
 
+    def to_as2(self):
+        self.id = self.id.rstrip('/') # TODO: sort out the trailing / business
+        return super().to_as2()
+
     @property
     def inboxes(self):
         if self._inboxes: return self._inboxes
@@ -611,7 +634,8 @@ class Person(Object, base.Profile):
     @public_key.setter
     def public_key(self, value):
         self._public_key = value
-        self.public_key_dict = {'id': self.id+'#main-key', 'owner': self.id, 'publicKeyPem': value}
+        id_ = self.id.rstrip('/')
+        self.public_key_dict = {'id': id_+'#main-key', 'owner': id_, 'publicKeyPem': value}
 
     @property
     def image_urls(self):
@@ -667,28 +691,38 @@ class Service(Person):
         rdf_type = as2.Service
 
 
+class Application(Person):
+    class Meta:
+        rdf_type = as2.Application
+
+
 # The to_base method is used to handle cases where an AP object type matches multiple
 # classes depending on the existence/value of specific propertie(s) or
 # when the same class is used both as an object or an activity or
 # when a property can't be directly deserialized from the payload.
 # calamus Nested field can't handle using the same model
 # or the same type in multiple schemas
-class Note(Object):
+class Note(Object, RawContentMixin):
     id = fields.Id()
     actor_id = IRI(as2.attributedTo)
     target_id = IRI(as2.inReplyTo)
     conversation = fields.RawJsonLD(ostatus.conversation)
     in_reply_to_atom_uri = IRI(ostatus.inReplyToAtomUri)
+    sensitive = fields.Boolean(as2.sensitive, default=False)
     summary = fields.String(as2.summary)
     url = IRI(as2.url)
     _raw_content = None
     __children = []
 
     def __init__(self, *args, **kwargs):
+        self.tag_objects = [] # mutable objects...
         super().__init__(*args, **kwargs)
+        self.extract_mentions()
         self._allowed_children += (base.Image, base.Audio, base.Video)
 
     def to_as2(self):
+        self.sensitive = 'nsfw' in self.tags
+
         if self.activity_id:
             activity = Create
             if hasattr(self, 'times'):
@@ -727,6 +761,9 @@ class Note(Object):
                 ) for image in self.embedded_images
                 ]
         self.extract_mentions()
+        self.content_map = {'orig': self.rendered_content}
+        self.add_object_mentions()
+        self.add_object_tags()
 
     def post_receive(self) -> None:
         """
@@ -752,11 +789,10 @@ class Note(Object):
             skip_tags=["code", "pre"],
         )
 
-    def add_object_tags(self) -> List[Dict]:
+    def add_object_tags(self) -> None:
         """
         Populate tags to the object.tag list.
         """
-        tags = []
         try:
             config = get_configuration()
         except ImportError:
@@ -767,14 +803,24 @@ class Note(Object):
             else:
                 tags_path = None
         for tag in self.tags:
-            _tag = {
-                'type': 'Hashtag',
-                'name': f'#{tag}',
-            }
+            _tag = Hashtag(name=f'#{tag}')
             if tags_path:
-                _tag["href"] = tags_path.replace(":tag:", tag)
-            tags.append(_tag)
-        return tags
+                _tag.href = tags_path.replace(":tag:", tag)
+            self.tag_objects.append(_tag)
+
+    def add_object_mentions(self) -> None:
+        """
+        Populate mentions to the object.tag list.
+        """
+        if len(self._mentions):
+            mentions = list(self._mentions)
+            mentions.sort()
+            for mention in mentions:
+                if mention.startswith("http"):
+                    self.tag_objects.append(Mention(href=mention, name=mention))
+                elif validate_handle(mention):
+                    # Look up via WebFinger
+                    self.tag_objects.append(Mention(href=mention, name=mention)) # TODO need to implement fetch via webfinger for AP handles first
 
     def extract_mentions(self):
         """
@@ -782,10 +828,9 @@ class Note(Object):
         """
         super().extract_mentions()
 
-        if getattr(self, 'tag_list', None):
-            from federation.entities.activitypub.models import Mention # Circulars
-            tag_list = self.tag_list if isinstance(self.tag_list, list) else [self.tag_list]
-            for tag in tag_list:
+        if getattr(self, 'tag_objects', None):
+            tag_objects = self.tag_objects if isinstance(self.tag_objects, list) else [self.tag_objects]
+            for tag in tag_objects:
                 if isinstance(tag, Mention):
                     self._mentions.add(tag.href)
 
@@ -817,7 +862,6 @@ class Note(Object):
         self._raw_content = value
         if self._media_type == 'text/markdown':
             self.source = {'content': value, 'mediaType': self._media_type}
-        self.content_map = {'orig': self.rendered_content}
 
     @property
     def _children(self):
@@ -1011,20 +1055,22 @@ class Follow(Activity, base.Follow):
 
     class Meta:
         rdf_type = as2.Follow
+        exclude = ('created_at',)
 
 
 class Announce(Activity, base.Share):
-    id = fields.Id(default="unused") # needed for validation with undo
+    id = fields.Id()
     target_id = IRI(as2.object)
 
     def to_as2(self):
         if isinstance(self.activity, type):
             self.activity = self.activity(
-                activity_id = f"{self.actor_id}#share-{uuid.uuid4()}",
+                activity_id = self.activity_id if self.activity_id else f"{self.actor_id}#share-{uuid.uuid4()}",
                 actor_id = self.actor_id,
                 created_at = self.created_at,
-                object_ = self.target_id
+                object_ = self
                 )
+            self.id = f"{self.target_id}"
 
         return super().to_as2()
 
@@ -1051,7 +1097,7 @@ class Tombstone(Object, base.Retraction):
     def to_as2(self):
         if not isinstance(self.activity, type): return None
         self.activity = self.activity(
-                activity_id = f"{self.actor_id}#delete-{uuid.uuid4()}",
+                activity_id = self.activity_id,
                 actor_id = self.actor_id,
                 created_at = self.created_at,
                 object_ = self,
@@ -1096,6 +1142,7 @@ class Accept(Create, base.Accept):
 
     class Meta:
         rdf_type = as2.Accept
+        exclude = ('created_at',)
 
 
 class Delete(Create, base.Retraction):
@@ -1117,6 +1164,7 @@ class Update(Create):
 class Undo(Create):
     class Meta:
         rdf_type = as2.Undo
+        exclude = ('created_at',)
 
 
 class View(Create):
@@ -1241,7 +1289,7 @@ def model_to_objects(payload):
         try:
             entity = model.schema().load(payload)
         except (KeyError, jsonld.JsonLdError, exceptions.ValidationError) as exc :  # Just give up for now. This must be made robust
-            logger.error(f"Error parsing  jsonld payload ({exc})")
+            logger.error(f"Error parsing jsonld payload ({exc})")
             return None
 
         if isinstance(getattr(entity, 'object_', None), Object):

@@ -43,6 +43,7 @@ def get_outbound_entity(entity: BaseEntity, private_key):
         elif entity.entity_type == 'Share':
             outbound = models.Announce.from_base(entity)
             outbound.activity = models.Undo
+            outbound._required.remove('id')
         elif entity.entity_type == 'Profile':
             outbound = models.Delete.from_base(entity)
     elif cls == Share:

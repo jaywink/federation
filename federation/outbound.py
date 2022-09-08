@@ -2,6 +2,7 @@ import copy
 import importlib
 import json
 import logging
+from pprint import pprint
 import traceback
 from typing import List, Dict, Union
 
@@ -357,8 +358,11 @@ def handle_send(
     # Do actual sending
     for payload in payloads:
         for url in payload["urls"]:
-            print(url, payload["payload"])
-            continue
+            #try:
+            #    pprint(json.loads(payload["payload"]))
+            #except:
+            #    pass
+            #continue
             try:
                 # TODO send_document and fetch_document need to handle rate limits
                 send_document(

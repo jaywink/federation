@@ -4,9 +4,8 @@ from pprint import pprint
 # noinspection PyPackageRequirements
 from Crypto.PublicKey.RSA import RsaKey
 
-from federation.entities.activitypub.constants import (
-    CONTEXTS_DEFAULT, CONTEXT_MANUALLY_APPROVES_FOLLOWERS, CONTEXT_LD_SIGNATURES, CONTEXT_DIASPORA)
-from federation.entities.activitypub.entities import ActivitypubAccept
+from federation.entities.activitypub.constants import CONTEXT
+from federation.entities.activitypub.models import Accept
 from federation.tests.fixtures.keys import PUBKEY
 from federation.types import UserType
 
@@ -15,12 +14,11 @@ class TestEntitiesConvertToAS2:
     def test_accept_to_as2(self, activitypubaccept):
         result = activitypubaccept.to_as2()
         assert result == {
-            "@context": CONTEXTS_DEFAULT,
+            "@context": CONTEXT,
             "id": "https://localhost/accept",
             "type": "Accept",
             "actor": "https://localhost/profile",
             "object": {
-                "@context": CONTEXTS_DEFAULT,
                 "id": "https://localhost/follow",
                 "type": "Follow",
                 "actor": "https://localhost/profile",
@@ -28,10 +26,10 @@ class TestEntitiesConvertToAS2:
             },
         }
 
-    def test_accounce_to_as2(self, activitypubannounce):
+    def test_announce_to_as2(self, activitypubannounce):
         result = activitypubannounce.to_as2()
         assert result == {
-            "@context": CONTEXTS_DEFAULT,
+            "@context": CONTEXT,
             "id": "http://127.0.0.1:8000/post/123456/#create",
             "type": "Announce",
             "actor": "http://127.0.0.1:8000/profile/123456/",
@@ -40,15 +38,10 @@ class TestEntitiesConvertToAS2:
         }
 
     def test_comment_to_as2(self, activitypubcomment):
+        activitypubcomment.pre_send()
         result = activitypubcomment.to_as2()
         assert result == {
-            '@context': [
-                'https://www.w3.org/ns/activitystreams',
-                {"pyfed": "https://docs.jasonrobinson.me/ns/python-federation#"},
-                {'Hashtag': 'as:Hashtag'},
-                'https://w3id.org/security/v1',
-                {'sensitive': 'as:sensitive'},
-            ],
+            '@context': CONTEXT,
             'type': 'Create',
             'id': 'http://127.0.0.1:8000/post/123456/#create',
             'actor': 'http://127.0.0.1:8000/profile/123456/',
@@ -60,9 +53,6 @@ class TestEntitiesConvertToAS2:
                 'published': '2019-04-27T00:00:00',
                 'inReplyTo': 'http://127.0.0.1:8000/post/012345/',
                 'sensitive': False,
-                'summary': None,
-                'tag': [],
-                'url': '',
                 'source': {
                     'content': 'raw_content',
                     'mediaType': 'text/markdown',
@@ -73,15 +63,10 @@ class TestEntitiesConvertToAS2:
 
     def test_comment_to_as2__url_in_raw_content(self, activitypubcomment):
         activitypubcomment.raw_content = 'raw_content http://example.com'
+        activitypubcomment.pre_send()
         result = activitypubcomment.to_as2()
         assert result == {
-            '@context': [
-                'https://www.w3.org/ns/activitystreams',
-                {"pyfed": "https://docs.jasonrobinson.me/ns/python-federation#"},
-                {'Hashtag': 'as:Hashtag'},
-                'https://w3id.org/security/v1',
-                {'sensitive': 'as:sensitive'},
-            ],
+            '@context': CONTEXT,
             'type': 'Create',
             'id': 'http://127.0.0.1:8000/post/123456/#create',
             'actor': 'http://127.0.0.1:8000/profile/123456/',
@@ -94,9 +79,6 @@ class TestEntitiesConvertToAS2:
                 'published': '2019-04-27T00:00:00',
                 'inReplyTo': 'http://127.0.0.1:8000/post/012345/',
                 'sensitive': False,
-                'summary': None,
-                'tag': [],
-                'url': '',
                 'source': {
                     'content': 'raw_content http://example.com',
                     'mediaType': 'text/markdown',
@@ -108,7 +90,7 @@ class TestEntitiesConvertToAS2:
     def test_follow_to_as2(self, activitypubfollow):
         result = activitypubfollow.to_as2()
         assert result == {
-            "@context": CONTEXTS_DEFAULT,
+            "@context": CONTEXT,
             "id": "https://localhost/follow",
             "type": "Follow",
             "actor": "https://localhost/profile",
@@ -119,7 +101,7 @@ class TestEntitiesConvertToAS2:
         result = activitypubundofollow.to_as2()
         result["object"]["id"] = "https://localhost/follow"  # Real object will have a random UUID postfix here
         assert result == {
-            "@context": CONTEXTS_DEFAULT,
+            "@context": CONTEXT,
             "id": "https://localhost/undo",
             "type": "Undo",
             "actor": "https://localhost/profile",
@@ -132,15 +114,10 @@ class TestEntitiesConvertToAS2:
         }
 
     def test_post_to_as2(self, activitypubpost):
+        activitypubpost.pre_send()
         result = activitypubpost.to_as2()
         assert result == {
-            '@context': [
-                'https://www.w3.org/ns/activitystreams',
-                {"pyfed": "https://docs.jasonrobinson.me/ns/python-federation#"},
-                {'Hashtag': 'as:Hashtag'},
-                'https://w3id.org/security/v1',
-                {'sensitive': 'as:sensitive'},
-            ],
+            '@context': CONTEXT,
             'type': 'Create',
             'id': 'http://127.0.0.1:8000/post/123456/#create',
             'actor': 'http://127.0.0.1:8000/profile/123456/',
@@ -150,11 +127,7 @@ class TestEntitiesConvertToAS2:
                 'attributedTo': 'http://127.0.0.1:8000/profile/123456/',
                 'content': '<h1>raw_content</h1>',
                 'published': '2019-04-27T00:00:00',
-                'inReplyTo': None,
                 'sensitive': False,
-                'summary': None,
-                'tag': [],
-                'url': '',
                 'source': {
                     'content': '# raw_content',
                     'mediaType': 'text/markdown',
@@ -167,13 +140,7 @@ class TestEntitiesConvertToAS2:
         activitypubpost_mentions.pre_send()
         result = activitypubpost_mentions.to_as2()
         assert result == {
-            '@context': [
-                'https://www.w3.org/ns/activitystreams',
-                {"pyfed": "https://docs.jasonrobinson.me/ns/python-federation#"},
-                {'Hashtag': 'as:Hashtag'},
-                'https://w3id.org/security/v1',
-                {'sensitive': 'as:sensitive'},
-            ],
+            '@context': CONTEXT,
             'type': 'Create',
             'id': 'http://127.0.0.1:8000/post/123456/#create',
             'actor': 'http://127.0.0.1:8000/profile/123456/',
@@ -185,9 +152,7 @@ class TestEntitiesConvertToAS2:
                            'href="http://localhost.local/someone" rel="nofollow" target="_blank">'
                            '<span>Bob Bobértson</span></a></p>',
                 'published': '2019-04-27T00:00:00',
-                'inReplyTo': None,
                 'sensitive': False,
-                'summary': None,
                 'tag': [
                     {
                         "type": "Mention",
@@ -210,7 +175,6 @@ class TestEntitiesConvertToAS2:
                         "name": "someone@localhost.local",
                     },
                 ],
-                'url': '',
                 'source': {
                     'content': '# raw_content\n\n@{someone@localhost.local} @{http://localhost.local/someone}',
                     'mediaType': 'text/markdown',
@@ -220,15 +184,10 @@ class TestEntitiesConvertToAS2:
         }
 
     def test_post_to_as2__with_tags(self, activitypubpost_tags):
+        activitypubpost_tags.pre_send()
         result = activitypubpost_tags.to_as2()
         assert result == {
-            '@context': [
-                'https://www.w3.org/ns/activitystreams',
-                {"pyfed": "https://docs.jasonrobinson.me/ns/python-federation#"},
-                {'Hashtag': 'as:Hashtag'},
-                'https://w3id.org/security/v1',
-                {'sensitive': 'as:sensitive'},
-            ],
+            '@context': CONTEXT,
             'type': 'Create',
             'id': 'http://127.0.0.1:8000/post/123456/#create',
             'actor': 'http://127.0.0.1:8000/profile/123456/',
@@ -246,9 +205,7 @@ class TestEntitiesConvertToAS2:
                            'noreferrer nofollow" '
                            'target="_blank">#<span>barfoo</span></a></p>',
                 'published': '2019-04-27T00:00:00',
-                'inReplyTo': None,
                 'sensitive': False,
-                'summary': None,
                 'tag': [
                     {
                         "type": "Hashtag",
@@ -261,7 +218,6 @@ class TestEntitiesConvertToAS2:
                         "name": "#foobar",
                     },
                 ],
-                'url': '',
                 'source': {
                     'content': '# raw_content\n#foobar\n#barfoo',
                     'mediaType': 'text/markdown',
@@ -271,15 +227,10 @@ class TestEntitiesConvertToAS2:
         }
 
     def test_post_to_as2__with_images(self, activitypubpost_images):
+        activitypubpost_images.pre_send()
         result = activitypubpost_images.to_as2()
         assert result == {
-            '@context': [
-                'https://www.w3.org/ns/activitystreams',
-                {"pyfed": "https://docs.jasonrobinson.me/ns/python-federation#"},
-                {'Hashtag': 'as:Hashtag'},
-                'https://w3id.org/security/v1',
-                {'sensitive': 'as:sensitive'},
-            ],
+            '@context': CONTEXT,
             'type': 'Create',
             'id': 'http://127.0.0.1:8000/post/123456/#create',
             'actor': 'http://127.0.0.1:8000/profile/123456/',
@@ -289,16 +240,11 @@ class TestEntitiesConvertToAS2:
                 'attributedTo': 'http://127.0.0.1:8000/profile/123456/',
                 'content': '<p>raw_content</p>',
                 'published': '2019-04-27T00:00:00',
-                'inReplyTo': None,
                 'sensitive': False,
-                'summary': None,
-                'tag': [],
-                'url': '',
                 'attachment': [
                     {
                         'type': 'Image',
                         'mediaType': 'image/jpeg',
-                        'name': '',
                         'url': 'foobar',
                         'pyfed:inlineImage': False,
                     },
@@ -319,16 +265,10 @@ class TestEntitiesConvertToAS2:
         }
 
     def test_post_to_as2__with_diaspora_guid(self, activitypubpost_diaspora_guid):
+        activitypubpost_diaspora_guid.pre_send()
         result = activitypubpost_diaspora_guid.to_as2()
         assert result == {
-            '@context': [
-                'https://www.w3.org/ns/activitystreams',
-                {"pyfed": "https://docs.jasonrobinson.me/ns/python-federation#"},
-                {'Hashtag': 'as:Hashtag'},
-                'https://w3id.org/security/v1',
-                {'sensitive': 'as:sensitive'},
-                {'diaspora': 'https://diasporafoundation.org/ns/'},
-            ],
+            '@context': CONTEXT,
             'type': 'Create',
             'id': 'http://127.0.0.1:8000/post/123456/#create',
             'actor': 'http://127.0.0.1:8000/profile/123456/',
@@ -339,11 +279,7 @@ class TestEntitiesConvertToAS2:
                 'attributedTo': 'http://127.0.0.1:8000/profile/123456/',
                 'content': '<p>raw_content</p>',
                 'published': '2019-04-27T00:00:00',
-                'inReplyTo': None,
                 'sensitive': False,
-                'summary': None,
-                'tag': [],
-                'url': '',
                 'source': {
                     'content': 'raw_content',
                     'mediaType': 'text/markdown',
@@ -353,14 +289,10 @@ class TestEntitiesConvertToAS2:
         }
 
     # noinspection PyUnusedLocal
-    @patch("federation.entities.base.fetch_content_type", return_value="image/jpeg")
-    def test_profile_to_as2(self, mock_fetch, activitypubprofile):
+    def test_profile_to_as2(self, activitypubprofile):
         result = activitypubprofile.to_as2()
         assert result == {
-            "@context": CONTEXTS_DEFAULT + [
-                CONTEXT_LD_SIGNATURES,
-                CONTEXT_MANUALLY_APPROVES_FOLLOWERS,
-            ],
+            "@context": CONTEXT,
             "endpoints": {
                 "sharedInbox": "https://example.com/public",
             },
@@ -376,6 +308,7 @@ class TestEntitiesConvertToAS2:
                 "owner": "https://example.com/bob",
                 "publicKeyPem": PUBKEY,
             },
+            'published': '2022-09-06T00:00:00',
             "type": "Person",
             "url": "https://example.com/bob-bobertson",
             "summary": "foobar",
@@ -383,21 +316,15 @@ class TestEntitiesConvertToAS2:
                 "type": "Image",
                 "url": "urllarge",
                 "mediaType": "image/jpeg",
-                "name": "",
                 "pyfed:inlineImage": False,
             }
         }
 
     # noinspection PyUnusedLocal
-    @patch("federation.entities.base.fetch_content_type", return_value="image/jpeg")
-    def test_profile_to_as2__with_diaspora_guid(self, mock_fetch, activitypubprofile_diaspora_guid):
+    def test_profile_to_as2__with_diaspora_guid(self, activitypubprofile_diaspora_guid):
         result = activitypubprofile_diaspora_guid.to_as2()
         assert result == {
-            "@context": CONTEXTS_DEFAULT + [
-                CONTEXT_LD_SIGNATURES,
-                CONTEXT_MANUALLY_APPROVES_FOLLOWERS,
-                CONTEXT_DIASPORA,
-            ],
+            "@context": CONTEXT,
             "endpoints": {
                 "sharedInbox": "https://example.com/public",
             },
@@ -415,6 +342,7 @@ class TestEntitiesConvertToAS2:
                 "owner": "https://example.com/bob",
                 "publicKeyPem": PUBKEY,
             },
+            'published': '2022-09-06T00:00:00',
             "type": "Person",
             "url": "https://example.com/bob-bobertson",
             "summary": "foobar",
@@ -422,7 +350,6 @@ class TestEntitiesConvertToAS2:
                 "type": "Image",
                 "url": "urllarge",
                 "mediaType": "image/jpeg",
-                "name": "",
                 "pyfed:inlineImage": False,
             }
         }
@@ -430,10 +357,7 @@ class TestEntitiesConvertToAS2:
     def test_retraction_to_as2(self, activitypubretraction):
         result = activitypubretraction.to_as2()
         assert result == {
-            '@context': [
-                'https://www.w3.org/ns/activitystreams',
-                {"pyfed": "https://docs.jasonrobinson.me/ns/python-federation#"},
-            ],
+            '@context': CONTEXT,
             'type': 'Delete',
             'id': 'http://127.0.0.1:8000/post/123456/#delete',
             'actor': 'http://127.0.0.1:8000/profile/123456/',
@@ -447,10 +371,7 @@ class TestEntitiesConvertToAS2:
     def test_retraction_to_as2__announce(self, activitypubretraction_announce):
         result = activitypubretraction_announce.to_as2()
         assert result == {
-            '@context': [
-                'https://www.w3.org/ns/activitystreams',
-                {"pyfed": "https://docs.jasonrobinson.me/ns/python-federation#"},
-            ],
+            '@context': CONTEXT,
             'type': 'Undo',
             'id': 'http://127.0.0.1:8000/post/123456/#delete',
             'actor': 'http://127.0.0.1:8000/profile/123456/',
@@ -463,15 +384,15 @@ class TestEntitiesConvertToAS2:
 
 
 class TestEntitiesPostReceive:
-    @patch("federation.utils.activitypub.retrieve_and_parse_profile", autospec=True)
-    @patch("federation.entities.activitypub.entities.handle_send", autospec=True)
+    @patch("federation.entities.activitypub.models.retrieve_and_parse_profile", autospec=True)
+    @patch("federation.entities.activitypub.models.handle_send", autospec=True)
     def test_follow_post_receive__sends_correct_accept_back(
             self, mock_send, mock_retrieve, activitypubfollow, profile
     ):
         mock_retrieve.return_value = profile
         activitypubfollow.post_receive()
         args, kwargs = mock_send.call_args_list[0]
-        assert isinstance(args[0], ActivitypubAccept)
+        assert isinstance(args[0], Accept)
         assert args[0].activity_id.startswith("https://example.com/profile#accept-")
         assert args[0].actor_id == "https://example.com/profile"
         assert args[0].target_id == "https://localhost/follow"
@@ -485,13 +406,13 @@ class TestEntitiesPostReceive:
             "public": False,
         }]
 
-    @patch("federation.entities.activitypub.entities.bleach.linkify", autospec=True)
+    @patch("federation.entities.activitypub.models.bleach.linkify", autospec=True)
     def test_post_post_receive__linkifies_if_not_markdown(self, mock_linkify, activitypubpost):
         activitypubpost._media_type = 'text/html'
         activitypubpost.post_receive()
         mock_linkify.assert_called_once()
 
-    @patch("federation.entities.activitypub.entities.bleach.linkify", autospec=True)
+    @patch("federation.entities.activitypub.models.bleach.linkify", autospec=True)
     def test_post_post_receive__skips_linkify_if_markdown(self, mock_linkify, activitypubpost):
         activitypubpost.post_receive()
         mock_linkify.assert_not_called()
