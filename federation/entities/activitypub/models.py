@@ -206,7 +206,6 @@ class MixedField(fields.Nested):
             return super()._serialize(value, attr, obj, **kwargs)
 
     def _deserialize(self, value, attr, data, **kwargs):
-        print(attr, value, type(value))
         # this is just so the ACTIVITYPUB_POST_OBJECT_IMAGES test payload passes
         if len(value) == 0: return value
 
@@ -293,7 +292,6 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
 
     def to_as2(self):
         obj = self.activity if isinstance(self.activity, Activity) else self
-        print('to_as2', obj, getattr(obj, 'tag_objects', None))
         return jsonld.compact(obj.dump(), CONTEXT)
 
     @classmethod
@@ -399,10 +397,8 @@ class Home(metaclass=JsonLDAnnotation):
 
 class NormalizedList(fields.List):
     def _deserialize(self,value, attr, data, **kwargs):
-        print('List', attr, value)
         value = normalize_value(value)
         ret = super()._deserialize(value,attr,data,**kwargs)
-        print('List after', ret)
         return ret
 
 
@@ -555,9 +551,9 @@ class Emoji(Object):
 class Person(Object, base.Profile):
     id = fields.Id()
     inbox = IRI(ldp.inbox)
-    outbox = IRI(as2.outbox, dump_derived={'fmt': '{id}/outbox/', 'fields': ['id']})
-    following = IRI(as2.following, dump_derived={'fmt': '{id}/following/', 'fields': ['id']})
-    followers = IRI(as2.followers, dump_derived={'fmt': '{id}/followers/', 'fields': ['id']})
+    outbox = IRI(as2.outbox)
+    following = IRI(as2.following)
+    followers = IRI(as2.followers)
     username = fields.String(as2.preferredUsername)
     endpoints = CompactedDict(as2.endpoints)
     shared_inbox = IRI(as2.sharedInbox) # misskey adds this
@@ -570,7 +566,7 @@ class Person(Object, base.Profile):
     devices = IRI(toot.devices)
     public_key_dict = CompactedDict(sec.publicKey)
     guid = fields.String(diaspora.guid)
-    handle = fields.String(diaspora.handle)
+    handle = fields.String(diaspora.handle, default="")
     raw_content = fields.String(as2.summary, default="") # None fails in extract_mentions
     has_address = MixedField(vcard.hasAddress, nested='HomeSchema')
     has_instant_message = fields.List(vcard.hasInstantMessage, cls_or_instance=fields.String)
@@ -580,6 +576,7 @@ class Person(Object, base.Profile):
     copied_to = IRI(toot.copiedTo)
     capabilities = CompactedDict(litepub.capabilities)
     suspended = fields.Boolean(toot.suspended)
+    public = True
     _inboxes = None
     _public_key = None
     _image_urls = None
@@ -598,7 +595,21 @@ class Person(Object, base.Profile):
         self._allowed_children += (PropertyValue, IdentityProof)
 
     def to_as2(self):
-        self.id = self.id.rstrip('/') # TODO: sort out the trailing / business
+        #self.id = self.id.rstrip('/') # TODO: sort out the trailing / business
+        self.followers = f'{with_slash(self.id)}followers/'
+        self.following = f'{with_slash(self.id)}following/'
+        self.outbox = f'{with_slash(self.id)}outbox/'
+
+        if hasattr(self, 'times'):
+            if self.times.get('updated',0) > self.times.get('created',0):
+                self.updated = self.times.get('updated')
+            if self.times.get('edited'):
+                self.activity = Update(
+                        activity_id=f'{self.id}#profile-{uuid.uuid4()}',
+                        actor_id=self.id,
+                        created_at=self.times.get('updated'),
+                        object_=self,
+                        )
         return super().to_as2()
 
     @property
@@ -617,10 +628,11 @@ class Person(Object, base.Profile):
 
     @inboxes.setter
     def inboxes(self, value):
-        self._inboxes = value
-        if isinstance(value, dict):
-            self.inbox = value.get('private', None)
-            self.endpoints = {'sharedInbox': value.get('public', None)}
+        if value != {'private':None, 'public':None}:
+            self._inboxes = value
+            if isinstance(value, dict):
+                self.inbox = value.get('private', None)
+                self.endpoints = {'sharedInbox': value.get('public', None)}
 
     @property
     def public_key(self):
@@ -634,8 +646,9 @@ class Person(Object, base.Profile):
     @public_key.setter
     def public_key(self, value):
         self._public_key = value
-        id_ = self.id.rstrip('/')
-        self.public_key_dict = {'id': id_+'#main-key', 'owner': id_, 'publicKeyPem': value}
+        #id_ = self.id.rstrip('/')
+        #self.public_key_dict = {'id': id_+'#main-key', 'owner': id_, 'publicKeyPem': value}
+        self.public_key_dict = {'id': self.id+'#main-key', 'owner': self.id, 'publicKeyPem': value}
 
     @property
     def image_urls(self):
@@ -652,18 +665,15 @@ class Person(Object, base.Profile):
 
     @image_urls.setter
     def image_urls(self, value):
-        self._image_urls = value
-        if value.get('large'):
-            try:
-                profile_icon = base.Image(url=value.get('large'))
-                if profile_icon.media_type:
-                    self.icon = [Image.from_base(profile_icon)]
-            except Exception as ex:
-                logger.warning("models.Person - failed to set profile icon: %s", ex)
-
-    def to_base(self):
-        set_public(self)
-        return self
+        if value != {'large':'', 'medium':'', 'small':''}:
+            self._image_urls = value
+            if value.get('large'):
+                try:
+                    profile_icon = base.Image(url=value.get('large'))
+                    if profile_icon.media_type:
+                        self.icon = [Image.from_base(profile_icon)]
+                except Exception as ex:
+                    logger.warning("models.Person - failed to set profile icon: %s", ex)
 
     class Meta:
         rdf_type = as2.Person
@@ -988,11 +998,10 @@ class Follow(Activity, base.Follow):
     def to_as2(self):
         if not self.following:
             self.activity = Undo(
-                    activity_id = self.activity_id,
+                    activity_id = self.activity_id if self.activity_id else f"{self.actor_id}#follow-{uuid.uuid4()}",
                     actor_id = self.actor_id,
                     object_ = self
                     )
-            self.activity_id = f"{self.actor_id}#follow-{uuid.uuid4()}"
 
         return super().to_as2()
 
@@ -1067,10 +1076,8 @@ class Announce(Activity, base.Share):
             self.activity = self.activity(
                 activity_id = self.activity_id if self.activity_id else f"{self.actor_id}#share-{uuid.uuid4()}",
                 actor_id = self.actor_id,
-                created_at = self.created_at,
                 object_ = self
                 )
-            self.id = f"{self.target_id}"
 
         return super().to_as2()
 
@@ -1097,7 +1104,7 @@ class Tombstone(Object, base.Retraction):
     def to_as2(self):
         if not isinstance(self.activity, type): return None
         self.activity = self.activity(
-                activity_id = self.activity_id,
+                activity_id = self.activity_id if self.activity_id else f"{self.actor_id}#delete-{uuid.uuid4()}",
                 actor_id = self.actor_id,
                 created_at = self.created_at,
                 object_ = self,
@@ -1200,9 +1207,9 @@ def extract_receivers(entity):
     """
     receivers = []
     profile = None
-    # don't care about receivers for payloads without an actor_id
-    with rc.enabled(cache_name='fed_cache', backend=backend):
-        if getattr(entity, 'actor_id'):
+    # don't care about receivers for payloads without an actor_id    
+    if getattr(entity, 'actor_id'):
+        with rc.enabled(cache_name='fed_cache', backend=backend):
             profile = retrieve_and_parse_profile(entity.actor_id)
     if not profile: return receivers
     
@@ -1262,11 +1269,10 @@ def element_to_objects(element: Union[Dict, Object]) -> List:
 
     # json-ld handling with calamus
     # Skips unimplemented payloads
-    # TODO: remove unused code
     entity = model_to_objects(element) if not isinstance(element, Object) else element
-    #if entity: entity = entity.to_base()
     if entity and hasattr(entity, 'to_base'):
         entity = entity.to_base()
+    if isinstance(entity, BaseEntity):
         try:
             extract_and_validate(entity)
         except ValueError as ex:

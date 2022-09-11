@@ -50,35 +50,39 @@ class TestRetrieveAndParseDocument:
             "https://example.com/foobar", extra_headers={'accept': 'application/activity+json'}, auth=auth,
         )
 
+    @patch("federation.entities.activitypub.models.extract_receivers", return_value=[])
     @patch("federation.utils.activitypub.fetch_document", autospec=True, return_value=(
         json.dumps(ACTIVITYPUB_FOLLOW), None, None),
     )
     @patch.object(Follow, "post_receive")
-    def test_returns_entity_for_valid_document__follow(self, mock_post_receive, mock_fetch):
+    def test_returns_entity_for_valid_document__follow(self, mock_post_receive, mock_fetch, mock_recv):
         entity = retrieve_and_parse_document("https://example.com/foobar")
         assert isinstance(entity, Follow)
 
+    @patch("federation.entities.activitypub.models.extract_receivers", return_value=[])
     @patch("federation.utils.activitypub.fetch_document", autospec=True, return_value=(
             json.dumps(ACTIVITYPUB_POST_OBJECT), None, None),
     )
-    def test_returns_entity_for_valid_document__post__without_activity(self, mock_fetch):
+    def test_returns_entity_for_valid_document__post__without_activity(self, mock_fetch, mock_recv):
         entity = retrieve_and_parse_document("https://example.com/foobar")
         assert isinstance(entity, Note)
 
+    @patch("federation.entities.activitypub.models.extract_receivers", return_value=[])
     @patch("federation.utils.activitypub.fetch_document", autospec=True, return_value=(
             json.dumps(ACTIVITYPUB_POST_OBJECT_IMAGES), None, None),
     )
-    def test_returns_entity_for_valid_document__post__without_activity__with_images(self, mock_fetch):
+    def test_returns_entity_for_valid_document__post__without_activity__with_images(self, mock_fetch, mock_recv):
         entity = retrieve_and_parse_document("https://example.com/foobar")
         assert isinstance(entity, Note)
         assert len(entity._children) == 1
         assert entity._children[0].url == "https://files.mastodon.social/media_attachments/files/017/792/237/original" \
                                           "/foobar.jpg"
 
+    @patch("federation.entities.activitypub.models.extract_receivers", return_value=[])
     @patch("federation.utils.activitypub.fetch_document", autospec=True, return_value=(
         json.dumps(ACTIVITYPUB_POST), None, None),
     )
-    def test_returns_entity_for_valid_document__post__wrapped_in_activity(self, mock_fetch):
+    def test_returns_entity_for_valid_document__post__wrapped_in_activity(self, mock_fetch, mock_recv):
         entity = retrieve_and_parse_document("https://example.com/foobar")
         assert isinstance(entity, Note)
 

@@ -128,6 +128,85 @@ ACTIVITYPUB_PROFILE = {
   }
 }
 
+ACTIVITYPUB_REMOTE_PROFILE = {
+ "@context": ["https://www.w3.org/ns/activitystreams",
+              "https://w3id.org/security/v1",
+              {"Curve25519Key": "toot:Curve25519Key",
+               "Device": "toot:Device",
+               "Ed25519Key": "toot:Ed25519Key",
+               "Ed25519Signature": "toot:Ed25519Signature",
+               "EncryptedMessage": "toot:EncryptedMessage",
+               "PropertyValue": "schema:PropertyValue",
+               "alsoKnownAs": {"@id": "as:alsoKnownAs", "@type": "@id"},
+               "cipherText": "toot:cipherText",
+               "claim": {"@id": "toot:claim", "@type": "@id"},
+               "deviceId": "toot:deviceId",
+               "devices": {"@id": "toot:devices", "@type": "@id"},
+               "discoverable": "toot:discoverable",
+               "featured": {"@id": "toot:featured", "@type": "@id"},
+               "featuredTags": {"@id": "toot:featuredTags", "@type": "@id"},
+               "fingerprintKey": {"@id": "toot:fingerprintKey", "@type": "@id"},
+               "focalPoint": {"@container": "@list", "@id": "toot:focalPoint"},
+               "identityKey": {"@id": "toot:identityKey", "@type": "@id"},
+               "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+               "messageFranking": "toot:messageFranking",
+               "messageType": "toot:messageType",
+               "movedTo": {"@id": "as:movedTo", "@type": "@id"},
+               "publicKeyBase64": "toot:publicKeyBase64",
+               "schema": "http://schema.org#",
+               "suspended": "toot:suspended",
+               "toot": "http://joinmastodon.org/ns#",
+               "value": "schema:value"}],
+ "attachment": [{"name": "OS", "type": "PropertyValue", "value": "Manjaro"},
+                {"name": "Self Hosting",
+                 "type": "PropertyValue",
+                 "value": "Matrix HS, Nextcloud"}],
+ "devices": "https://fosstodon.org/users/astdenis/collections/devices",
+ "discoverable": True,
+ "endpoints": {"sharedInbox": "https://fosstodon.org/inbox"},
+ "featured": "https://fosstodon.org/users/astdenis/collections/featured",
+ "featuredTags": "https://fosstodon.org/users/astdenis/collections/tags",
+ "followers": "https://fosstodon.org/users/astdenis/followers",
+ "following": "https://fosstodon.org/users/astdenis/following",
+ "icon": {"mediaType": "image/jpeg",
+          "type": "Image",
+          "url": "https://cdn.fosstodon.org/accounts/avatars/000/252/976/original/09b7067cde009950.jpg"},
+ "id": "https://fosstodon.org/users/astdenis",
+ "image": {"mediaType": "image/jpeg",
+           "type": "Image",
+           "url": "https://cdn.fosstodon.org/accounts/headers/000/252/976/original/555a1ac1819e4e7f.jpg"},
+ "inbox": "https://fosstodon.org/users/astdenis/inbox",
+ "manuallyApprovesFollowers": False,
+ "name": "Alain",
+ "outbox": "https://fosstodon.org/users/astdenis/outbox",
+ "preferredUsername": "astdenis",
+ "publicKey": {"id": "https://fosstodon.org/users/astdenis#main-key",
+               "owner": "https://fosstodon.org/users/astdenis",
+               "publicKeyPem": "-----BEGIN PUBLIC KEY-----\n"
+                               "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuaoIq/b+aUNqGAJNYF76\n"
+                               "WY8tk49Vb1udyb7X+oseBXYtOwCDGfbZMalnFfqur1bAzogkKzuyjCeA3BfVs6R3\n"
+                               "Cll897kUveMNHVc24pslhOx5ZzwpNT8e4q97dNaeHWLSLH5H+4JJGbeoD23G5SaY\n"
+                               "9ZKt5iP+qRUlO/kSsUPwqsX9i2qSEqzwDiSvyRYhvvx4O588cUaaY9rAliLgtc/P\n"
+                               "4EID3v6Edexe2QosUaghwGbb8zZWsYq0O4Umn2QMN4LzmQ0FjP+lq1TFX8FkGDZH\n"
+                               "lnP+AMEQMyuac9Yb12t4RwvdsAIk4MXhAKvutMJm/X1GVQIyrsLEmvAO3rgk8dMr\n"
+                               "6QIDAQAB\n"
+                               "-----END PUBLIC KEY-----\n"},
+ "published": "2020-07-25T00:00:00Z",
+ "summary": "<p>Linux user and sysadmin since 1994, retired from the HPC field "
+            "since 2019.</p><p>Utilisateur et sysadmin Linux depuis 1994, "
+            "retraité du domaine du CHP depuis 2019.</p>",
+ "tag": [],
+ "type": "Person",
+ "url": "https://fosstodon.org/@astdenis"
+}
+
+ACTIVITYPUB_COLLECTION = {
+ "@context": "https://www.w3.org/ns/activitystreams",
+ "id": "https://diaspodon.fr/users/jaywink/followers",
+ "totalItems": 231,
+ "type": "OrderedCollection"
+}
+
 ACTIVITYPUB_PROFILE_INVALID = {
   "@context": [
     "https://www.w3.org/ns/activitystreams",
@@ -313,7 +392,7 @@ ACTIVITYPUB_POST = {
  'published': '2019-06-29T21:08:45Z',
  'to': 'https://www.w3.org/ns/activitystreams#Public',
  'cc': ['https://diaspodon.fr/users/jaywink/followers',
-  'https://dev.jasonrobinson.me/p/d4574854-a5d7-42be-bfac-f70c16fcaa97/'],
+     'https://fosstodon.org/users/astdenis'],
  'object': {'id': 'https://diaspodon.fr/users/jaywink/statuses/102356911717767237',
   'type': 'Note',
   'summary': None,
@@ -323,7 +402,7 @@ ACTIVITYPUB_POST = {
   'attributedTo': 'https://diaspodon.fr/users/jaywink',
   'to': 'https://www.w3.org/ns/activitystreams#Public',
   'cc': ['https://diaspodon.fr/users/jaywink/followers',
-   'https://dev.jasonrobinson.me/p/d4574854-a5d7-42be-bfac-f70c16fcaa97/'],
+      'https://fosstodon.org/users/astdenis'],
   'sensitive': False,
   'atomUri': 'https://diaspodon.fr/users/jaywink/statuses/102356911717767237',
   'inReplyToAtomUri': None,

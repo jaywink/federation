@@ -19,7 +19,7 @@ class TestGetBaseAttributes:
         assert set(attrs) == {
             "created_at", "location", "provider_display_name", "public", "raw_content",
             "signature", "base_url", "actor_id", "id", "handle", "guid", "activity", "activity_id",
-            "url", "mxid",
+            "url", "mxid", "times",
         }
         entity = Profile()
         attrs = get_base_attributes(entity).keys()
@@ -27,7 +27,7 @@ class TestGetBaseAttributes:
             "created_at", "name", "email", "gender", "raw_content", "location", "public",
             "nsfw", "public_key", "image_urls", "tag_list", "signature", "url", "atom_url",
             "base_url", "id", "actor_id", "handle", "handle", "guid", "activity", "activity_id", "username",
-            "inboxes", "mxid",
+            "inboxes", "mxid", "times",
         }
 
 

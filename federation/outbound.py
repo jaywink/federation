@@ -358,6 +358,7 @@ def handle_send(
     # Do actual sending
     for payload in payloads:
         for url in payload["urls"]:
+            # Comment this out for testing
             #try:
             #    pprint(json.loads(payload["payload"]))
             #except:

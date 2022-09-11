@@ -1,6 +1,7 @@
 from datetime import datetime
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, DEFAULT
 
+import json
 import pytest
 
 #from federation.entities.activitypub.entities import (
@@ -8,12 +9,13 @@ import pytest
 #    models.Delete, models.Announce)
 import federation.entities.activitypub.models as models
 from federation.entities.activitypub.mappers import message_to_objects, get_outbound_entity
-from federation.entities.base import Accept, Follow, Profile, Post, Comment, Image, Share
+from federation.entities.base import Accept, Follow, Profile, Post, Comment, Image, Share, Retraction
 from federation.tests.fixtures.payloads import (
     ACTIVITYPUB_FOLLOW, ACTIVITYPUB_PROFILE, ACTIVITYPUB_PROFILE_INVALID, ACTIVITYPUB_UNDO_FOLLOW, ACTIVITYPUB_POST,
     ACTIVITYPUB_COMMENT, ACTIVITYPUB_RETRACTION, ACTIVITYPUB_SHARE, ACTIVITYPUB_RETRACTION_SHARE,
     ACTIVITYPUB_POST_IMAGES, ACTIVITYPUB_POST_WITH_SOURCE_MARKDOWN, ACTIVITYPUB_POST_WITH_TAGS,
-    ACTIVITYPUB_POST_WITH_SOURCE_BBCODE, ACTIVITYPUB_POST_WITH_MENTIONS, ACTIVITYPUB_PROFILE_WITH_DIASPORA_GUID)
+    ACTIVITYPUB_POST_WITH_SOURCE_BBCODE, ACTIVITYPUB_POST_WITH_MENTIONS, ACTIVITYPUB_PROFILE_WITH_DIASPORA_GUID,
+    ACTIVITYPUB_REMOTE_PROFILE, ACTIVITYPUB_COLLECTION)
 from federation.types import UserType, ReceiverVariant
 
 
@@ -217,7 +219,20 @@ class TestActivitypubEntityMappersReceive:
         assert profile.id == "https://friendica.feneas.org/profile/feneas"
         assert profile.guid == "76158462365bd347844d248732383358"
 
-    def test_message_to_objects_receivers_are_saved(self):
+    @patch('federation.utils.activitypub.fetch_document')
+    def test_message_to_objects_receivers_are_saved(self, mock_fetch):
+        def side_effect(*args, **kwargs):
+            payloads = {'https://diaspodon.fr/users/jaywink': json.dumps(ACTIVITYPUB_PROFILE),
+                    'https://fosstodon.org/users/astdenis': json.dumps(ACTIVITYPUB_REMOTE_PROFILE),
+                    'https://diaspodon.fr/users/jaywink/followers': json.dumps(ACTIVITYPUB_COLLECTION),
+                    }
+            if args[0] in payloads.keys():
+                return payloads[args[0]], 200, None
+            else:
+                return DEFAULT
+
+        mock_fetch.side_effect = side_effect
+
         # noinspection PyTypeChecker
         entities = message_to_objects(
             ACTIVITYPUB_POST,
@@ -230,7 +245,7 @@ class TestActivitypubEntityMappersReceive:
                 id='https://diaspodon.fr/users/jaywink', receiver_variant=ReceiverVariant.FOLLOWERS,
             ),
             UserType(
-                id='https://dev.jasonrobinson.me/p/d4574854-a5d7-42be-bfac-f70c16fcaa97/',
+                id='https://fosstodon.org/users/astdenis',
                 receiver_variant=ReceiverVariant.ACTOR,
             )
         }
@@ -239,7 +254,7 @@ class TestActivitypubEntityMappersReceive:
         entities = message_to_objects(ACTIVITYPUB_RETRACTION, "https://friendica.feneas.org/profile/jaywink")
         assert len(entities) == 1
         entity = entities[0]
-        assert isinstance(entity, models.Delete)
+        assert isinstance(entity, Retraction)
         assert entity.actor_id == "https://friendica.feneas.org/profile/jaywink"
         assert entity.target_id == "https://friendica.feneas.org/objects/76158462-165d-3386-aa23-ba2090614385"
         assert entity.entity_type == "Object"
@@ -248,7 +263,7 @@ class TestActivitypubEntityMappersReceive:
         entities = message_to_objects(ACTIVITYPUB_RETRACTION_SHARE, "https://mastodon.social/users/jaywink")
         assert len(entities) == 1
         entity = entities[0]
-        assert isinstance(entity, models.Announce)
+        assert isinstance(entity, Retraction)
         assert entity.actor_id == "https://mastodon.social/users/jaywink"
         assert entity.target_id == "https://mastodon.social/users/jaywink/statuses/102571932479036987/activity"
         assert entity.entity_type == "Object"

@@ -28,7 +28,13 @@ def get_outbound_entity(entity: BaseEntity, private_key):
         return entity
     outbound = None
     cls = entity.__class__
-    if cls == Accept:
+    if cls in [
+        models.Accept, models.Follow, models.Person, models.Note,
+        models.Delete, models.Tombstone, models.Announce,
+        ] and isinstance(entity, BaseEntity):
+        # Already fine
+        outbound = entity
+    elif cls == Accept:
         outbound = models.Accept.from_base(entity)
     elif cls == Follow:
         outbound = models.Follow.from_base(entity)

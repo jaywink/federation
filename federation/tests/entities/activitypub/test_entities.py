@@ -376,10 +376,12 @@ class TestEntitiesConvertToAS2:
             'id': 'http://127.0.0.1:8000/post/123456/#delete',
             'actor': 'http://127.0.0.1:8000/profile/123456/',
             'object': {
+                'actor': 'http://127.0.0.1:8000/profile/123456/',
                 'id': 'http://127.0.0.1:8000/post/123456/activity',
+                'object': 'http://127.0.0.1:8000/post/123456',
                 'type': 'Announce',
+                'published': '2019-04-27T00:00:00',
             },
-            'published': '2019-04-27T00:00:00',
         }
 
 

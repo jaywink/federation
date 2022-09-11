@@ -180,7 +180,7 @@ https://jasonrobinson.me/media/uploads/2019/07/16/daa24d89-cedf-4fc7-bad8-74a902
 def activitypubprofile(mock_fetch):
     with freeze_time("2022-09-06"):
         return models.Person(
-            id="https://example.com/bob/", raw_content="foobar", name="Bob Bobertson", public=True,
+            id="https://example.com/bob", raw_content="foobar", name="Bob Bobertson", public=True,
             tag_list=["socialfederation", "federation"], image_urls={
                 "large": "urllarge", "medium": "urlmedium", "small": "urlsmall"
             }, inboxes={
@@ -195,7 +195,7 @@ def activitypubprofile(mock_fetch):
 def activitypubprofile_diaspora_guid(mock_fetch):
     with freeze_time("2022-09-06"):
         return models.Person(
-            id="https://example.com/bob/", raw_content="foobar", name="Bob Bobertson", public=True,
+            id="https://example.com/bob", raw_content="foobar", name="Bob Bobertson", public=True,
             tag_list=["socialfederation", "federation"], image_urls={
                 "large": "urllarge", "medium": "urlmedium", "small": "urlsmall"
             }, inboxes={
@@ -222,7 +222,8 @@ def activitypubretraction():
 def activitypubretraction_announce():
     with freeze_time("2019-04-27"):
         obj = Retraction(
-            target_id="http://127.0.0.1:8000/post/123456/activity",
+            id="http://127.0.0.1:8000/post/123456/activity",
+            target_id="http://127.0.0.1:8000/post/123456",
             activity_id="http://127.0.0.1:8000/post/123456/#delete",
             actor_id="http://127.0.0.1:8000/profile/123456/",
             entity_type="Share",
