@@ -11,7 +11,7 @@ from calamus.schema import JsonLDAnnotation, JsonLDSchema, JsonLDSchemaOpts
 from calamus.utils import normalize_value
 from marshmallow import exceptions, pre_load, post_load, pre_dump, post_dump
 from marshmallow.fields import Integer
-from marshmallow.utils import EXCLUDE
+from marshmallow.utils import EXCLUDE, missing
 from pyld import jsonld
 import requests_cache as rc
 
@@ -164,16 +164,14 @@ class Integer(fields._JsonLDField, Integer):
 # calamus doesn't implement json-ld langage maps
 class LanguageMap(CompactedDict):
     def _serialize(self, value, attr, obj, **kwargs):
-        ret = super()._serialize(value, attr, obj, **kwargs)
-        if not ret: return ret
-        value = []
-        for k,v in ret.items():
-            if k == '_:orig':
-                value.append(v)
+        if not value: return None
+        ret = []
+        for k,v in value.items():
+            if k == 'orig':
+                ret.append(v)
             else:
-                value.append({'@language': k, '@value':v})
-
-        return value
+                ret.append({'@language': k, '@value':v})
+        return ret
 
     def _deserialize(self, value, attr, data, **kwargs):
         ret = {}
@@ -201,7 +199,7 @@ class MixedField(fields.Nested):
                 isinstance(value, list) and len(value) > 0 and isinstance(value[0], str)):
             return self.iri._serialize(value, attr, obj, **kwargs)
         else:
-            value = value[0] if isinstance(value, list) and len(value) == 1 else value
+            value = value[0] if not self.many and isinstance(value, list) and len(value) == 1 else value
             if isinstance(value, list) and len(value) == 0: value = None
             return super()._serialize(value, attr, obj, **kwargs)
 
@@ -268,8 +266,9 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     attachment = fields.Nested(as2.attachment, nested=['ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'], many=True)
     content_map = LanguageMap(as2.content)  # language maps are not implemented in calamus
     context = IRI(as2.context)
-    guid = fields.String(diaspora.guid)
-    name = fields.String(as2.name)
+    guid = fields.String(diaspora.guid, default='')
+    handle = fields.String(diaspora.handle, default='')
+    name = fields.String(as2.name, default='')
     generator = MixedField(as2.generator, nested=['ApplicationSchema','ServiceSchema'])
     created_at = fields.DateTime(as2.published, add_value_types=True)
     replies = MixedField(as2.replies, nested=['CollectionSchema','OrderedCollectionSchema'])
@@ -299,6 +298,17 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
         # noinspection PyArgumentList
         return cls(**get_base_attributes(entity))
 
+    # Before validation, assign None to attributes that are set to marshmallow.missing
+    # Setting missing fields to marshmallow.missing starts with calamus 0.4.1
+    # TODO: rework validation
+    def validate(self, direction='inbound'):
+        if direction == 'inbound':
+            for attr in dir(self):
+                if getattr(self, attr) is missing:
+                    setattr(self, attr, None)
+
+        super().validate(direction)
+
     def to_string(self):
         # noinspection PyUnresolvedReferences
         return str(self.to_as2())
@@ -307,7 +317,7 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
         rdf_type = as2.Object
 
         @pre_load
-        def update_context(self, data, **kwargs):
+        def patch_context(self, data, **kwargs):
             if not data.get('@context'): return data
             ctx = copy(data['@context'])
 
@@ -442,17 +452,17 @@ class OrderedCollectionPage(OrderedCollection, CollectionPage):
 # seen with Peertube payloads only so far
 class Document(Object):
     inline = fields.Boolean(pyfed.inlineImage, default=False)
-    height = Integer(as2.height, flavor=xsd.nonNegativeInteger, add_value_types=True)
-    width = Integer(as2.width, flavor=xsd.nonNegativeInteger, add_value_types=True)
+    height = Integer(as2.height, default=0, flavor=xsd.nonNegativeInteger, add_value_types=True)
+    width = Integer(as2.width, default=0, flavor=xsd.nonNegativeInteger, add_value_types=True)
     blurhash = fields.String(toot.blurhash)
     url = MixedField(as2.url, nested='LinkSchema')
 
     def to_base(self):
         self.__dict__.update({'schema': True})
         if self.media_type.startswith('image'):
-            return base.Image(**self.__dict__)
+            return Image(**self.__dict__)
         if self.media_type.startswith('audio'):
-            return base.Audio(**self.__dict__)
+            return Audio(**self.__dict__)
         if self.media_type.startswith('video'):
             return base.Video(**self.__dict__)
         return self # what was that?
@@ -476,7 +486,6 @@ class Audio(Document, base.Audio):
         fields = ('url', 'name', 'media_type', 'inline')
 
 class Infohash(Object):
-    name = fields.String(as2.name)
 
     class Meta:
         rdf_type = pt.Infohash
@@ -527,7 +536,6 @@ class Mention(Link):
 
 
 class PropertyValue(Object):
-    name = fields.String(as2.name)
     value = fields.String(schema.value)
 
     class Meta:
@@ -565,9 +573,7 @@ class Person(Object, base.Profile):
     discoverable = fields.Boolean(toot.discoverable)
     devices = IRI(toot.devices)
     public_key_dict = CompactedDict(sec.publicKey)
-    guid = fields.String(diaspora.guid)
-    handle = fields.String(diaspora.handle, default="")
-    raw_content = fields.String(as2.summary, default="") # None fails in extract_mentions
+    raw_content = fields.String(as2.summary, default="")
     has_address = MixedField(vcard.hasAddress, nested='HomeSchema')
     has_instant_message = fields.List(vcard.hasInstantMessage, cls_or_instance=fields.String)
     address = fields.String(vcard.Address)
@@ -715,7 +721,7 @@ class Application(Person):
 class Note(Object, RawContentMixin):
     id = fields.Id()
     actor_id = IRI(as2.attributedTo)
-    target_id = IRI(as2.inReplyTo)
+    target_id = IRI(as2.inReplyTo, default=None)
     conversation = fields.RawJsonLD(ostatus.conversation)
     in_reply_to_atom_uri = IRI(ostatus.inReplyToAtomUri)
     sensitive = fields.Boolean(as2.sensitive, default=False)
@@ -1272,7 +1278,10 @@ def element_to_objects(element: Union[Dict, Object]) -> List:
     entity = model_to_objects(element) if not isinstance(element, Object) else element
     if entity and hasattr(entity, 'to_base'):
         entity = entity.to_base()
-    if isinstance(entity, BaseEntity):
+    if isinstance(entity, (
+        base.Post, base.Comment, base.Profile, base.Share, base.Follow,
+        base.Retraction, base.Accept,)
+        ):
         try:
             extract_and_validate(entity)
         except ValueError as ex:
