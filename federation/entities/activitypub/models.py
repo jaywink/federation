@@ -327,7 +327,7 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
             if 'python-federation"' in s:
                 ctx = json.loads(s.replace('python-federation', 'python-federation#', 1))
 
-            # gotosocial has http://joinmastodon.com/ns in @context. This
+            # some paltforms have http://joinmastodon.com/ns in @context. This
             # is not a json-ld document.
             try:
                 ctx.pop(ctx.index('http://joinmastodon.org/ns'))
@@ -353,7 +353,8 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
                     'discoverable': [{'toot':'http://joinmastodon.org/ns#','discoverable': 'toot:discoverable'}], #for hubzilla
                     'copiedTo': [{'toot':'http://joinmastodon.org/ns#','copiedTo': 'toot:copiedTo'}], #for hubzilla
                     'featured': [{'toot':'http://joinmastodon.org/ns#','featured': 'toot:featured'}], #for litepub and pleroma
-                    'tag': [{'Hashtag': 'as:Hashtag'}] #for epicyon
+                    'tag': [{'Hashtag': 'as:Hashtag'}], #for epicyon
+                    'attachment': [{'schema': 'http://schema.org#', 'PropertyValue': 'schema:PropertyValue'}] # for owncast
                     }
 
             to_add = [val for key,val in may_add.items() if data.get(key)]
