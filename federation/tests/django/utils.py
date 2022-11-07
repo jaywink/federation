@@ -4,7 +4,7 @@ from typing import Dict
 from Crypto.PublicKey.RSA import RsaKey
 
 from federation.entities.base import Profile
-from federation.tests.fixtures.keys import get_dummy_private_key
+from federation.tests.fixtures.keys import get_dummy_private_key, get_dummy_public_key
 
 
 def dummy_profile():
@@ -18,12 +18,16 @@ def dummy_profile():
     )
 
 
-def get_object_function(object_id):
+def get_object_function(object_id, signer=None):
     return dummy_profile()
 
 
 def get_private_key(identifier: str) -> RsaKey:
     return get_dummy_private_key()
+
+
+def get_public_key(identifier: str) -> RsaKey:
+    return get_dummy_public_key()
 
 
 def get_profile(fid=None, handle=None, guid=None, request=None):

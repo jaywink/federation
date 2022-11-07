@@ -2,7 +2,7 @@ import logging
 from typing import List, Callable, Dict, Union, Optional
 
 from federation.entities.activitypub.models import element_to_objects, make_content_class
-from federation.entities.base import Follow, Profile, Accept, Post, Comment, Retraction, Share, Image
+from federation.entities.base import Follow, Profile, Accept, Post, Comment, Retraction, Share, Image, Collection
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType, ReceiverVariant
 import federation.entities.activitypub.models as models
@@ -30,7 +30,8 @@ def get_outbound_entity(entity: BaseEntity, private_key):
     cls = entity.__class__
     if cls in [
         models.Accept, models.Follow, models.Person, models.Note,
-        models.Delete, models.Tombstone, models.Announce,
+        models.Delete, models.Tombstone, models.Announce, models.Collection,
+        models.OrderedCollection,
         ] and isinstance(entity, BaseEntity):
         # Already fine
         outbound = entity
@@ -54,6 +55,8 @@ def get_outbound_entity(entity: BaseEntity, private_key):
             outbound = models.Delete.from_base(entity)
     elif cls == Share:
         outbound = models.Announce.from_base(entity)
+    elif cls == Collection:
+        outbound = models.OrderedCollection.from_base(entity) if entity.ordered else models.Collection.from_base(entity)
     if not outbound:
         raise ValueError("Don't know how to convert this base entity to ActivityPub protocol entities.")
     # TODO LDS signing

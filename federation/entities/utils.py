@@ -5,7 +5,7 @@ if TYPE_CHECKING:
     from federation.entities.base import Profile
 
 
-def get_base_attributes(entity):
+def get_base_attributes(entity, keep=()):
     """Build a dict of attributes of an entity.
 
     Returns attributes and their values, ignoring any properties, functions and anything that starts
@@ -14,7 +14,7 @@ def get_base_attributes(entity):
     attributes = {}
     cls = entity.__class__
     for attr, _ in inspect.getmembers(cls, lambda o: not isinstance(o, property) and not inspect.isroutine(o)):
-        if not attr.startswith("_"):
+        if not attr.startswith("_") or attr in keep:
             attributes[attr] = getattr(entity, attr)
     return attributes
 
@@ -41,7 +41,7 @@ def get_name_for_profile(fid: str) -> Optional[str]:
         pass
 
 
-def get_profile(fid):
+def get_profile(**kwargs):
     # type: (str) -> Profile
     """
     Get a profile via the configured profile getter.
@@ -53,6 +53,6 @@ def get_profile(fid):
         profile_func = get_function_from_config("get_profile_function")
         if not profile_func:
             return
-        return profile_func(fid=fid)
+        return profile_func(**kwargs)
     except Exception:
         pass

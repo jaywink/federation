@@ -7,7 +7,7 @@ from typing import List, Set, Union, Dict, Tuple
 from commonmark import commonmark
 
 from federation.entities.activitypub.enums import ActivityType
-from federation.entities.utils import get_name_for_profile
+from federation.entities.utils import get_name_for_profile, get_profile
 from federation.utils.text import process_text_links, find_tags
 
 
@@ -31,6 +31,9 @@ class BaseEntity:
     id: str = ""
     mxid: str = ""
     signature: str = ""
+    # for AP
+    to: List = []
+    cc: List = []
 
     def __init__(self, *args, **kwargs):
         self._required = ["id", "actor_id"]
@@ -222,7 +225,7 @@ class RawContentMixin(BaseEntity):
         images = []
         if self._media_type != "text/markdown" or self.raw_content is None:
             return images
-        regex = r"!\[([\w ]*)\]\((https?://[\w\d\-\./]+\.[\w]*((?<=jpg)|(?<=gif)|(?<=png)|(?<=jpeg)))\)"
+        regex = r"!\[([\w\s\-\']*)\]\((https?://[\w\d\-\./]+\.[\w]*((?<=jpg)|(?<=gif)|(?<=png)|(?<=jpeg)))\)"
         matches = re.finditer(regex, self.raw_content, re.MULTILINE | re.IGNORECASE)
         for match in matches:
             groups = match.groups()
@@ -256,15 +259,12 @@ class RawContentMixin(BaseEntity):
             # Do mentions
             if self._mentions:
                 for mention in self._mentions:
-                    # Only linkify mentions that are URL's
-                    if not mention.startswith("http"):
-                        continue
-                    display_name = get_name_for_profile(mention)
-                    if not display_name:
-                        display_name = mention
+                    # Diaspora mentions are linkified as mailto
+                    profile = get_profile(handle=mention)
+                    href = 'mailto:'+mention if not getattr(profile, 'id', None) else profile.id
                     rendered = rendered.replace(
-                        "@{%s}" % mention,
-                        f'@<a class="mention" href="{mention}"><span>{display_name}</span></a>',
+                        "@%s" % mention,
+                        f'@<a class="h-card" href="{href}"><span>{mention}</span></a>',
                     )
             # Finally linkify remaining URL's that are not links
             rendered = process_text_links(rendered)
@@ -280,13 +280,14 @@ class RawContentMixin(BaseEntity):
         return sorted(tags)
 
     def extract_mentions(self):
-        matches = re.findall(r'@{([\S ][^{}]+)}', self.raw_content)
+        if self._media_type != 'text/markdown': return
+        matches = re.findall(r'@{?[\S ]?[^{}@]+[@;]?\s*[\w\-./@]+[\w/]+}?', self.raw_content)
         if not matches:
             return
         for mention in matches:
             splits = mention.split(";")
             if len(splits) == 1:
-                self._mentions.add(splits[0].strip(' }'))
+                self._mentions.add(splits[0].strip(' }').lstrip('@{'))
             elif len(splits) == 2:
                 self._mentions.add(splits[1].strip(' }'))
 

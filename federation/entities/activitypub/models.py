@@ -3,6 +3,7 @@ from functools import cache
 import json
 import logging
 from typing import List, Callable, Dict, Union, Optional
+from urllib.parse import urlparse
 import uuid
 
 import bleach
@@ -17,29 +18,31 @@ import requests_cache as rc
 
 from federation.entities.activitypub.constants import CONTEXT, NAMESPACE_PUBLIC
 from federation.entities.mixins import BaseEntity, RawContentMixin
-from federation.entities.utils import get_base_attributes
+from federation.entities.utils import get_base_attributes, get_profile
 from federation.outbound import handle_send
 from federation.types import UserType, ReceiverVariant
-from federation.utils.activitypub import retrieve_and_parse_document, retrieve_and_parse_profile
+from federation.utils.activitypub import retrieve_and_parse_document, retrieve_and_parse_profile, get_profile_id_from_webfinger
 from federation.utils.text import with_slash, validate_handle
 import federation.entities.base as base
 
 logger = logging.getLogger("federation")
     
-# try to obtain redis config from django and use as
-# requests_cache backend if available
+# Make django federation parameters globally available
+# if possible
 try:
     from federation.utils.django import get_configuration
-    cfg = get_configuration()
-    if cfg.get('redis'):
-        backend = rc.RedisCache(namespace='fed_cache', **cfg['redis'])
-    else:
-        backend = rc.SQLiteCache(db_path='fed_cache')
+    django_params = get_configuration()
 except ImportError:
+    django_params = {}
+
+# try to obtain redis config from django and use as
+# requests_cache backend if available
+if django_params.get('redis'):
+    backend = rc.RedisCache(namespace='fed_cache', **django_params['redis'])
+else:
     backend = rc.SQLiteCache(db_path='fed_cache')
 logger.info('Using %s for requests_cache', type(backend))
     
-
 
 # This is required to workaround a bug in pyld that has the Accept header
 # accept other content types. From what I understand, precedence handling
@@ -57,6 +60,14 @@ def get_loader(*args, **kwargs):
 
 jsonld.set_document_loader(get_loader())
 
+
+def get_profile_or_entity(fid):
+    obj = get_profile(fid=fid)
+    if not obj:
+        with rc.enabled(cache_name='fed_cache', backend=backend):
+            obj = retrieve_and_parse_document(fid)
+    return obj
+    
 
 class AddedSchemaOpts(JsonLDSchemaOpts):
     def __init__(self, meta, *args, **kwargs):
@@ -120,6 +131,13 @@ class IRI(fields.IRI):
         return super()._deserialize(value, attr, data, **kwargs)
 
 
+class NormalizedList(fields.List):
+    def _deserialize(self,value, attr, data, **kwargs):
+        value = normalize_value(value)
+        ret = super()._deserialize(value,attr,data,**kwargs)
+        return ret
+
+
 # Don't want expanded IRIs to be exposed as dict keys
 class CompactedDict(fields.Dict):
     ctx = ["https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"]
@@ -128,7 +146,8 @@ class CompactedDict(fields.Dict):
     def _serialize(self, value, attr, obj, **kwargs):
         if value and isinstance(value, dict):
             value['@context'] = self.ctx
-            value = jsonld.expand(value)[0]
+            value = jsonld.expand(value)
+            if value and isinstance(value, list): value = value[0]
         return super()._serialize(value, attr, obj, **kwargs)
 
     def _deserialize(self, value, attr, data, **kwargs):
@@ -199,7 +218,7 @@ class MixedField(fields.Nested):
                 isinstance(value, list) and len(value) > 0 and isinstance(value[0], str)):
             return self.iri._serialize(value, attr, obj, **kwargs)
         else:
-            value = value[0] if not self.many and isinstance(value, list) and len(value) == 1 else value
+            #value = value[0] if isinstance(value, list) and len(value) == 1 else value
             if isinstance(value, list) and len(value) == 0: value = None
             return super()._serialize(value, attr, obj, **kwargs)
 
@@ -217,11 +236,11 @@ class MixedField(fields.Nested):
         for item in value:
             if item.get('@type'):
                 res = super()._deserialize(item, attr, data, **kwargs)
-                ret.append(res)
+                ret.append(res if not isinstance(res, list) else res[0])
             else:
                 ret.append(self.iri._deserialize(item, attr, data, **kwargs))
 
-        return ret if len(ret) > 1 else ret[0]
+        return ret if len(ret) > 1 or self.many else ret[0]
         
 
 OBJECTS = [
@@ -249,6 +268,7 @@ def set_public(entity):
 
 
 def add_props_to_attrs(obj, props):
+    return obj.__dict__
     attrs = copy(obj.__dict__)
     for prop in props:
         attrs.update({prop: getattr(obj, prop, None)})
@@ -261,7 +281,7 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     atom_url = fields.String(ostatus.atomUri)
     also_known_as = IRI(as2.alsoKnownAs)
     icon = MixedField(as2.icon, nested='ImageSchema')
-    image = MixedField(as2.image, nested='ImageSchema')
+    image = MixedField(as2.image, nested='ImageSchema', default='')
     tag_objects = MixedField(as2.tag, nested=['HashtagSchema','MentionSchema','PropertyValueSchema','EmojiSchema'], many=True)
     attachment = fields.Nested(as2.attachment, nested=['ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'], many=True)
     content_map = LanguageMap(as2.content)  # language maps are not implemented in calamus
@@ -275,8 +295,8 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     signature = MixedField(sec.signature, nested = 'SignatureSchema')
     start_time = fields.DateTime(as2.startTime, add_value_types=True)
     updated = fields.DateTime(as2.updated, add_value_types=True)
-    to = IRI(as2.to)
-    cc = IRI(as2.cc)
+    to = fields.List(as2.to, cls_or_instance=IRI(as2.to))
+    cc = fields.List(as2.cc, cls_or_instance=IRI(as2.cc))
     media_type = fields.String(as2.mediaType)
     source = CompactedDict(as2.source)
 
@@ -298,12 +318,12 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
         # noinspection PyArgumentList
         return cls(**get_base_attributes(entity))
 
-    # Before validation, assign None to attributes that are set to marshmallow.missing
+    # Before validation, assign None to fields that are set to marshmallow.missing
     # Setting missing fields to marshmallow.missing starts with calamus 0.4.1
     # TODO: rework validation
     def validate(self, direction='inbound'):
         if direction == 'inbound':
-            for attr in dir(self):
+            for attr in type(self).schema().load_fields.keys():
                 if getattr(self, attr) is missing:
                     setattr(self, attr, None)
 
@@ -320,6 +340,9 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
         def patch_context(self, data, **kwargs):
             if not data.get('@context'): return data
             ctx = copy(data['@context'])
+
+            # One platform send a single string context
+            if isinstance(ctx, str): ctx = [ctx]
 
             # add a # at the end of the python-federation string
             # for socialhome payloads
@@ -350,6 +373,7 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
             # define RsaSignature2017. add it to the context
             # hubzilla doesn't define the discoverable property in its context
             may_add = {'signature': ['https://w3id.org/security/v1', {'sec':'https://w3id.org/security#','RsaSignature2017':'sec:RsaSignature2017'}],
+                    'publicKey': ['https://w3id.org/security/v1'],
                     'discoverable': [{'toot':'http://joinmastodon.org/ns#','discoverable': 'toot:discoverable'}], #for hubzilla
                     'copiedTo': [{'toot':'http://joinmastodon.org/ns#','copiedTo': 'toot:copiedTo'}], #for hubzilla
                     'featured': [{'toot':'http://joinmastodon.org/ns#','featured': 'toot:featured'}], #for litepub and pleroma
@@ -406,16 +430,9 @@ class Home(metaclass=JsonLDAnnotation):
         rdf_type = vcard.Home
 
 
-class NormalizedList(fields.List):
-    def _deserialize(self,value, attr, data, **kwargs):
-        value = normalize_value(value)
-        ret = super()._deserialize(value,attr,data,**kwargs)
-        return ret
-
-
-class Collection(Object):
+class Collection(Object, base.Collection):
     id = fields.Id()
-    items = MixedField(as2.items, nested=OBJECTS)
+    items = MixedField(as2.items, nested=OBJECTS, many=True)
     first = MixedField(as2.first, nested=['CollectionPageSchema', 'OrderedCollectionPageSchema'])
     current = IRI(as2.current)
     last = IRI(as2.last)
@@ -461,30 +478,34 @@ class Document(Object):
     def to_base(self):
         self.__dict__.update({'schema': True})
         if self.media_type.startswith('image'):
-            return Image(**self.__dict__)
+            return Image(**get_base_attributes(self))
         if self.media_type.startswith('audio'):
-            return Audio(**self.__dict__)
+            return Audio(**get_base_attributes(self))
         if self.media_type.startswith('video'):
-            return base.Video(**self.__dict__)
+            return base.Video(**get_base_attributes(self))
         return self # what was that?
         
     class Meta:
         rdf_type = as2.Document
-        fields = ('url', 'name', 'media_type', 'inline')
+        fields = ('image', 'url', 'name', 'media_type', 'inline')
 
 
 class Image(Document, base.Image):
+    def to_base(self):
+        return self
 
     class Meta:
         rdf_type = as2.Image
-        fields = ('url', 'name', 'media_type', 'inline')
+        fields = ('image', 'url', 'name', 'media_type', 'inline')
 
 # haven't seen this one so far..
 class Audio(Document, base.Audio):
+    def to_base(self):
+        return self
 
     class Meta:
         rdf_type = as2.Audio
-        fields = ('url', 'name', 'media_type', 'inline')
+        fields = ('image', 'url', 'name', 'media_type', 'inline')
 
 class Infohash(Object):
 
@@ -502,7 +523,7 @@ class Link(metaclass=JsonLDAnnotation):
     width = Integer(as2.width, flavor=xsd.nonNegativeInteger, add_value_types=True)
     fps = Integer(pt.fps, flavor=schema.Number, add_value_types=True)
     size = Integer(pt.size, flavor=schema.Number, add_value_types=True)
-    tag = MixedField(as2.tag, nested=['InfohashSchema', 'LinkSchema'])
+    tag = MixedField(as2.tag, nested=['InfohashSchema', 'LinkSchema'], many=True)
     # Not implemented yet
     #preview : variable type?
 
@@ -584,9 +605,10 @@ class Person(Object, base.Profile):
     capabilities = CompactedDict(litepub.capabilities)
     suspended = fields.Boolean(toot.suspended)
     public = True
-    _inboxes = None
-    _public_key = None
-    _image_urls = None
+    _cached_inboxes = None
+    _cached_public_key = None
+    _cached_image_urls = None
+    _media_type = 'text/plain' # embedded_images shouldn't parse the profile summary
 
     # Not implemented yet
     #liked is a collection
@@ -600,6 +622,15 @@ class Person(Object, base.Profile):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._allowed_children += (PropertyValue, IdentityProof)
+
+    # Set handle to username@host if not provided by the platform
+    def post_receive(self):
+        if not self.handle:
+            domain = urlparse(self.id).netloc
+            handle = f'{self.username.lower()}@{domain}'
+            with rc.enabled(cache_name='fed_cache', backend=backend):
+                if get_profile_id_from_webfinger(handle) == self.id:
+                    self.handle = handle
 
     def to_as2(self):
         #self.id = self.id.rstrip('/') # TODO: sort out the trailing / business
@@ -621,66 +652,56 @@ class Person(Object, base.Profile):
 
     @property
     def inboxes(self):
-        if self._inboxes: return self._inboxes
-
-        self._inboxes = {
-                'private': getattr(self, 'inbox', None), 
-                'public': None
-                }
+        self._cached_inboxes['private'] = getattr(self, 'inbox', None)
         if hasattr(self, 'endpoints') and isinstance(self.endpoints, dict):
-            self._inboxes['public'] = self.endpoints.get('sharedInbox', None)
+            self._cached_inboxes['public'] = self.endpoints.get('sharedInbox', None)
         else:
-            self._inboxes['public'] = getattr(self,'shared_inbox',None)
-        return self._inboxes
+            self._cached_inboxes['public'] = getattr(self,'shared_inbox',None)
+        return self._cached_inboxes
 
     @inboxes.setter
     def inboxes(self, value):
-        if value != {'private':None, 'public':None}:
-            self._inboxes = value
-            if isinstance(value, dict):
-                self.inbox = value.get('private', None)
-                self.endpoints = {'sharedInbox': value.get('public', None)}
+        self._cached_inboxes = value
+        if isinstance(value, dict):
+            self.inbox = value.get('private', None)
+            self.endpoints = {'sharedInbox': value.get('public', None)}
 
     @property
     def public_key(self):
-        if self._public_key: return self._public_key
+        if self._cached_public_key: return self._cached_public_key
 
         if hasattr(self, 'public_key_dict') and isinstance(self.public_key_dict, dict):
-            self._public_key = self.public_key_dict.get('publicKeyPem', None)
+            self._cached_public_key = self.public_key_dict.get('publicKeyPem', None)
 
-        return self._public_key
+        return self._cached_public_key
 
     @public_key.setter
     def public_key(self, value):
-        self._public_key = value
-        #id_ = self.id.rstrip('/')
-        #self.public_key_dict = {'id': id_+'#main-key', 'owner': id_, 'publicKeyPem': value}
+        if not value: return
+        self._cached_public_key = value
         self.public_key_dict = {'id': self.id+'#main-key', 'owner': self.id, 'publicKeyPem': value}
 
     @property
     def image_urls(self):
-        if self._image_urls: return self._image_urls
-
         if getattr(self, 'icon', None):
             icon = self.icon if not isinstance(self.icon, list) else self.icon[0]
-            self._image_urls = {
+            self._cached_image_urls = {
                 'small': icon.url,
                 'medium': icon.url,
                 'large': icon.url
                 }
-        return self._image_urls
+        return self._cached_image_urls
 
     @image_urls.setter
     def image_urls(self, value):
-        if value != {'large':'', 'medium':'', 'small':''}:
-            self._image_urls = value
-            if value.get('large'):
-                try:
-                    profile_icon = base.Image(url=value.get('large'))
-                    if profile_icon.media_type:
-                        self.icon = [Image.from_base(profile_icon)]
-                except Exception as ex:
-                    logger.warning("models.Person - failed to set profile icon: %s", ex)
+        self._cached_image_urls = value
+        if value.get('large'):
+            try:
+                profile_icon = Image(url=value.get('large'))
+                if profile_icon.media_type:
+                    self.icon = profile_icon
+            except Exception as ex:
+                logger.warning("models.Person - failed to set profile icon: %s", ex)
 
     class Meta:
         rdf_type = as2.Person
@@ -724,42 +745,48 @@ class Note(Object, RawContentMixin):
     actor_id = IRI(as2.attributedTo)
     target_id = IRI(as2.inReplyTo, default=None)
     conversation = fields.RawJsonLD(ostatus.conversation)
+    entity_type = 'Post'
     in_reply_to_atom_uri = IRI(ostatus.inReplyToAtomUri)
     sensitive = fields.Boolean(as2.sensitive, default=False)
     summary = fields.String(as2.summary)
     url = IRI(as2.url)
-    _raw_content = None
-    __children = []
+    _cached_raw_content = ''
+    _cached_children = []
 
     def __init__(self, *args, **kwargs):
         self.tag_objects = [] # mutable objects...
         super().__init__(*args, **kwargs)
-        self.extract_mentions()
-        self._allowed_children += (base.Image, base.Audio, base.Video)
+        self._allowed_children += (base.Audio, base.Video)
 
     def to_as2(self):
         self.sensitive = 'nsfw' in self.tags
 
+        edited = False
+        if hasattr(self, 'times'):
+            self.created_at = self.times['created']
+            if self.times['edited']:
+                self.updated = self.times['modified']
+                edited = True
+
         if self.activity_id:
-            activity = Create
-            if hasattr(self, 'times'):
-                self.created_at = self.times['created']
-                if self.times['edited']:
-                    self.updated = self.times['modified']
-                    activity = Update
+            activity = Update if edited else Create
             activity.schema().declared_fields['object_'].schema['to'][type(self)] = Note.schema()
             self.activity=activity(
                     activity_id=self.activity_id, 
                     created_at=self.created_at, 
                     actor_id=self.actor_id,
-                    object_ = self
+                    object_ = self,
+                    to = self.to,
+                    cc = self.cc
                     )
+
         as2 = super().to_as2()
         if self.activity_id: del activity.schema().declared_fields['object_'].schema['to'][type(self)]
         return as2
 
     def to_base(self):
-        kwargs = add_props_to_attrs(self, ('_children', 'raw_content'))
+        kwargs = get_base_attributes(self, keep=(
+            '_mentions', '_media_type', '_rendered_content', '_cached_children', '_cached_raw_content'))
         entity = make_content_class(base.Comment)(**kwargs) if getattr(self, 'target_id') else make_content_class(base.Post)(**kwargs)
 
         set_public(entity)
@@ -770,17 +797,19 @@ class Note(Object, RawContentMixin):
         Attach any embedded images from raw_content.
         """
         super().pre_send()
-        self._children += [
-                base.Image(
+        self._children = [
+                Image(
                     url=image[0],
                     name=image[1],
                     inline=True,
                 ) for image in self.embedded_images
                 ]
+
+        # Add other AP objects
         self.extract_mentions()
         self.content_map = {'orig': self.rendered_content}
-        self.add_object_mentions()
-        self.add_object_tags()
+        self.add_mention_objects()
+        self.add_tag_objects()
 
     def post_receive(self) -> None:
         """
@@ -788,14 +817,24 @@ class Note(Object, RawContentMixin):
         """
         super().post_receive()
 
+        if getattr(self, 'target_id'): self.entity_type = 'Comment'
+
         # noinspection PyUnusedLocal
         def remove_tag_links(attrs, new=False):
+
+            # Mastodon
             rel = (None, "rel")
             if attrs.get(rel) == "tag":
                 return
+            
+            # Friendica
+            href = (None, "href")
+            if attrs.get(href).endswith(f'tag={attrs.get("_text")}'):
+                return
+
             return attrs
 
-        if self._media_type == "text/markdown":
+        if not self.raw_content or self._media_type == "text/markdown":
             # Skip when markdown
             return
 
@@ -806,7 +845,7 @@ class Note(Object, RawContentMixin):
             skip_tags=["code", "pre"],
         )
 
-    def add_object_tags(self) -> None:
+    def add_tag_objects(self) -> None:
         """
         Populate tags to the object.tag list.
         """
@@ -825,7 +864,7 @@ class Note(Object, RawContentMixin):
                 _tag.href = tags_path.replace(":tag:", tag)
             self.tag_objects.append(_tag)
 
-    def add_object_mentions(self) -> None:
+    def add_mention_objects(self) -> None:
         """
         Populate mentions to the object.tag list.
         """
@@ -833,11 +872,11 @@ class Note(Object, RawContentMixin):
             mentions = list(self._mentions)
             mentions.sort()
             for mention in mentions:
-                if mention.startswith("http"):
-                    self.tag_objects.append(Mention(href=mention, name=mention))
-                elif validate_handle(mention):
-                    # Look up via WebFinger
-                    self.tag_objects.append(Mention(href=mention, name=mention)) # TODO need to implement fetch via webfinger for AP handles first
+                if validate_handle(mention):
+                    profile = get_profile(handle=mention)
+                    # only add AP profiles mentions
+                    if getattr(profile, 'id', None):
+                        self.tag_objects.append(Mention(href=profile.id, name='@'+mention))
 
     def extract_mentions(self):
         """
@@ -846,15 +885,17 @@ class Note(Object, RawContentMixin):
         super().extract_mentions()
 
         if getattr(self, 'tag_objects', None):
-            tag_objects = self.tag_objects if isinstance(self.tag_objects, list) else [self.tag_objects]
-            for tag in tag_objects:
+            #tag_objects = self.tag_objects if isinstance(self.tag_objects, list) else [self.tag_objects]
+            for tag in self.tag_objects:
                 if isinstance(tag, Mention):
-                    self._mentions.add(tag.href)
+                    profile = get_profile_or_entity(fid=tag.href)
+                    handle = getattr(profile, 'handle', None)
+                    if handle: self._mentions.add(handle)
 
     @property
     def raw_content(self):
 
-        if self._raw_content: return self._raw_content
+        if self._cached_raw_content: return self._cached_raw_content
         if self.content_map:
             orig = self.content_map.pop('orig')
             if len(self.content_map.keys()) > 1:
@@ -866,52 +907,56 @@ class Note(Object, RawContentMixin):
 
             if isinstance(self.source, dict) and self.source.get('mediaType') == 'text/markdown':
                 self._media_type = self.source['mediaType']
-                self._raw_content = self.source.get('content').strip()
+                self._cached_raw_content = self.source.get('content').strip()
             else:
                 self._media_type = 'text/html'
-                self._raw_content = self._rendered_content
+                self._cached_raw_content = self._rendered_content
             # to allow for posts/replies with medias only.
-            if not self._raw_content: self._raw_content = "<div></div>"
-            return self._raw_content
+            if not self._cached_raw_content: self._cached_raw_content = "<div></div>"
+            return self._cached_raw_content
     
     @raw_content.setter
     def raw_content(self, value):
-        self._raw_content = value
+        if not value: return
+        self._cached_raw_content = value
         if self._media_type == 'text/markdown':
             self.source = {'content': value, 'mediaType': self._media_type}
 
     @property
     def _children(self):
-        if self.__children: return self.__children
+        if self._cached_children: return self._cached_children
 
         if isinstance(getattr(self, 'attachment', None), list):
             children = []
             for child in self.attachment:
-                obj = child.to_base()
-                if obj:
-                    if isinstance(obj, base.Image) and obj.inline:
-                        continue
+                if isinstance(child, Document):
+                    obj = child.to_base()
+                    if isinstance(obj, Image):
+                        if obj.inline or (obj.image and obj.image in self.raw_content):
+                            continue
                     children.append(obj)
-            self.__children = children
+            self._cached_children = children
 
-        return self.__children
+        return self._cached_children
     
     @_children.setter
     def _children(self, value):
-        self.__children = value
+        if not value: return
+        self._cached_children = value
         self.attachment = [Image.from_base(i) for i in value]
 
 
     class Meta:
         rdf_type = as2.Note
+        exclude = ('handle',)
 
 
 @cache
 def make_content_class(base):
-    class Content(Note, base):
-        class Meta:
-            rdf_type = as2.Note
-    return Content
+    cls = type(base.__name__, (Note, base), 
+            {'Meta':Note.Meta, '__module__':'federation.entities.activitypub.models'})
+    globals()[base.__name__] = cls # else can't pickle
+    return cls
 
 
 class Article(Note):
@@ -927,7 +972,7 @@ class Page(Note):
 # peertube uses a lot of properties differently...
 class Video(Object):
     id = fields.Id()
-    actor_id = MixedField(as2.attributedTo, nested=['PersonSchema', 'GroupSchema'])
+    actor_id = MixedField(as2.attributedTo, nested=['PersonSchema', 'GroupSchema'], many=True)
     url = MixedField(as2.url, nested='LinkSchema')
 
     class Meta:
@@ -963,8 +1008,8 @@ class Video(Object):
                 # TODO: fix extract_receivers which can't handle multiple actors!
                 self.actor_id = new_act[0]
             
-            kwargs = add_props_to_attrs(self, ('_children', 'raw_content'))
-            entity = base.Post(**kwargs)
+            entity = make_content_class(base.Post)(**get_base_attributes(self,
+                keep=('_mentions', '_media_type', '_rendered_content', '_cached_children', '_cached_raw_content')))
             set_public(entity)
             return entity
         #Some Video object
@@ -1005,7 +1050,7 @@ class Follow(Activity, base.Follow):
     def to_as2(self):
         if not self.following:
             self.activity = Undo(
-                    activity_id = self.activity_id if self.activity_id else f"{self.actor_id}#follow-{uuid.uuid4()}",
+                    activity_id = f"{self.actor_id}#follow-{uuid.uuid4()}",
                     actor_id = self.actor_id,
                     object_ = self
                     )
@@ -1071,7 +1116,7 @@ class Follow(Activity, base.Follow):
 
     class Meta:
         rdf_type = as2.Follow
-        exclude = ('created_at',)
+        exclude = ('created_at', 'handle')
 
 
 class Announce(Activity, base.Share):
@@ -1083,7 +1128,9 @@ class Announce(Activity, base.Share):
             self.activity = self.activity(
                 activity_id = self.activity_id if self.activity_id else f"{self.actor_id}#share-{uuid.uuid4()}",
                 actor_id = self.actor_id,
-                object_ = self
+                object_ = self,
+                to = self.to,
+                cc = self.cc
                 )
 
         return super().to_as2()
@@ -1096,7 +1143,7 @@ class Announce(Activity, base.Share):
             self.target_id = self.id
             self.entity_type = 'Object'
             self.__dict__.update({'schema': True})
-            entity = base.Retraction(**self.__dict__)
+            entity = base.Retraction(**get_base_attributes(self))
 
         set_public(entity)
         return entity
@@ -1198,8 +1245,9 @@ def extract_receiver(profile, receiver):
         # Ignore since we already store "public" as a boolean on the entity
         return []
 
-    with rc.enabled(cache_name='fed_cache', backend=backend):
-        obj = retrieve_and_parse_document(receiver)
+    # First try to get receiver entity locally or remotely
+    obj = get_profile_or_entity(fid=receiver)
+
     if isinstance(obj, base.Profile):
         return [UserType(id=receiver, receiver_variant=ReceiverVariant.ACTOR)]
     # This doesn't handle cases where the actor is sending to other actors

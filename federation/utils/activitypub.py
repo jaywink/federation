@@ -45,7 +45,10 @@ def retrieve_and_parse_document(fid: str) -> Optional[Any]:
     document, status_code, ex = fetch_document(fid, extra_headers={'accept': 'application/activity+json'}, 
             auth=get_http_authentication(federation_user.rsa_private_key,f'{federation_user.id}#main-key') if federation_user else None)
     if document:
-        document = json.loads(decode_if_bytes(document))
+        try:
+            document = json.loads(decode_if_bytes(document))
+        except json.decoder.JSONDecodeError:
+            return None
         entities = element_to_objects(document)
         if entities:
             logger.info("retrieve_and_parse_document - using first entity: %s", entities[0])

@@ -38,7 +38,7 @@ class DummyRestrictedView(View):
         return HttpResponse("foo")
 
 
-def dummy_get_object_function(request):
+def dummy_get_object_function(request, signer=None):
     if request.method == 'GET':
         return False
     return True
@@ -59,13 +59,13 @@ class TestActivityPubObjectView:
         assert response.content == b'foo'
 
     def test_receives_messages_to_inbox(self):
-        request = RequestFactory().post("/inbox/", data='{"foo": "bar"}', content_type='application/json')
+        request = RequestFactory().post("/u/bla/inbox/", data='{"foo": "bar"}', content_type='application/json')
         response = dummy_view(request=request)
 
         assert response.status_code == 202
 
     def test_receives_messages_to_inbox__cbv(self):
-        request = RequestFactory().post("/inbox/", data='{"foo": "bar"}', content_type="application/json")
+        request = RequestFactory().post("/u/bla/inbox/", data='{"foo": "bar"}', content_type="application/json")
         view = DummyView.as_view()
         response = view(request=request)
 

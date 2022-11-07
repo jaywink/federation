@@ -72,6 +72,8 @@ def activitypubpost():
             activity_id=f"http://127.0.0.1:8000/post/123456/#create",
             actor_id=f"http://127.0.0.1:8000/profile/123456/",
             _media_type="text/markdown",
+            to=["https://www.w3.org/ns/activitystreams#Public"],
+            cc=["https://http://127.0.0.1:8000/profile/123456/followers/"]
         )
         obj.times={'edited':False, 'created':obj.created_at}
         return obj
@@ -116,17 +118,17 @@ def activitypubpost_images():
 def activitypubpost_mentions():
     with freeze_time("2019-04-27"):
         obj = make_content_class(Post)(
-            raw_content="""# raw_content\n\n@{someone@localhost.local} @{http://localhost.local/someone}""",
+            raw_content="""# raw_content\n\n@someone@localhost.local @jaywink@localhost.local""",
             public=True,
             provider_display_name="Socialhome",
             id=f"http://127.0.0.1:8000/post/123456/",
             activity_id=f"http://127.0.0.1:8000/post/123456/#create",
             actor_id=f"http://127.0.0.1:8000/profile/123456/",
-            _mentions={
-                "http://127.0.0.1:8000/profile/999999",
-                "jaywink@localhost.local",
-                "http://localhost.local/someone",
-            }
+#            _mentions={
+#                "http://127.0.0.1:8000/profile/999999",
+#                "jaywink@localhost.local",
+#                "http://localhost.local/someone",
+#            }
         )
         obj.times={'edited':False, 'created':obj.created_at}
         return obj
@@ -186,7 +188,7 @@ def activitypubprofile(mock_fetch):
             }, inboxes={
                 "private": "https://example.com/bob/private",
                 "public": "https://example.com/public",
-            }, public_key=PUBKEY, url="https://example.com/bob-bobertson"
+                }, public_key=PUBKEY, url="https://example.com/bob-bobertson"
         )
 
 
@@ -254,7 +256,7 @@ def profile():
         inboxes={
             "private": "https://example.com/bob/private",
             "public": "https://example.com/public",
-        }, public_key=PUBKEY,
+        }, public_key=PUBKEY, to=["https://www.w3.org/ns/activitystreams#Public"]
     )
 
 
