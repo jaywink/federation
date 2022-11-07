@@ -39,6 +39,7 @@ setup(
         "jsonschema>=2.0.0",
         "pycryptodome>=3.4.10",
         "python-dateutil>=2.4.0",
+        "python-magic",
         "python-slugify>=5.0.0",
         "python-xrd>=0.1",
         "pytz",
