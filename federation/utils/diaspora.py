@@ -152,6 +152,7 @@ def parse_profile_from_hcard(hcard: str, handle: str):
         public=True,
         id=handle,
         handle=handle,
+        finger=handle,
         guid=_get_element_text_or_none(doc, ".uid"),
         public_key=_get_element_text_or_none(doc, ".key"),
         username=handle.split('@')[0],

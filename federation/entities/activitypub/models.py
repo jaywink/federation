@@ -625,12 +625,14 @@ class Person(Object, base.Profile):
 
     # Set handle to username@host if not provided by the platform
     def post_receive(self):
-        if not self.handle:
+        if not self.finger:
             domain = urlparse(self.id).netloc
-            handle = f'{self.username.lower()}@{domain}'
+            finger = f'{self.username.lower()}@{domain}'
             with rc.enabled(cache_name='fed_cache', backend=backend):
-                if get_profile_id_from_webfinger(handle) == self.id:
-                    self.handle = handle
+                if get_profile_id_from_webfinger(finger) == self.id:
+                    self.finger = finger
+        if self.guid and not self.handle:
+            self.handle = self.finger
 
     def to_as2(self):
         #self.id = self.id.rstrip('/') # TODO: sort out the trailing / business

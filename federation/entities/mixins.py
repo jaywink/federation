@@ -28,6 +28,7 @@ class BaseEntity:
     base_url: str = ""
     guid: str = ""
     handle: str = ""
+    finger: str = ""
     id: str = ""
     mxid: str = ""
     signature: str = ""
@@ -260,7 +261,7 @@ class RawContentMixin(BaseEntity):
             if self._mentions:
                 for mention in self._mentions:
                     # Diaspora mentions are linkified as mailto
-                    profile = get_profile(handle=mention)
+                    profile = get_profile(finger=mention)
                     href = 'mailto:'+mention if not getattr(profile, 'id', None) else profile.id
                     rendered = rendered.replace(
                         "@%s" % mention,
