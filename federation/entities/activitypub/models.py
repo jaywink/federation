@@ -875,7 +875,7 @@ class Note(Object, RawContentMixin):
             mentions.sort()
             for mention in mentions:
                 if validate_handle(mention):
-                    profile = get_profile(handle=mention)
+                    profile = get_profile(finger=mention)
                     # only add AP profiles mentions
                     if getattr(profile, 'id', None):
                         self.tag_objects.append(Mention(href=profile.id, name='@'+mention))
@@ -891,7 +891,7 @@ class Note(Object, RawContentMixin):
             for tag in self.tag_objects:
                 if isinstance(tag, Mention):
                     profile = get_profile_or_entity(fid=tag.href)
-                    handle = getattr(profile, 'handle', None)
+                    handle = getattr(profile, 'finger', None)
                     if handle: self._mentions.add(handle)
 
     @property
