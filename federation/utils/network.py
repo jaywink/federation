@@ -215,7 +215,7 @@ def try_retrieve_webfinger_document(handle: str) -> Optional[str]:
     """
     try:
         host = handle.split("@")[1]
-    except AttributeError:
+    except (AttributeError, IndexError):
         logger.warning("retrieve_webfinger_document: invalid handle given: %s", handle)
         return None
     document, code, exception = fetch_document(
