@@ -482,7 +482,7 @@ class Document(Object):
         if self.media_type.startswith('audio'):
             return Audio(**get_base_attributes(self))
         if self.media_type.startswith('video'):
-            return base.Video(**get_base_attributes(self))
+            return Video(**get_base_attributes(self))
         return self # what was that?
         
     class Meta:
@@ -972,7 +972,7 @@ class Page(Note):
 
 
 # peertube uses a lot of properties differently...
-class Video(Object):
+class Video(Document, base.Video):
     id = fields.Id()
     actor_id = MixedField(as2.attributedTo, nested=['PersonSchema', 'GroupSchema'], many=True)
     url = MixedField(as2.url, nested='LinkSchema')
@@ -1016,7 +1016,7 @@ class Video(Object):
             return entity
         #Some Video object
         else:
-            return base.Video(**self.__dict__)
+            return self
 
 
 class Signature(Object):
