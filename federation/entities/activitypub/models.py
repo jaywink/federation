@@ -879,6 +879,8 @@ class Note(Object, RawContentMixin):
                     # only add AP profiles mentions
                     if getattr(profile, 'id', None):
                         self.tag_objects.append(Mention(href=profile.id, name='@'+mention))
+                        # some platforms only render diaspora style markdown if it is available
+                        self.source['content'] = self.source['content'].replace(mention, '{'+mention+'}')
 
     def extract_mentions(self):
         """
