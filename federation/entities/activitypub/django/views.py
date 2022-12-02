@@ -12,7 +12,11 @@ def get_and_verify_signer(request):
     """
     A remote user might be allowed to access retricted content
     if a valid signature is provided.
+
+    Only done for content.
     """
+    # TODO: revisit this when we start responding to sending follow[ing,ers] collections
+    if request.path.startswith('/u/'): return None 
     get_public_key = get_function_from_config('get_public_key_function')
     if not request.headers.get('Signature'): return None
     req = RequestType(
