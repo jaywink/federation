@@ -1,7 +1,7 @@
 import logging
 from typing import List, Callable, Dict, Union, Optional
 
-from federation.entities.activitypub.models import element_to_objects, make_content_class
+from federation.entities.activitypub.models import element_to_objects
 from federation.entities.base import Follow, Profile, Accept, Post, Comment, Retraction, Share, Image, Collection
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType, ReceiverVariant
@@ -39,8 +39,10 @@ def get_outbound_entity(entity: BaseEntity, private_key):
         outbound = models.Accept.from_base(entity)
     elif cls == Follow:
         outbound = models.Follow.from_base(entity)
-    elif cls == Post or cls == Comment:
-        outbound = make_content_class(cls).from_base(entity)
+    elif cls == Post:
+        outbound = models.Post.from_base(entity)
+    elif cls == Comment:
+        outbound = models.Comment.from_base(entity)
     elif cls == Profile:
         outbound = models.Person.from_base(entity)
     elif cls == Retraction:

@@ -789,7 +789,7 @@ class Note(Object, RawContentMixin):
     def to_base(self):
         kwargs = get_base_attributes(self, keep=(
             '_mentions', '_media_type', '_rendered_content', '_cached_children', '_cached_raw_content'))
-        entity = make_content_class(base.Comment)(**kwargs) if getattr(self, 'target_id') else make_content_class(base.Post)(**kwargs)
+        entity = Comment(**kwargs) if getattr(self, 'target_id') else Post(**kwargs)
 
         set_public(entity)
         return entity
@@ -955,12 +955,16 @@ class Note(Object, RawContentMixin):
         exclude = ('handle',)
 
 
-@cache
-def make_content_class(base):
-    cls = type(base.__name__, (Note, base), 
-            {'Meta':Note.Meta, '__module__':'federation.entities.activitypub.models'})
-    globals()[base.__name__] = cls # else can't pickle
-    return cls
+class Post(Note, base.Post):
+    class Meta:
+        rdf_type = as2.Note
+        exclude = ('handle',)
+
+
+class Comment(Note, base.Comment):
+    class Meta:
+        rdf_type = as2.Note
+        exclude = ('handle',)
 
 
 class Article(Note):
@@ -1012,7 +1016,7 @@ class Video(Document, base.Video):
                 # TODO: fix extract_receivers which can't handle multiple actors!
                 self.actor_id = new_act[0]
             
-            entity = make_content_class(base.Post)(**get_base_attributes(self,
+            entity = Post(**get_base_attributes(self,
                 keep=('_mentions', '_media_type', '_rendered_content', '_cached_children', '_cached_raw_content')))
             set_public(entity)
             return entity
@@ -1307,11 +1311,7 @@ def extract_reply_ids(replies, visited=[]):
     objs = []
     items = getattr(replies, 'items', [])
     if items and not isinstance(items, list): items = [items]
-    for item in items:
-        if isinstance(item, Object):
-            objs.append(item.id)
-        else:
-            objs.append(item)
+    objs += items
     if hasattr(replies, 'next_'):
         if replies.next_ and (replies.id != replies.next_) and (replies.next_ not in visited):
             resp = retrieve_and_parse_document(replies.next_)
