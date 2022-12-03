@@ -5,7 +5,6 @@ from unittest.mock import patch
 
 from federation.entities.activitypub.mappers import get_outbound_entity
 import federation.entities.activitypub.models as models
-from federation.entities.activitypub.models import make_content_class
 from federation.entities.base import Profile, Post, Comment, Retraction
 from federation.entities.diaspora.entities import (
     DiasporaPost, DiasporaComment, DiasporaLike, DiasporaProfile, DiasporaRetraction,
@@ -29,7 +28,7 @@ def activitypubannounce():
 @pytest.fixture
 def activitypubcomment():
     with freeze_time("2019-04-27"):
-        obj = make_content_class(Comment)(
+        obj = models.Comment(
             raw_content="raw_content",
             public=True,
             provider_display_name="Socialhome",
@@ -64,7 +63,7 @@ def activitypubaccept(activitypubfollow):
 @pytest.fixture
 def activitypubpost():
     with freeze_time("2019-04-27"):
-        obj = make_content_class(Post)(
+        obj = models.Post(
             raw_content="# raw_content",
             public=True,
             provider_display_name="Socialhome",
@@ -82,7 +81,7 @@ def activitypubpost():
 @pytest.fixture
 def activitypubpost_diaspora_guid():
     with freeze_time("2019-04-27"):
-        obj = make_content_class(Post)(
+        obj = models.Post(
             raw_content="raw_content",
             public=True,
             provider_display_name="Socialhome",
@@ -98,7 +97,7 @@ def activitypubpost_diaspora_guid():
 @pytest.fixture
 def activitypubpost_images():
     with freeze_time("2019-04-27"):
-        obj = make_content_class(Post)(
+        obj = models.Post(
             raw_content="raw_content",
             public=True,
             provider_display_name="Socialhome",
@@ -117,7 +116,7 @@ def activitypubpost_images():
 @pytest.fixture
 def activitypubpost_mentions():
     with freeze_time("2019-04-27"):
-        obj = make_content_class(Post)(
+        obj = models.Post(
             raw_content="""# raw_content\n\n@someone@localhost.local @jaywink@localhost.local""",
             public=True,
             provider_display_name="Socialhome",
@@ -137,7 +136,7 @@ def activitypubpost_mentions():
 @pytest.fixture
 def activitypubpost_tags():
     with freeze_time("2019-04-27"):
-        obj = make_content_class(Post)(
+        obj = models.Post(
             raw_content="# raw_content\n#foobar\n#barfoo",
             public=True,
             provider_display_name="Socialhome",
@@ -152,7 +151,7 @@ def activitypubpost_tags():
 @pytest.fixture
 def activitypubpost_embedded_images():
     with freeze_time("2019-04-27"):
-        obj = make_content_class(Post)(
+        obj = models.Post(
             raw_content="""
 #Cycling #lauttasaari #sea #sun
 
@@ -404,7 +403,7 @@ def diasporaretraction():
 
 @pytest.fixture
 def post():
-    return Post(
+    return models.Post(
         raw_content="""One more test before sleep 😅 This time with an image.
 
 ![](https://jasonrobinson.me/media/uploads/2020/12/27/1b2326c6-554c-4448-9da3-bdacddf2bb77.jpeg)""",
