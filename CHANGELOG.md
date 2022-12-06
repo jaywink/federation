@@ -4,7 +4,7 @@
 
 ### Added
 
-* Inbound Activitypub payloads are now processed by calamus (https://github.com/SwissDataScienceCenter/calamus),
+* Activitypub payloads are now processed by calamus (https://github.com/SwissDataScienceCenter/calamus),
   which is a jsonld processor based on marshmallow.
 
 * For performance, requests_cache has been added. It pulls a redis configuration from django if one exists or

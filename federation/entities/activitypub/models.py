@@ -15,7 +15,7 @@ from marshmallow.utils import EXCLUDE, missing
 from pyld import jsonld
 import requests_cache as rc
 
-from federation.entities.activitypub.constants import CONTEXT, NAMESPACE_PUBLIC
+from federation.entities.activitypub.constants import CONTEXT, CONTEXT_SETS, NAMESPACE_PUBLIC
 from federation.entities.mixins import BaseEntity, RawContentMixin
 from federation.entities.utils import get_base_attributes, get_profile
 from federation.outbound import handle_send
@@ -294,8 +294,8 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     signature = MixedField(sec.signature, nested = 'SignatureSchema')
     start_time = fields.DateTime(as2.startTime, add_value_types=True)
     updated = fields.DateTime(as2.updated, add_value_types=True)
-    to = fields.List(as2.to, cls_or_instance=IRI(as2.to))
-    cc = fields.List(as2.cc, cls_or_instance=IRI(as2.cc))
+    to = fields.List(as2.to, cls_or_instance=fields.String(as2.to))
+    cc = fields.List(as2.cc, cls_or_instance=fields.String(as2.cc))
     media_type = fields.String(as2.mediaType)
     source = CompactedDict(as2.source)
 
@@ -405,6 +405,8 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
                             upd.update(val)
                 if not idx and upd: ctx.append(upd)
             
+            # for to and cc fields to be processed as strings
+            ctx.append(CONTEXT_SETS)
             data['@context'] = ctx
             return data
 
@@ -634,7 +636,6 @@ class Person(Object, base.Profile):
             self.handle = self.finger
 
     def to_as2(self):
-        #self.id = self.id.rstrip('/') # TODO: sort out the trailing / business
         self.followers = f'{with_slash(self.id)}followers/'
         self.following = f'{with_slash(self.id)}following/'
         self.outbox = f'{with_slash(self.id)}outbox/'
@@ -648,6 +649,7 @@ class Person(Object, base.Profile):
                         actor_id=self.id,
                         created_at=self.times.get('updated'),
                         object_=self,
+                        to=self.to,
                         )
         return super().to_as2()
 
@@ -1300,13 +1302,8 @@ def extract_and_validate(entity):
     if hasattr(entity, "extract_mentions"):
         entity.extract_mentions()
 
-    # Extract reply ids
-    if getattr(entity, 'replies', None):
-        entity._replies = extract_reply_ids(getattr(entity.replies, 'first', []))
 
-
-
-def extract_reply_ids(replies, visited=[]):
+def extract_replies(replies, visited=[]):
     objs = []
     items = getattr(replies, 'items', [])
     if items and not isinstance(items, list): items = [items]
@@ -1316,7 +1313,7 @@ def extract_reply_ids(replies, visited=[]):
             resp = retrieve_and_parse_document(replies.next_)
             if resp:
                 visited.append(replies.next_)
-                objs += extract_reply_ids(resp, visited)
+                objs += extract_replies(resp, visited)
     return objs
 
 

@@ -286,11 +286,15 @@ class RawContentMixin(BaseEntity):
         if not matches:
             return
         for mention in matches:
+            handle = None
             splits = mention.split(";")
             if len(splits) == 1:
-                self._mentions.add(splits[0].strip(' }').lstrip('@{'))
+                handle = splits[0].strip(' }').lstrip('@{')
             elif len(splits) == 2:
-                self._mentions.add(splits[1].strip(' }'))
+                handle = splits[1].strip(' }')
+            if handle:
+                self._mentions.add(handle)
+                self.raw_content = self.raw_content.replace(mention, '@'+handle)
 
 
 class OptionalRawContentMixin(RawContentMixin):
