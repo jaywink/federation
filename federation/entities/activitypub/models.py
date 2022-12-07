@@ -1307,7 +1307,16 @@ def extract_replies(replies, visited=[]):
     objs = []
     items = getattr(replies, 'items', [])
     if items and not isinstance(items, list): items = [items]
-    objs += items
+    for obj in items:
+        if isinstance(obj, Note):
+            try:
+                obj = obj.to_base()
+                extract_and_validate(obj)
+            except ValueError as ex:
+                logger.error("extract_replies - Failed to validate entity %s: %s", entity, ex)
+                continue
+        elif not isinstance(obj, str): continue
+        objs.append(obj)
     if hasattr(replies, 'next_'):
         if replies.next_ and (replies.id != replies.next_) and (replies.next_ not in visited):
             resp = retrieve_and_parse_document(replies.next_)
