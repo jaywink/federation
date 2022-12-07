@@ -1303,8 +1303,7 @@ def extract_and_validate(entity):
         entity.extract_mentions()
 
 
-def extract_replies(replies, visited=[]):
-    objs = []
+def extract_replies(replies, objs=[], visited=[]):
     items = getattr(replies, 'items', [])
     if items and not isinstance(items, list): items = [items]
     for obj in items:
@@ -1322,7 +1321,7 @@ def extract_replies(replies, visited=[]):
             resp = retrieve_and_parse_document(replies.next_)
             if resp:
                 visited.append(replies.next_)
-                objs += extract_replies(resp, visited)
+                objs += extract_replies(resp, objs, visited)
     return objs
 
 
