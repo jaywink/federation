@@ -1304,6 +1304,8 @@ def extract_and_validate(entity):
 
 
 def extract_replies(replies, objs=[], visited=[]):
+    print('objs', objs)
+    print(replies.id)
     items = getattr(replies, 'items', [])
     if items and not isinstance(items, list): items = [items]
     for obj in items:
@@ -1320,9 +1322,11 @@ def extract_replies(replies, objs=[], visited=[]):
         if replies.next_ and (replies.id != replies.next_) and (replies.next_ not in visited):
             resp = retrieve_and_parse_document(replies.next_)
             if resp:
+                print('resp', resp.id)
                 visited.append(replies.next_)
-                objs += extract_replies(resp, objs, visited)
-    return objs
+                return objs + extract_replies(resp, objs, visited)
+        return []
+    return []
 
 
 def element_to_objects(element: Union[Dict, Object]) -> List:
