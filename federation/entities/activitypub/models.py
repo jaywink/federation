@@ -1303,27 +1303,32 @@ def extract_and_validate(entity):
         entity.extract_mentions()
 
 
-def extract_replies(replies, objs=[], visited=[]):
-    items = getattr(replies, 'items', [])
-    if items and not isinstance(items, list): items = [items]
-    for obj in items:
-        if isinstance(obj, Note):
-            try:
-                obj = obj.to_base()
-                extract_and_validate(obj)
-            except ValueError as ex:
-                logger.error("extract_replies - Failed to validate entity %s: %s", entity, ex)
-                continue
-        elif not isinstance(obj, str): continue
-        objs.append(obj)
-    if hasattr(replies, 'next_'):
-        if replies.next_ and (replies.id != replies.next_) and (replies.next_ not in visited):
-            resp = retrieve_and_parse_document(replies.next_)
-            if resp:
-                visited.append(replies.next_)
-                return objs + extract_replies(resp, objs, visited)
-        return []
-    return []
+def extract_replies(replies):
+    objs = []
+    visited = []
+
+    def walk_reply_collection(replies):
+        items = getattr(replies, 'items', [])
+        if items and not isinstance(items, list): items = [items]
+        for obj in items:
+            if isinstance(obj, Note):
+                try:
+                    obj = obj.to_base()
+                    extract_and_validate(obj)
+                except ValueError as ex:
+                    logger.error("extract_replies - Failed to validate entity %s: %s", entity, ex)
+                    continue
+            elif not isinstance(obj, str): continue
+            objs.append(obj)
+        if getattr(replies, 'next_', None):
+            if (replies.id != replies.next_) and (replies.next_ not in visited):
+                resp = retrieve_and_parse_document(replies.next_)
+                if resp:
+                    visited.append(replies.next_)
+                    walk_reply_collection(resp)
+
+    walk_reply_collection(replies)
+    return objs
 
 
 def element_to_objects(element: Union[Dict, Object]) -> List:
