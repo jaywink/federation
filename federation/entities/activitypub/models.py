@@ -1206,10 +1206,6 @@ class Like(Announce):
 
 # inbound Accept is a noop...
 class Accept(Create, base.Accept):
-    def to_base(self):
-        del self.object_
-        return self
-
     class Meta:
         rdf_type = as2.Accept
         exclude = ('created_at',)
