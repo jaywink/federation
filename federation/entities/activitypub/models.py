@@ -589,7 +589,6 @@ class Person(Object, base.Profile):
     capabilities = CompactedDict(litepub.capabilities)
     suspended = fields.Boolean(toot.suspended)
     public = True
-    finger = None
     _cached_inboxes = None
     _cached_public_key = None
     _cached_image_urls = None
@@ -1256,8 +1255,7 @@ def extract_receivers(entity):
     profile = None
     # don't care about receivers for payloads without an actor_id    
     if getattr(entity, 'actor_id'):
-        profile = get_profile(fid=entity.actor_id)
-        if not profile: profile = retrieve_and_parse_profile(entity.actor_id)
+        profile = retrieve_and_parse_profile(entity.actor_id)
     if not profile: return receivers
     
     for attr in ("to", "cc"):

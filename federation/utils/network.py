@@ -21,7 +21,7 @@ logger = logging.getLogger("federation")
 USER_AGENT = "python/federation/%s" % __version__
 
 session = CachedSession('fed_cache', backend=get_requests_cache_backend('fed_cache'))
-EXPIRATION = datetime.timedelta(hours=2)
+EXPIRATION = datetime.timedelta(hours=6)
 
 def fetch_content_type(url: str) -> Optional[str]:
     """
