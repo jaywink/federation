@@ -21,28 +21,12 @@ from federation.entities.utils import get_base_attributes, get_profile
 from federation.outbound import handle_send
 from federation.types import UserType, ReceiverVariant
 from federation.utils.activitypub import retrieve_and_parse_document, retrieve_and_parse_profile, get_profile_id_from_webfinger
+from federation.utils.django import get_requests_cache_backend
 from federation.utils.text import with_slash, validate_handle
 import federation.entities.base as base
 
 logger = logging.getLogger("federation")
     
-# Make django federation parameters globally available
-# if possible
-try:
-    from federation.utils.django import get_configuration
-    django_params = get_configuration()
-except ImportError:
-    django_params = {}
-
-# try to obtain redis config from django and use as
-# requests_cache backend if available
-if django_params.get('redis'):
-    backend = rc.RedisCache(namespace='fed_cache', **django_params['redis'])
-else:
-    backend = rc.SQLiteCache(db_path='fed_cache')
-logger.info('Using %s for requests_cache', type(backend))
-    
-
 # This is required to workaround a bug in pyld that has the Accept header
 # accept other content types. From what I understand, precedence handling
 # is broken
@@ -52,7 +36,7 @@ def get_loader(*args, **kwargs):
     
     def loader(url, options={}):
         options['headers']['Accept'] = 'application/ld+json'
-        with rc.enabled(cache_name='fed_cache', backend=backend):
+        with rc.enabled(cache_name='ld_cache', backend=get_requests_cache_backend('ld_cache')):
             return requests_loader(url, options)
     
     return loader
@@ -63,8 +47,7 @@ jsonld.set_document_loader(get_loader())
 def get_profile_or_entity(fid):
     obj = get_profile(fid=fid)
     if not obj:
-        with rc.enabled(cache_name='fed_cache', backend=backend):
-            obj = retrieve_and_parse_document(fid)
+        obj = retrieve_and_parse_document(fid)
     return obj
     
 
@@ -606,6 +589,7 @@ class Person(Object, base.Profile):
     capabilities = CompactedDict(litepub.capabilities)
     suspended = fields.Boolean(toot.suspended)
     public = True
+    finger = None
     _cached_inboxes = None
     _cached_public_key = None
     _cached_image_urls = None
@@ -624,15 +608,18 @@ class Person(Object, base.Profile):
         super().__init__(*args, **kwargs)
         self._allowed_children += (PropertyValue, IdentityProof)
 
-    # Set handle to username@host if not provided by the platform
+    # Set finger to username@host if not provided by the platform
     def post_receive(self):
-        if not self.finger:
+        profile = get_profile(fid=self.id)
+        if getattr(profile, 'finger', None):
+            self.finger = profile.finger
+        else:
             domain = urlparse(self.id).netloc
             finger = f'{self.username.lower()}@{domain}'
-            with rc.enabled(cache_name='fed_cache', backend=backend):
-                if get_profile_id_from_webfinger(finger) == self.id:
-                    self.finger = finger
-        if self.guid and not self.handle:
+            if get_profile_id_from_webfinger(finger) == self.id:
+                self.finger = finger
+        # multi-protocol platform
+        if self.finger and self.guid and not self.handle:
             self.handle = self.finger
 
     def to_as2(self):
@@ -1269,8 +1256,8 @@ def extract_receivers(entity):
     profile = None
     # don't care about receivers for payloads without an actor_id    
     if getattr(entity, 'actor_id'):
-        with rc.enabled(cache_name='fed_cache', backend=backend):
-            profile = retrieve_and_parse_profile(entity.actor_id)
+        profile = get_profile(fid=entity.actor_id)
+        if not profile: profile = retrieve_and_parse_profile(entity.actor_id)
     if not profile: return receivers
     
     for attr in ("to", "cc"):

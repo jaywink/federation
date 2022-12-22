@@ -28,7 +28,8 @@ def retrieve_remote_content(
         protocol_name = identify_protocol_by_id(id).PROTOCOL_NAME
     utils = importlib.import_module("federation.utils.%s" % protocol_name)
     return utils.retrieve_and_parse_content(
-        id=id, guid=guid, handle=handle, entity_type=entity_type, sender_key_fetcher=sender_key_fetcher,
+        id=id, guid=guid, handle=handle, entity_type=entity_type, 
+        cache=cache, sender_key_fetcher=sender_key_fetcher,
     )
 
 
