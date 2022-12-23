@@ -21,7 +21,7 @@ from federation.entities.utils import get_base_attributes, get_profile
 from federation.outbound import handle_send
 from federation.types import UserType, ReceiverVariant
 from federation.utils.activitypub import retrieve_and_parse_document, retrieve_and_parse_profile, get_profile_id_from_webfinger
-from federation.utils.django import get_requests_cache_backend
+from federation.utils.django import get_configuration, get_requests_cache_backend
 from federation.utils.text import with_slash, validate_handle
 import federation.entities.base as base
 
@@ -949,6 +949,14 @@ class Post(Note, base.Post):
 
 
 class Comment(Note, base.Comment):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._required += ['target_id']
+
+    def validate_target_id(self):
+        if not self.target_id.startswith('https'):
+            raise ValueError(f'Invalid target_id for activitypub ({self.target_id})')
+
     class Meta:
         rdf_type = as2.Note
         exclude = ('handle',)
@@ -1117,6 +1125,14 @@ class Follow(Activity, base.Follow):
 class Announce(Activity, base.Share):
     id = fields.Id()
     target_id = IRI(as2.object)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._required += ['target_id']
+
+    def validate_target_id(self):
+        if not self.target_id.startswith('https'):
+            raise ValueError(f'Invalid target_id for activitypub ({self.target_id})')
 
     def to_as2(self):
         if isinstance(self.activity, type):
