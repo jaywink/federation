@@ -33,10 +33,11 @@ logger = logging.getLogger("federation")
 # from https://github.com/digitalbazaar/pyld/issues/133
 def get_loader(*args, **kwargs):
     requests_loader = jsonld.requests_document_loader(*args, **kwargs)
+    backend = get_requests_cache_backend('ld_cache')
     
     def loader(url, options={}):
         options['headers']['Accept'] = 'application/ld+json'
-        with rc.enabled(cache_name='ld_cache', backend=get_requests_cache_backend('ld_cache')):
+        with rc.enabled(cache_name='ld_cache', backend=backend):
             return requests_loader(url, options)
     
     return loader
@@ -1179,7 +1180,7 @@ class Tombstone(Object, base.Retraction):
                     
 
     def to_base(self):
-        if self.activity != self: self.actor_id = self.activity.actor_id
+        if self.activity and self.activity != self: self.actor_id = self.activity.actor_id
         self.entity_type = 'Object'
         return self
 
