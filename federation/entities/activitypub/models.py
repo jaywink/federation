@@ -1,4 +1,5 @@
 from copy import copy
+from datetime import timedelta
 import json
 import logging
 from typing import List, Callable, Dict, Union, Optional
@@ -26,6 +27,8 @@ from federation.utils.text import with_slash, validate_handle
 import federation.entities.base as base
 
 logger = logging.getLogger("federation")
+
+cache_backend = get_requests_cache_backend('ld_cache')
     
 # This is required to workaround a bug in pyld that has the Accept header
 # accept other content types. From what I understand, precedence handling
@@ -33,11 +36,10 @@ logger = logging.getLogger("federation")
 # from https://github.com/digitalbazaar/pyld/issues/133
 def get_loader(*args, **kwargs):
     requests_loader = jsonld.requests_document_loader(*args, **kwargs)
-    backend = get_requests_cache_backend('ld_cache')
     
     def loader(url, options={}):
         options['headers']['Accept'] = 'application/ld+json'
-        with rc.enabled(cache_name='ld_cache', backend=backend):
+        with rc.enabled(cache_name='ld_cache', backend=cache_backend, expire_after=timedelta(weeks=2)):
             return requests_loader(url, options)
     
     return loader
