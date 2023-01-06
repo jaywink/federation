@@ -44,6 +44,7 @@ setup(
         "python-xrd>=0.1",
         "pytz",
         "PyYAML",
+        "redis",
         "requests>=2.8.0",
         "requests-cache",
         "requests-http-signature-jaywink>=0.1.0.dev0",
