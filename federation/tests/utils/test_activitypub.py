@@ -1,3 +1,4 @@
+from datetime import timedelta
 import json
 from unittest.mock import patch, Mock
 
@@ -47,7 +48,7 @@ class TestRetrieveAndParseDocument:
         # auth argument is passed with kwargs
         auth = mock_fetch.call_args.kwargs.get('auth', None)
         mock_fetch.assert_called_once_with(
-            "https://example.com/foobar", extra_headers={'accept': 'application/activity+json'}, auth=auth,
+            "https://example.com/foobar", extra_headers={'accept': 'application/activity+json'}, cache=True, auth=auth,
         )
 
     @patch("federation.entities.activitypub.models.extract_receivers", return_value=[])

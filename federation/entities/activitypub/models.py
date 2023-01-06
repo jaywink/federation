@@ -967,7 +967,7 @@ class Comment(Note, base.Comment):
         self._required += ['target_id']
 
     def validate_target_id(self):
-        if not self.target_id.startswith('https'):
+        if not self.target_id.startswith('http'):
             raise ValueError(f'Invalid target_id for activitypub ({self.target_id})')
 
     class Meta:
@@ -1144,7 +1144,7 @@ class Announce(Activity, base.Share):
         self._required += ['target_id']
 
     def validate_target_id(self):
-        if not self.target_id.startswith('https'):
+        if not self.target_id.startswith('http'):
             raise ValueError(f'Invalid target_id for activitypub ({self.target_id})')
 
     def to_as2(self):
