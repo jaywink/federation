@@ -1,4 +1,5 @@
 import importlib
+import redis
 from requests_cache import RedisCache, SQLiteCache
 
 from django.conf import settings
@@ -59,6 +60,15 @@ def get_federation_user():
     if not key: return None
 
     return UserType(id=config['federation_id'], private_key=key)
+
+def get_redis():
+    """
+    Returns a connected redis object if available
+    """
+    config = get_configuration()
+    if not config.get('redis'): return None
+
+    return redis.Redis(**config['redis'])
 
 def get_requests_cache_backend(namespace):
     """

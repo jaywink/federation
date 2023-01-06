@@ -22,25 +22,35 @@ from federation.entities.utils import get_base_attributes, get_profile
 from federation.outbound import handle_send
 from federation.types import UserType, ReceiverVariant
 from federation.utils.activitypub import retrieve_and_parse_document, retrieve_and_parse_profile, get_profile_id_from_webfinger
-from federation.utils.django import get_configuration, get_requests_cache_backend
+from federation.utils.django import get_configuration, get_redis
 from federation.utils.text import with_slash, validate_handle
 import federation.entities.base as base
 
 logger = logging.getLogger("federation")
 
-cache_backend = get_requests_cache_backend('ld_cache')
+cache = get_redis() or {}
+EXPIRATION = int(timedelta(weeks=2).total_seconds())
     
 # This is required to workaround a bug in pyld that has the Accept header
 # accept other content types. From what I understand, precedence handling
 # is broken
 # from https://github.com/digitalbazaar/pyld/issues/133
+# cacheing loosely inspired by https://github.com/digitalbazaar/pyld/issues/70
 def get_loader(*args, **kwargs):
     requests_loader = jsonld.requests_document_loader(*args, **kwargs)
     
     def loader(url, options={}):
-        options['headers']['Accept'] = 'application/ld+json'
-        with rc.enabled(cache_name='ld_cache', backend=cache_backend, expire_after=timedelta(weeks=2)):
-            return requests_loader(url, options)
+        key = f'ld_cache:{url}'
+        try:
+            return json.loads(cache[key])
+        except KeyError:
+            options['headers']['Accept'] = 'application/ld+json'
+            doc = requests_loader(url, options)
+            if isinstance(cache, dict):
+                cache[url] = json.dumps(doc)
+            else:
+                cache.set(f'ld_cache:{url}', json.dumps(doc), ex=EXPIRATION)
+            return doc
     
     return loader
 
