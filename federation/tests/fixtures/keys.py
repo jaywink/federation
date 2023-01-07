@@ -69,3 +69,7 @@ XML2 = "<comment><guid>d728fe501584013514526c626dd55703</guid><parent_guid>d641b
 
 def get_dummy_private_key():
     return RSA.importKey(PRIVATE_KEY)
+
+
+def get_dummy_public_key():
+    return PUBKEY

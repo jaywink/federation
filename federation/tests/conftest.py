@@ -15,7 +15,7 @@ def disable_network_calls(monkeypatch):
     """Disable network calls."""
     monkeypatch.setattr("requests.post", Mock())
 
-    class MockResponse(str):
+    class MockGetResponse(str):
         status_code = 200
         text = ""
 
@@ -29,8 +29,17 @@ def disable_network_calls(monkeypatch):
             return saved_get(*args, **kwargs)
         return DEFAULT
 
-    monkeypatch.setattr("requests.get", Mock(return_value=MockResponse, side_effect=side_effect))
+    monkeypatch.setattr("requests.get", Mock(return_value=MockGetResponse, side_effect=side_effect))
 
+    class MockHeadResponse(dict):
+        status_code = 200
+        headers = {'Content-Type':'image/jpeg'}
+
+        @staticmethod
+        def raise_for_status():
+            pass
+
+    monkeypatch.setattr("requests.head", Mock(return_value=MockHeadResponse))
 
 @pytest.fixture
 def private_key():

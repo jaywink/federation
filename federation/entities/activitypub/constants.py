@@ -11,4 +11,12 @@ CONTEXTS_DEFAULT = [
     CONTEXT_PYTHON_FEDERATION,
 ]
 
+CONTEXT = [CONTEXT_ACTIVITYSTREAMS, CONTEXT_LD_SIGNATURES]
+CONTEXT_DICT = {}
+for ctx in [CONTEXT_DIASPORA, CONTEXT_HASHTAG, CONTEXT_MANUALLY_APPROVES_FOLLOWERS, CONTEXT_SENSITIVE, CONTEXT_PYTHON_FEDERATION]:
+    CONTEXT_DICT.update(ctx)
+CONTEXT_SETS = {prop: {'@id': f'as:{prop}', '@container': '@set'} for prop in ['to', 'cc', 'tag', 'attachment']}
+CONTEXT_DICT.update(CONTEXT_SETS)
+CONTEXT.append(CONTEXT_DICT)
+
 NAMESPACE_PUBLIC = "https://www.w3.org/ns/activitystreams#Public"

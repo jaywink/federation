@@ -7,7 +7,7 @@ from typing import List, Set, Union, Dict, Tuple
 from commonmark import commonmark
 
 from federation.entities.activitypub.enums import ActivityType
-from federation.entities.utils import get_name_for_profile
+from federation.entities.utils import get_name_for_profile, get_profile
 from federation.utils.text import process_text_links, find_tags
 
 
@@ -28,9 +28,13 @@ class BaseEntity:
     base_url: str = ""
     guid: str = ""
     handle: str = ""
+    finger: str = ""
     id: str = ""
     mxid: str = ""
     signature: str = ""
+    # for AP
+    to: List = []
+    cc: List = []
 
     def __init__(self, *args, **kwargs):
         self._required = ["id", "actor_id"]
@@ -39,8 +43,8 @@ class BaseEntity:
         self._receivers = []
 
         # make the assumption that if a schema is being used, the payload
-        # is deserialized and validated properly
-        if kwargs.get('has_schema'):
+        # is (de)serialized and validated properly
+        if hasattr(self, 'schema') or kwargs.get('schema'):
             for key, value in kwargs.items():
                 setattr(self, key, value)
         else:
@@ -54,11 +58,6 @@ class BaseEntity:
         if not self.activity:
             # Fill a default activity if not given and type of entity class has one
             self.activity = getattr(self, "_default_activity", None)
-
-    def as_protocol(self, protocol):
-        entities = importlib.import_module(f"federation.entities.{protocol}.entities")
-        klass = getattr(entities, f"{protocol.title()}{self.__class__.__name__}")
-        return klass.from_base(self)
 
     def post_receive(self):
         """
@@ -190,6 +189,7 @@ class ParticipationMixin(TargetIDMixin):
 
 class CreatedAtMixin(BaseEntity):
     created_at = None
+    times: dict = {}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -220,7 +220,7 @@ class RawContentMixin(BaseEntity):
         images = []
         if self._media_type != "text/markdown" or self.raw_content is None:
             return images
-        regex = r"!\[([\w ]*)\]\((https?://[\w\d\-\./]+\.[\w]*((?<=jpg)|(?<=gif)|(?<=png)|(?<=jpeg)))\)"
+        regex = r"!\[([\w\s\-\']*)\]\((https?://[\w\d\-\./]+\.[\w]*((?<=jpg)|(?<=gif)|(?<=png)|(?<=jpeg)))\)"
         matches = re.finditer(regex, self.raw_content, re.MULTILINE | re.IGNORECASE)
         for match in matches:
             groups = match.groups()
@@ -254,15 +254,12 @@ class RawContentMixin(BaseEntity):
             # Do mentions
             if self._mentions:
                 for mention in self._mentions:
-                    # Only linkify mentions that are URL's
-                    if not mention.startswith("http"):
-                        continue
-                    display_name = get_name_for_profile(mention)
-                    if not display_name:
-                        display_name = mention
+                    # Diaspora mentions are linkified as mailto
+                    profile = get_profile(finger=mention)
+                    href = 'mailto:'+mention if not getattr(profile, 'id', None) else profile.id
                     rendered = rendered.replace(
-                        "@{%s}" % mention,
-                        f'@<a class="mention" href="{mention}"><span>{display_name}</span></a>',
+                        "@%s" % mention,
+                        f'@<a class="h-card" href="{href}"><span>{mention}</span></a>',
                     )
             # Finally linkify remaining URL's that are not links
             rendered = process_text_links(rendered)
@@ -278,15 +275,20 @@ class RawContentMixin(BaseEntity):
         return sorted(tags)
 
     def extract_mentions(self):
-        matches = re.findall(r'@{([\S ][^{}]+)}', self.raw_content)
+        if self._media_type != 'text/markdown': return
+        matches = re.findall(r'@{?[\S ]?[^{}@]+[@;]?\s*[\w\-./@]+[\w/]+}?', self.raw_content)
         if not matches:
             return
         for mention in matches:
+            handle = None
             splits = mention.split(";")
             if len(splits) == 1:
-                self._mentions.add(splits[0].strip(' }'))
+                handle = splits[0].strip(' }').lstrip('@{')
             elif len(splits) == 2:
-                self._mentions.add(splits[1].strip(' }'))
+                handle = splits[1].strip(' }')
+            if handle:
+                self._mentions.add(handle)
+                self.raw_content = self.raw_content.replace(mention, '@'+handle)
 
 
 class OptionalRawContentMixin(RawContentMixin):

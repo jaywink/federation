@@ -1,6 +1,38 @@
+from cryptography.exceptions import InvalidSignature
 from django.http import JsonResponse, HttpResponse, HttpResponseNotFound
+from requests_http_signature import HTTPSignatureHeaderAuth
 
+from federation.entities.activitypub.mappers import get_outbound_entity
+from federation.protocols.activitypub.signing import verify_request_signature
+from federation.types import RequestType
 from federation.utils.django import get_function_from_config
+
+
+def get_and_verify_signer(request):
+    """
+    A remote user might be allowed to access retricted content
+    if a valid signature is provided.
+
+    Only done for content.
+    """
+    # TODO: revisit this when we start responding to sending follow[ing,ers] collections
+    if request.path.startswith('/u/'): return None 
+    get_public_key = get_function_from_config('get_public_key_function')
+    if not request.headers.get('Signature'): return None
+    req = RequestType(
+            url=request.build_absolute_uri(),
+            body=request.body,
+            method=request.method,
+            headers=request.headers)
+    sig = HTTPSignatureHeaderAuth.get_sig_struct(req)
+    signer = sig.get('keyId', '').split('#')[0]
+    key = get_public_key(signer)
+    if key:
+        try:
+            verify_request_signature(req, key)
+            return signer
+        except InvalidSignature:
+            return None
 
 
 def activitypub_object_view(func):
@@ -27,11 +59,11 @@ def activitypub_object_view(func):
                 return func(request, *args, **kwargs)
 
             get_object_function = get_function_from_config('get_object_function')
-            obj = get_object_function(request)
+            obj = get_object_function(request, get_and_verify_signer(request))
             if not obj:
                 return HttpResponseNotFound()
-
-            as2_obj = obj.as_protocol('activitypub')
+            
+            as2_obj = get_outbound_entity(obj, None)
             return JsonResponse(as2_obj.to_as2(), content_type='application/activity+json')
 
         def post(request, *args, **kwargs):
@@ -44,7 +76,7 @@ def activitypub_object_view(func):
 
         if request.method == 'GET':
             return get(request, *args, **kwargs)
-        elif request.method == 'POST' and request.path.endswith('/inbox/'):
+        elif request.method == 'POST' and request.path.startswith('/u/') and request.path.endswith('/inbox/'):
             return post(request, *args, **kwargs)
 
         return HttpResponse(status=405)

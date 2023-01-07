@@ -1,3 +1,4 @@
+from datetime import timedelta
 from unittest.mock import patch, Mock, call
 
 import pytest
@@ -12,24 +13,25 @@ from federation.utils.network import (
 class TestFetchDocument:
     call_args = {"timeout": 10, "headers": {'user-agent': USER_AGENT}}
 
-    @patch("federation.utils.network.requests.get", return_value=Mock(status_code=200, text="foo"))
+    @patch("federation.utils.network.session.get", return_value=Mock(status_code=200, text="foo"))
     def test_extra_headers(self, mock_get):
         fetch_document("https://example.com/foo", extra_headers={'accept': 'application/activity+json'})
         mock_get.assert_called_once_with('https://example.com/foo', timeout=10, headers={
-            'user-agent': USER_AGENT, 'accept': 'application/activity+json',
-        })
+            'user-agent': USER_AGENT, 'accept': 'application/activity+json'},
+            expire_after=timedelta(hours=6)
+        )
 
     def test_raises_without_url_and_host(self):
         with pytest.raises(ValueError):
             fetch_document()
 
-    @patch("federation.utils.network.requests.get")
+    @patch("federation.utils.network.session.get")
     def test_url_is_called(self, mock_get):
         mock_get.return_value = Mock(status_code=200, text="foo")
         fetch_document("https://localhost")
         assert mock_get.called
 
-    @patch("federation.utils.network.requests.get")
+    @patch("federation.utils.network.session.get")
     def test_host_is_called_with_https_first_then_http(self, mock_get):
         def mock_failing_https_get(url, *args, **kwargs):
             if url.find("https://") > -1:
@@ -43,7 +45,7 @@ class TestFetchDocument:
             call("http://localhost/", **self.call_args),
         ]
 
-    @patch("federation.utils.network.requests.get")
+    @patch("federation.utils.network.session.get")
     def test_host_is_sanitized(self, mock_get):
         mock_get.return_value = Mock(status_code=200, text="foo")
         fetch_document(host="http://localhost")
@@ -51,7 +53,7 @@ class TestFetchDocument:
             call("https://localhost/", **self.call_args)
         ]
 
-    @patch("federation.utils.network.requests.get")
+    @patch("federation.utils.network.session.get")
     def test_path_is_sanitized(self, mock_get):
         mock_get.return_value = Mock(status_code=200, text="foo")
         fetch_document(host="localhost", path="foobar/bazfoo")
@@ -59,7 +61,7 @@ class TestFetchDocument:
             call("https://localhost/foobar/bazfoo", **self.call_args)
         ]
 
-    @patch("federation.utils.network.requests.get")
+    @patch("federation.utils.network.session.get")
     def test_exception_is_raised_if_both_protocols_fail(self, mock_get):
         mock_get.side_effect = HTTPError
         doc, code, exc = fetch_document(host="localhost")
@@ -68,7 +70,7 @@ class TestFetchDocument:
         assert code == None
         assert exc.__class__ == HTTPError
 
-    @patch("federation.utils.network.requests.get")
+    @patch("federation.utils.network.session.get")
     def test_exception_is_raised_if_url_fails(self, mock_get):
         mock_get.side_effect = HTTPError
         doc, code, exc = fetch_document("localhost")
@@ -77,7 +79,7 @@ class TestFetchDocument:
         assert code == None
         assert exc.__class__ == HTTPError
 
-    @patch("federation.utils.network.requests.get")
+    @patch("federation.utils.network.session.get")
     def test_exception_is_raised_if_http_fails_and_raise_ssl_errors_true(self, mock_get):
         mock_get.side_effect = SSLError
         doc, code, exc = fetch_document("localhost")
@@ -86,7 +88,7 @@ class TestFetchDocument:
         assert code == None
         assert exc.__class__ == SSLError
 
-    @patch("federation.utils.network.requests.get")
+    @patch("federation.utils.network.session.get")
     def test_exception_is_raised_on_network_error(self, mock_get):
         mock_get.side_effect = RequestException
         doc, code, exc = fetch_document(host="localhost")

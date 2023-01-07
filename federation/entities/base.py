@@ -1,4 +1,5 @@
 from typing import Dict, Tuple
+from magic import from_file
 from mimetypes import guess_type
 
 from dirty_validators.basic import Email
@@ -7,7 +8,7 @@ from federation.entities.activitypub.enums import ActivityType
 from federation.entities.mixins import (
     PublicMixin, TargetIDMixin, ParticipationMixin, CreatedAtMixin, RawContentMixin, OptionalRawContentMixin,
     EntityTypeMixin, ProviderDisplayNameMixin, RootTargetIDMixin, BaseEntity)
-from federation.utils.network import fetch_content_type
+from federation.utils.network import fetch_content_type, fetch_file
 
 
 class Accept(CreatedAtMixin, TargetIDMixin, BaseEntity):
@@ -45,6 +46,13 @@ class Image(OptionalRawContentMixin, CreatedAtMixin, BaseEntity):
 
     def get_media_type(self) -> str:
         media_type = guess_type(self.url)[0] or fetch_content_type(self.url)
+        if media_type == 'application/octet-stream':
+            try:
+                file = fetch_file(self.url)
+                media_type = from_file(file, mime=True)
+                os.unlink(file)
+            except:
+                pass
         if media_type in self._valid_media_types:
             return media_type
         return ""
@@ -183,3 +191,18 @@ class Share(CreatedAtMixin, TargetIDMixin, EntityTypeMixin, OptionalRawContentMi
     share.
     """
     entity_type = "Post"
+
+
+class Collection(BaseEntity):
+    """Represents collections of objects.
+
+    Only useful to Activitypub outbound payloads.
+    """
+    ordered = False
+    total_items = 0
+    items = []
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._required.remove('actor_id')
+        self._required += ['ordered']
