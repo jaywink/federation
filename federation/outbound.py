@@ -204,16 +204,6 @@ def handle_send(
                         logger.warning("handle_send - skipping activitypub due to failure to generate payload: %s", ex)
                         continue
                 payload = copy.copy(ready_payloads[protocol]["payload"])
-                if public:
-                    payload["to"] = [NAMESPACE_PUBLIC]
-                    payload["cc"] = [fid]
-                    if isinstance(payload.get("object"), dict):
-                        payload["object"]["to"] = [NAMESPACE_PUBLIC]
-                        payload["object"]["cc"] = [fid]
-                else:
-                    payload["to"] = [fid]
-                    if isinstance(payload.get("object"), dict):
-                        payload["object"]["to"] = [fid]
                 rendered_payload = json.dumps(payload).encode("utf-8")
             except Exception:
                 logger.error(

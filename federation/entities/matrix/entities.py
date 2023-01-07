@@ -175,7 +175,7 @@ class MatrixRoomMessage(Post, MatrixEntityMixin):
         if not self._profile_room_id:
             from federation.entities.matrix.mappers import get_outbound_entity
             # Need to also create the profile
-            profile = get_profile(self.actor_id)
+            profile = get_profile(fid=self.actor_id)
             profile_entity = get_outbound_entity(profile, None)
             payloads = profile_entity.payloads()
             if payloads:

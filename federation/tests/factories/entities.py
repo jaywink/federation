@@ -87,3 +87,4 @@ class ShareFactory(ActorIDMixinFactory, EntityTypeMixinFactory, IDMixinFactory, 
 
     raw_content = ""
     provider_display_name = ""
+    to = ["https://www.w3.org/ns/activitystreams#Public"]

@@ -1,111 +1,13 @@
 import logging
 from typing import List, Callable, Dict, Union, Optional
 
-from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
-from federation.entities.activitypub.entities import (
-    ActivitypubFollow, ActivitypubProfile, ActivitypubAccept, ActivitypubPost, ActivitypubComment,
-    ActivitypubRetraction, ActivitypubShare, ActivitypubImage)
 from federation.entities.activitypub.models import element_to_objects
-from federation.entities.base import Follow, Profile, Accept, Post, Comment, Retraction, Share, Image
+from federation.entities.base import Follow, Profile, Accept, Post, Comment, Retraction, Share, Image, Collection
 from federation.entities.mixins import BaseEntity
 from federation.types import UserType, ReceiverVariant
+import federation.entities.activitypub.models as models
 
 logger = logging.getLogger("federation")
-
-
-MAPPINGS = {
-    "Accept": ActivitypubAccept,
-    "Announce": ActivitypubShare,
-    "Application": ActivitypubProfile,
-    "Article": ActivitypubPost,
-    "Delete": ActivitypubRetraction,
-    "Follow": ActivitypubFollow,  # Technically not correct, but for now we support only following profiles
-    "Group": ActivitypubProfile,
-    "Image": ActivitypubImage,
-    "Note": ActivitypubPost,
-    "Organization": ActivitypubProfile,
-    "Page": ActivitypubPost,
-    "Person": ActivitypubProfile,
-    "Service": ActivitypubProfile,
-}
-
-OBJECTS = (
-    "Application",
-    "Article",
-    "Group",
-    "Image",
-    "Note",
-    "Organization",
-    "Page",
-    "Person",
-    "Service",
-)
-
-UNDO_MAPPINGS = {
-    "Follow": ActivitypubFollow,
-    "Announce": ActivitypubRetraction,
-}
-
-
-def element_to_objects_orig(payload: Dict) -> List:
-    """
-    Transform an Element to a list of entities.
-    """
-    cls = None
-    entities = []
-
-    is_object = True if payload.get('type') in OBJECTS else False
-    if payload.get('type') == "Delete":
-        cls = ActivitypubRetraction
-    elif payload.get('type') == "Undo":
-        if isinstance(payload.get('object'), dict):
-            cls = UNDO_MAPPINGS.get(payload["object"]["type"])
-    elif isinstance(payload.get('object'), dict) and payload["object"].get('type'):
-        if payload["object"]["type"] == "Note" and payload["object"].get("inReplyTo"):
-            cls = ActivitypubComment
-        else:
-            cls = MAPPINGS.get(payload["object"]["type"])
-    else:
-        cls = MAPPINGS.get(payload.get('type'))
-    if not cls:
-        return []
-
-    transformed = transform_attributes(payload, cls, is_object=is_object)
-    entity = cls(**transformed)
-    # Extract children
-    if payload.get("object") and isinstance(payload.get("object"), dict):
-        # Try object if exists
-        entity._children = extract_attachments(payload.get("object"))
-    else:
-        # Try payload itself
-        entity._children = extract_attachments(payload)
-
-    entities.append(entity)
-
-    return entities
-
-
-def extract_attachments(payload: Dict) -> List[Image]:
-    """
-    Extract images from attachments.
-
-    There could be other attachments, but currently we only extract images.
-    """
-    attachments = []
-    for item in payload.get('attachment', []):
-        # noinspection PyProtectedMember
-        if item.get("type") in ("Document", "Image") and item.get("mediaType") in Image._valid_media_types:
-            if item.get('pyfed:inlineImage', False):
-                # Skip this image as it's indicated to be inline in content and source already
-                continue
-            attachments.append(
-                ActivitypubImage(
-                    url=item.get('url'),
-                    name=item.get('name') or "",
-                    media_type=item.get("mediaType"),
-                )
-            )
-    return attachments
 
 
 def get_outbound_entity(entity: BaseEntity, private_key):
@@ -127,25 +29,36 @@ def get_outbound_entity(entity: BaseEntity, private_key):
     outbound = None
     cls = entity.__class__
     if cls in [
-        ActivitypubAccept, ActivitypubFollow, ActivitypubProfile, ActivitypubPost, ActivitypubComment,
-        ActivitypubRetraction, ActivitypubShare,
-    ]:
+        models.Accept, models.Follow, models.Person, models.Note,
+        models.Delete, models.Tombstone, models.Announce, models.Collection,
+        models.OrderedCollection,
+        ] and isinstance(entity, BaseEntity):
         # Already fine
         outbound = entity
     elif cls == Accept:
-        outbound = ActivitypubAccept.from_base(entity)
+        outbound = models.Accept.from_base(entity)
     elif cls == Follow:
-        outbound = ActivitypubFollow.from_base(entity)
+        outbound = models.Follow.from_base(entity)
     elif cls == Post:
-        outbound = ActivitypubPost.from_base(entity)
-    elif cls == Profile:
-        outbound = ActivitypubProfile.from_base(entity)
-    elif cls == Retraction:
-        outbound = ActivitypubRetraction.from_base(entity)
+        outbound = models.Post.from_base(entity)
     elif cls == Comment:
-        outbound = ActivitypubComment.from_base(entity)
+        outbound = models.Comment.from_base(entity)
+    elif cls == Profile:
+        outbound = models.Person.from_base(entity)
+    elif cls == Retraction:
+        if entity.entity_type in ('Post', 'Comment'):
+            outbound = models.Tombstone.from_base(entity)
+            outbound.activity = models.Delete
+        elif entity.entity_type == 'Share':
+            outbound = models.Announce.from_base(entity)
+            outbound.activity = models.Undo
+            outbound._required.remove('id')
+        elif entity.entity_type == 'Profile':
+            outbound = models.Delete.from_base(entity)
     elif cls == Share:
-        outbound = ActivitypubShare.from_base(entity)
+        outbound = models.Announce.from_base(entity)
+    elif cls == Collection:
+        outbound = models.OrderedCollection.from_base(entity) if entity.ordered else models.Collection.from_base(entity)
     if not outbound:
         raise ValueError("Don't know how to convert this base entity to ActivityPub protocol entities.")
     # TODO LDS signing
@@ -174,100 +87,3 @@ def message_to_objects(
     return element_to_objects(message)
 
 
-def transform_attribute(
-        key: str, value: Union[str, Dict, int], transformed: Dict, cls, is_object: bool, payload: Dict,
-) -> None:
-    if value is None:
-        value = ""
-    if key == "id":
-        if is_object:
-            if cls == ActivitypubRetraction:
-                transformed["target_id"] = value
-                transformed["entity_type"] = "Object"
-            else:
-                transformed["id"] = value
-        elif cls in (ActivitypubProfile, ActivitypubShare):
-            transformed["id"] = value
-        else:
-            transformed["activity_id"] = value
-    elif key == "actor":
-        transformed["actor_id"] = value
-    elif key == "attributedTo" and is_object:
-        transformed["actor_id"] = value
-    elif key in ("content", "source"):
-        if payload.get('source') and isinstance(payload.get("source"), dict) and \
-                payload.get('source').get('mediaType') == "text/markdown":
-            transformed["_media_type"] = "text/markdown"
-            transformed["raw_content"] = payload.get('source').get('content').strip()
-            transformed["_rendered_content"] = payload.get('content').strip()
-        else:
-            # Assume HTML by convention
-            transformed["_media_type"] = "text/html"
-            transformed["raw_content"] = payload.get('content').strip()
-            transformed["_rendered_content"] = transformed["raw_content"]
-    elif key == "diaspora:guid":
-        transformed["guid"] = value
-    elif key == "endpoints" and isinstance(value, dict):
-        if "inboxes" not in transformed:
-            transformed["inboxes"] = {"private": None, "public": None}
-        if value.get('sharedInbox'):
-            transformed["inboxes"]["public"] = value.get("sharedInbox")
-    elif key == "icon":
-        # TODO maybe we should ditch these size constants and instead have a more flexible dict for images
-        # so based on protocol there would either be one url or many by size name
-        if isinstance(value, dict):
-            transformed["image_urls"] = {
-                "small": value['url'],
-                "medium": value['url'],
-                "large": value['url'],
-            }
-        else:
-            transformed["image_urls"] = {
-                "small": value,
-                "medium": value,
-                "large": value,
-            }
-    elif key == "inbox":
-        if "inboxes" not in transformed:
-            transformed["inboxes"] = {"private": None, "public": None}
-        transformed["inboxes"]["private"] = value
-        if not transformed["inboxes"]["public"]:
-            transformed["inboxes"]["public"] = value
-    elif key == "inReplyTo":
-        transformed["target_id"] = value
-    elif key == "name":
-        transformed["name"] = value or ""
-    elif key == "object" and not is_object:
-        if isinstance(value, dict):
-            if cls == ActivitypubAccept:
-                transformed["target_id"] = value.get("id")
-            elif cls == ActivitypubFollow:
-                transformed["target_id"] = value.get("object")
-            else:
-                transform_attributes(value, cls, transformed, is_object=True)
-        else:
-            transformed["target_id"] = value
-    elif key == "preferredUsername":
-        transformed["username"] = value
-    elif key == "publicKey":
-        transformed["public_key"] = value.get('publicKeyPem', '')
-    elif key == "summary" and cls == ActivitypubProfile:
-        transformed["raw_content"] = value
-    elif key in ("to", "cc"):
-        if isinstance(value, list) and NAMESPACE_PUBLIC in value:
-            transformed["public"] = True
-        elif value == NAMESPACE_PUBLIC:
-            transformed["public"] = True
-    elif key == "type":
-        if value == "Undo":
-            transformed["following"] = False
-    else:
-        transformed[key] = value
-
-
-def transform_attributes(payload: Dict, cls, transformed: Dict = None, is_object: bool = False) -> Dict:
-    if not transformed:
-        transformed = {}
-    for key, value in payload.items():
-        transform_attribute(key, value, transformed, cls, is_object, payload)
-    return transformed

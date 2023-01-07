@@ -2,7 +2,6 @@ import json
 import logging
 from typing import Optional, Any
 
-from federation.entities.activitypub.entities import ActivitypubProfile
 from federation.protocols.activitypub.signing import get_http_authentication
 from federation.utils.network import fetch_document, try_retrieve_webfinger_document
 from federation.utils.text import decode_if_bytes, validate_handle
@@ -35,25 +34,28 @@ def get_profile_id_from_webfinger(handle: str) -> Optional[str]:
 
 
 def retrieve_and_parse_content(**kwargs) -> Optional[Any]:
-    return retrieve_and_parse_document(kwargs.get("id"))
+    return retrieve_and_parse_document(kwargs.get("id"), cache=kwargs.get('cache',True))
 
 
-def retrieve_and_parse_document(fid: str) -> Optional[Any]:
+def retrieve_and_parse_document(fid: str, cache: bool=True) -> Optional[Any]:
     """
     Retrieve remote document by ID and return the entity.
     """
     from federation.entities.activitypub.models import element_to_objects # Circulars
-    document, status_code, ex = fetch_document(fid, extra_headers={'accept': 'application/activity+json'}, 
+    document, status_code, ex = fetch_document(fid, extra_headers={'accept': 'application/activity+json'}, cache=cache,
             auth=get_http_authentication(federation_user.rsa_private_key,f'{federation_user.id}#main-key') if federation_user else None)
     if document:
-        document = json.loads(decode_if_bytes(document))
+        try:
+            document = json.loads(decode_if_bytes(document))
+        except json.decoder.JSONDecodeError:
+            return None
         entities = element_to_objects(document)
         if entities:
             logger.info("retrieve_and_parse_document - using first entity: %s", entities[0])
             return entities[0]
 
 
-def retrieve_and_parse_profile(fid: str) -> Optional[ActivitypubProfile]:
+def retrieve_and_parse_profile(fid: str) -> Optional[Any]:
     """
     Retrieve the remote fid and return a Profile object.
     """
