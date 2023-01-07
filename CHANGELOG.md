@@ -7,15 +7,49 @@
 * Activitypub payloads are now processed by calamus (https://github.com/SwissDataScienceCenter/calamus),
   which is a jsonld processor based on marshmallow.
 
-* For performance, requests_cache has been added. It pulls a redis configuration from django if one exists or
-  falls back to a sqlite backend.
+  * A large number of inbound Activitypub objects and properties are deserialized, it's up to the client
+    app to implement the corresponding behavior.
 
-* GET requests are now signed if the django configuration includes FEDERATION_USER which is used to fetch that
+  * Unsupported objects and properties should be easy to implement. Unsupported payloads are logged as such.
+
+  * More AP platforms are now supported (friendica, pixelfed, misskey, pleroma, gotosocial, litepub, and more).
+    The jsonld context some platforms provide sometimes needs to be patched because of missing jsonld term definitions.
+
+  * Peertube Video objects are translated into Posts.
+
+* For performance, requests_cache has been added. It pulls a redis configuration from django if one exists or
+  falls back to a sqlite backend. Special case: pyld document loader has been extended to use redis directly.
+
+* Activitypub GET requests are now signed if the django configuration includes FEDERATION_USER which is used to fetch that
   user's private key.
+
+* Activitypub remote GET signature is now verified in order to authorize remote access to limited content.
 
 * Added Video and Audio objects. Inbound support only.
 
-* Process Activitypub reply collections.
+* Process Activitypub reply collections. When supported by the client app, it allows for a more complete view of
+  conversations, especially for shared content.
+
+* WIP: initial support for providing reponses to Activitypub collections requests. This release
+  only responds with a count for the followers and following collections.
+
+### Changed
+
+* outbound.py doesn't need to set the to and cc Activitypub properties, they are now expected to be set by
+  the client app.
+
+* Attempts are made to remove duplicate img tags some platforms send (friendica, for one).
+
+* Activitypub receivers of the followers variant are now correctly processed for all known platforms.
+
+* Accept images with application/octet-stream content type (with the help of the magic library).
+
+* user@domain is now the only format used for mentions. The client app is expected to comply. For
+  Activitypub, this means making a webfinger request to validate the handle if the client app doesn't
+  already know the corresponding profile.
+
+* Because of the change above, ensure mentions in Diaspora outbound payloads are as per their protocol
+  spec (i.e. replacing @user@domain with @{user@domain} in the text)
 
 ### Fixed
 
@@ -24,6 +58,8 @@
 ### Internal changes
 
 * Dropped python 3.6 support.
+
+* Many tests were fixed/updated.
 
 ## [0.22.0] - 2021-08-15
 
@@ -40,7 +76,7 @@
 
 * Fixed image delivery between platforms that send ActivityPub payloads with a markdown `source`,
   caused by overenthusiastic linkifying of markdown.
-  
+ 
 * Fix a crash in `outbound.handle_send` when payload failed to be generated and `parent_user` was not given.
 
 ## [0.21.0] - 2020-12-20
@@ -66,7 +102,7 @@
 
   If Django is configured, a profile will be retrieved using the configured profile
   getter function and the profile name or username will be used for the link.
-  
+ 
 * Add `process_text_links` text utility to linkify URL's in text.
 
 * Add `find_tags` text utility to find hashtags from text. Optionally the function can
@@ -78,15 +114,15 @@
     * `str` or `dict` payload
     * `str` protocol name
     * `str` sender id
-    
+   
   The function will be called for each generated payload.
 
-* Cross-protocol improvements:  
+* Cross-protocol improvements: 
     * Extract Diaspora guid from ActivityPub payloads implementing the Diaspora extension.
     * Add Diaspora extension and guid to outbound ActivityPub payloads, if available. For
       profiles, also add handle.
     * Extract ActivityPub ID from Diaspora payloads if found as the `activitypub_id` property.
-    * Add ActivityPub ID to outbound Diaspora payloads of types comment, post and profile, 
+    * Add ActivityPub ID to outbound Diaspora payloads of types comment, post and profile,
       if an URL given as `id`.
 
 ### Changed
@@ -95,7 +131,7 @@
 
 * URL's in outgoing text content are now linkified for the HTML representation
   of the content for ActivityPub payloads.
-  
+ 
 * Don't include OStatus for Mastodon 3.0+ protocols list. ([related issue](https://github.com/thefederationinfo/the-federation.info/issues/217))
 
 * **Backwards incompatible**: Stop markdownifying incoming ActivityPub content. Instead
@@ -109,27 +145,27 @@
 * Add missing `response.raise_for_status()` call to the `fetch_document` network helper
   when fetching with given URL. Error status was already being raised correctly when
   fetching by domain and path.
-  
+ 
 * Don't crash when parsing an invalid NodeInfo document where the usage dictionary
   is not following specification.
-  
+ 
 * Ensure Pixelfed, Kroeg and Kibou instances that emulate the Mastodon API don't get identified as Mastodon instances.
 
 * Loosen validation of `TargetIDMixin`, it now requires one of the target attributes
   to be set, not just `target_id`. This fixes follows over the Diaspora protocol which
   broke with stricter send validation added in 0.19.0.
-  
+ 
 * Fix some edge case crashes of `handle_send` when there are Diaspora protocol receivers.
 
 * Fix reading `sharedInbox` from remote ActivityPub profiles. This caused public payloads not
   to be deduplicated when sending public payloads to remote ActivityPub servers. Refetching
-  profiles should now fix this. ([related issue](https://git.feneas.org/jaywink/federation/issues/124))  
+  profiles should now fix this. ([related issue](https://git.feneas.org/jaywink/federation/issues/124)) 
 
 * Don't always crash generating payloads if Django is installed but not configured.
 
 * Don't try to relay AP payloads to Diaspora receivers and vice versa, for now, until cross-protocol
   relaying is supported.
-  
+ 
 * Fix some characters stopping tags being identified ([related issue](https://git.feneas.org/socialhome/socialhome/-/issues/222))
 
 * Fix tags separated by slashes being identified ([related issue](https://git.feneas.org/socialhome/socialhome/-/issues/198))
@@ -145,7 +181,7 @@
 * All outgoing entities are now validated before sending. This stops the sending of invalid
   entities to the network, for example a Share of a Post from ActivityPub to the Diaspora
   protocol network.
-  
+ 
 ### Fixed
 
 * Allow ActivityPub HTTP Signature verification to pass if signature is at most 24 hours old.
@@ -197,7 +233,7 @@
 * Entities with `raw_content` now also contain a `_media_type` and `rendered_content`.
 
   The default `_media_type` is `text/markdown` except for ActivityPub originating posts it defaults to `text/html`. If the ActivityPub payload contains a `source`, that mediaType will be used instead.
-  
+ 
 * Host meta fetchers now support NodeInfo 2.1
 
 ### Changed
@@ -215,15 +251,15 @@
   * The high level inbound and outbound functions `inbound.handle_receive`, `outbound.handle_send` parameter `user` must now receive a `UserType` compatible object. This must have the attribute `id`, and for `handle_send` also `private_key`. If Diaspora support is required then also `handle` and `guid` should exist. The type can be found as a class in `types.UserType`.
   * The high level inbound function `inbound.handle_receive` first parameter has been changed to `request` which must be a `RequestType` compatible object. This must have the attribute `body` which corrresponds to the old `payload` parameter. For ActivityPub inbound requests the object must also contain `headers`, `method` and `url`.
   * The outbound function `outbound.handle_send` parameter `recipients` structure has changed. It must now be a list of dictionaries, containing at minimum the following: `endpoint` for the recipient endpoint, `fid` for the recipient federation ID (ActivityPub only), `protocol` for the protocol to use and `public` as a boolean whether the payload should be treated as visible to anyone.
-  
+ 
     For Diaspora private deliveries, also a `public_key` is required containing the receiver public key. Note that passing in handles as recipients is not any more possible - always pass in a url for `endpoint`.
   * The outbound function `outbound.handle_create_payload` now requires an extra third parameter for the protocol to use. This function should rarely need to be called directly - use `handle_send` instead which can handle both ActivityPub and Diaspora protocols.
   * The `Image` base entity has been made more generic.
-    
+   
     The following were removed: `remote_path`, `remote_name`, `linked_type`, `linked_guid`, `public`.
-    
+   
     The following were added: `url`, `name`.
-  
+ 
 * **Backwards incompatible.** Generator `RFC3033Webfinger` and the related `rfc3033_webfinger_view` have been renamed to `RFC7033Webfinger` and `rfc7033_webfinger_view` to reflect the right RFC number.
 
 * Network helper utility `fetch_document` can now also take a dictionary of `headers`. They will be passed to the underlying `requests` method call as is.
@@ -263,7 +299,7 @@
 * Enable generating encrypted JSON payloads with the Diaspora protocol which adds private message support. ([related issue](https://github.com/jaywink/federation/issues/82))
 
   JSON encrypted payload encryption and decryption is handled by the Diaspora `EncryptedPayload` class.
-  
+ 
 * Add RFC7033 webfinger generator ([related issue](https://github.com/jaywink/federation/issues/108))
 
   Also provided is a Django view and url configuration for easy addition into Django projects. Django is not a hard dependency of this library, usage of the Django view obviously requires installing Django itself. For configuration details see documentation.
@@ -275,33 +311,33 @@
 * Added new network utilities to fetch IP and country information from a host.
 
   The country information is fetched using the free `ipdata.co` service. NOTE! This service is rate limited to 1500 requests per day.
-  
+ 
 * Extract mentions from Diaspora payloads that have text content. The mentions will be available in the entity as `_mentions` which is a set of Diaspora ID's in URI format.
-  
+ 
 ### Changed
 
 * Send outbound Diaspora payloads in new format. Remove possibility to generate legacy MagicEnvelope payloads. ([related issue](https://github.com/jaywink/federation/issues/82))
 
 * **Backwards incompatible**.  Refactor `handle_send` function
-    
+   
   Now handle_send high level outbound helper function also allows delivering private payloads using the Diaspora protocol. ([related issue](https://github.com/jaywink/federation/issues/82))
-  
+ 
   The signature has changed. Parameter `recipients` should now be a list of recipients to delivery to. Each recipient should either be an `id` or a tuple of `(id, public key)`. If public key is provided, Diaspora protocol delivery will be made as an encrypted private delivery.
-  
+ 
 * **Backwards incompatible**. Change `handle_create_payload` function signature.
 
   Parameter `to_user` is now `to_user_key` and thus instead of an object containing the `key` attribute it should now be an RSA public key object instance. This simplifies things since we only need the key from the user, nothing else.
 
 * Switch Diaspora protocol to send new style entities ([related issue](https://github.com/jaywink/federation/issues/59))
 
-  We've already accepted these on incoming payloads for a long time and so do all the other platforms now, so now we always send out entities with the new property names. This can break federation with really old servers that don't understand these keys yet. 
+  We've already accepted these on incoming payloads for a long time and so do all the other platforms now, so now we always send out entities with the new property names. This can break federation with really old servers that don't understand these keys yet.
 
 ### Fixed
 
 * Change unquote method used when preparing Diaspora XML payloads for verification ([related issue](https://github.com/jaywink/federation/issues/115))
 
   Some platforms deliver payloads not using the urlsafe base64 standard which caused problems when validating the unquoted signature. Ensure maximum compatibility by allowing non-standard urlsafe quoted payloads.
-  
+ 
 * Fix for empty values in Diaspora protocol entities sometimes ending up as `None` instead of empty string when processing incoming payloads.
 
 * Fix validation of `Retraction` with entity type `Share`
@@ -309,31 +345,31 @@
 * Allow port in Diaspora handles as per the protocol specification
 
   Previously handles were validated like emails.
-  
+ 
 * Fix Diaspora `Profile` mapping regarding `last_name` property
 
   Previously only `first_name` was used when creating the `Profile.name` value. Now both `first_name` and `last_name` are used.
-  
+ 
   When creating outgoing payloads, the `Profile.name` will still be placed in `first_name` to avoid trying to artificially split it.
-    
+   
 ## [0.15.0] - 2018-02-12
 
 ### Added
 * Added base entity `Share` which maps to a `DiasporaReshare` for the Diaspora protocol. ([related issue](https://github.com/jaywink/federation/issues/94))
 
   The `Share` entity supports all the properties that a Diaspora reshare does. Additionally two other properties are supported: `raw_content` and `entity_type`. The former can be used for a "quoted share" case where the sharer adds their own note to the share. The latter can be used to reference the type of object that was shared, to help the receiver, if it is not sharing a `Post` entity. The value must be a base entity class name.
- 
+
 * Entities have two new properties: `id` and `target_id`.
 
-  Diaspora entity ID's are in the form of the [Diaspora URI scheme](https://diaspora.github.io/diaspora_federation/federation/diaspora_scheme.html), where it is possible to construct an ID from the entity. In the future, ActivityPub object ID's will be found in these properties. 
+  Diaspora entity ID's are in the form of the [Diaspora URI scheme](https://diaspora.github.io/diaspora_federation/federation/diaspora_scheme.html), where it is possible to construct an ID from the entity. In the future, ActivityPub object ID's will be found in these properties.
 
 * New high level fetcher function `federation.fetchers.retrieve_remote_content`. ([related issue](https://github.com/jaywink/federation/issues/103))
 
   This function takes the following parameters:
-  
+ 
     * `id` - Object ID. For Diaspora, the only supported protocol at the moment, this is in the [Diaspora URI](https://diaspora.github.io/diaspora_federation/federation/diaspora_scheme.html) format.
     * `sender_key_fetcher` - Optional function that takes a profile `handle` and returns a public key in `str` format. If this is not given, the public key will be fetched from the remote profile over the network.
-    
+   
   The given ID will be fetched from the remote endpoint, validated to be from the correct author against their public key and then an instance of the entity class will be constructed and returned.
 
 * New Diaspora protocol helpers in `federation.utils.diaspora`:
@@ -341,16 +377,16 @@
   * `retrieve_and_parse_content`. See notes regarding the high level fetcher above.
   * `fetch_public_key`. Given a `handle` as a parameter, will fetch the remote profile and return the `public_key` from it.
   * `parse_diaspora_uri`. Parses a Diaspora URI scheme string, returns either `None` if parsing fails or a `tuple` of `handle`, `entity_type` and `guid`.
-  
+ 
 * Support fetching new style Diaspora protocol Webfinger (RFC 3033) ([related issue](https://github.com/jaywink/federation/issues/108))
 
-  The legaxy Webfinger is still used as fallback if the new Webfinger is not found. 
+  The legaxy Webfinger is still used as fallback if the new Webfinger is not found.
 
 ### Changed
 * Refactoring for Diaspora `MagicEnvelope` class.
 
   The class init now also allows passing in parameters to construct and verify MagicEnvelope instances. The order of init parameters has not been changed, but they are now all optional. When creating a class instance, one should always pass in the necessary parameters depnding on whether the class instance will be used for building a payload or verifying an incoming payload. See class docstring for details.
-  
+ 
 * Diaspora procotol receive flow now uses the `MagicEnvelope` class to verify payloads. No functional changes regarding verification otherwise.
 
 * Diaspora protocol receive flow now fetches the sender public key over the network if a `sender_key_fetcher` function is not passed in. Previously an error would be raised.
@@ -372,9 +408,9 @@
 ## [0.14.0] - 2017-08-06
 
 ### Security
-* Add proper checks to make sure Diaspora protocol payload handle and entity handle are the same. Even though we already verified the signature of the sender, we didn't ensure that the sender isn't trying to fake an entity authored by someone else. 
+* Add proper checks to make sure Diaspora protocol payload handle and entity handle are the same. Even though we already verified the signature of the sender, we didn't ensure that the sender isn't trying to fake an entity authored by someone else.
 
-  The Diaspora protocol functions `message_to_objects` and `element_to_objects` now require a new parameter, the payload sender handle. These functions should normally not be needed to be used directly. 
+  The Diaspora protocol functions `message_to_objects` and `element_to_objects` now require a new parameter, the payload sender handle. These functions should normally not be needed to be used directly.
 
 ### Changed
 * **Breaking change.** The high level `federation.outbound` functions `handle_send` and `handle_create_payload` signatures have been changed. This has been done to better represent the objects that are actually sent in and to add an optional `parent_user` object.
@@ -384,7 +420,7 @@
 ## [0.13.0] - 2017-07-22
 
 ### Backwards incompatible changes
-* When processing Diaspora payloads, entity used to get a `_source_object` stored to it. This was an `etree.Element` created from the source object. Due to serialization issues in applications (for example pushing the object to a task queue or saving to database), `_source_object` is now a byte string representation for the element done with `etree.tostring()`. 
+* When processing Diaspora payloads, entity used to get a `_source_object` stored to it. This was an `etree.Element` created from the source object. Due to serialization issues in applications (for example pushing the object to a task queue or saving to database), `_source_object` is now a byte string representation for the element done with `etree.tostring()`.
 
 ### Added
 * New style Diaspora private encrypted JSON payloads are now supported in the receiving side. Outbound private Diaspora payloads are still sent as legacy encrypted payloads. ([issue](https://github.com/jaywink/federation/issues/83))
@@ -401,7 +437,7 @@
 
 ### Removed
 * `Post.photos` entity attribute was never used by any code and has been removed. Child entities of type `Image` are stored in the `Post._children` as before.
-* Removed deprecated user private key lookup using `user.key` in Diaspora receive processing. Passed in `user` objects must now have a `private_key` attribute. 
+* Removed deprecated user private key lookup using `user.key` in Diaspora receive processing. Passed in `user` objects must now have a `private_key` attribute.
 
 ## [0.12.0] - 2017-05-22
 
@@ -423,9 +459,9 @@
 
 Diaspora protocol support added for `comment` and `like` relayable types. On inbound payloads the signature included in the payload will be verified against the sender public key. A failed verification will raise `SignatureVerificationError`. For outbound entities, the author private key will be used to add a signature to the payload.
 
-This introduces some backwards incompatible changes to the way entities are processed. Diaspora entity mappers `get_outbound_entity` and entity utilities `get_full_xml_representation` now requires the author `private_key` as a parameter. This is required to sign outgoing `Comment` and `Reaction` (like) entities. 
+This introduces some backwards incompatible changes to the way entities are processed. Diaspora entity mappers `get_outbound_entity` and entity utilities `get_full_xml_representation` now requires the author `private_key` as a parameter. This is required to sign outgoing `Comment` and `Reaction` (like) entities.
 
-Additionally, Diaspora entity mappers `message_to_objects` and `element_to_objects` now take an optional `sender_key_fetcher` parameter. This must be a function that when called with the sender handle will return the sender public key. This allows using locally cached public keys instead of fetching them as needed. NOTE! If the function is not given, each processed payload will fetch the public key over the network. 
+Additionally, Diaspora entity mappers `message_to_objects` and `element_to_objects` now take an optional `sender_key_fetcher` parameter. This must be a function that when called with the sender handle will return the sender public key. This allows using locally cached public keys instead of fetching them as needed. NOTE! If the function is not given, each processed payload will fetch the public key over the network.
 
 A failed payload signature verification now raises a `SignatureVerificationError` instead of a less specific `AssertionError`.
 
@@ -446,7 +482,7 @@ A failed payload signature verification now raises a `SignatureVerificationError
 ## [0.10.1] - 2017-03-09
 
 ### Fixes
-* Ensure tags are lower cased after collecting them from entity `raw_content`. 
+* Ensure tags are lower cased after collecting them from entity `raw_content`.
 
 ## [0.10.0] - 2017-01-28
 
@@ -491,7 +527,7 @@ A failed payload signature verification now raises a `SignatureVerificationError
 
 The name Social-Federation was really only an early project name which stuck. Since the beginning, the main module has been `federation`. It makes sense to unify these and also shorter names are generally nicer.
 
-#### What do you need to do? 
+#### What do you need to do?
 
 Mostly nothing since the module was already called `federation`. Some things to note below:
 
@@ -533,7 +569,7 @@ Mostly nothing since the module was already called `federation`. Some things to 
 ### Changed
 * Deprecate receiving user `key` attribute for Diaspora protocol. Instead correct attribute is now `private_key` for any user passed to `federation.inbound.handle_receive`. We already use `private_key` in the message creation code so this is just to unify the user related required attributes.
    * DEPRECATION: There is a fallback with `key` for user objects in the receiving payload part of the Diaspora protocol until 0.8.0.
-   
+  
 ### Fixes
 * Loosen up hCard selectors when parsing profile from hCard document in `federation.utils.diaspora.parse_profile_from_hcard`. The selectors now match Diaspora upcoming federation documentation.
 
@@ -542,7 +578,7 @@ Mostly nothing since the module was already called `federation`. Some things to 
 ### Breaking changes
 - `federation.outbound.handle_create_payload` parameter `to_user` is now optional. Public posts don't need a recipient. This also affects Diaspora protocol `build_send` method where the change is reflected similarly. [#43](https://github.com/jaywink/federation/pull/43)
      - In practise this means the signature has changed for `handle_create_payload` and `build_send` from **`from_user, to_user, entity`** to **`entity, from_user, to_user=None`**.
-     
+
 ### Added
 - `Post.provider_display_name` is now supported in the entity outbound/inbound mappers. [#44](https://github.com/jaywink/federation/pull/44)
 - Add utility method `federation.utils.network.send_document` which is just a wrapper around `requests.post`. User agent will be added to the headers and exceptions will be silently captured and returned instead. [#45](https://github.com/jaywink/federation/pull/45)

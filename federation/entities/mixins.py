@@ -59,12 +59,6 @@ class BaseEntity:
             # Fill a default activity if not given and type of entity class has one
             self.activity = getattr(self, "_default_activity", None)
 
-    # This is now broken, but only used by the activitypub django decorator
-    #def as_protocol(self, protocol):
-    #    entities = importlib.import_module(f"federation.entities.{protocol}.entities")
-    #    klass = getattr(entities, f"{protocol.title()}{self.__class__.__name__}")
-    #    return klass.from_base(self)
-
     def post_receive(self):
         """
         Run any actions after deserializing the payload into an entity.

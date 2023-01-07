@@ -80,7 +80,6 @@ class TestHandleSend:
         assert kwargs['headers'] == {
             'Content-Type': 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
         }
-        print(args)
         assert encode_if_text("https://www.w3.org/ns/activitystreams#Public") in args[1]
 
         # Ensure diaspora public payloads and recipients, one per unique host
