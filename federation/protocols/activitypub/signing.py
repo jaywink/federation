@@ -47,10 +47,10 @@ def verify_request_signature(request: RequestType):
     sig = {i.split("=", 1)[0]: i.split("=", 1)[1].strip('"') for i in sig_struct.split(",")}
     signer = retrieve_and_parse_document(sig.get('keyId'))
     if not signer:
-        raise ValueError("Failed to retrieve keyId")
+        raise ValueError(f"Failed to retrieve keyId for {sig.get('keyId')}")
 
     if not getattr(signer, 'public_key_dict', None):
-        raise ValueError("Failed to retrieve public key")
+        raise ValueError(f"Failed to retrieve public key for {sig.get('keyId')}")
 
     key = encode_if_text(signer.public_key_dict['publicKeyPem'])
 
@@ -63,8 +63,8 @@ def verify_request_signature(request: RequestType):
     past_delta = datetime.timedelta(hours=24)
     future_delta = datetime.timedelta(seconds=30)
     now = datetime.datetime.utcnow().replace(tzinfo=pytz.utc)
-    #if dt < now - past_delta or dt > now + future_delta:
-    #    raise ValueError("Request Date is too far in future or past")
+    if dt < now - past_delta or dt > now + future_delta:
+        raise ValueError("Request Date is too far in future or past")
 
     path = getattr(request, 'path', urlsplit(request.url).path)
     if not HeaderVerifier(request.headers, key, method=request.method,
