@@ -17,9 +17,6 @@ setup(
     name='federation',
     version=__version__,
     description=description,
-    dependency_links=[
-        "https://github.com/tripougnif/python-httpsig-socialhome/tarball/master#egg=f04c890ecca4d8921cd838a96db3e3345a80b4f0-0.1"
-    ],
     long_description=get_long_description(),
     author='Jason Robinson',
     author_email='mail@jasonrobinson.me',
@@ -53,6 +50,9 @@ setup(
         "f04c890ecca4d8921cd838a96db3e3345a80b4f0-0.1",
     ],
     include_package_data=True,
+    dependency_links=[
+        "https://github.com/tripougnif/python-httpsig-socialhome/tarball/master#egg=f04c890ecca4d8921cd838a96db3e3345a80b4f0-0.1"
+    ],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Web Environment',
