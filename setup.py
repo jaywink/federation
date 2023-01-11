@@ -17,6 +17,9 @@ setup(
     name='federation',
     version=__version__,
     description=description,
+    dependency_links=[
+        "https://github.com/tripougnif/python-httpsig-socialhome/tarball/master#egg=f04c890ecca4d8921cd838a96db3e3345a80b4f0-0.1"
+    ],
     long_description=get_long_description(),
     author='Jason Robinson',
     author_email='mail@jasonrobinson.me',
@@ -31,7 +34,7 @@ setup(
         "bleach>3.0",
         "calamus",
         "commonmark",
-        "cryptography<=3.4.7",
+        "cryptography",
         "cssselect>=0.9.2",
         "dirty-validators>=0.3.0",
         "lxml>=3.4.0",
@@ -47,7 +50,7 @@ setup(
         "redis",
         "requests>=2.8.0",
         "requests-cache",
-        "requests-http-signature-jaywink>=0.1.0.dev0",
+        "f04c890ecca4d8921cd838a96db3e3345a80b4f0-0.1",
     ],
     include_package_data=True,
     classifiers=[

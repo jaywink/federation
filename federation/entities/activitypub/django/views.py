@@ -24,15 +24,10 @@ def get_and_verify_signer(request):
             body=request.body,
             method=request.method,
             headers=request.headers)
-    sig = HTTPSignatureHeaderAuth.get_sig_struct(req)
-    signer = sig.get('keyId', '').split('#')[0]
-    key = get_public_key(signer)
-    if key:
-        try:
-            verify_request_signature(req, key)
-            return signer
-        except InvalidSignature:
-            return None
+    try:
+        return verify_request_signature(req)
+    except ValueError:
+        return None
 
 
 def activitypub_object_view(func):
