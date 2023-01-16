@@ -47,7 +47,7 @@ setup(
         "redis",
         "requests>=2.8.0",
         "requests-cache",
-        "httpsig @ git+https://github.com/tripougnif/python-httpsig-socialhome.git@f04c890ecca4d8921cd838a96db3e3345a80b4f0#egg=httpsig==0.1",
+        "httpsig @ git+https://github.com/tripougnif/python-httpsig-socialhome.git@ce03fa7b25acfacc14fba2670c33246025db7be0#egg=httpsig==0.1",
     ],
     include_package_data=True,
     classifiers=[
