@@ -37,13 +37,21 @@ def get_http_authentication(private_key: RsaKey, private_key_id: str, digest: bo
     )
 
 
-def verify_request_signature(request: RequestType):
+def verify_request_signature(request: RequestType, required: bool=True):
     """
     Verify HTTP signature in request against a public key.
     """
     from federation.utils.activitypub import retrieve_and_parse_document
     
-    sig_struct = request.headers["Signature"]
+    sig_struct = request.headers.get("Signature", None)
+    if not sig_struct:
+        if required:
+            raise ValueError("A signature is required but was not provided")
+        else:
+            return None
+
+    # this should return a dict populated with the following keys:
+    # keyId, algorithm, headers and signature
     sig = {i.split("=", 1)[0]: i.split("=", 1)[1].strip('"') for i in sig_struct.split(",")}
     signer = retrieve_and_parse_document(sig.get('keyId'))
     if not signer:

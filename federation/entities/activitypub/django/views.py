@@ -24,7 +24,7 @@ def get_and_verify_signer(request):
             method=request.method,
             headers=request.headers)
     try:
-        return verify_request_signature(req)
+        return verify_request_signature(req, required=False)
     except ValueError:
         return None
 
