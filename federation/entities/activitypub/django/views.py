@@ -1,6 +1,5 @@
 from cryptography.exceptions import InvalidSignature
 from django.http import JsonResponse, HttpResponse, HttpResponseNotFound
-from requests_http_signature import HTTPSignatureHeaderAuth
 
 from federation.entities.activitypub.mappers import get_outbound_entity
 from federation.protocols.activitypub.signing import verify_request_signature
@@ -24,15 +23,10 @@ def get_and_verify_signer(request):
             body=request.body,
             method=request.method,
             headers=request.headers)
-    sig = HTTPSignatureHeaderAuth.get_sig_struct(req)
-    signer = sig.get('keyId', '').split('#')[0]
-    key = get_public_key(signer)
-    if key:
-        try:
-            verify_request_signature(req, key)
-            return signer
-        except InvalidSignature:
-            return None
+    try:
+        return verify_request_signature(req, required=False)
+    except ValueError:
+        return None
 
 
 def activitypub_object_view(func):

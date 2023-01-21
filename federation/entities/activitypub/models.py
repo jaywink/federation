@@ -256,7 +256,7 @@ OBJECTS = [
 
 
 def set_public(entity):
-    for attr in [getattr(entity, 'to', []), getattr(entity, 'cc' ,[])]:
+    for attr in [entity.to, entity.cc]:
         if isinstance(attr, list):
             if NAMESPACE_PUBLIC in attr: entity.public = True
         elif attr == NAMESPACE_PUBLIC: entity.public = True
@@ -1318,8 +1318,8 @@ def extract_replies(replies):
     visited = []
 
     def walk_reply_collection(replies):
-        items = getattr(replies, 'items', [])
-        if items and not isinstance(items, list): items = [items]
+        items = replies.items if replies.items is not missing else []
+        if not isinstance(items, list): items = [items]
         for obj in items:
             if isinstance(obj, Note):
                 try:
@@ -1330,7 +1330,7 @@ def extract_replies(replies):
                     continue
             elif not isinstance(obj, str): continue
             objs.append(obj)
-        if getattr(replies, 'next_', None):
+        if replies.next_ is not missing:
             if (replies.id != replies.next_) and (replies.next_ not in visited):
                 resp = retrieve_and_parse_document(replies.next_)
                 if resp:
