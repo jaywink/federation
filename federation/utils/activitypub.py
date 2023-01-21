@@ -3,17 +3,15 @@ import logging
 from typing import Optional, Any
 
 from federation.protocols.activitypub.signing import get_http_authentication
+from federation.utils.django import get_federation_user
 from federation.utils.network import fetch_document, try_retrieve_webfinger_document
 from federation.utils.text import decode_if_bytes, validate_handle
 
 logger = logging.getLogger('federation')
 
-try:
-    from federation.utils.django import get_federation_user
-    federation_user = get_federation_user()
-except (ImportError, AttributeError):
-    federation_user = None
-    logger.warning("django is required for get requests signing")
+federation_user = get_federation_user()
+if not federation_user: logger.warning("django is required for get requests signing")
+
 
 def get_profile_id_from_webfinger(handle: str) -> Optional[str]:
     """
@@ -43,7 +41,7 @@ def retrieve_and_parse_document(fid: str, cache: bool=True) -> Optional[Any]:
     """
     from federation.entities.activitypub.models import element_to_objects # Circulars
     document, status_code, ex = fetch_document(fid, extra_headers={'accept': 'application/activity+json'}, cache=cache,
-            auth=get_http_authentication(federation_user.rsa_private_key,f'{federation_user.id}#main-key') if federation_user else None)
+            auth=get_http_authentication(federation_user.rsa_private_key,f'{federation_user.id}#main-key', digest=False) if federation_user else None)
     if document:
         try:
             document = json.loads(decode_if_bytes(document))

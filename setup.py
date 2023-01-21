@@ -31,7 +31,7 @@ setup(
         "bleach>3.0",
         "calamus",
         "commonmark",
-        "cryptography<=3.4.7",
+        "cryptography",
         "cssselect>=0.9.2",
         "dirty-validators>=0.3.0",
         "lxml>=3.4.0",
@@ -47,7 +47,7 @@ setup(
         "redis",
         "requests>=2.8.0",
         "requests-cache",
-        "requests-http-signature-jaywink>=0.1.0.dev0",
+        "httpsig @ git+https://github.com/tripougnif/python-httpsig-socialhome.git@ce03fa7b25acfacc14fba2670c33246025db7be0#egg=httpsig==0.1",
     ],
     include_package_data=True,
     classifiers=[
