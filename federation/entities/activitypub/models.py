@@ -1208,12 +1208,13 @@ class Create(Activity):
     class Meta:
         rdf_type = as2.Create
 
+# this is only a placeholder until reactions are implemented
+class Like(Activity, base.Reaction):
+    id = fields.Id()
+    reaction = fields.String(diaspora.like)
 
-class Like(Announce):
-    like = fields.String(diaspora.like)
-
-    def to_base(self):
-        return self
+    def validate(self):
+        pass
 
     class Meta:
         rdf_type = as2.Like
