@@ -790,6 +790,8 @@ class Note(Object, RawContentMixin):
         kwargs = get_base_attributes(self, keep=(
             '_mentions', '_media_type', '_rendered_content', '_cached_children', '_cached_raw_content'))
         entity = Comment(**kwargs) if getattr(self, 'target_id') else Post(**kwargs)
+        # Plume (and maybe other platforms) send the attrbutedTo field as an array
+        if isinstance(entity.actor_id, list): entity.actor_id = entity.actor_id[0]
 
         set_public(entity)
         return entity
@@ -1333,7 +1335,7 @@ def extract_replies(replies):
             objs.append(obj)
         if replies.next_ is not missing:
             if (replies.id != replies.next_) and (replies.next_ not in visited):
-                resp = retrieve_and_parse_document(replies.next_)
+                resp = retrieve_and_parse_document(replies.next_, cache=False)
                 if resp:
                     visited.append(replies.next_)
                     walk_reply_collection(resp)
