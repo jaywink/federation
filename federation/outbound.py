@@ -221,8 +221,10 @@ def handle_send(
                     }
                 )
                 continue
+            # The parent_user MUST be local
+            local_user = author_user if author_user.rsa_private_key else parent_user
             payloads.append({
-                "auth": get_http_authentication(author_user.rsa_private_key, f"{author_user.id}#main-key"),
+                "auth": get_http_authentication(local_user.rsa_private_key, f"{local_user.id}#main-key"),
                 "headers": {
                     "Content-Type": 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
                 },
