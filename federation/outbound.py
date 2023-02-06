@@ -132,7 +132,10 @@ def handle_send(
                      ]
     :arg parent_user: (Optional) User object of the parent object, if there is one. This must be given for the
                       Diaspora protocol if a parent object exists, so that a proper ``parent_author_signature`` can
-                      be generated. If given, the payload will be sent as this user.
+                      be generated. If given, the payload will be sent as this user. For Activitypub, the
+                      parent_user's private key will be used to generate the http signature if the author_user
+                      is not a local user.
+
     :arg payload_logger: (Optional) Function to log the payloads with.
     """
     payloads = []

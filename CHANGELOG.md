@@ -55,6 +55,8 @@
 
 * Signatures are not verified and the corresponding payload is dropped if no public key is found.
 
+* Sign forwarded AP replies and shares with the target content author's private key. 
+
 ### Internal changes
 
 * Dropped python 3.6 support.

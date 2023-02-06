@@ -23,7 +23,7 @@ def get_configuration():
     }
     try:
         configuration.update(settings.FEDERATION)
-    except ImproperlyConfigured:
+    except (ModuleNotFoundError, ImproperlyConfigured):
         # Django is not properly configured, return defaults
         return configuration
     if not all([
