@@ -1,5 +1,11 @@
 # Changelog
 
+## unreleased
+
+### Changed
+
+* Switch `python-httpsig-socialhome` dependency to PyPi packaged version.
+
 ## [0.23.0] - 2023-02-08
 
 ### Added
