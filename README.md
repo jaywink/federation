@@ -20,10 +20,8 @@ without the app builder having to know everything about those protocols.
 Currently, three protocols are being focused on.
 
 * Diaspora is considered to be stable with most of the protocol implemented.
-* ActivityPub support should be considered as alpha - all the basic
-  things work but there are likely to be a lot of compatibility issues with other ActivityPub
-  implementations.
-* Matrix support cannot be considered usable yet.
+* ActivityPub is considered to be stable with working federation with most ActivityPub platforms.
+* Matrix support is in early phase and not to be considered useful yet.
 
 The code base is well tested and in use in several projects. Backward incompatible changes 
 will be clearly documented in changelog entries.
