@@ -3,6 +3,7 @@ __pycache__
 .cache
 .pytest_cache/
 
+http_cache.sqlite
 database.sqlite
 
 # C extensions
