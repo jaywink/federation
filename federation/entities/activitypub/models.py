@@ -1,30 +1,30 @@
-from copy import copy
-from datetime import timedelta
 import json
 import logging
-from typing import List, Callable, Dict, Union, Optional
-from urllib.parse import urlparse
 import uuid
+from copy import copy
+from datetime import timedelta
+from typing import List, Dict, Union
+from urllib.parse import urlparse
 
 import bleach
 from calamus import fields
 from calamus.schema import JsonLDAnnotation, JsonLDSchema, JsonLDSchemaOpts
 from calamus.utils import normalize_value
-from marshmallow import exceptions, pre_load, post_load, pre_dump, post_dump
+from marshmallow import exceptions, pre_load, post_load, post_dump
 from marshmallow.fields import Integer
 from marshmallow.utils import EXCLUDE, missing
 from pyld import jsonld
-import requests_cache as rc
 
+import federation.entities.base as base
 from federation.entities.activitypub.constants import CONTEXT, CONTEXT_SETS, NAMESPACE_PUBLIC
 from federation.entities.mixins import BaseEntity, RawContentMixin
 from federation.entities.utils import get_base_attributes, get_profile
 from federation.outbound import handle_send
 from federation.types import UserType, ReceiverVariant
-from federation.utils.activitypub import retrieve_and_parse_document, retrieve_and_parse_profile, get_profile_id_from_webfinger
+from federation.utils.activitypub import retrieve_and_parse_document, retrieve_and_parse_profile, \
+    get_profile_id_from_webfinger
 from federation.utils.django import get_configuration, get_redis
 from federation.utils.text import with_slash, validate_handle
-import federation.entities.base as base
 
 logger = logging.getLogger("federation")
 
@@ -1107,7 +1107,7 @@ class Follow(Activity, base.Follow):
             activity_id=f"{self.target_id}#accept-{uuid.uuid4()}",
             actor_id=self.target_id,
             target_id=self.activity_id,
-            object=self.to_as2(),
+            object_=self,
         )
         # noinspection PyBroadException
         try:
@@ -1167,7 +1167,7 @@ class Announce(Activity, base.Share):
             entity = self
         else:
             self.target_id = self.id
-            self.entity_type = 'Object'
+            self.entity_type = 'Share'
             self.__dict__.update({'schema': True})
             entity = base.Retraction(**get_base_attributes(self))
 
@@ -1245,7 +1245,7 @@ class Update(Create):
         rdf_type = as2.Update
 
 
-class Undo(Create):
+class Undo(Create, base.Retraction):
     class Meta:
         rdf_type = as2.Undo
         exclude = ('created_at',)
