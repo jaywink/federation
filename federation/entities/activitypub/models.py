@@ -1167,7 +1167,7 @@ class Announce(Activity, base.Share):
             entity = self
         else:
             self.target_id = self.id
-            self.entity_type = 'Share'
+            self.entity_type = 'Object'
             self.__dict__.update({'schema': True})
             entity = base.Retraction(**get_base_attributes(self))
 
