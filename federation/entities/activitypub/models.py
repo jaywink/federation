@@ -825,7 +825,7 @@ class Note(Object, RawContentMixin):
             # Skip when markdown
             return
 
-        hrefs = [tag.href.lower() for tag in self.tag_objects]
+        hrefs = [tag.href.lower() for tag in self.tag_objects if isinstance(tag, Hashtag)]
         # noinspection PyUnusedLocal
         def remove_tag_links(attrs, new=False):
             # Hashtag object hrefs
