@@ -821,10 +821,17 @@ class Note(Object, RawContentMixin):
         """
         super().post_receive()
 
-        if getattr(self, 'target_id'): self.entity_type = 'Comment'
+        if not self.raw_content or self._media_type == "text/markdown":
+            # Skip when markdown
+            return
 
+        hrefs = [tag.href.lower() for tag in self.tag_objects]
         # noinspection PyUnusedLocal
         def remove_tag_links(attrs, new=False):
+            # Hashtag object hrefs
+            href = (None, "href")
+            if attrs.get(href, "").lower() in hrefs:
+                return
 
             # Mastodon
             rel = (None, "rel")
@@ -832,15 +839,10 @@ class Note(Object, RawContentMixin):
                 return
             
             # Friendica
-            href = (None, "href")
-            if attrs.get(href).endswith(f'tag={attrs.get("_text")}'):
+            if attrs.get(href, "").endswith(f'tag={attrs.get("_text")}'):
                 return
 
             return attrs
-
-        if not self.raw_content or self._media_type == "text/markdown":
-            # Skip when markdown
-            return
 
         self.raw_content = bleach.linkify(
             self.raw_content,
@@ -848,6 +850,8 @@ class Note(Object, RawContentMixin):
             parse_email=False,
             skip_tags=["code", "pre"],
         )
+
+        if getattr(self, 'target_id'): self.entity_type = 'Comment'
 
     def add_tag_objects(self) -> None:
         """
