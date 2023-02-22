@@ -840,7 +840,13 @@ class Note(Object, RawContentMixin):
         def remove_tag_links(attrs, new=False):
             # Hashtag object hrefs
             href = (None, "href")
-            if attrs.get(href, "").lower() in hrefs:
+            url = attrs.get(href, "").lower()
+            if url in hrefs:
+                return
+            # one more time without the query (for pixelfed)
+            parsed = urlparse(url)
+            url = f'{parsed.scheme}://{parsed.netloc}{parsed.path}'
+            if url in hrefs:
                 return
 
             # Mastodon
