@@ -367,13 +367,23 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
             # AP activities may be signed, but most platforms don't
             # define RsaSignature2017. add it to the context
             # hubzilla doesn't define the discoverable property in its context
+            # include all Mastodon extensions for platforms that only define http://joinmastodon.org/ns in their context
             may_add = {'signature': ['https://w3id.org/security/v1', {'sec':'https://w3id.org/security#','RsaSignature2017':'sec:RsaSignature2017'}],
                     'publicKey': ['https://w3id.org/security/v1'],
                     'discoverable': [{'toot':'http://joinmastodon.org/ns#','discoverable': 'toot:discoverable'}], #for hubzilla
+                    'suspended': [{'toot':'http://joinmastodon.org/ns#','suspended': 'toot:suspended'}],
                     'copiedTo': [{'toot':'http://joinmastodon.org/ns#','copiedTo': 'toot:copiedTo'}], #for hubzilla
                     'featured': [{'toot':'http://joinmastodon.org/ns#','featured': 'toot:featured'}], #for litepub and pleroma
-                    'tag': [{'Hashtag': 'as:Hashtag'}], #for epicyon
-                    'attachment': [{'schema': 'http://schema.org#', 'PropertyValue': 'schema:PropertyValue'}] # for owncast
+                    'featuredTags': [{'toot':'http://joinmastodon.org/ns#','featuredTags': 'toot:featuredTags'}],
+                    'focalPoint': [{'toot':'http://joinmastodon.org/ns#',
+                                    'focalPoint': {'@id':'toot:focalPoint','@container':'@list'},
+                                    }],
+                    'tag': [{'Hashtag': 'as:Hashtag', #for epicyon
+                             'toot':'http://joinmastodon.org/ns#',
+                             'Emoji':'toot:Emoji'}],
+                    'attachment': [{'schema': 'http://schema.org#', 'PropertyValue': 'schema:PropertyValue', # for owncast
+                                    'toot':'http://joinmastodon.org/ns#','blurHash': 'toot:blurHash',
+                                    'IdentityProof': 'toot:IdentityProof'}]
                     }
 
             to_add = [val for key,val in may_add.items() if data.get(key)]
