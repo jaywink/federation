@@ -584,7 +584,7 @@ class Person(Object, base.Profile):
     username = fields.String(as2.preferredUsername)
     endpoints = CompactedDict(as2.endpoints)
     shared_inbox = IRI(as2.sharedInbox) # misskey adds this
-    url = IRI(as2.url)
+    url = MixedField(as2.url, nested='LinkSchema')
     playlists = IRI(pt.playlists)
     featured = IRI(toot.featured)
     featuredTags = IRI(toot.featuredTags)
