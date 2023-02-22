@@ -1337,7 +1337,7 @@ def extract_replies(replies):
                     continue
             elif not isinstance(obj, str): continue
             objs.append(obj)
-        if replies.next_ is not missing:
+        if getattr(replies, 'next_', None) not in (missing, None):
             if (replies.id != replies.next_) and (replies.next_ not in visited):
                 resp = retrieve_and_parse_document(replies.next_, cache=False)
                 if resp:
