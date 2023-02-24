@@ -971,6 +971,9 @@ class Note(Object, RawContentMixin):
         self._cached_children = value
         self.attachment = [Image.from_base(i) for i in value]
 
+    def validate_actor_id(self):
+        if not self.actor_id.startswith('http'):
+            raise ValueError(f'Invalid actor_id for activitypub ({self.actor_id})')
 
     class Meta:
         rdf_type = as2.Note
