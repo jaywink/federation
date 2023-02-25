@@ -869,6 +869,11 @@ class Note(Object, RawContentMixin):
 
         if getattr(self, 'target_id'): self.entity_type = 'Comment'
 
+        # add nsfw tag. TODO: add a client app content property for this?
+        # TODO: prepend with the summary property? Needs support from the client app.
+        if self.sensitive:
+            self.raw_content += ' #nsfw'
+
     def add_tag_objects(self) -> None:
         """
         Populate tags to the object.tag list.
