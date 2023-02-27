@@ -167,7 +167,7 @@ def handle_send(
     logger.debug('handle_send - length of recipients: %s', len(recipients))
     # Flatten to unique recipients
     # TODO supply a callable that empties "fid" in the case that public=True
-    unique_recipients = list(unique_everseen(recipients, key=lambda val: val['endpoints']))
+    unique_recipients = list(unique_everseen(recipients, key=lambda val: val['endpoint']))
     logger.debug('handle_send - length of unique_recipients: %s', len(unique_recipients))
     logger.debug('handle_send / unique_recipients - %s', unique_recipients)
 
