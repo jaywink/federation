@@ -1104,9 +1104,12 @@ class Follow(Activity, base.Follow):
         return super().to_as2()
 
     def to_base(self):
-        # This is assuming Follow can only be the object of an Undo activity. Lazy.
-        if self.activity != self: 
+        if isinstance(self.activity, Undo):
             self.following = False
+
+        # Socialhome doesn't know what to do with Accept objects yet.
+        if isinstance(self.activity, Accept):
+            return self.activity
 
         return self
 
@@ -1252,6 +1255,9 @@ class Like(Activity, base.Reaction):
 
 # inbound Accept is a noop...
 class Accept(Create, base.Accept):
+    def validate(self):
+        pass
+
     class Meta:
         rdf_type = as2.Accept
         exclude = ('created_at',)
