@@ -313,6 +313,13 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
         # noinspection PyArgumentList
         return cls(**get_base_attributes(entity))
 
+    # This is to ensure the original payload is relayed in order
+    # to preserve the validity of the LD signature.
+    # Note: the function name comes from the Diaspora logic and does
+    # not reflect what is actually happening here
+    def sign_with_parent(self, private_key):
+        self.outbound_doc = getattr(self, '_source_object', None)
+
     # Before validation, assign None to fields that are set to marshmallow.missing
     # Setting missing fields to marshmallow.missing starts with calamus 0.4.1
     # TODO: rework validation
@@ -1408,6 +1415,7 @@ def model_to_objects(payload):
     if model and issubclass(model, Object):
         try:
             entity = model.schema().load(payload)
+            entity._source_object = payload
         except (KeyError, jsonld.JsonLdError, exceptions.ValidationError) as exc :  # Just give up for now. This must be made robust
             logger.error(f"Error parsing jsonld payload ({exc})")
             return None

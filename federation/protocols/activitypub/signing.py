@@ -9,11 +9,11 @@ from typing import Union
 from urllib.parse import urlsplit
 
 import pytz
+from Crypto.Hash import SHA256
 from Crypto.PublicKey.RSA import RsaKey
 from httpsig.sign_algorithms import PSS
 from httpsig.requests_auth import HTTPSignatureAuth
 from httpsig.verify import HeaderVerifier
-
 
 from federation.types import RequestType
 from federation.utils.network import parse_http_date
@@ -35,6 +35,10 @@ def get_http_authentication(private_key: RsaKey, private_key_id: str, digest: bo
         secret=key,
         key_id=private_key_id,
     )
+
+
+def create_ld_signature(payload, private_key):
+    pass
 
 
 def verify_request_signature(request: RequestType, required: bool=True):
@@ -81,3 +85,10 @@ def verify_request_signature(request: RequestType, required: bool=True):
         raise ValueError("Invalid signature")
 
     return signer.id
+
+
+def verify_ld_signature(payload):
+    """
+    Verify inbound payload LD signature
+    """
+    pass
