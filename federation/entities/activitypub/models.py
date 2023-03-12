@@ -16,6 +16,7 @@ from marshmallow.utils import EXCLUDE, missing
 from pyld import jsonld
 
 import federation.entities.base as base
+import federation.utils.jsonld_helper
 from federation.entities.activitypub.constants import CONTEXT, CONTEXT_SETS, NAMESPACE_PUBLIC
 from federation.entities.mixins import BaseEntity, RawContentMixin
 from federation.entities.utils import get_base_attributes, get_profile
@@ -23,38 +24,10 @@ from federation.outbound import handle_send
 from federation.types import UserType, ReceiverVariant
 from federation.utils.activitypub import retrieve_and_parse_document, retrieve_and_parse_profile, \
     get_profile_id_from_webfinger
-from federation.utils.django import get_configuration, get_redis
+from federation.utils.django import get_configuration
 from federation.utils.text import with_slash, validate_handle
 
 logger = logging.getLogger("federation")
-
-cache = get_redis() or {}
-EXPIRATION = int(timedelta(weeks=2).total_seconds())
-    
-# This is required to workaround a bug in pyld that has the Accept header
-# accept other content types. From what I understand, precedence handling
-# is broken
-# from https://github.com/digitalbazaar/pyld/issues/133
-# cacheing loosely inspired by https://github.com/digitalbazaar/pyld/issues/70
-def get_loader(*args, **kwargs):
-    requests_loader = jsonld.requests_document_loader(*args, **kwargs)
-    
-    def loader(url, options={}):
-        key = f'ld_cache:{url}'
-        try:
-            return json.loads(cache[key])
-        except KeyError:
-            options['headers']['Accept'] = 'application/ld+json'
-            doc = requests_loader(url, options)
-            if isinstance(cache, dict):
-                cache[url] = json.dumps(doc)
-            else:
-                cache.set(f'ld_cache:{url}', json.dumps(doc), ex=EXPIRATION)
-            return doc
-    
-    return loader
-
-jsonld.set_document_loader(get_loader())
 
 
 def get_profile_or_entity(fid):
@@ -316,7 +289,8 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     # This is to ensure the original payload is relayed in order
     # to preserve the validity of the LD signature.
     # Note: the function name comes from the Diaspora logic and does
-    # not reflect what is actually happening here
+    # not reflect what is actually happening here. For AP, the parent
+    # user's key is used for the http signature.
     def sign_with_parent(self, private_key):
         self.outbound_doc = getattr(self, '_source_object', None)
 
@@ -1365,7 +1339,7 @@ def extract_replies(replies):
                     obj = obj.to_base()
                     extract_and_validate(obj)
                 except ValueError as ex:
-                    logger.error("extract_replies - Failed to validate entity %s: %s", entity, ex)
+                    logger.error("extract_replies - Failed to validate entity %s: %s", obj, ex)
                     continue
             elif not isinstance(obj, str): continue
             objs.append(obj)
