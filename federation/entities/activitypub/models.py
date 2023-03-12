@@ -1102,7 +1102,7 @@ class Follow(Activity, base.Follow):
         if isinstance(self.activity, Undo):
             self.following = False
 
-        # Socialhome doesn't know what to do with Accept objects yet.
+        # Ensure the Accept activity is returned to the client app.
         if isinstance(self.activity, Accept):
             return self.activity
 
