@@ -2,22 +2,24 @@
 
 ## [0.24] - unreleased
 
-### Fixes
+### Added
 
-* Activitypub fixes:
+* Add a validation function for the Activitypub `attributedTo` property. Ensure it starts with `http`.
 
-  * Match the Activitypub Hashtag object `href` property value against the raw content in order to make
-    this process platform agnostic.
+### Changed
 
-  * The Activitypub `url` property can now handle nested Link objects for all defined object types.
+* Optimize handle_send by ensuring a payload is only sent once per recipient unique endpoint.
 
-  * Catch cases where an Activitypub CollectionPage `next` property points back to a Collection object.
+* Match the Activitypub Hashtag object `href` property value against the raw content in order to make
+  this process platform agnostic.
 
-  * Add a validation function for the Activitypub `attributedTo` property. Ensure it starts with `http`.
+### Fixed
 
-  * Optimize handle_send by ensuring a payload is only sent once per recipient unique endpoint.
+* The Activitypub `url` property can now handle nested Link objects for all defined object types.
 
-  * Make the Activitypub Follow class handle both the Undo and the Accept activities.
+* Catch cases where an Activitypub CollectionPage `next` property points back to a Collection object.
+
+* Make the Activitypub Follow class handle both the Undo and the Accept activities.
 
 ## [0.23.1] - 2023-02-08
 
