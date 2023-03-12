@@ -367,13 +367,23 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
             # AP activities may be signed, but most platforms don't
             # define RsaSignature2017. add it to the context
             # hubzilla doesn't define the discoverable property in its context
+            # include all Mastodon extensions for platforms that only define http://joinmastodon.org/ns in their context
             may_add = {'signature': ['https://w3id.org/security/v1', {'sec':'https://w3id.org/security#','RsaSignature2017':'sec:RsaSignature2017'}],
                     'publicKey': ['https://w3id.org/security/v1'],
                     'discoverable': [{'toot':'http://joinmastodon.org/ns#','discoverable': 'toot:discoverable'}], #for hubzilla
+                    'suspended': [{'toot':'http://joinmastodon.org/ns#','suspended': 'toot:suspended'}],
                     'copiedTo': [{'toot':'http://joinmastodon.org/ns#','copiedTo': 'toot:copiedTo'}], #for hubzilla
                     'featured': [{'toot':'http://joinmastodon.org/ns#','featured': 'toot:featured'}], #for litepub and pleroma
-                    'tag': [{'Hashtag': 'as:Hashtag'}], #for epicyon
-                    'attachment': [{'schema': 'http://schema.org#', 'PropertyValue': 'schema:PropertyValue'}] # for owncast
+                    'featuredTags': [{'toot':'http://joinmastodon.org/ns#','featuredTags': 'toot:featuredTags'}],
+                    'focalPoint': [{'toot':'http://joinmastodon.org/ns#',
+                                    'focalPoint': {'@id':'toot:focalPoint','@container':'@list'},
+                                    }],
+                    'tag': [{'Hashtag': 'as:Hashtag', #for epicyon
+                             'toot':'http://joinmastodon.org/ns#',
+                             'Emoji':'toot:Emoji'}],
+                    'attachment': [{'schema': 'http://schema.org#', 'PropertyValue': 'schema:PropertyValue', # for owncast
+                                    'toot':'http://joinmastodon.org/ns#','blurHash': 'toot:blurHash',
+                                    'IdentityProof': 'toot:IdentityProof'}]
                     }
 
             to_add = [val for key,val in may_add.items() if data.get(key)]
@@ -584,7 +594,7 @@ class Person(Object, base.Profile):
     username = fields.String(as2.preferredUsername)
     endpoints = CompactedDict(as2.endpoints)
     shared_inbox = IRI(as2.sharedInbox) # misskey adds this
-    url = IRI(as2.url)
+    url = MixedField(as2.url, nested='LinkSchema')
     playlists = IRI(pt.playlists)
     featured = IRI(toot.featured)
     featuredTags = IRI(toot.featuredTags)
@@ -821,10 +831,23 @@ class Note(Object, RawContentMixin):
         """
         super().post_receive()
 
-        if getattr(self, 'target_id'): self.entity_type = 'Comment'
+        if not self.raw_content or self._media_type == "text/markdown":
+            # Skip when markdown
+            return
 
+        hrefs = [tag.href.lower() for tag in self.tag_objects if isinstance(tag, Hashtag)]
         # noinspection PyUnusedLocal
         def remove_tag_links(attrs, new=False):
+            # Hashtag object hrefs
+            href = (None, "href")
+            url = attrs.get(href, "").lower()
+            if url in hrefs:
+                return
+            # one more time without the query (for pixelfed)
+            parsed = urlparse(url)
+            url = f'{parsed.scheme}://{parsed.netloc}{parsed.path}'
+            if url in hrefs:
+                return
 
             # Mastodon
             rel = (None, "rel")
@@ -832,15 +855,10 @@ class Note(Object, RawContentMixin):
                 return
             
             # Friendica
-            href = (None, "href")
-            if attrs.get(href).endswith(f'tag={attrs.get("_text")}'):
+            if attrs.get(href, "").endswith(f'tag={attrs.get("_text")}'):
                 return
 
             return attrs
-
-        if not self.raw_content or self._media_type == "text/markdown":
-            # Skip when markdown
-            return
 
         self.raw_content = bleach.linkify(
             self.raw_content,
@@ -848,6 +866,8 @@ class Note(Object, RawContentMixin):
             parse_email=False,
             skip_tags=["code", "pre"],
         )
+
+        if getattr(self, 'target_id'): self.entity_type = 'Comment'
 
     def add_tag_objects(self) -> None:
         """
@@ -951,6 +971,9 @@ class Note(Object, RawContentMixin):
         self._cached_children = value
         self.attachment = [Image.from_base(i) for i in value]
 
+    def validate_actor_id(self):
+        if not self.actor_id.startswith('http'):
+            raise ValueError(f'Invalid actor_id for activitypub ({self.actor_id})')
 
     class Meta:
         rdf_type = as2.Note
@@ -1076,9 +1099,12 @@ class Follow(Activity, base.Follow):
         return super().to_as2()
 
     def to_base(self):
-        # This is assuming Follow can only be the object of an Undo activity. Lazy.
-        if self.activity != self: 
+        if isinstance(self.activity, Undo):
             self.following = False
+
+        # Ensure the Accept activity is returned to the client app.
+        if isinstance(self.activity, Accept):
+            return self.activity
 
         return self
 
@@ -1224,6 +1250,9 @@ class Like(Activity, base.Reaction):
 
 # inbound Accept is a noop...
 class Accept(Create, base.Accept):
+    def validate(self):
+        pass
+
     class Meta:
         rdf_type = as2.Accept
         exclude = ('created_at',)
@@ -1333,7 +1362,7 @@ def extract_replies(replies):
                     continue
             elif not isinstance(obj, str): continue
             objs.append(obj)
-        if replies.next_ is not missing:
+        if getattr(replies, 'next_', None) not in (missing, None):
             if (replies.id != replies.next_) and (replies.next_ not in visited):
                 resp = retrieve_and_parse_document(replies.next_, cache=False)
                 if resp:

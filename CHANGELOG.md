@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.24] - unreleased
+
+### Added
+
+* Add a validation function for the Activitypub `attributedTo` property. Ensure it starts with `http`.
+
+### Changed
+
+* Optimize handle_send by ensuring a payload is only sent once per recipient unique endpoint.
+
+* Match the Activitypub Hashtag object `href` property value against the raw content in order to make
+  this process platform agnostic.
+
+### Fixed
+
+* The Activitypub `url` property can now handle nested Link objects for all defined object types.
+
+* Catch cases where an Activitypub CollectionPage `next` property points back to a Collection object.
+
+* Make the Activitypub Follow class handle both the Undo and the Accept activities.
+
 ## [0.23.1] - 2023-02-08
 
 ### Changed
