@@ -32,6 +32,7 @@ setup(
         "cryptography",
         "cssselect>=0.9.2",
         "dirty-validators>=0.3.0",
+        "funcy",
         "lxml>=3.4.0",
         "iteration_utilities",
         "jsonschema>=2.0.0",
