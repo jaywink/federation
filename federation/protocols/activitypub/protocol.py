@@ -8,7 +8,7 @@ from Crypto.PublicKey.RSA import RsaKey
 
 from federation.entities.activitypub.enums import ActorType
 from federation.entities.mixins import BaseEntity
-from federation.protocols.activitypub.signing import verify_request_signature
+from federation.protocols.activitypub.signing import verify_request_signature, verify_ld_signature
 from federation.types import UserType, RequestType
 from federation.utils.text import decode_if_bytes
 
@@ -94,4 +94,6 @@ class Protocol:
 
     def verify_signature(self):
         # Verify the HTTP signature
-        verify_request_signature(self.request)
+        self.actor = verify_request_signature(self.request)
+        # Verify the LD signature (not currently enforced)
+        verify_ld_signature(self.payload)
