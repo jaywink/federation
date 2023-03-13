@@ -108,6 +108,7 @@ def verify_ld_signature(payload):
     profile = retrieve_and_parse_document(signature.get('creator'))
     if not profile:
         logger.warning(f'ld_signature - Failed to retrieve profile for {signature.get("creator")}')
+        return None
     try:
         pkey = import_key(profile.public_key)
     except ValueError as exc:
