@@ -6,6 +6,7 @@ https://funkwhale.audio/
 import datetime
 import logging
 import math
+import re
 from base64 import b64decode
 from  copy import copy
 from funcy import omit
@@ -134,7 +135,7 @@ def verify_ld_signature(payload):
     except ValueError as exc:
         logger.warning(f'ld_signature - invalid signature for {payload.get("id")}')
 
-# The ruby rdf_normalize library turns floats with a zero fraction to integers.
+
 # We need this to ensure the digests are identical.
 def normalize(input_, options):
     return NormalizedDoubles().normalize(input_, options)
@@ -142,7 +143,12 @@ def normalize(input_, options):
 class NormalizedDoubles(jsonld.JsonLdProcessor):
     def _object_to_rdf(self, item, issuer, triples, rdfDirection):
         value = item['@value'] if jsonld._is_value(item) else None
+        # The ruby rdf_normalize library turns floats with a zero fraction to integers.
         if isinstance(value, float) and value == math.floor(value):
             item['@value'] = math.floor(value)
-        return super()._object_to_rdf(item, issuer, triples, rdfDirection)
+        obj = super()._object_to_rdf(item, issuer, triples, rdfDirection)
+        # This is to address https://github.com/digitalbazaar/pyld/issues/175
+        if obj.get('datatype') == jsonld.XSD_DOUBLE:
+            obj['value'] = re.sub(r'(\d)0*E\+?(-)?0*(\d)', r'\1E\2\3', obj['value'])
 
+        return obj
