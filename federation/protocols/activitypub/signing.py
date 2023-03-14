@@ -5,6 +5,7 @@ https://funkwhale.audio/
 """
 import datetime
 import logging
+import math
 from base64 import b64decode
 from  copy import copy
 from funcy import omit
@@ -119,10 +120,10 @@ def verify_ld_signature(payload):
     # Compute digests and verify signature
     sig = omit(signature, ('type', 'signatureValue'))
     sig.update({'@context':'https://w3id.org/security/v1'})
-    sig_nquads = jsonld.normalize(sig, options={'format':'application/nquads','algorithm':'URDNA2015'}).encode('utf-8')
+    sig_nquads = normalize(sig, options={'format':'application/nquads','algorithm':'URDNA2015'}).encode('utf-8')
     sig_digest = SHA256.new(sig_nquads).hexdigest()
     obj = omit(payload, 'signature')
-    obj_nquads = jsonld.normalize(obj, options={'format':'application/nquads','algorithm':'URDNA2015'}).encode('utf-8')
+    obj_nquads = normalize(obj, options={'format':'application/nquads','algorithm':'URDNA2015'}).encode('utf-8')
     obj_digest = SHA256.new(obj_nquads).hexdigest()
     digest = (sig_digest + obj_digest).encode('utf-8')
 
@@ -133,5 +134,15 @@ def verify_ld_signature(payload):
     except ValueError as exc:
         logger.warning(f'ld_signature - invalid signature for {payload.get("id")}')
 
+# The ruby rdf_normalize library turns floats with a zero fraction to integers.
+# We need this to ensure the digests are identical.
+def normalize(input_, options):
+    return NormalizedDoubles().normalize(input_, options)
 
+class NormalizedDoubles(jsonld.JsonLdProcessor):
+    def _object_to_rdf(self, item, issuer, triples, rdfDirection):
+        value = item['@value'] if jsonld._is_value(item) else None
+        if isinstance(value, float) and value == math.floor(value):
+            item['@value'] = math.floor(value)
+        return super()._object_to_rdf(item, issuer, triples, rdfDirection)
 
