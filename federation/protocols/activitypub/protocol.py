@@ -8,7 +8,7 @@ from Crypto.PublicKey.RSA import RsaKey
 
 from federation.entities.activitypub.enums import ActorType
 from federation.entities.mixins import BaseEntity
-from federation.protocols.activitypub.signing import verify_request_signature, verify_ld_signature
+from federation.protocols.activitypub.signing import verify_request_signature, verify_ld_signature, create_ld_signature
 from federation.types import UserType, RequestType
 from federation.utils.text import decode_if_bytes
 
@@ -59,6 +59,7 @@ class Protocol:
             rendered = entity.outbound_doc
         else:
             rendered = entity.to_as2()
+            create_ld_signature(rendered, from_user)
         return rendered
 
     def extract_actor(self):
