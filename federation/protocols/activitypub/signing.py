@@ -101,7 +101,7 @@ def create_ld_signature(obj, author):
 
     try:
         private_key = import_key(author.private_key)
-    except ValueError as exc:
+    except (ValueError, TypeError) as exc:
         logger.warning(f'ld_signature - {exc}')
         return None
     signer = pkcs1_15.new(private_key)
