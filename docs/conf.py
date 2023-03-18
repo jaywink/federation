@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from recommonmark.parser import CommonMarkParser
 
-__version__ = "0.24.0"
+__version__ = "0.24.1"
 
 #
 # Federation documentation build configuration file, created by
