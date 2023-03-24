@@ -1,7 +1,7 @@
+import copy
 import json
 import logging
 import uuid
-from copy import copy
 from datetime import timedelta
 from typing import List, Dict, Union
 from urllib.parse import urlparse
@@ -16,8 +16,9 @@ from marshmallow.utils import EXCLUDE, missing
 from pyld import jsonld
 
 import federation.entities.base as base
-import federation.utils.jsonld_helper
-from federation.entities.activitypub.constants import CONTEXT, CONTEXT_SETS, NAMESPACE_PUBLIC
+from federation.entities.activitypub.constants import CONTEXT_ACTIVITYSTREAMS, CONTEXT_SECURITY, NAMESPACE_PUBLIC
+from federation.entities.activitypub.ldcontext import LdContextManager
+from federation.entities.activitypub.ldsigning import create_ld_signature, verify_ld_signature
 from federation.entities.mixins import BaseEntity, RawContentMixin
 from federation.entities.utils import get_base_attributes, get_profile
 from federation.outbound import handle_send
@@ -108,7 +109,7 @@ class NormalizedList(fields.List):
 
 # Don't want expanded IRIs to be exposed as dict keys
 class CompactedDict(fields.Dict):
-    ctx = ["https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"]
+    ctx = [CONTEXT_ACTIVITYSTREAMS, CONTEXT_SECURITY]
 
     # may or may not be needed
     def _serialize(self, value, attr, obj, **kwargs):
@@ -133,12 +134,12 @@ class CompactedDict(fields.Dict):
 # calamus sets a XMLSchema#integer type, but different definitions
 # maybe used, hence the flavor property
 # TODO: handle non negative types
-class Integer(fields._JsonLDField, Integer):
+class MixedInteger(fields._JsonLDField, Integer):
     flavor = None  # add fields.IRIReference type hint 
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.flavor = kwargs.get('flavor')
+        self.flavor = self.metadata.get('flavor')
 
     def _serialize(self, value, attr, obj, **kwargs):
         value = super()._serialize(value, attr, obj, **kwargs)
@@ -227,7 +228,6 @@ OBJECTS = [
         'VideoSchema'
 ]
 
-
 def set_public(entity):
     for attr in [entity.to, entity.cc]:
         if isinstance(attr, list):
@@ -235,38 +235,31 @@ def set_public(entity):
         elif attr == NAMESPACE_PUBLIC: entity.public = True
 
 
-def add_props_to_attrs(obj, props):
-    return obj.__dict__
-    attrs = copy(obj.__dict__)
-    for prop in props:
-        attrs.update({prop: getattr(obj, prop, None)})
-        attrs.pop('_'+prop, None)
-    attrs.update({'schema': True})
-    return attrs
-
-
 class Object(BaseEntity, metaclass=JsonLDAnnotation):
     atom_url = fields.String(ostatus.atomUri)
-    also_known_as = IRI(as2.alsoKnownAs)
+    also_known_as = IRI(as2.alsoKnownAs,
+                        metadata={'ctx':[{ 'alsoKnownAs':{'@id':'as:alsoKnownAs','@type':'@id'}}]})
     icon = MixedField(as2.icon, nested='ImageSchema')
-    image = MixedField(as2.image, nested='ImageSchema', default='')
+    image = MixedField(as2.image, nested='ImageSchema')
     tag_objects = MixedField(as2.tag, nested=['HashtagSchema','MentionSchema','PropertyValueSchema','EmojiSchema'], many=True)
-    attachment = fields.Nested(as2.attachment, nested=['ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'], many=True)
+    attachment = fields.Nested(as2.attachment, nested=['ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'],
+                               many=True, default=[])
     content_map = LanguageMap(as2.content)  # language maps are not implemented in calamus
-    context = IRI(as2.context)
-    guid = fields.String(diaspora.guid, default='')
-    handle = fields.String(diaspora.handle, default='')
+    context = fields.RawJsonLD(as2.context)
     name = fields.String(as2.name, default='')
     generator = MixedField(as2.generator, nested=['ApplicationSchema','ServiceSchema'])
     created_at = fields.DateTime(as2.published, add_value_types=True)
     replies = MixedField(as2.replies, nested=['CollectionSchema','OrderedCollectionSchema'])
-    signature = MixedField(sec.signature, nested = 'SignatureSchema')
+    signature = MixedField(sec.signature, nested = 'SignatureSchema',
+                           metadata={'ctx': [CONTEXT_SECURITY,
+                                             {'RsaSignature2017':'sec:RsaSignature2017'}]})
     start_time = fields.DateTime(as2.startTime, add_value_types=True)
     updated = fields.DateTime(as2.updated, add_value_types=True)
-    to = fields.List(as2.to, cls_or_instance=fields.String(as2.to))
-    cc = fields.List(as2.cc, cls_or_instance=fields.String(as2.cc))
+    to = fields.List(as2.to, cls_or_instance=IRI(as2.to), default=[])
+    cc = fields.List(as2.cc, cls_or_instance=IRI(as2.cc), default=[])
     media_type = fields.String(as2.mediaType)
     source = CompactedDict(as2.source)
+    signable = False
 
     # The following properties are defined by some platforms, but are not implemented yet
     #audience
@@ -279,7 +272,12 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
 
     def to_as2(self):
         obj = self.activity if isinstance(self.activity, Activity) else self
-        return jsonld.compact(obj.dump(), CONTEXT)
+        return context_manager.compact(obj)
+
+    def sign_as2(self, sender=None):
+        obj = self.to_as2()
+        if self.signable and sender: create_ld_signature(obj, sender)
+        return obj
 
     @classmethod
     def from_base(cls, entity):
@@ -315,86 +313,8 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
         @pre_load
         def patch_context(self, data, **kwargs):
             if not data.get('@context'): return data
-            ctx = copy(data['@context'])
-
-            # One platform send a single string context
-            if isinstance(ctx, str): ctx = [ctx]
-
-            # add a # at the end of the python-federation string
-            # for socialhome payloads
-            s = json.dumps(ctx)
-            if 'python-federation"' in s:
-                ctx = json.loads(s.replace('python-federation', 'python-federation#', 1))
-
-            # some paltforms have http://joinmastodon.com/ns in @context. This
-            # is not a json-ld document.
-            try:
-                ctx.pop(ctx.index('http://joinmastodon.org/ns'))
-            except:
-                pass
-
-            # remove @language in context since this directive is not
-            # processed by calamus. Pleroma adds a useless @language: 'und'
-            # which is discouraged in best practices and in some cases makes 
-            # calamus return dict where str is expected.
-            # see https://www.rfc-editor.org/rfc/rfc5646, page 56
-            idx = []
-            for i,v in enumerate(ctx):
-                if isinstance(v, dict): 
-                    v.pop('@language',None)
-                    if len(v) == 0: idx.insert(0, i)
-            for i in idx: ctx.pop(i)
-
-            # AP activities may be signed, but most platforms don't
-            # define RsaSignature2017. add it to the context
-            # hubzilla doesn't define the discoverable property in its context
-            # include all Mastodon extensions for platforms that only define http://joinmastodon.org/ns in their context
-            may_add = {'signature': ['https://w3id.org/security/v1', {'sec':'https://w3id.org/security#','RsaSignature2017':'sec:RsaSignature2017'}],
-                    'publicKey': ['https://w3id.org/security/v1'],
-                    'discoverable': [{'toot':'http://joinmastodon.org/ns#','discoverable': 'toot:discoverable'}], #for hubzilla
-                    'suspended': [{'toot':'http://joinmastodon.org/ns#','suspended': 'toot:suspended'}],
-                    'copiedTo': [{'toot':'http://joinmastodon.org/ns#','copiedTo': 'toot:copiedTo'}], #for hubzilla
-                    'featured': [{'toot':'http://joinmastodon.org/ns#','featured': 'toot:featured'}], #for litepub and pleroma
-                    'featuredTags': [{'toot':'http://joinmastodon.org/ns#','featuredTags': 'toot:featuredTags'}],
-                    'focalPoint': [{'toot':'http://joinmastodon.org/ns#',
-                                    'focalPoint': {'@id':'toot:focalPoint','@container':'@list'},
-                                    }],
-                    'tag': [{'Hashtag': 'as:Hashtag', #for epicyon
-                             'toot':'http://joinmastodon.org/ns#',
-                             'Emoji':'toot:Emoji'}],
-                    'attachment': [{'schema': 'http://schema.org#', 'PropertyValue': 'schema:PropertyValue', # for owncast
-                                    'toot':'http://joinmastodon.org/ns#','blurHash': 'toot:blurHash',
-                                    'IdentityProof': 'toot:IdentityProof'}]
-                    }
-
-            to_add = [val for key,val in may_add.items() if data.get(key)]
-            if to_add:
-                idx = [i for i,v in enumerate(ctx) if isinstance(v, dict)]
-                if idx:
-                    upd = ctx[idx[0]]
-                    # merge context dicts
-                    if len(idx) > 1:
-                        idx.reverse()
-                        for i in idx[:-1]:
-                            upd.update(ctx[i])
-                            ctx.pop(i)
-                else:
-                    upd = {}
-
-                for add in to_add:
-                    for val in add:
-                        if isinstance(val, str) and val not in ctx:
-                            try:
-                                ctx.append(val)
-                            except AttributeError:
-                                ctx = [ctx, val]
-                        if isinstance(val, dict):
-                            upd.update(val)
-                if not idx and upd: ctx.append(upd)
-            
-            # for to and cc fields to be processed as strings
-            ctx.append(CONTEXT_SETS)
-            data['@context'] = ctx
+            ctx = copy.copy(data['@context'])
+            data['@context'] = context_manager.merge_context(ctx)
             return data
 
         # A node without an id isn't true json-ld, but many payloads have
@@ -424,7 +344,7 @@ class Collection(Object, base.Collection):
     first = MixedField(as2.first, nested=['CollectionPageSchema', 'OrderedCollectionPageSchema'])
     current = IRI(as2.current)
     last = IRI(as2.last)
-    total_items = Integer(as2.totalItems, flavor=xsd.nonNegativeInteger, add_value_types=True)
+    total_items = MixedInteger(as2.totalItems, metafdata={'flavor':xsd.nonNegativeInteger}, add_value_types=True)
 
     class Meta:
         rdf_type = as2.Collection
@@ -447,7 +367,7 @@ class CollectionPage(Collection):
 
 
 class OrderedCollectionPage(OrderedCollection, CollectionPage):
-    start_index = Integer(as2.startIndex, flavor=xsd.nonNegativeInteger, add_value_types=True)
+    start_index = MixedInteger(as2.startIndex, metadata={'flavor':xsd.nonNegativeInteger}, add_value_types=True)
 
     class Meta:
         rdf_type = as2.OrderedCollectionPage
@@ -457,10 +377,12 @@ class OrderedCollectionPage(OrderedCollection, CollectionPage):
 # AP defines [Ii]mage and [Aa]udio objects/properties, but only a Video object
 # seen with Peertube payloads only so far
 class Document(Object):
-    inline = fields.Boolean(pyfed.inlineImage, default=False)
-    height = Integer(as2.height, default=0, flavor=xsd.nonNegativeInteger, add_value_types=True)
-    width = Integer(as2.width, default=0, flavor=xsd.nonNegativeInteger, add_value_types=True)
-    blurhash = fields.String(toot.blurhash)
+    inline = fields.Boolean(pyfed.inlineImage, default=False,
+                            metadata={'ctx':[{'pyfed':str(pyfed)}]})
+    height = MixedInteger(as2.height, default=0, metadata={'flavor':xsd.nonNegativeInteger}, add_value_types=True)
+    width = MixedInteger(as2.width, default=0, metadata={'flavor':xsd.nonNegativeInteger}, add_value_types=True)
+    blurhash = fields.String(toot.blurHash,
+                             metadata={'ctx':[{'toot':str(toot),'blurHash':'toot:blurHash'}]})
     url = MixedField(as2.url, nested='LinkSchema')
 
     def to_base(self):
@@ -507,10 +429,10 @@ class Link(metaclass=JsonLDAnnotation):
     media_type = fields.String(as2.mediaType)
     name = fields.String(as2.name)
     href_lang = fields.String(as2.hrefLang)
-    height = Integer(as2.height, flavor=xsd.nonNegativeInteger, add_value_types=True)
-    width = Integer(as2.width, flavor=xsd.nonNegativeInteger, add_value_types=True)
-    fps = Integer(pt.fps, flavor=schema.Number, add_value_types=True)
-    size = Integer(pt.size, flavor=schema.Number, add_value_types=True)
+    height = MixedInteger(as2.height, metadata={'flavor':xsd.nonNegativeInteger}, add_value_types=True)
+    width = MixedInteger(as2.width, metadata={'flavor':xsd.nonNegativeInteger}, add_value_types=True)
+    fps = MixedInteger(pt.fps, metadata={'flavor':schema.Number}, add_value_types=True)
+    size = MixedInteger(pt.size, metadata={'flavor':schema.Number}, add_value_types=True)
     tag = MixedField(as2.tag, nested=['InfohashSchema', 'LinkSchema'], many=True)
     # Not implemented yet
     #preview : variable type?
@@ -534,6 +456,7 @@ class Link(metaclass=JsonLDAnnotation):
 
 
 class Hashtag(Link):
+    ctx = [{'Hashtag': 'as:Hashtag'}]
 
     class Meta:
         rdf_type = as2.Hashtag
@@ -546,7 +469,9 @@ class Mention(Link):
 
 
 class PropertyValue(Object):
-    value = fields.String(schema.value)
+    value = fields.String(schema.value,
+                          metadata={'ctx':[{'schema':str(schema),'value':'schema:value'}]})
+    ctx = [{'schema':str(schema),'PropertyValue':'schema:PropertyValue'}]
 
     class Meta:
         rdf_type = schema.PropertyValue
@@ -555,12 +480,14 @@ class PropertyValue(Object):
 class IdentityProof(Object):
     signature_value = fields.String(sec.signatureValue)
     signing_algorithm = fields.String(sec.signingAlgorithm)
+    ctx = [CONTEXT_SECURITY]
 
     class Meta:
         rdf_type = toot.IdentityProof
 
 
 class Emoji(Object):
+    ctx = [{'toot':'http://joinmastodon.org/ns#','Emoji':'toot:Emoji'}]
 
     class Meta:
         rdf_type = toot.Emoji
@@ -572,26 +499,40 @@ class Person(Object, base.Profile):
     outbox = IRI(as2.outbox)
     following = IRI(as2.following)
     followers = IRI(as2.followers)
+    guid = fields.String(diaspora.guid, metadata={'ctx':[{'diaspora':str(diaspora)}]})
+    handle = fields.String(diaspora.handle, metadata={'ctx':[{'diaspora':str(diaspora)}]})
     username = fields.String(as2.preferredUsername)
     endpoints = CompactedDict(as2.endpoints)
     shared_inbox = IRI(as2.sharedInbox) # misskey adds this
     url = MixedField(as2.url, nested='LinkSchema')
     playlists = IRI(pt.playlists)
-    featured = IRI(toot.featured)
-    featuredTags = IRI(toot.featuredTags)
-    manuallyApprovesFollowers = fields.Boolean(as2.manuallyApprovesFollowers, default=False)
-    discoverable = fields.Boolean(toot.discoverable)
+    featured = IRI(toot.featured,
+                   metadata={'ctx':[{'toot':str(toot),
+                                     'featured': {'@id':'toot:featured','@type':'@id'}}]})
+    featured_tags = IRI(toot.featuredTags,
+                        metadata={'ctx':[{'toot':str(toot),
+                                          'featuredTags': {'@id':'toot:featuredTags','@type':'@id'}}]})
+    manually_approves_followers = fields.Boolean(as2.manuallyApprovesFollowers, default=False,
+                                                 metadata={'ctx':[{'manuallyApprovesFollowers':'as:manuallyApprovesFollowers'}]})
+    discoverable = fields.Boolean(toot.discoverable,
+                                  metadata={'ctx':[{'toot':str(toot),
+                                                    'discoverable': 'toot:discoverable'}]})
     devices = IRI(toot.devices)
-    public_key_dict = CompactedDict(sec.publicKey)
-    raw_content = fields.String(as2.summary, default="")
+    public_key_dict = CompactedDict(sec.publicKey,
+                                    metadata={'ctx':[CONTEXT_SECURITY]})
+    raw_content = fields.String(as2.summary, default='')
     has_address = MixedField(vcard.hasAddress, nested='HomeSchema')
     has_instant_message = fields.List(vcard.hasInstantMessage, cls_or_instance=fields.String)
     address = fields.String(vcard.Address)
     is_cat = fields.Boolean(misskey.isCat)
-    moved_to = IRI(as2.movedTo)
-    copied_to = IRI(toot.copiedTo)
+    moved_to = IRI(as2.movedTo,
+                   metadata={'ctx':[{'movedTo':{'@id':'as:movedTo','@type':'@id'}}]})
+    copied_to = IRI(as2.copiedTo,
+                    metadata={'ctx':[{'copiedTo':{'@id':'as:copiedTo','@type':'@id'}}]})
     capabilities = CompactedDict(litepub.capabilities)
-    suspended = fields.Boolean(toot.suspended)
+    suspended = fields.Boolean(toot.suspended,
+                               metadata={'ctx':[{'toot':str(toot),
+                                                 'suspended': 'toot:suspended'}]})
     public = True
     _cached_inboxes = None
     _cached_public_key = None
@@ -622,7 +563,7 @@ class Person(Object, base.Profile):
             if get_profile_id_from_webfinger(finger) == self.id:
                 self.finger = finger
         # multi-protocol platform
-        if self.finger and self.guid and not self.handle:
+        if self.finger and self.guid is not missing and self.handle is missing:
             self.handle = self.finger
 
     def to_as2(self):
@@ -678,10 +619,11 @@ class Person(Object, base.Profile):
     def image_urls(self):
         if getattr(self, 'icon', None):
             icon = self.icon if not isinstance(self.icon, list) else self.icon[0]
+            url = icon if isinstance(icon, str) else icon.url
             self._cached_image_urls = {
-                'small': icon.url,
-                'medium': icon.url,
-                'large': icon.url
+                'small': url,
+                'medium': url,
+                'large': url
                 }
         return self._cached_image_urls
 
@@ -737,14 +679,22 @@ class Note(Object, RawContentMixin):
     id = fields.Id()
     actor_id = IRI(as2.attributedTo)
     target_id = IRI(as2.inReplyTo, default=None)
-    conversation = fields.RawJsonLD(ostatus.conversation)
+    conversation = fields.RawJsonLD(ostatus.conversation,
+                                    metadata={'ctx':[{'ostatus':str(ostatus),
+                                                      'conversation':'ostatus:conversation'}]})
     entity_type = 'Post'
-    in_reply_to_atom_uri = IRI(ostatus.inReplyToAtomUri)
-    sensitive = fields.Boolean(as2.sensitive, default=False)
+    guid = fields.String(diaspora.guid, metadata={'ctx':[{'diaspora':str(diaspora)}]})
+    in_reply_to_atom_uri = IRI(ostatus.inReplyToAtomUri,
+                               metadata={'ctx':[{'ostatus':str(ostatus),
+                               'inReplyToAtomUri':'ostatus:inReplyToAtomUri'}]})
+    sensitive = fields.Boolean(as2.sensitive, default=False,
+                               metadata={'ctx':[{'sensitive':'as:sensitive'}]})
     summary = fields.String(as2.summary)
     url = IRI(as2.url)
+
     _cached_raw_content = ''
     _cached_children = []
+    signable = True
 
     def __init__(self, *args, **kwargs):
         self.tag_objects = [] # mutable objects...
@@ -752,7 +702,8 @@ class Note(Object, RawContentMixin):
         self._allowed_children += (base.Audio, base.Video)
 
     def to_as2(self):
-        self.sensitive = 'nsfw' in self.tags
+        #self.sensitive = 'nsfw' in self.tags
+        self.url = self.id
 
         edited = False
         if hasattr(self, 'times'):
@@ -779,7 +730,8 @@ class Note(Object, RawContentMixin):
 
     def to_base(self):
         kwargs = get_base_attributes(self, keep=(
-            '_mentions', '_media_type', '_rendered_content', '_cached_children', '_cached_raw_content'))
+            '_mentions', '_media_type', '_rendered_content', '_source_object',
+            '_cached_children', '_cached_raw_content'))
         entity = Comment(**kwargs) if getattr(self, 'target_id') else Post(**kwargs)
         # Plume (and maybe other platforms) send the attrbutedTo field as an array
         if isinstance(entity.actor_id, list): entity.actor_id = entity.actor_id[0]
@@ -958,13 +910,11 @@ class Note(Object, RawContentMixin):
 
     class Meta:
         rdf_type = as2.Note
-        exclude = ('handle',)
 
 
 class Post(Note, base.Post):
     class Meta:
         rdf_type = as2.Note
-        exclude = ('handle',)
 
 
 class Comment(Note, base.Comment):
@@ -978,7 +928,6 @@ class Comment(Note, base.Comment):
 
     class Meta:
         rdf_type = as2.Note
-        exclude = ('handle',)
 
 
 class Article(Note):
@@ -996,6 +945,7 @@ class Video(Document, base.Video):
     id = fields.Id()
     actor_id = MixedField(as2.attributedTo, nested=['PersonSchema', 'GroupSchema'], many=True)
     url = MixedField(as2.url, nested='LinkSchema')
+    signable = True
 
     class Meta:
         unknown = EXCLUDE # required until all the pt fields are defined
@@ -1031,7 +981,8 @@ class Video(Document, base.Video):
                 self.actor_id = new_act[0]
             
             entity = Post(**get_base_attributes(self,
-                keep=('_mentions', '_media_type', '_rendered_content', '_cached_children', '_cached_raw_content')))
+                keep=('_mentions', '_media_type', '_rendered_content',
+                      '_cached_children', '_cached_raw_content', '_source_object')))
             set_public(entity)
             return entity
         #Some Video object
@@ -1141,7 +1092,7 @@ class Follow(Activity, base.Follow):
 
     class Meta:
         rdf_type = as2.Follow
-        exclude = ('created_at', 'handle')
+        exclude = ('created_at',)
 
 
 class Announce(Activity, base.Share):
@@ -1176,14 +1127,20 @@ class Announce(Activity, base.Share):
             self.target_id = self.id
             self.entity_type = 'Object'
             self.__dict__.update({'schema': True})
-            entity = base.Retraction(**get_base_attributes(self))
+            entity = Retraction(**get_base_attributes(self, keep=('_source_object',)))
 
         set_public(entity)
         return entity
 
     class Meta:
         rdf_type = as2.Announce
-    
+
+
+# Only used for inbound share retraction (undo announce)
+class Retraction(Announce, base.Retraction):
+    class Meta:
+        rdf_type = as2.Announce
+
 
 class Tombstone(Object, base.Retraction):
     target_id = fields.Id()
@@ -1354,7 +1311,7 @@ def extract_replies(replies):
     return objs
 
 
-def element_to_objects(element: Union[Dict, Object]) -> List:
+def element_to_objects(element: Union[Dict, Object], sender: str = "") -> List:
     """
     Transform an Element to a list of entities.
     """
@@ -1372,7 +1329,14 @@ def element_to_objects(element: Union[Dict, Object]) -> List:
             extract_and_validate(entity)
         except ValueError as ex:
             logger.error("Failed to validate entity %s: %s", entity, ex)
-            return None
+            return []
+        # Always verify the LD signature, for monitoring purposes
+        actor = verify_ld_signature(entity._source_object)
+        if entity.signable and sender not in (entity.id, getattr(entity, 'actor_id', None), ''):
+            # Relayed payload
+            if not actor:
+                logger.warning(f'no or invalid signature for a relayed payload, fetching {entity.id}')
+                entity = retrieve_and_parse_document(entity.id)
         logger.info('Entity type "%s" was handled through the json-ld processor', entity.__class__.__name__)
         return [entity]
     elif entity:
@@ -1385,11 +1349,11 @@ def element_to_objects(element: Union[Dict, Object]) -> List:
 
 
 def model_to_objects(payload):
+    original_payload = copy.copy(payload)
     model = globals().get(payload.get('type'))
     if model and issubclass(model, Object):
         try:
             entity = model.schema().load(payload)
-            entity._source_object = payload
         except (KeyError, jsonld.JsonLdError, exceptions.ValidationError) as exc :  # Just give up for now. This must be made robust
             logger.error(f"Error parsing jsonld payload ({exc})")
             return None
@@ -1397,6 +1361,19 @@ def model_to_objects(payload):
         if isinstance(getattr(entity, 'object_', None), Object):
             entity.object_.activity = entity
             entity = entity.object_
-    
+
+        entity._source_object = original_payload
         return entity
     return None
+
+
+CLASSES_WITH_CONTEXT_EXTENSIONS = (
+    Document,
+    Emoji,
+    Hashtag,
+    IdentityProof,
+    Note,
+    Person,
+    PropertyValue
+)
+context_manager = LdContextManager(CLASSES_WITH_CONTEXT_EXTENSIONS)

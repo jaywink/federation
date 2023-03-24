@@ -8,7 +8,7 @@ from Crypto.PublicKey.RSA import RsaKey
 
 from federation.entities.activitypub.enums import ActorType
 from federation.entities.mixins import BaseEntity
-from federation.protocols.activitypub.signing import verify_request_signature, verify_ld_signature, create_ld_signature
+from federation.protocols.activitypub.signing import verify_request_signature
 from federation.types import UserType, RequestType
 from federation.utils.text import decode_if_bytes
 
@@ -43,6 +43,7 @@ class Protocol:
     get_contact_key = None
     payload = None
     request = None
+    sender = None
     user = None
 
     def build_send(self, entity: BaseEntity, from_user: UserType, to_user_key: RsaKey = None) -> Union[str, Dict]:
@@ -58,8 +59,7 @@ class Protocol:
             # Use pregenerated outbound document
             rendered = entity.outbound_doc
         else:
-            rendered = entity.to_as2()
-            create_ld_signature(rendered, from_user)
+            rendered = entity.sign_as2(sender=from_user)
         return rendered
 
     def extract_actor(self):
@@ -87,14 +87,9 @@ class Protocol:
         # Verify the message is from who it claims to be
         if not skip_author_verification:
             try:
-                self.verify_signature()
+                # Verify the HTTP signature
+                self.sender = verify_request_signature(self.request)
             except (ValueError, KeyError, InvalidSignature) as exc:
-                logger.warning(f'Signature verification failed: {exc}')
+                logger.warning(f'HTTP signature verification failed: {exc}')
                 return self.actor, {}
-        return self.actor, self.payload
-
-    def verify_signature(self):
-        # Verify the HTTP signature
-        self.actor = verify_request_signature(self.request)
-        # Verify the LD signature (not currently enforced)
-        verify_ld_signature(self.payload)
+        return self.sender, self.payload

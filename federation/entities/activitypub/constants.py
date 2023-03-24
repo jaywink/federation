@@ -1,22 +1,4 @@
 CONTEXT_ACTIVITYSTREAMS = "https://www.w3.org/ns/activitystreams"
-CONTEXT_DIASPORA = {"diaspora": "https://diasporafoundation.org/ns/"}
-CONTEXT_HASHTAG = {"Hashtag": "as:Hashtag"}
-CONTEXT_LD_SIGNATURES = "https://w3id.org/security/v1"
-CONTEXT_MANUALLY_APPROVES_FOLLOWERS = {"manuallyApprovesFollowers": "as:manuallyApprovesFollowers"}
-CONTEXT_PYTHON_FEDERATION = {"pyfed": "https://docs.jasonrobinson.me/ns/python-federation#"}
-CONTEXT_SENSITIVE = {"sensitive": "as:sensitive"}
-
-CONTEXTS_DEFAULT = [
-    CONTEXT_ACTIVITYSTREAMS,
-    CONTEXT_PYTHON_FEDERATION,
-]
-
-CONTEXT = [CONTEXT_ACTIVITYSTREAMS, CONTEXT_LD_SIGNATURES]
-CONTEXT_DICT = {}
-for ctx in [CONTEXT_DIASPORA, CONTEXT_HASHTAG, CONTEXT_MANUALLY_APPROVES_FOLLOWERS, CONTEXT_SENSITIVE, CONTEXT_PYTHON_FEDERATION]:
-    CONTEXT_DICT.update(ctx)
-CONTEXT_SETS = {prop: {'@id': f'as:{prop}', '@container': '@set'} for prop in ['to', 'cc', 'tag', 'attachment']}
-CONTEXT_DICT.update(CONTEXT_SETS)
-CONTEXT.append(CONTEXT_DICT)
+CONTEXT_SECURITY = "https://w3id.org/security/v1"
 
 NAMESPACE_PUBLIC = "https://www.w3.org/ns/activitystreams#Public"

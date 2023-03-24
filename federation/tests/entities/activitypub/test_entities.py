@@ -5,7 +5,7 @@ from pprint import pprint
 # noinspection PyPackageRequirements
 from Crypto.PublicKey.RSA import RsaKey
 
-from federation.entities.activitypub.constants import CONTEXT
+from federation.entities.activitypub.models import context_manager
 from federation.entities.activitypub.models import Accept
 from federation.tests.fixtures.keys import PUBKEY
 from federation.types import UserType
@@ -15,7 +15,7 @@ class TestEntitiesConvertToAS2:
     def test_accept_to_as2(self, activitypubaccept):
         result = activitypubaccept.to_as2()
         assert result == {
-            "@context": CONTEXT,
+            "@context": context_manager.build_context(activitypubaccept),
             "id": "https://localhost/accept",
             "type": "Accept",
             "actor": "https://localhost/profile",
@@ -30,7 +30,7 @@ class TestEntitiesConvertToAS2:
     def test_announce_to_as2(self, activitypubannounce):
         result = activitypubannounce.to_as2()
         assert result == {
-            "@context": CONTEXT,
+            "@context": context_manager.build_context(activitypubannounce),
             "id": "http://127.0.0.1:8000/post/123456/#create",
             "type": "Announce",
             "actor": "http://127.0.0.1:8000/profile/123456/",
@@ -42,13 +42,14 @@ class TestEntitiesConvertToAS2:
         activitypubcomment.pre_send()
         result = activitypubcomment.to_as2()
         assert result == {
-            '@context': CONTEXT,
+            '@context': context_manager.build_context(activitypubcomment),
             'type': 'Create',
             'id': 'http://127.0.0.1:8000/post/123456/#create',
             'actor': 'http://127.0.0.1:8000/profile/123456/',
             'object': {
                 'id': 'http://127.0.0.1:8000/post/123456/',
                 'type': 'Note',
+                'url': 'http://127.0.0.1:8000/post/123456/',
                 'attributedTo': 'http://127.0.0.1:8000/profile/123456/',
                 'content': '<p>raw_content</p>',
                 'published': '2019-04-27T00:00:00',
@@ -67,13 +68,14 @@ class TestEntitiesConvertToAS2:
         activitypubcomment.pre_send()
         result = activitypubcomment.to_as2()
         assert result == {
-            '@context': CONTEXT,
+            '@context': context_manager.build_context(activitypubcomment),
             'type': 'Create',
             'id': 'http://127.0.0.1:8000/post/123456/#create',
             'actor': 'http://127.0.0.1:8000/profile/123456/',
             'object': {
                 'id': 'http://127.0.0.1:8000/post/123456/',
                 'type': 'Note',
+                'url': 'http://127.0.0.1:8000/post/123456/',
                 'attributedTo': 'http://127.0.0.1:8000/profile/123456/',
                 'content': '<p>raw_content <a href="http://example.com" rel="nofollow" target="_blank">'
                            'http://example.com</a></p>',
@@ -91,7 +93,7 @@ class TestEntitiesConvertToAS2:
     def test_follow_to_as2(self, activitypubfollow):
         result = activitypubfollow.to_as2()
         assert result == {
-            "@context": CONTEXT,
+            "@context": context_manager.build_context(activitypubfollow),
             "id": "https://localhost/follow",
             "type": "Follow",
             "actor": "https://localhost/profile",
@@ -103,7 +105,7 @@ class TestEntitiesConvertToAS2:
         result["id"] = "https://localhost/undo"  # Real object will have a random UUID postfix here
         result["object"]["id"] = "https://localhost/follow"  # Real object will have a random UUID postfix here
         assert result == {
-            "@context": CONTEXT,
+            "@context": context_manager.build_context(activitypubundofollow),
             "id": "https://localhost/undo",
             "type": "Undo",
             "actor": "https://localhost/profile",
@@ -119,7 +121,7 @@ class TestEntitiesConvertToAS2:
         activitypubpost.pre_send()
         result = activitypubpost.to_as2()
         assert result == {
-            '@context': CONTEXT,
+            '@context': context_manager.build_context(activitypubpost),
             'type': 'Create',
             'id': 'http://127.0.0.1:8000/post/123456/#create',
             'actor': 'http://127.0.0.1:8000/profile/123456/',
@@ -130,6 +132,7 @@ class TestEntitiesConvertToAS2:
                 'cc': ['https://http://127.0.0.1:8000/profile/123456/followers/'],
                 'to': ['https://www.w3.org/ns/activitystreams#Public'],
                 'type': 'Note',
+                'url': 'http://127.0.0.1:8000/post/123456/',
                 'attributedTo': 'http://127.0.0.1:8000/profile/123456/',
                 'content': '<h1>raw_content</h1>',
                 'published': '2019-04-27T00:00:00',
@@ -148,13 +151,14 @@ class TestEntitiesConvertToAS2:
         activitypubpost_mentions.pre_send()
         result = activitypubpost_mentions.to_as2()
         assert result == {
-            '@context': CONTEXT,
+            '@context': context_manager.build_context(activitypubpost_mentions),
             'type': 'Create',
             'id': 'http://127.0.0.1:8000/post/123456/#create',
             'actor': 'http://127.0.0.1:8000/profile/123456/',
             'object': {
                 'id': 'http://127.0.0.1:8000/post/123456/',
                 'type': 'Note',
+                'url': 'http://127.0.0.1:8000/post/123456/',
                 'attributedTo': 'http://127.0.0.1:8000/profile/123456/',
                 'content': '<h1>raw_content</h1>\n<p>@{someone@localhost.local} @<a class="mention" '
                            'href="http://localhost.local/someone" rel="nofollow" target="_blank">'
@@ -190,13 +194,14 @@ class TestEntitiesConvertToAS2:
         activitypubpost_tags.pre_send()
         result = activitypubpost_tags.to_as2()
         assert result == {
-            '@context': CONTEXT,
+            '@context': context_manager.build_context(activitypubpost_tags),
             'type': 'Create',
             'id': 'http://127.0.0.1:8000/post/123456/#create',
             'actor': 'http://127.0.0.1:8000/profile/123456/',
             'object': {
                 'id': 'http://127.0.0.1:8000/post/123456/',
                 'type': 'Note',
+                'url': 'http://127.0.0.1:8000/post/123456/',
                 'attributedTo': 'http://127.0.0.1:8000/profile/123456/',
                 'content': '<h1>raw_content</h1>\n'
                            '<p><a class="mention hashtag" '
@@ -233,13 +238,14 @@ class TestEntitiesConvertToAS2:
         activitypubpost_images.pre_send()
         result = activitypubpost_images.to_as2()
         assert result == {
-            '@context': CONTEXT,
+            '@context': context_manager.build_context(activitypubpost_images),
             'type': 'Create',
             'id': 'http://127.0.0.1:8000/post/123456/#create',
             'actor': 'http://127.0.0.1:8000/profile/123456/',
             'object': {
                 'id': 'http://127.0.0.1:8000/post/123456/',
                 'type': 'Note',
+                'url': 'http://127.0.0.1:8000/post/123456/',
                 'attributedTo': 'http://127.0.0.1:8000/profile/123456/',
                 'content': '<p>raw_content</p>',
                 'published': '2019-04-27T00:00:00',
@@ -271,7 +277,7 @@ class TestEntitiesConvertToAS2:
         activitypubpost_diaspora_guid.pre_send()
         result = activitypubpost_diaspora_guid.to_as2()
         assert result == {
-            '@context': CONTEXT,
+            '@context': context_manager.build_context(activitypubpost_diaspora_guid),
             'type': 'Create',
             'id': 'http://127.0.0.1:8000/post/123456/#create',
             'actor': 'http://127.0.0.1:8000/profile/123456/',
@@ -279,6 +285,7 @@ class TestEntitiesConvertToAS2:
                 'id': 'http://127.0.0.1:8000/post/123456/',
                 'diaspora:guid': 'totallyrandomguid',
                 'type': 'Note',
+                'url': 'http://127.0.0.1:8000/post/123456/',
                 'attributedTo': 'http://127.0.0.1:8000/profile/123456/',
                 'content': '<p>raw_content</p>',
                 'published': '2019-04-27T00:00:00',
@@ -295,7 +302,7 @@ class TestEntitiesConvertToAS2:
     def test_profile_to_as2(self, activitypubprofile):
         result = activitypubprofile.to_as2()
         assert result == {
-            "@context": CONTEXT,
+            "@context": context_manager.build_context(activitypubprofile),
             "endpoints": {
                 "sharedInbox": "https://example.com/public",
             },
@@ -327,7 +334,7 @@ class TestEntitiesConvertToAS2:
     def test_profile_to_as2__with_diaspora_guid(self, activitypubprofile_diaspora_guid):
         result = activitypubprofile_diaspora_guid.to_as2()
         assert result == {
-            "@context": CONTEXT,
+            "@context": context_manager.build_context(activitypubprofile_diaspora_guid),
             "endpoints": {
                 "sharedInbox": "https://example.com/public",
             },
@@ -360,7 +367,7 @@ class TestEntitiesConvertToAS2:
     def test_retraction_to_as2(self, activitypubretraction):
         result = activitypubretraction.to_as2()
         assert result == {
-            '@context': CONTEXT,
+            '@context': context_manager.build_context(activitypubretraction),
             'type': 'Delete',
             'id': 'http://127.0.0.1:8000/post/123456/#delete',
             'actor': 'http://127.0.0.1:8000/profile/123456/',
@@ -374,7 +381,7 @@ class TestEntitiesConvertToAS2:
     def test_retraction_to_as2__announce(self, activitypubretraction_announce):
         result = activitypubretraction_announce.to_as2()
         assert result == {
-            '@context': CONTEXT,
+            '@context': context_manager.build_context(activitypubretraction_announce),
             'type': 'Undo',
             'id': 'http://127.0.0.1:8000/post/123456/#delete',
             'actor': 'http://127.0.0.1:8000/profile/123456/',
