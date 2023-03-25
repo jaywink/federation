@@ -1,6 +1,12 @@
 # Changelog
 
-## [0.24] - unreleased
+## [0.24.1] - 2023-03-18
+
+### Fixed
+
+* Fix documentation builds
+
+## [0.24.0] - 2023-03-18
 
 ### Added
 
