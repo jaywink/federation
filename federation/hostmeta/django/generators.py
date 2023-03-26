@@ -60,7 +60,7 @@ def rfc7033_webfinger_view(request, *args, **kwargs):
     if not resource.startswith("acct:"):
         return HttpResponseBadRequest("Invalid resource")
     handle = resource.replace("acct:", "").lower()
-    logger.debug(f"{handle} requested with {request}")
+    logger.debug("%s requested with %s", handle, request)
     profile_func = get_function_from_config("get_profile_function")
 
     try:

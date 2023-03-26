@@ -20,6 +20,7 @@ class BaseEntity:
     _source_protocol: str = ""
     # Contains the original object from payload as a string
     _source_object: Union[str, Dict] = None
+    _sender: str = ""
     _sender_key: str = ""
     # ActivityType
     activity: ActivityType = None
@@ -231,8 +232,8 @@ class RawContentMixin(BaseEntity):
     @property
     def rendered_content(self) -> str:
         """Returns the rendered version of raw_content, or just raw_content."""
-        from federation.utils.django import get_configuration
         try:
+            from federation.utils.django import get_configuration
             config = get_configuration()
             if config["tags_path"]:
                 def linkifier(tag: str) -> str:

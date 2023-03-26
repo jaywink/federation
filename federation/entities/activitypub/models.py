@@ -10,6 +10,7 @@ import bleach
 from calamus import fields
 from calamus.schema import JsonLDAnnotation, JsonLDSchema, JsonLDSchemaOpts
 from calamus.utils import normalize_value
+from cryptography.exceptions import InvalidSignature
 from marshmallow import exceptions, pre_load, post_load, post_dump
 from marshmallow.fields import Integer
 from marshmallow.utils import EXCLUDE, missing
@@ -25,7 +26,6 @@ from federation.outbound import handle_send
 from federation.types import UserType, ReceiverVariant
 from federation.utils.activitypub import retrieve_and_parse_document, retrieve_and_parse_profile, \
     get_profile_id_from_webfinger
-from federation.utils.django import get_configuration
 from federation.utils.text import with_slash, validate_handle
 
 logger = logging.getLogger("federation")
@@ -297,11 +297,22 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     # TODO: rework validation
     def validate(self, direction='inbound'):
         if direction == 'inbound':
+            # ensure marshmallow.missing is not sent to the client app
             for attr in type(self).schema().load_fields.keys():
                 if getattr(self, attr) is missing:
                     setattr(self, attr, None)
 
         super().validate(direction)
+
+    def _validate_signatures(self):
+        # Always verify the inbound LD signature, for monitoring purposes
+        actor = verify_ld_signature(self._source_object)
+        if not self._sender:
+            return
+        if self.signable and self._sender not in (self.id, getattr(self, 'actor_id', None)):
+            # Relayed payload
+            if not actor:
+                raise InvalidSignature('no or invalid signature for %s, a relayed payload', self.id)
 
     def to_string(self):
         # noinspection PyUnresolvedReferences
@@ -457,6 +468,7 @@ class Link(metaclass=JsonLDAnnotation):
 
 class Hashtag(Link):
     ctx = [{'Hashtag': 'as:Hashtag'}]
+    id = fields.Id() # Hubzilla uses id instead of href
 
     class Meta:
         rdf_type = as2.Hashtag
@@ -702,7 +714,7 @@ class Note(Object, RawContentMixin):
         self._allowed_children += (base.Audio, base.Video)
 
     def to_as2(self):
-        #self.sensitive = 'nsfw' in self.tags
+        self.sensitive = 'nsfw' in self.tags
         self.url = self.id
 
         edited = False
@@ -768,7 +780,13 @@ class Note(Object, RawContentMixin):
             # Skip when markdown
             return
 
-        hrefs = [tag.href.lower() for tag in self.tag_objects if isinstance(tag, Hashtag)]
+        hrefs = []
+        for tag in self.tag_objects:
+            if isinstance(tag, Hashtag):
+                if tag.href is not missing:
+                    hrefs.append(tag.href.lower())
+                elif tag.id is not missing:
+                    hrefs.append(tag.id.lower())
         # noinspection PyUnusedLocal
         def remove_tag_links(attrs, new=False):
             # Hashtag object hrefs
@@ -807,6 +825,7 @@ class Note(Object, RawContentMixin):
         Populate tags to the object.tag list.
         """
         try:
+            from federation.utils.django import get_configuration
             config = get_configuration()
         except ImportError:
             tags_path = None
@@ -1321,6 +1340,7 @@ def element_to_objects(element: Union[Dict, Object], sender: str = "") -> List:
     entity = model_to_objects(element) if not isinstance(element, Object) else element
     if entity and hasattr(entity, 'to_base'):
         entity = entity.to_base()
+        entity._sender = sender
     if isinstance(entity, (
         base.Post, base.Comment, base.Profile, base.Share, base.Follow,
         base.Retraction, base.Accept,)
@@ -1330,13 +1350,11 @@ def element_to_objects(element: Union[Dict, Object], sender: str = "") -> List:
         except ValueError as ex:
             logger.error("Failed to validate entity %s: %s", entity, ex)
             return []
-        # Always verify the LD signature, for monitoring purposes
-        actor = verify_ld_signature(entity._source_object)
-        if entity.signable and sender not in (entity.id, getattr(entity, 'actor_id', None), ''):
-            # Relayed payload
-            if not actor:
-                logger.warning(f'no or invalid signature for a relayed payload, fetching {entity.id}')
-                entity = retrieve_and_parse_document(entity.id)
+        except InvalidSignature as exc:
+            logger.info('%s, fetching from remote', exc)
+            entity = retrieve_and_parse_document(entity.id)
+            if not entity:
+                return []
         logger.info('Entity type "%s" was handled through the json-ld processor', entity.__class__.__name__)
         return [entity]
     elif entity:
@@ -1355,7 +1373,7 @@ def model_to_objects(payload):
         try:
             entity = model.schema().load(payload)
         except (KeyError, jsonld.JsonLdError, exceptions.ValidationError) as exc :  # Just give up for now. This must be made robust
-            logger.error(f"Error parsing jsonld payload ({exc})")
+            logger.error("Error parsing jsonld payload (%s)", exc)
             return None
 
         if isinstance(getattr(entity, 'object_', None), Object):

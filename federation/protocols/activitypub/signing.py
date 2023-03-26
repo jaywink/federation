@@ -79,9 +79,3 @@ def verify_request_signature(request: RequestType, required: bool=True):
         raise ValueError("Invalid signature")
 
     return signer.id
-
-
-
-
-
-

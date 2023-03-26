@@ -3,14 +3,17 @@ import logging
 from typing import Optional, Any
 
 from federation.protocols.activitypub.signing import get_http_authentication
-from federation.utils.django import get_federation_user
 from federation.utils.network import fetch_document, try_retrieve_webfinger_document
 from federation.utils.text import decode_if_bytes, validate_handle
 
 logger = logging.getLogger('federation')
 
-federation_user = get_federation_user()
-if not federation_user: logger.warning("django is required for get requests signing")
+try:
+    from federation.utils.django import get_federation_user
+    federation_user = get_federation_user()
+except ImportError:
+    federation_user = None
+    logger.warning("django is required for get requests signing")
 
 
 def get_profile_id_from_webfinger(handle: str) -> Optional[str]:

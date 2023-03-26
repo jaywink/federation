@@ -3,7 +3,7 @@ import logging
 import math
 import re
 from base64 import b64encode, b64decode
-from  copy import copy
+from copy import copy
 from funcy import omit
 from pyld import jsonld
 
@@ -22,13 +22,13 @@ def create_ld_signature(obj, author):
     sig = {
         'created': datetime.datetime.now(tz=datetime.timezone.utc).isoformat(timespec='seconds'),
         'creator': f'{author.id}#main-key',
-        '@context':'https://w3id.org/security/v1'
+        '@context': 'https://w3id.org/security/v1'
     }
 
     try:
         private_key = import_key(author.private_key)
     except (ValueError, TypeError) as exc:
-        logger.warning(f'ld_signature - {exc}')
+        logger.warning('ld_signature - %s', exc)
         return None
     signer = pkcs1_15.new(private_key)
 
@@ -40,7 +40,7 @@ def create_ld_signature(obj, author):
     sig.update({'type': 'RsaSignature2017', 'signatureValue': b64encode(signature).decode()})
     sig.pop('@context')
 
-    obj.update({'signature':sig})
+    obj.update({'signature': sig})
 
 
 def verify_ld_signature(payload):
@@ -49,24 +49,25 @@ def verify_ld_signature(payload):
     """
     signature = copy(payload.get('signature', None))
     if not signature:
-        logger.warning(f'ld_signature - No signature in {payload.get("id", "the payload")}')
+        logger.warning('ld_signature - No signature in %s', payload.get("id", "the payload"))
         return None
 
     # retrieve the author's public key
     profile = retrieve_and_parse_document(signature.get('creator'))
     if not profile:
-        logger.warning(f'ld_signature - Failed to retrieve profile for {signature.get("creator")}')
+
+        logger.warning('ld_signature - Failed to retrieve profile for %s', signature.get("creator"))
         return None
     try:
         pkey = import_key(profile.public_key)
     except ValueError as exc:
-        logger.warning(f'ld_signature - {exc}')
+        logger.warning('ld_signature - %s', exc)
         return None
     verifier = pkcs1_15.new(pkey)
 
     # Compute digests and verify signature
     sig = omit(signature, ('type', 'signatureValue'))
-    sig.update({'@context':'https://w3id.org/security/v1'})
+    sig.update({'@context': 'https://w3id.org/security/v1'})
     sig_digest = hash(sig)
     obj = omit(payload, 'signature')
     obj_digest = hash(obj)
@@ -75,15 +76,15 @@ def verify_ld_signature(payload):
     sig_value = b64decode(signature.get('signatureValue'))
     try:
         verifier.verify(SHA256.new(digest), sig_value)
-        logger.debug(f'ld_signature - {payload.get("id")} has a valid signature')
+        logger.debug('ld_signature - %s has a valid signature', payload.get("id"))
         return profile.id
     except ValueError:
-        logger.warning(f'ld_signature - Invalid signature for {payload.get("id")}')
+        logger.warning('ld_signature - Invalid signature for %s', payload.get("id"))
         return None
 
 
 def hash(obj):
-    nquads = NormalizedDoubles().normalize(obj, options={'format':'application/nquads','algorithm':'URDNA2015'})
+    nquads = NormalizedDoubles().normalize(obj, options={'format': 'application/nquads', 'algorithm': 'URDNA2015'})
     return SHA256.new(nquads.encode('utf-8')).hexdigest()
 
 

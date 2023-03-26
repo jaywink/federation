@@ -90,6 +90,6 @@ class Protocol:
                 # Verify the HTTP signature
                 self.sender = verify_request_signature(self.request)
             except (ValueError, KeyError, InvalidSignature) as exc:
-                logger.warning(f'HTTP signature verification failed: {exc}')
+                logger.warning('HTTP signature verification failed: %s', exc)
                 return self.actor, {}
         return self.sender, self.payload
