@@ -306,7 +306,8 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
 
     def _validate_signatures(self):
         # Always verify the inbound LD signature, for monitoring purposes
-        actor = verify_ld_signature(self._source_object)
+        if self._source_object: # objects extracted from collections don't have a source object
+            actor = verify_ld_signature(self._source_object)
         if not self._sender:
             return
         if self.signable and self._sender not in (self.id, getattr(self, 'actor_id', None)):
