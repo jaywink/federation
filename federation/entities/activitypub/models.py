@@ -305,9 +305,13 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
         super().validate(direction)
 
     def _validate_signatures(self):
-        # Always verify the inbound LD signature, for monitoring purposes
-        if self._source_object: # objects extracted from collections don't have a source object
-            actor = verify_ld_signature(self._source_object)
+        # Objects extracted from collections don't have a source object.
+        # To avoid infinite recursion, only verify a profile signature
+        # if it was sent, not retrieved.
+        if not self._source_object or (not self._sender and isinstance(self, Person)):
+            return
+        # Always verify inbound LD signature, for monitoring purposes
+        actor = verify_ld_signature(self._source_object)
         if not self._sender:
             return
         if self.signable and self._sender not in (self.id, getattr(self, 'actor_id', None)):
