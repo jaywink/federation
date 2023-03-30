@@ -1122,6 +1122,7 @@ class Follow(Activity, base.Follow):
 class Announce(Activity, base.Share):
     id = fields.Id()
     target_id = IRI(as2.object)
+    signable = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1221,6 +1222,8 @@ class Accept(Create, base.Accept):
 
 
 class Delete(Create, base.Retraction):
+    signable = True
+
     def to_base(self):
         if hasattr(self, 'object_') and not isinstance(self.object_, Tombstone):
             self.target_id = self.object_
