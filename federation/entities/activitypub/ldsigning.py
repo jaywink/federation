@@ -11,6 +11,7 @@ from Crypto.Hash import SHA256
 from Crypto.PublicKey.RSA import import_key
 from Crypto.Signature import pkcs1_15
 
+from federation.entities.utils import get_profile
 from federation.utils.activitypub import retrieve_and_parse_document
 
 
@@ -53,9 +54,10 @@ def verify_ld_signature(payload):
         return None
 
     # retrieve the author's public key
-    profile = retrieve_and_parse_document(signature.get('creator'))
+    profile = get_profile(key_id=signature.get('creator'))
     if not profile:
-
+        profile = retrieve_and_parse_document(signature.get('creator'))
+    if not profile:
         logger.warning('ld_signature - Failed to retrieve profile for %s', signature.get("creator"))
         return None
     try:

@@ -88,7 +88,8 @@ class Protocol:
         if not skip_author_verification:
             try:
                 # Verify the HTTP signature
-                self.sender = verify_request_signature(self.request)
+                pubkey = sender_key_fetcher(self.actor) if sender_key_fetcher else ''
+                self.sender = verify_request_signature(self.request, pubkey=pubkey)
             except (ValueError, KeyError, InvalidSignature) as exc:
                 logger.warning('HTTP signature verification failed: %s', exc)
                 return self.actor, {}

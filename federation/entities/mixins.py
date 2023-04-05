@@ -31,7 +31,9 @@ class BaseEntity:
     guid: str = ""
     handle: str = ""
     finger: str = ""
+    followers: str = ""
     id: str = ""
+    key_id: str = ""
     mxid: str = ""
     signature: str = ""
     # for AP

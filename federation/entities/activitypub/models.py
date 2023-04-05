@@ -618,10 +618,15 @@ class Person(Object, base.Profile):
             self.endpoints = {'sharedInbox': value.get('public', None)}
 
     @property
+    def key_id(self):
+        if isinstance(self.public_key_dict, dict):
+            return self.public_key_dict.get('id', None)
+
+    @property
     def public_key(self):
         if self._cached_public_key: return self._cached_public_key
 
-        if hasattr(self, 'public_key_dict') and isinstance(self.public_key_dict, dict):
+        if isinstance(self.public_key_dict, dict):
             self._cached_public_key = self.public_key_dict.get('publicKeyPem', None)
 
         return self._cached_public_key
@@ -982,7 +987,7 @@ class Video(Document, base.Video):
         """
         
         self.__dict__.update({'schema': True})
-        if hasattr(self, 'content_map'):
+        if self.content_map is not missing:
             text = self.content_map['orig']
             if getattr(self, 'media_type', None) == 'text/markdown':
                 url = ""
@@ -994,7 +999,7 @@ class Video(Document, base.Video):
                 self.raw_content = text.strip()
                 self._media_type = self.media_type
 
-            if hasattr(self, 'actor_id'):
+            if self.actor_id is not missing:
                 act = self.actor_id
                 new_act = []
                 if not isinstance(act, list): act = [act]
@@ -1225,7 +1230,7 @@ class Delete(Create, base.Retraction):
     signable = True
 
     def to_base(self):
-        if hasattr(self, 'object_') and not isinstance(self.object_, Tombstone):
+        if not isinstance(self.object_, Tombstone):
             self.target_id = self.object_
             self.entity_type = 'Object'
         return self
@@ -1253,7 +1258,7 @@ class View(Create):
 def process_followers(obj, base_url):
     pass
 
-def extract_receiver(profile, receiver):
+def extract_receiver(author, receiver):
     """
     Transform a single receiver ID to a UserType.
     """
@@ -1267,11 +1272,18 @@ def extract_receiver(profile, receiver):
 
     if isinstance(obj, base.Profile):
         return [UserType(id=receiver, receiver_variant=ReceiverVariant.ACTOR)]
-    # This doesn't handle cases where the actor is sending to other actors
-    # followers (seen on PeerTube)
-    if profile.followers == receiver:
-        return [UserType(id=profile.id, receiver_variant=ReceiverVariant.FOLLOWERS)]
 
+    # This handles cases where the actor is sending to other actors
+    # followers (seen on PeerTube)
+    if isinstance(obj, base.Collection):
+        profile = get_profile(followers_fid=obj.id)
+        if profile:
+            return [UserType(id=profile.id, receiver_variant=ReceiverVariant.FOLLOWERS)]
+
+    if author.followers == receiver:
+        return [UserType(id=author.id, receiver_variant=ReceiverVariant.FOLLOWERS)]
+
+    return []
 
 def extract_receivers(entity):
     """
@@ -1281,8 +1293,9 @@ def extract_receivers(entity):
     profile = None
     # don't care about receivers for payloads without an actor_id    
     if getattr(entity, 'actor_id'):
-        profile = retrieve_and_parse_profile(entity.actor_id)
-    if not profile: return receivers
+        profile = get_profile_or_entity(entity.actor_id)
+    if not isinstance(profile, base.Profile):
+        return receivers
     
     for attr in ("to", "cc"):
         receiver = getattr(entity, attr, None)
