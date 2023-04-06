@@ -1230,9 +1230,10 @@ class Delete(Create, base.Retraction):
     signable = True
 
     def to_base(self):
+        self.entity_type = 'Unsupported'
         if not isinstance(self.object_, Tombstone):
             self.target_id = self.object_
-            self.entity_type = 'Object'
+            self.entity_type = 'Profile'
         return self
 
     class Meta:
