@@ -53,12 +53,13 @@ def verify_request_signature(request: RequestType, pubkey: str=""):
     if not signer:
         signer = retrieve_and_parse_document(sig.get('keyId'))
     key = getattr(signer, 'public_key', None)
-    if not key and pubkey:
-        # fallback to the author's key the client app may have provided
-        logger.warning("Failed to retrieve keyId for %s, trying the actor's key", sig.get('keyId'))
-        key = pubkey
-    else:
-        raise ValueError(f"No public key for {sig.get('keyId')}")
+    if not key:
+        if pubkey:
+            # fallback to the author's key the client app may have provided
+            logger.warning("Failed to retrieve keyId for %s, trying the actor's key", sig.get('keyId'))
+            key = pubkey
+        else:
+            raise ValueError(f"No public key for {sig.get('keyId')}")
 
     key = encode_if_text(key)
     date_header = request.headers.get("Date")
