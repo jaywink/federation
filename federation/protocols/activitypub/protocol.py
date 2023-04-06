@@ -8,9 +8,12 @@ from Crypto.PublicKey.RSA import RsaKey
 
 from federation.entities.activitypub.enums import ActorType
 from federation.entities.mixins import BaseEntity
+from federation.entities.utils import get_profile
 from federation.protocols.activitypub.signing import verify_request_signature
 from federation.types import UserType, RequestType
+from federation.utils.activitypub import retrieve_and_parse_document
 from federation.utils.text import decode_if_bytes
+
 
 logger = logging.getLogger('federation')
 
@@ -88,9 +91,32 @@ class Protocol:
         if not skip_author_verification:
             try:
                 # Verify the HTTP signature
-                pubkey = sender_key_fetcher(self.actor) if sender_key_fetcher else ''
-                self.sender = verify_request_signature(self.request, pubkey=pubkey)
+                self.verify()
             except (ValueError, KeyError, InvalidSignature) as exc:
                 logger.warning('HTTP signature verification failed: %s', exc)
                 return self.actor, {}
         return self.sender, self.payload
+
+    def verify(self):
+        sig_struct = self.request.headers.get("Signature", None)
+        if not sig_struct:
+            raise ValueError("A signature is required but was not provided")
+
+        # this should return a dict populated with the following keys:
+        # keyId, algorithm, headers and signature
+        sig = {i.split("=", 1)[0]: i.split("=", 1)[1].strip('"') for i in sig_struct.split(",")}
+
+        signer = get_profile(key_id=sig.get('keyId'))
+        if not signer:
+            signer = retrieve_and_parse_document(sig.get('keyId'))
+        self.sender = signer.id if signer else self.actor
+        key = getattr(signer, 'public_key', None)
+        if not key:
+            key = self.get_contact_key(self.actor) if self.get_contact_key else ''
+            if key:
+                # fallback to the author's key the client app may have provided
+                logger.warning("Failed to retrieve keyId for %s, trying the actor's key", sig.get('keyId'))
+            else:
+                raise ValueError(f"No public key for {sig.get('keyId')}")
+
+        verify_request_signature(self.request, key=key, algorithm=sig.get('algorithm',""))
