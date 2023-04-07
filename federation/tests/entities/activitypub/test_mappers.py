@@ -187,7 +187,7 @@ class TestActivitypubEntityMappersReceive:
             "private": "https://diaspodon.fr/users/jaywink/inbox",
             "public": "https://diaspodon.fr/inbox",
         }
-        assert profile.handle == ""
+        assert profile.handle == None
         assert profile.name == "Jason Robinson"
         assert profile.image_urls == {
             "large": "https://diaspodon.fr/system/accounts/avatars/000/033/155/original/pnc__picked_media_be51984c-4"

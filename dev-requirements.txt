@@ -23,7 +23,7 @@ arrow
 freezegun
 
 # Django support
-django>=1.8,<2.3
+django>=3.2,<4
 pytest-django
 
 # Releasing

@@ -1,5 +1,44 @@
 # Changelog
 
+## [0.25] - Unreleased
+
+### Added
+
+* LD signature. Relayable AP payloads signatures are checked (inbound) and signed (outbound). A missing
+  or invalid signature on inbound payloads will trigger a fetch if the sender differs from the author
+  (i.e., a relay).
+
+* The `signable` attribute has been added. It defaults to `False` and will enforce the fetching of relayed
+  payloads with a bad signature when set to `True`on a given class.
+
+* The `url` property is now set to the `id` propety as some platforms make use of it.
+
+### Changed
+
+* Re-implement dynamically generated LD contexts for outbound payloads. AP extensions are defined on a
+  per class/property basis. For classes, a `ctx` attribute is set if required. For properties, the calamus
+  field `metadata` property is used.
+
+* For inbound payload, a cached dict of all the defined AP extensions is merged with each incoming LD context.
+
+* Better handle conflicting property defaults by having `get_base_attributes` return only attributes that
+  are not empty (or bool). This helps distinguishing between `marshmallow.missing` and empty values.
+
+* JsonLD document caching now set in `activitypub/__init__.py`.
+
+* Patch outbound payloads for platform that don't handle arrays compacted to a single value and
+  `as:Public`.
+
+### Fixed
+
+* Inbound AP share retractions (undo announce) were deserialized as a `base.Retraction` class, which would
+  throw an error when accessing the missing `signable` attribute. To fix this, a `Retraction` class was added.
+
+* Because of the additions and changes above, a number of tests needed to be fixed.
+
+* HTTP signature verification now returns the signature author fid which is used as the actual
+  sender by `message_to_object`.
+
 ## [0.24.1] - 2023-03-18
 
 ### Fixed

@@ -13,22 +13,17 @@ from federation.entities.utils import get_base_attributes
 
 
 class TestGetBaseAttributes:
-    def test_get_base_attributes_returns_only_intended_attributes(self):
-        entity = Post()
+    def test_get_base_attributes_returns_only_intended_attributes(self, diasporapost, diasporaprofile):
+        entity = diasporapost
         attrs = get_base_attributes(entity).keys()
         assert set(attrs) == {
-            "created_at", "location", "provider_display_name", "public", "raw_content",
-            "signature", "base_url", "actor_id", "id", "handle", "guid", "activity", "activity_id",
-            "url", "mxid", "times", "to", "cc", "finger",
-        }
-        entity = Profile()
+            'activity', 'actor_id', 'created_at', 'guid', 'handle', 'id',
+            'provider_display_name', 'public', 'raw_content'}
+        entity = diasporaprofile
         attrs = get_base_attributes(entity).keys()
         assert set(attrs) == {
-            "created_at", "name", "email", "gender", "raw_content", "location", "public",
-            "nsfw", "public_key", "image_urls", "tag_list", "signature", "url", "atom_url",
-            "base_url", "id", "actor_id", "handle", "handle", "guid", "activity", "activity_id", "username",
-            "inboxes", "mxid", "times", "to", "cc", "finger",
-        }
+            'created_at', 'guid', 'handle', 'id', 'image_urls', 'inboxes',
+            'name', 'nsfw', 'public', 'raw_content', 'tag_list'}
 
 
 class TestGetFullXMLRepresentation:

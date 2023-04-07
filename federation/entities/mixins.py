@@ -5,6 +5,7 @@ import warnings
 from typing import List, Set, Union, Dict, Tuple
 
 from commonmark import commonmark
+from marshmallow import missing
 
 from federation.entities.activitypub.enums import ActivityType
 from federation.entities.utils import get_name_for_profile, get_profile
@@ -19,6 +20,7 @@ class BaseEntity:
     _source_protocol: str = ""
     # Contains the original object from payload as a string
     _source_object: Union[str, Dict] = None
+    _sender: str = ""
     _sender_key: str = ""
     # ActivityType
     activity: ActivityType = None
@@ -100,7 +102,7 @@ class BaseEntity:
     def _validate_required(self, attributes):
         """Ensure required attributes are present."""
         required_fulfilled = set(self._required).issubset(set(attributes))
-        if not required_fulfilled:
+        if not required_fulfilled or required_fulfilled is missing:
             raise ValueError(
                 "Not all required attributes fulfilled. Required: {required}".format(required=set(self._required))
             )
@@ -115,7 +117,7 @@ class BaseEntity:
         attrs_to_check = set(self._required) & set(attributes)
         for attr in attrs_to_check:
             value = getattr(self, attr)  # We should always have a value here
-            if value is None or value == "":
+            if value is None or value == "" or value is missing:
                 raise ValueError(
                     "Attribute %s cannot be None or an empty string since it is required." % attr
                 )
@@ -230,8 +232,8 @@ class RawContentMixin(BaseEntity):
     @property
     def rendered_content(self) -> str:
         """Returns the rendered version of raw_content, or just raw_content."""
-        from federation.utils.django import get_configuration
         try:
+            from federation.utils.django import get_configuration
             config = get_configuration()
             if config["tags_path"]:
                 def linkifier(tag: str) -> str:

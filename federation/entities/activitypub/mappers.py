@@ -84,6 +84,6 @@ def message_to_objects(
     Takes in a message extracted by a protocol and maps it to entities.
     """
     # We only really expect one element here for ActivityPub.
-    return element_to_objects(message)
+    return element_to_objects(message, sender)
 
 

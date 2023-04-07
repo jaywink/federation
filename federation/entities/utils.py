@@ -15,7 +15,9 @@ def get_base_attributes(entity, keep=()):
     cls = entity.__class__
     for attr, _ in inspect.getmembers(cls, lambda o: not isinstance(o, property) and not inspect.isroutine(o)):
         if not attr.startswith("_") or attr in keep:
-            attributes[attr] = getattr(entity, attr)
+            value = getattr(entity, attr)
+            if value or isinstance(value, bool):
+                attributes[attr] = value
     return attributes
 
 

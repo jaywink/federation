@@ -5,7 +5,6 @@ https://funkwhale.audio/
 """
 import datetime
 import logging
-from typing import Union
 from urllib.parse import urlsplit
 
 import pytz
@@ -13,7 +12,6 @@ from Crypto.PublicKey.RSA import RsaKey
 from httpsig.sign_algorithms import PSS
 from httpsig.requests_auth import HTTPSignatureAuth
 from httpsig.verify import HeaderVerifier
-
 
 from federation.types import RequestType
 from federation.utils.network import parse_http_date

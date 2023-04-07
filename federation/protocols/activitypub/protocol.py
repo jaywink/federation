@@ -43,6 +43,7 @@ class Protocol:
     get_contact_key = None
     payload = None
     request = None
+    sender = None
     user = None
 
     def build_send(self, entity: BaseEntity, from_user: UserType, to_user_key: RsaKey = None) -> Union[str, Dict]:
@@ -58,7 +59,7 @@ class Protocol:
             # Use pregenerated outbound document
             rendered = entity.outbound_doc
         else:
-            rendered = entity.to_as2()
+            rendered = entity.sign_as2(sender=from_user)
         return rendered
 
     def extract_actor(self):
@@ -86,12 +87,9 @@ class Protocol:
         # Verify the message is from who it claims to be
         if not skip_author_verification:
             try:
-                self.verify_signature()
+                # Verify the HTTP signature
+                self.sender = verify_request_signature(self.request)
             except (ValueError, KeyError, InvalidSignature) as exc:
-                logger.warning(f'Signature verification failed: {exc}')
+                logger.warning('HTTP signature verification failed: %s', exc)
                 return self.actor, {}
-        return self.actor, self.payload
-
-    def verify_signature(self):
-        # Verify the HTTP signature
-        verify_request_signature(self.request)
+        return self.sender, self.payload

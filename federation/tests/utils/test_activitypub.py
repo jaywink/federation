@@ -79,11 +79,13 @@ class TestRetrieveAndParseDocument:
         assert entity._children[0].url == "https://files.mastodon.social/media_attachments/files/017/792/237/original" \
                                           "/foobar.jpg"
 
+    @patch("federation.entities.activitypub.models.verify_ld_signature", return_value=None)
     @patch("federation.entities.activitypub.models.extract_receivers", return_value=[])
     @patch("federation.utils.activitypub.fetch_document", autospec=True, return_value=(
         json.dumps(ACTIVITYPUB_POST), None, None),
     )
-    def test_returns_entity_for_valid_document__post__wrapped_in_activity(self, mock_fetch, mock_recv):
+    def test_returns_entity_for_valid_document__post__wrapped_in_activity(
+            self, mock_fetch, mock_recv, mock_sign):
         entity = retrieve_and_parse_document("https://example.com/foobar")
         assert isinstance(entity, Note)
 
