@@ -11,7 +11,7 @@
 * The `signable` attribute has been added. It defaults to `False` and will enforce the fetching of relayed
   payloads with a bad signature when set to `True`on a given class.
 
-* The `url` property is now set to the `id` propety as some platforms make use of it.
+* The `url` property is now set to the `id` property as some platforms make use of it.
 
 ### Changed
 
@@ -29,6 +29,10 @@
 * Patch outbound payloads for platform that don't handle arrays compacted to a single value and
   `as:Public`.
 
+* Always try to get profiles from the client app before fetching from remote. In support of this, the client
+  app AP profiles must include the keyId and the followers URIs. As a significant side effect, profile retractions
+  are now more likely to succeed.
+
 ### Fixed
 
 * Inbound AP share retractions (undo announce) were deserialized as a `base.Retraction` class, which would
@@ -38,6 +42,8 @@
 
 * HTTP signature verification now returns the signature author fid which is used as the actual
   sender by `message_to_object`.
+
+* In fetch_document: if response.encoding is not set, default to utf-8.
 
 ## [0.24.1] - 2023-03-18
 
