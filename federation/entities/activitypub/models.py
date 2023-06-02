@@ -1209,7 +1209,7 @@ class Like(Activity, base.Reaction):
     id = fields.Id()
     reaction = fields.String(diaspora.like)
 
-    def validate(self):
+    def validate(self, direction='inbound'):
         pass
 
     class Meta:
@@ -1218,7 +1218,7 @@ class Like(Activity, base.Reaction):
 
 # inbound Accept is a noop...
 class Accept(Create, base.Accept):
-    def validate(self):
+    def validate(self, direction='inbound'):
         pass
 
     class Meta:
