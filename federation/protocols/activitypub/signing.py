@@ -35,31 +35,11 @@ def get_http_authentication(private_key: RsaKey, private_key_id: str, digest: bo
     )
 
 
-def verify_request_signature(request: RequestType, required: bool=True):
+def verify_request_signature(request: RequestType, key: str="", algorithm: str=""):
     """
     Verify HTTP signature in request against a public key.
     """
-    from federation.utils.activitypub import retrieve_and_parse_document
-    
-    sig_struct = request.headers.get("Signature", None)
-    if not sig_struct:
-        if required:
-            raise ValueError("A signature is required but was not provided")
-        else:
-            return None
-
-    # this should return a dict populated with the following keys:
-    # keyId, algorithm, headers and signature
-    sig = {i.split("=", 1)[0]: i.split("=", 1)[1].strip('"') for i in sig_struct.split(",")}
-    signer = retrieve_and_parse_document(sig.get('keyId'))
-    if not signer:
-        raise ValueError(f"Failed to retrieve keyId for {sig.get('keyId')}")
-
-    if not getattr(signer, 'public_key_dict', None):
-        raise ValueError(f"Failed to retrieve public key for {sig.get('keyId')}")
-
-    key = encode_if_text(signer.public_key_dict['publicKeyPem'])
-
+    key = encode_if_text(key)
     date_header = request.headers.get("Date")
     if not date_header:
         raise ValueError("Request Date header is missing")
@@ -75,7 +55,5 @@ def verify_request_signature(request: RequestType, required: bool=True):
     path = getattr(request, 'path', urlsplit(request.url).path)
     if not HeaderVerifier(request.headers, key, method=request.method,
             path=path, sign_header='signature',
-            sign_algorithm=PSS() if sig.get('algorithm',None) == 'hs2019' else None).verify():
+            sign_algorithm=PSS() if algorithm == 'hs2019' else None).verify():
         raise ValueError("Invalid signature")
-
-    return signer.id

@@ -11,9 +11,9 @@ logger = logging.getLogger('federation')
 try:
     from federation.utils.django import get_federation_user
     federation_user = get_federation_user()
-except ImportError:
+except Exception as exc:
     federation_user = None
-    logger.warning("django is required for get requests signing")
+    logger.warning("django is required for get requests signing: %s", exc)
 
 
 def get_profile_id_from_webfinger(handle: str) -> Optional[str]:

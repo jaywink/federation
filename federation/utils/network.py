@@ -68,6 +68,7 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
                     expire_after=EXPIRATION if cache else DO_NOT_CACHE, **kwargs)
             logger.debug("fetch_document: found document, code %s", response.status_code)
             response.raise_for_status()
+            if not response.encoding: response.encoding = 'utf-8'
             return response.text, response.status_code, None
         except RequestException as ex:
             logger.debug("fetch_document: exception %s", ex)
