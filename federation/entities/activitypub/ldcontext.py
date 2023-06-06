@@ -137,12 +137,17 @@ class LdContextManager:
         # Merge all defined AP extensions to the inbound context
         uris = []
         defs = {}
-        # Merge original context dicts in one dict
-        for item in ctx:
-            if isinstance(item, str):
-                uris.append(item)
-            else:
-                defs.update(item)
+        # Merge original context dicts in one dict, taking into account nested @context
+        def parse_context(ctx):
+            for item in ctx:
+                if isinstance(item, str):
+                    uris.append(item)
+                else:
+                    if '@context' in item:
+                        parse_context([item['@context']])
+                        item.pop('@context')
+                    defs.update(item)
+        parse_context(ctx)
 
         for item in self._merged:
             if isinstance(item, str) and item not in uris:

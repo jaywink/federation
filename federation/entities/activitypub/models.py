@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+import traceback
 import uuid
 from datetime import timedelta
 from typing import List, Dict, Union
@@ -241,8 +242,8 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
                         metadata={'ctx':[{ 'alsoKnownAs':{'@id':'as:alsoKnownAs','@type':'@id'}}]})
     icon = MixedField(as2.icon, nested='ImageSchema')
     image = MixedField(as2.image, nested='ImageSchema')
-    tag_objects = MixedField(as2.tag, nested=['HashtagSchema','MentionSchema','PropertyValueSchema','EmojiSchema'], many=True)
-    attachment = fields.Nested(as2.attachment, nested=['ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'],
+    tag_objects = MixedField(as2.tag, nested=['NoteSchema', 'HashtagSchema','MentionSchema','PropertyValueSchema','EmojiSchema'], many=True)
+    attachment = fields.Nested(as2.attachment, nested=['NoteSchema', 'ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'],
                                many=True, default=[])
     content_map = LanguageMap(as2.content)  # language maps are not implemented in calamus
     context = fields.RawJsonLD(as2.context)
@@ -250,7 +251,7 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     generator = MixedField(as2.generator, nested=['ApplicationSchema','ServiceSchema'])
     created_at = fields.DateTime(as2.published, add_value_types=True)
     replies = MixedField(as2.replies, nested=['CollectionSchema','OrderedCollectionSchema'])
-    signature = MixedField(sec.signature, nested = 'SignatureSchema',
+    signature = MixedField(sec.signature, nested = 'RsaSignature2017Schema',
                            metadata={'ctx': [CONTEXT_SECURITY,
                                              {'RsaSignature2017':'sec:RsaSignature2017'}]})
     start_time = fields.DateTime(as2.startTime, add_value_types=True)
@@ -332,6 +333,20 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
             ctx = copy.copy(data['@context'])
             data['@context'] = context_manager.merge_context(ctx)
             return data
+
+        # JSONLD specs states it is case sensitive.
+        # Ensure type names for which we have an implementation have the proper case
+        # for platforms that ignore the spec.
+        @pre_load
+        def patch_types(self, data, **kwargs):
+            def walk_payload(payload):
+                for key,val in copy.copy(payload).items():
+                    if isinstance(val, dict):
+                        payload.update(walk_payload(val))
+                    if key == 'type':
+                        payload[key] = MODEL_NAMES.get(val.lower(), val)
+                return payload
+            return walk_payload(data)
 
         # A node without an id isn't true json-ld, but many payloads have
         # id-less nodes. Since calamus forces random ids on such nodes, 
@@ -567,7 +582,7 @@ class Person(Object, base.Profile):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._allowed_children += (PropertyValue, IdentityProof)
+        self._allowed_children += (Note, PropertyValue, IdentityProof)
 
     # Set finger to username@host if not provided by the platform
     def post_receive(self):
@@ -1019,7 +1034,7 @@ class Video(Document, base.Video):
             return self
 
 
-class Signature(Object):
+class RsaSignature2017(Object):
     created = fields.DateTime(dc.created, add_value_types=True)
     creator = IRI(dc.creator)
     key = fields.String(sec.signatureValue)
@@ -1396,6 +1411,7 @@ def model_to_objects(payload):
             entity = model.schema().load(payload)
         except (KeyError, jsonld.JsonLdError, exceptions.ValidationError) as exc :  # Just give up for now. This must be made robust
             logger.error("Error parsing jsonld payload (%s)", exc)
+            traceback.print_exception(exc)
             return None
 
         if isinstance(getattr(entity, 'object_', None), Object):
@@ -1417,3 +1433,9 @@ CLASSES_WITH_CONTEXT_EXTENSIONS = (
     PropertyValue
 )
 context_manager = LdContextManager(CLASSES_WITH_CONTEXT_EXTENSIONS)
+
+
+MODEL_NAMES = {}
+for key,val in copy.copy(globals()).items():
+    if type(val) == JsonLDAnnotation and issubclass(val, Object):
+        MODEL_NAMES[key.lower()] = key
