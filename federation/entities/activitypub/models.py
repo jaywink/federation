@@ -1439,6 +1439,3 @@ MODEL_NAMES = {}
 for key,val in copy.copy(globals()).items():
     if type(val) == JsonLDAnnotation and issubclass(val, Object):
         MODEL_NAMES[key.lower()] = key
-
-from pprint import pprint
-pprint(MODEL_NAMES)
