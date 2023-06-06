@@ -342,7 +342,7 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
             def walk_payload(payload):
                 for key,val in copy.copy(payload).items():
                     if isinstance(val, dict):
-                        payload.update(walk_payload(val))
+                        walk_payload(val)
                     if key == 'type':
                         payload[key] = MODEL_NAMES.get(val.lower(), val)
                 return payload
@@ -1439,3 +1439,6 @@ MODEL_NAMES = {}
 for key,val in copy.copy(globals()).items():
     if type(val) == JsonLDAnnotation and issubclass(val, Object):
         MODEL_NAMES[key.lower()] = key
+
+from pprint import pprint
+pprint(MODEL_NAMES)
