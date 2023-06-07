@@ -243,7 +243,7 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     icon = MixedField(as2.icon, nested='ImageSchema')
     image = MixedField(as2.image, nested='ImageSchema')
     tag_objects = MixedField(as2.tag, nested=['NoteSchema', 'HashtagSchema','MentionSchema','PropertyValueSchema','EmojiSchema'], many=True)
-    attachment = fields.Nested(as2.attachment, nested=['NoteSchema', 'ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'],
+    attachment = fields.Nested(as2.attachment, nested=['LinkSchema', 'NoteSchema', 'ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'],
                                many=True, default=[])
     content_map = LanguageMap(as2.content)  # language maps are not implemented in calamus
     context = fields.RawJsonLD(as2.context)
@@ -736,7 +736,7 @@ class Note(Object, RawContentMixin):
     def __init__(self, *args, **kwargs):
         self.tag_objects = [] # mutable objects...
         super().__init__(*args, **kwargs)
-        self._allowed_children += (base.Audio, base.Video)
+        self._allowed_children += (base.Audio, base.Video, Link)
 
     def to_as2(self):
         self.sensitive = 'nsfw' in self.tags
@@ -932,12 +932,13 @@ class Note(Object, RawContentMixin):
         if isinstance(getattr(self, 'attachment', None), list):
             children = []
             for child in self.attachment:
-                if isinstance(child, Document):
-                    obj = child.to_base()
-                    if isinstance(obj, Image):
-                        if obj.inline or (obj.image and obj.image in self.raw_content):
+                if isinstance(child, (Document, Link)):
+                    if hasattr(child, 'to_base'):
+                        child = child.to_base()
+                    if isinstance(child, Image):
+                        if child.inline or (child.image and child.image in self.raw_content):
                             continue
-                    children.append(obj)
+                    children.append(child)
             self._cached_children = children
 
         return self._cached_children
@@ -1437,5 +1438,5 @@ context_manager = LdContextManager(CLASSES_WITH_CONTEXT_EXTENSIONS)
 
 MODEL_NAMES = {}
 for key,val in copy.copy(globals()).items():
-    if type(val) == JsonLDAnnotation and issubclass(val, Object):
+    if type(val) == JsonLDAnnotation and issubclass(val, (Object, Link)):
         MODEL_NAMES[key.lower()] = key
