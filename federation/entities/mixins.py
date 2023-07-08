@@ -4,12 +4,13 @@ import re
 import warnings
 from typing import List, Set, Union, Dict, Tuple
 
+from bs4 import BeautifulSoup
 from commonmark import commonmark
 from marshmallow import missing
 
 from federation.entities.activitypub.enums import ActivityType
 from federation.entities.utils import get_name_for_profile, get_profile
-from federation.utils.text import process_text_links, find_tags
+from federation.utils.text import process_text_links, find_elements, find_tags, MENTION_PATTERN
 
 
 class BaseEntity:
@@ -22,6 +23,7 @@ class BaseEntity:
     _source_object: Union[str, Dict] = None
     _sender: str = ""
     _sender_key: str = ""
+    _tags: Set = None
     # ActivityType
     activity: ActivityType = None
     activity_id: str = ""
@@ -205,7 +207,7 @@ class CreatedAtMixin(BaseEntity):
 class RawContentMixin(BaseEntity):
     _media_type: str = "text/markdown"
     _mentions: Set = None
-    _rendered_content: str = ""
+    rendered_content: str = ""
     raw_content: str = ""
 
     def __init__(self, *args, **kwargs):
@@ -231,59 +233,22 @@ class RawContentMixin(BaseEntity):
             images.append((groups[1], groups[0] or ""))
         return images
 
-    @property
-    def rendered_content(self) -> str:
-        """Returns the rendered version of raw_content, or just raw_content."""
-        try:
-            from federation.utils.django import get_configuration
-            config = get_configuration()
-            if config["tags_path"]:
-                def linkifier(tag: str) -> str:
-                    return f'<a class="mention hashtag" ' \
-                           f' href="{config["base_url"]}{config["tags_path"].replace(":tag:", tag.lower())}" ' \
-                           f'rel="noopener noreferrer">' \
-                           f'#<span>{tag}</span></a>'
-            else:
-                linkifier = None
-        except ImportError:
-            linkifier = None
-
-        if self._rendered_content:
-            return self._rendered_content
-        elif self._media_type == "text/markdown" and self.raw_content:
-            # Do tags
-            _tags, rendered = find_tags(self.raw_content, replacer=linkifier)
-            # Render markdown to HTML
-            rendered = commonmark(rendered).strip()
-            # Do mentions
-            if self._mentions:
-                for mention in self._mentions:
-                    # Diaspora mentions are linkified as mailto
-                    profile = get_profile(finger=mention)
-                    href = 'mailto:'+mention if not getattr(profile, 'id', None) else profile.id
-                    rendered = rendered.replace(
-                        "@%s" % mention,
-                        f'@<a class="h-card" href="{href}"><span>{mention}</span></a>',
-                    )
-            # Finally linkify remaining URL's that are not links
-            rendered = process_text_links(rendered)
-            return rendered
-        return self.raw_content
-
+    # Legacy. Keep this until tests are reworked
     @property
     def tags(self) -> List[str]:
-        """Returns a `list` of unique tags contained in `raw_content`."""
         if not self.raw_content:
-            return []
-        tags, _text = find_tags(self.raw_content)
-        return sorted(tags)
+            return
+        return find_tags(self.raw_content)
 
     def extract_mentions(self):
-        if self._media_type != 'text/markdown': return
-        matches = re.findall(r'@{?[\S ]?[^{}@]+[@;]?\s*[\w\-./@]+[\w/]+}?', self.raw_content)
-        if not matches:
+        if not self.raw_content:
             return
-        for mention in matches:
+        mentions = find_elements(
+            BeautifulSoup(
+                commonmark(self.raw_content, ignore_html_blocks=True), 'html.parser'),
+            MENTION_PATTERN)
+        for ns in mentions:
+            mention = ns.text
             handle = None
             splits = mention.split(";")
             if len(splits) == 1:
@@ -292,11 +257,12 @@ class RawContentMixin(BaseEntity):
                 handle = splits[1].strip(' }')
             if handle:
                 self._mentions.add(handle)
-                self.raw_content = self.raw_content.replace(mention, '@'+handle)
+                self.raw_content = self.raw_content.replace(mention, '@' + handle)
 
 
 class OptionalRawContentMixin(RawContentMixin):
     """A version of the RawContentMixin where `raw_content` is not required."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._required.remove("raw_content")

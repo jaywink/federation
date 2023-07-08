@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+import re
 import traceback
 import uuid
 from datetime import timedelta
@@ -8,6 +9,7 @@ from typing import List, Dict, Union
 from urllib.parse import urlparse
 
 import bleach
+from bs4 import BeautifulSoup
 from calamus import fields
 from calamus.schema import JsonLDAnnotation, JsonLDSchema, JsonLDSchemaOpts
 from calamus.utils import normalize_value
@@ -731,15 +733,19 @@ class Note(Object, RawContentMixin):
 
     _cached_raw_content = ''
     _cached_children = []
+    _soup = None
     signable = True
 
     def __init__(self, *args, **kwargs):
         self.tag_objects = [] # mutable objects...
         super().__init__(*args, **kwargs)
+        self.raw_content  # must be "primed" with source property for inbound payloads
+        self.rendered_content # must be "primed" with content_map property for inbound payloads
         self._allowed_children += (base.Audio, base.Video, Link)
+        self._required.remove('raw_content')
+        self._required += ['rendered_content']
 
     def to_as2(self):
-        self.sensitive = 'nsfw' in self.tags
         self.url = self.id
 
         edited = False
@@ -767,8 +773,8 @@ class Note(Object, RawContentMixin):
 
     def to_base(self):
         kwargs = get_base_attributes(self, keep=(
-            '_mentions', '_media_type', '_rendered_content', '_source_object',
-            '_cached_children', '_cached_raw_content'))
+            '_mentions', '_media_type', '_source_object',
+            '_cached_children', '_cached_raw_content', '_soup'))
         entity = Comment(**kwargs) if getattr(self, 'target_id') else Post(**kwargs)
         # Plume (and maybe other platforms) send the attrbutedTo field as an array
         if isinstance(entity.actor_id, list): entity.actor_id = entity.actor_id[0]
@@ -779,6 +785,7 @@ class Note(Object, RawContentMixin):
     def pre_send(self) -> None:
         """
         Attach any embedded images from raw_content.
+        Add Hashtag and Mention objects (the client app must define the class tag/mention property)
         """
         super().pre_send()
         self._children = [
@@ -789,135 +796,128 @@ class Note(Object, RawContentMixin):
                 ) for image in self.embedded_images
                 ]
 
-        # Add other AP objects
-        self.extract_mentions()
-        self.content_map = {'orig': self.rendered_content}
-        self.add_mention_objects()
-        self.add_tag_objects()
+        # Add Hashtag objects
+        for el in self._soup('a', attrs={'class':'hashtag'}):
+            self.tag_objects.append(Hashtag(
+                href = el.attrs['href'],
+                name = el.text.lstrip('#')
+            ))
+            if el.text == '#nsfw': self.sensitive = True
+
+        # Add Mention objects
+        mentions = []
+        for el in self._soup('a', attrs={'class':'mention'}):
+            mentions.append(el.text.lstrip('@'))
+
+        mentions.sort()
+        for mention in mentions:
+            if validate_handle(mention):
+                profile = get_profile(finger=mention)
+                # only add AP profiles mentions
+                if getattr(profile, 'id', None):
+                    self.tag_objects.append(Mention(href=profile.id, name='@'+mention))
+                    # some platforms only render diaspora style markdown if it is available
+                    self.source['content'] = self.source['content'].replace(mention, '{' + mention + '}')
+
 
     def post_receive(self) -> None:
         """
-        Make linkified tags normal tags.
+        Mark linkified tags and mentions with a data-{mention, tag} attribute.
         """
         super().post_receive()
 
-        if not self.raw_content or self._media_type == "text/markdown":
+        if self._media_type == "text/markdown":
             # Skip when markdown
             return
 
-        hrefs = []
-        for tag in self.tag_objects:
-            if isinstance(tag, Hashtag):
-                if tag.href is not missing:
-                    hrefs.append(tag.href.lower())
-                elif tag.id is not missing:
-                    hrefs.append(tag.id.lower())
-        # noinspection PyUnusedLocal
-        def remove_tag_links(attrs, new=False):
-            # Hashtag object hrefs
-            href = (None, "href")
-            url = attrs.get(href, "").lower()
-            if url in hrefs:
-                return
-            # one more time without the query (for pixelfed)
-            parsed = urlparse(url)
-            url = f'{parsed.scheme}://{parsed.netloc}{parsed.path}'
-            if url in hrefs:
-                return
-
-            # Mastodon
-            rel = (None, "rel")
-            if attrs.get(rel) == "tag":
-                return
-            
-            # Friendica
-            if attrs.get(href, "").endswith(f'tag={attrs.get("_text")}'):
-                return
-
-            return attrs
-
-        self.raw_content = bleach.linkify(
-            self.raw_content,
-            callbacks=[remove_tag_links],
-            parse_email=False,
-            skip_tags=["code", "pre"],
-        )
+        self._find_and_mark_hashtags()
+        self._find_and_mark_mentions()
 
         if getattr(self, 'target_id'): self.entity_type = 'Comment'
 
-    def add_tag_objects(self) -> None:
-        """
-        Populate tags to the object.tag list.
-        """
-        try:
-            from federation.utils.django import get_configuration
-            config = get_configuration()
-        except ImportError:
-            tags_path = None
-        else:
-            if config["tags_path"]:
-                tags_path = f"{config['base_url']}{config['tags_path']}"
-            else:
-                tags_path = None
-        for tag in self.tags:
-            _tag = Hashtag(name=f'#{tag}')
-            if tags_path:
-                _tag.href = tags_path.replace(":tag:", tag)
-            self.tag_objects.append(_tag)
+    def _find_and_mark_hashtags(self):
+        hrefs = set()
+        for tag in self.tag_objects:
+            if isinstance(tag, Hashtag):
+                if tag.href is not missing:
+                    hrefs.add(tag.href.lower())
+                # Some platforms use id instead of href...
+                elif tag.id is not missing:
+                    hrefs.add(tag.id.lower())
 
-    def add_mention_objects(self) -> None:
-        """
-        Populate mentions to the object.tag list.
-        """
-        if len(self._mentions):
-            mentions = list(self._mentions)
-            mentions.sort()
-            for mention in mentions:
-                if validate_handle(mention):
-                    profile = get_profile(finger=mention)
-                    # only add AP profiles mentions
-                    if getattr(profile, 'id', None):
-                        self.tag_objects.append(Mention(href=profile.id, name='@'+mention))
-                        # some platforms only render diaspora style markdown if it is available
-                        self.source['content'] = self.source['content'].replace(mention, '{'+mention+'}')
+        for link in self._soup.find_all('a', href=True):
+            parsed = urlparse(link['href'].lower())
+            # remove the query part, if any
+            url = f'{parsed.scheme}://{parsed.netloc}{parsed.path}'
+            links = {link['href'].lower(), url}
+            if links.intersection(hrefs):
+                link['data-hashtag'] = link.text.lstrip('#').lower()
+
+    def _find_and_mark_mentions(self):
+        mentions = [mention for mention in self.tag_objects if isinstance(mention, Mention)]
+        hrefs = [mention.href for mention in mentions]
+        # add Mastodon's form
+        hrefs.extend([re.sub(r'/(users/)([\w]+)$', r'/@\2', href) for href in hrefs])
+        for href in hrefs:
+            links = self._soup.find_all(href=href)
+            for link in links:
+                profile = get_profile_or_entity(fid=link['href'])
+                if profile:
+                    link['data-mention'] = profile.finger
+                    self._mentions.add(profile.finger)
 
     def extract_mentions(self):
         """
-        Extract mentions from the source object.
-        """
-        super().extract_mentions()
+        Extract mentions from the inbound Mention objects.
 
-        if getattr(self, 'tag_objects', None):
-            #tag_objects = self.tag_objects if isinstance(self.tag_objects, list) else [self.tag_objects]
-            for tag in self.tag_objects:
-                if isinstance(tag, Mention):
-                    profile = get_profile_or_entity(fid=tag.href)
-                    handle = getattr(profile, 'finger', None)
-                    if handle: self._mentions.add(handle)
+        Also attempt to extract from raw_content if available
+        """
+
+        if self.raw_content:
+            super().extract_mentions()
+        return
+
+        for mention in self.tag_objects:
+            if isinstance(mention, Mention):
+                profile = get_profile_or_entity(fid=mention.href)
+                handle = getattr(profile, 'finger', None)
+                if handle: self._mentions.add(handle)
 
     @property
-    def raw_content(self):
-
-        if self._cached_raw_content: return self._cached_raw_content
+    def rendered_content(self):
+        if self._soup: return str(self._soup)
+        content = ''
         if self.content_map:
             orig = self.content_map.pop('orig')
             if len(self.content_map.keys()) > 1:
                 logger.warning('Language selection not implemented, falling back to default')
-                self._rendered_content = orig.strip()
+                content = orig.strip()
             else:
-                self._rendered_content = orig.strip() if len(self.content_map.keys()) == 0 else next(iter(self.content_map.values())).strip()
+                content = orig.strip() if len(self.content_map.keys()) == 0 else next(iter(self.content_map.values())).strip()
             self.content_map['orig'] = orig
+        # to allow for posts/replies with medias only.
+        if not content: content = "<div></div>"
+        self._soup = BeautifulSoup(content, 'html.parser')
+        return str(self._soup)
 
-            if isinstance(self.source, dict) and self.source.get('mediaType') == 'text/markdown':
-                self._media_type = self.source['mediaType']
-                self._cached_raw_content = self.source.get('content').strip()
-            else:
-                self._media_type = 'text/html'
-                self._cached_raw_content = self._rendered_content
-            # to allow for posts/replies with medias only.
-            if not self._cached_raw_content: self._cached_raw_content = "<div></div>"
-            return self._cached_raw_content
-    
+    @rendered_content.setter
+    def rendered_content(self, value):
+        if not value: return
+        self._soup = BeautifulSoup(value, 'html.parser')
+        self.content_map = {'orig': value}
+
+    @property
+    def raw_content(self):
+        if self._cached_raw_content: return self._cached_raw_content
+
+        if isinstance(self.source, dict) and self.source.get('mediaType') == 'text/markdown':
+            self._media_type = self.source['mediaType']
+            self._cached_raw_content = self.source.get('content').strip()
+        else:
+            self._media_type = 'text/html'
+            self._cached_raw_content = ""
+        return self._cached_raw_content
+
     @raw_content.setter
     def raw_content(self, value):
         if not value: return
@@ -1026,7 +1026,7 @@ class Video(Document, base.Video):
                 self.actor_id = new_act[0]
             
             entity = Post(**get_base_attributes(self,
-                keep=('_mentions', '_media_type', '_rendered_content',
+                keep=('_mentions', '_media_type', '_soup',
                       '_cached_children', '_cached_raw_content', '_source_object')))
             set_public(entity)
             return entity
@@ -1330,14 +1330,16 @@ def extract_and_validate(entity):
     entity._source_protocol = "activitypub"
     # Extract receivers
     entity._receivers = extract_receivers(entity)
+
+    # Extract mentions
+    if hasattr(entity, "extract_mentions"):
+        entity.extract_mentions()
+
     if hasattr(entity, "post_receive"):
         entity.post_receive()
 
     if hasattr(entity, 'validate'): entity.validate()
 
-    # Extract mentions
-    if hasattr(entity, "extract_mentions"):
-        entity.extract_mentions()
 
 
 def extract_replies(replies):
