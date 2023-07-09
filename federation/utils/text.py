@@ -41,12 +41,20 @@ def find_tags(text: str) -> List[str]:
 
 
 def find_elements(soup: BeautifulSoup, pattern: re.Pattern) -> List[NavigableString]:
+    """
+    Split a BeautifulSoup tree strings according to a pattern, replacing each element
+    with a NavigableString. The returned list can be used to linkify the found
+    elements.
+
+    :param soup: BeautifulSoup instance of the content being searched
+    :param pattern: Compiled regular expression defined using a single group
+    :return: A NavigableString list attached to the original soup
+    """
     for candidate in soup.find_all(string=True):
         if candidate.parent.name == 'code': continue
         ns = [NavigableString(r) for r in re.split(pattern, candidate.text)]
         candidate.replace_with(*ns)
-    return list(soup.find_all(string=pattern))
-
+    return list(soup.find_all(string=re.compile(r'^'+pattern.pattern)))
 
 
 def get_path_from_url(url: str) -> str:
