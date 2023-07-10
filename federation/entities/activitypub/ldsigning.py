@@ -75,8 +75,8 @@ def verify_ld_signature(payload):
     obj_digest = hash(obj)
     digest = (sig_digest + obj_digest).encode('utf-8')
 
-    sig_value = b64decode(signature.get('signatureValue'))
     try:
+        sig_value = b64decode(signature.get('signatureValue'))
         verifier.verify(SHA256.new(digest), sig_value)
         logger.debug('ld_signature - %s has a valid signature', payload.get("id"))
         return profile.id

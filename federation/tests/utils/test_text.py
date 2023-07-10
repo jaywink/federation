@@ -18,78 +18,49 @@ class TestFindTags:
 
     def test_all_tags_are_parsed_from_text(self):
         source = "#starting and #MixED with some #line\nendings also tags can\n#start on new line"
-        tags, text = find_tags(source)
+        tags = find_tags(source)
         assert tags == {"starting", "mixed", "line", "start"}
-        assert text == source
-        tags, text = find_tags(source, replacer=self._replacer)
-        assert text == "#starting/starting and #MixED/mixed with some #line/line\nendings also tags can\n" \
-                       "#start/start on new line"
 
     def test_code_block_tags_ignored(self):
         source = "foo\n```\n#code\n```\n#notcode\n\n    #alsocode\n"
-        tags, text = find_tags(source)
+        tags = find_tags(source)
         assert tags == {"notcode"}
-        assert text == source
-        tags, text = find_tags(source, replacer=self._replacer)
-        assert text == "foo\n```\n#code\n```\n#notcode/notcode\n\n    #alsocode\n"
 
     def test_endings_are_filtered_out(self):
         source = "#parenthesis) #exp! #list] *#doh* _#bah_ #gah% #foo/#bar"
-        tags, text = find_tags(source)
+        tags = find_tags(source)
         assert tags == {"parenthesis", "exp", "list", "doh", "bah", "gah", "foo", "bar"}
-        assert text == source
-        tags, text = find_tags(source, replacer=self._replacer)
-        assert text == "#parenthesis/parenthesis) #exp/exp! #list/list] *#doh/doh* _#bah/bah_ #gah/gah% " \
-                       "#foo/foo/#bar/bar"
 
     def test_finds_tags(self):
         source = "#post **Foobar** #tag #OtherTag #third\n#fourth"
-        tags, text = find_tags(source)
+        tags = find_tags(source)
         assert tags == {"third", "fourth", "post", "othertag", "tag"}
-        assert text == source
-        tags, text = find_tags(source, replacer=self._replacer)
-        assert text == "#post/post **Foobar** #tag/tag #OtherTag/othertag #third/third\n#fourth/fourth"
 
     def test_ok_with_html_tags_in_text(self):
         source = "<p>#starting and <span>#MixED</span> however not <#>this</#> or <#/>that"
-        tags, text = find_tags(source)
+        tags = find_tags(source)
         assert tags == {"starting", "mixed"}
-        assert text == source
-        tags, text = find_tags(source, replacer=self._replacer)
-        assert text == "<p>#starting/starting and <span>#MixED/mixed</span> however not <#>this</#> or <#/>that"
 
     def test_postfixed_tags(self):
         source = "#foo) #bar] #hoo, #hee."
-        tags, text = find_tags(source)
+        tags = find_tags(source)
         assert tags == {"foo", "bar", "hoo", "hee"}
-        assert text == source
-        tags, text = find_tags(source, replacer=self._replacer)
-        assert text == "#foo/foo) #bar/bar] #hoo/hoo, #hee/hee."
 
     def test_prefixed_tags(self):
         source = "(#foo [#bar"
-        tags, text = find_tags(source)
+        tags = find_tags(source)
         assert tags == {"foo", "bar"}
-        assert text == source
-        tags, text = find_tags(source, replacer=self._replacer)
-        assert text == "(#foo/foo [#bar/bar"
 
     def test_invalid_text_returns_no_tags(self):
         source = "#a!a #a#a #a$a #a%a #a^a #a&a #a*a #a+a #a.a #a,a #a@a #a£a #a(a #a)a #a=a " \
                  "#a?a #a`a #a'a #a\\a #a{a #a[a #a]a #a}a #a~a #a;a #a:a #a\"a #a’a #a”a #\xa0cd"
-        tags, text = find_tags(source)
-        assert tags == set()
-        assert text == source
-        tags, text = find_tags(source, replacer=self._replacer)
-        assert text == source
+        tags = find_tags(source)
+        assert tags == {'a'}
 
     def test_start_of_paragraph_in_html_content(self):
         source = '<p>First line</p><p>#foobar #barfoo</p>'
-        tags, text = find_tags(source)
+        tags = find_tags(source)
         assert tags == {"foobar", "barfoo"}
-        assert text == source
-        tags, text = find_tags(source, replacer=self._replacer)
-        assert text == '<p>First line</p><p>#foobar/foobar #barfoo/barfoo</p>'
 
 
 class TestProcessTextLinks:

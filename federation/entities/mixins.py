@@ -237,8 +237,8 @@ class RawContentMixin(BaseEntity):
     @property
     def tags(self) -> List[str]:
         if not self.raw_content:
-            return
-        return find_tags(self.raw_content)
+            return []
+        return sorted(find_tags(self.raw_content))
 
     def extract_mentions(self):
         if not self.raw_content:

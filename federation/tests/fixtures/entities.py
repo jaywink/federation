@@ -30,6 +30,7 @@ def activitypubcomment():
     with freeze_time("2019-04-27"):
         obj = models.Comment(
             raw_content="raw_content",
+            rendered_content="<p>raw_content</p>",
             public=True,
             provider_display_name="Socialhome",
             id=f"http://127.0.0.1:8000/post/123456/",

@@ -27,7 +27,7 @@ def encode_if_text(text):
         return text
 
 
-def find_tags(text: str) -> List[str]:
+def find_tags(text: str) -> Set[str]:
     """Find tags in text.
 
     Ignore tags inside code blocks.
@@ -37,7 +37,7 @@ def find_tags(text: str) -> List[str]:
     """
     tags = find_elements(BeautifulSoup(commonmark(text, ignore_html_blocks=True), 'html.parser'),
                          TAG_PATTERN)
-    return sorted([tag.text.lstrip('#').lower() for tag in tags])
+    return set([tag.text.lstrip('#').lower() for tag in tags])
 
 
 def find_elements(soup: BeautifulSoup, pattern: re.Pattern) -> List[NavigableString]:
@@ -54,7 +54,7 @@ def find_elements(soup: BeautifulSoup, pattern: re.Pattern) -> List[NavigableStr
         if candidate.parent.name == 'code': continue
         ns = [NavigableString(r) for r in re.split(pattern, candidate.text)]
         candidate.replace_with(*ns)
-    return list(soup.find_all(string=re.compile(r'^'+pattern.pattern)))
+    return list(soup.find_all(string=re.compile(r'\A'+pattern.pattern+r'\Z')))
 
 
 def get_path_from_url(url: str) -> str:

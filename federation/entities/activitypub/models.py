@@ -4,7 +4,7 @@ import logging
 import re
 import traceback
 import uuid
-from datetime import timedelta
+from operator import attrgetter
 from typing import List, Dict, Union
 from urllib.parse import urlparse
 
@@ -801,8 +801,9 @@ class Note(Object, RawContentMixin):
         for el in self._soup('a', attrs={'class':'hashtag'}):
             self.tag_objects.append(Hashtag(
                 href = el.attrs['href'],
-                name = el.text.lstrip('#')
+                name = el.text
             ))
+            self.tag_objects = sorted(self.tag_objects, key=attrgetter('name'))
             if el.text == '#nsfw': self.sensitive = True
 
         # Add Mention objects
