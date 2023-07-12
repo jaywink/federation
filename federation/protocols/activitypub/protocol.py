@@ -114,7 +114,6 @@ class Protocol:
         signer = get_profile(key_id=sig.get('keyId'))
         if not signer:
             signer = retrieve_and_parse_document(sig.get('keyId'))
-        print(sig, signer)
         self.sender = signer.id if signer else self.actor
         key = getattr(signer, 'public_key', None)
         if not key:

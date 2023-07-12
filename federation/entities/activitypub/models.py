@@ -594,7 +594,7 @@ class Person(Object, base.Profile):
             self.finger = profile.finger
         else:
             domain = urlparse(self.id).netloc
-            finger = f'{self.username.lower()}@{domain}'
+            finger = f'{self.username}@{domain}'
             if get_profile_id_from_webfinger(finger) == self.id:
                 self.finger = finger
         # multi-protocol platform
