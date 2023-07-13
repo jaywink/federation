@@ -857,9 +857,13 @@ class Note(Object, RawContentMixin):
 
     def _find_and_mark_mentions(self):
         mentions = [mention for mention in self.tag_objects if isinstance(mention, Mention)]
-        hrefs = [mention.href for mention in mentions]
-        # add Mastodon's form
-        hrefs.extend([re.sub(r'/(users/)([\w]+)$', r'/@\2', href) for href in hrefs])
+        hrefs = []
+        for mention in mentions:
+            hrefs.append(mention.href)
+            # add Mastodon's form
+            parsed = urlparse(mention.href)
+            username = mention.name.lstrip('@').split('@')[0]
+            hrefs.append(f'{parsed.scheme}://{parsed.netloc}/@{username}')
         for href in hrefs:
             links = self._soup.find_all(href=href)
             for link in links:
