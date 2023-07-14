@@ -9,8 +9,8 @@ from bs4.element import NavigableString
 from commonmark import commonmark
 
 ILLEGAL_TAG_CHARS = "!#$%^&*+.,@£/()=?`'\\{[]}~;:\"’”—\xa0"
-TAG_PATTERN = re.compile(r'(^|\s)(#[\w]+)', re.UNICODE)
-MENTION_PATTERN = re.compile(r'(^|\s)(@{?[\S ]?[^{}@]+[@;]?\s*[\w\-./@]+[\w/]+}?)', re.UNICODE)
+TAG_PATTERN = re.compile(r'(#[\w]+)', re.UNICODE)
+MENTION_PATTERN = re.compile(r'(@{?[\S ]?[^{}@]+[@;]?\s*[\w\-./@]+[\w/]+}?)', re.UNICODE)
 
 
 def decode_if_bytes(text):
