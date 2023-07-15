@@ -874,20 +874,12 @@ class Note(Object, RawContentMixin):
 
     def extract_mentions(self):
         """
-        Extract mentions from the inbound Mention objects.
-
-        Also attempt to extract from raw_content if available
+        Attempt to extract mentions from raw_content if available
         """
 
         if self.raw_content:
             super().extract_mentions()
         return
-
-        for mention in self.tag_objects:
-            if isinstance(mention, Mention):
-                profile = get_profile_or_entity(fid=mention.href)
-                handle = getattr(profile, 'finger', None)
-                if handle: self._mentions.add(handle)
 
     @property
     def rendered_content(self):

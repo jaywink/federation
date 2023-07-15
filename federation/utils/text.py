@@ -10,8 +10,8 @@ from commonmark import commonmark
 
 ILLEGAL_TAG_CHARS = "!#$%^&*+.,@£/()=?`'\\{[]}~;:\"’”—\xa0"
 TAG_PATTERN = re.compile(r'(#[\w]+)', re.UNICODE)
-MENTION_PATTERN = re.compile(r'(@{?[\S ]?[^{}@]+[@;]?\s*[\w\-./@]+[\w/]+}?)', re.UNICODE)
-
+# This will match non matching braces. I don't think it's an issue.
+MENTION_PATTERN = re.compile(r'(@\{?(?:[\w\-. \u263a-\U0001f645]*; *)?[\w]+@[\w\-.]+\.[\w]+}?)', re.UNICODE)
 
 def decode_if_bytes(text):
     try:
