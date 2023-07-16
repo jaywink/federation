@@ -2,8 +2,6 @@ import re
 from typing import Set, List
 from urllib.parse import urlparse
 
-import bleach
-from bleach import callbacks
 from bs4 import BeautifulSoup
 from bs4.element import NavigableString
 from commonmark import commonmark
@@ -12,6 +10,7 @@ ILLEGAL_TAG_CHARS = "!#$%^&*+.,@£/()=?`'\\{[]}~;:\"’”—\xa0"
 TAG_PATTERN = re.compile(r'(#[\w]+)', re.UNICODE)
 # This will match non matching braces. I don't think it's an issue.
 MENTION_PATTERN = re.compile(r'(@\{?(?:[\w\-. \u263a-\U0001f645]*; *)?[\w]+@[\w\-.]+\.[\w]+}?)', re.UNICODE)
+URL_PATTERN = re.compile(r'(https?://[\w_\-.#?&/]+)', re.UNICODE)
 
 def decode_if_bytes(text):
     try:
@@ -64,28 +63,6 @@ def get_path_from_url(url: str) -> str:
     parsed = urlparse(url)
     return parsed.path
 
-
-def process_text_links(text):
-    """Process links in text, adding some attributes and linkifying textual links."""
-    link_callbacks = [callbacks.nofollow, callbacks.target_blank]
-
-    def link_attributes(attrs, new=False):
-        """Run standard callbacks except for internal links."""
-        href_key = (None, "href")
-        if attrs.get(href_key, "").startswith("/"):
-            return attrs
-
-        # Run the standard callbacks
-        for callback in link_callbacks:
-            attrs = callback(attrs, new)
-        return attrs
-
-    return bleach.linkify(
-        text,
-        callbacks=[link_attributes],
-        parse_email=False,
-        skip_tags=["code"],
-    )
 
 
 def test_tag(tag: str) -> bool:

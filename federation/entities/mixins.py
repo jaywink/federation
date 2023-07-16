@@ -10,7 +10,7 @@ from marshmallow import missing
 
 from federation.entities.activitypub.enums import ActivityType
 from federation.entities.utils import get_name_for_profile, get_profile
-from federation.utils.text import process_text_links, find_elements, find_tags, MENTION_PATTERN
+from federation.utils.text import find_elements, find_tags, MENTION_PATTERN
 
 
 class BaseEntity:

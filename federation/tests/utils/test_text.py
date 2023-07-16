@@ -1,4 +1,6 @@
-from federation.utils.text import decode_if_bytes, encode_if_text, validate_handle, process_text_links, find_tags
+import pytest
+
+from federation.utils.text import decode_if_bytes, encode_if_text, validate_handle, find_tags
 
 
 def test_decode_if_bytes():
@@ -63,6 +65,8 @@ class TestFindTags:
         assert tags == {"foobar", "barfoo"}
 
 
+# TODO: move these tests to the client app
+@pytest.mark.skip
 class TestProcessTextLinks:
     def test_link_at_start_or_end(self):
         assert process_text_links('https://example.org example.org\nhttp://example.org') == \

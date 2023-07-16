@@ -10,7 +10,6 @@ from federation.entities.activitypub.models import context_manager
 from federation.entities.activitypub.models import Accept
 from federation.tests.fixtures.keys import PUBKEY
 from federation.types import UserType
-from federation.utils.text import process_text_links
 
 
 class TestEntitiesConvertToAS2:
@@ -65,6 +64,8 @@ class TestEntitiesConvertToAS2:
             'published': '2019-04-27T00:00:00',
         }
 
+    # Now handled by the client app
+    @pytest.mark.skip
     def test_comment_to_as2__url_in_raw_content(self, activitypubcomment):
         activitypubcomment.raw_content = 'raw_content http://example.com'
         activitypubcomment.rendered_content = process_text_links(
