@@ -849,11 +849,13 @@ class Note(Object, RawContentMixin):
 
         for link in self._soup.find_all('a', href=True):
             parsed = urlparse(link['href'].lower())
-            # remove the query part, if any
-            url = f'{parsed.scheme}://{parsed.netloc}{parsed.path}'
+            # remove the query part and trailing garbage, if any
+            path = re.match(r'(/[\w/]+)', parsed.path).group()
+            url = f'{parsed.scheme}://{parsed.netloc}{path}'
             links = {link['href'].lower(), url}
             if links.intersection(hrefs):
-                link['data-hashtag'] = link.text.lstrip('#').lower()
+                tag = re.match(r'#?([\w]+)', link.text).group(1).lower()
+                link['data-hashtag'] = tag
 
     def _find_and_mark_mentions(self):
         mentions = [mention for mention in self.tag_objects if isinstance(mention, Mention)]

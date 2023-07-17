@@ -10,7 +10,7 @@ ILLEGAL_TAG_CHARS = "!#$%^&*+.,@£/()=?`'\\{[]}~;:\"’”—\xa0"
 TAG_PATTERN = re.compile(r'(#[\w]+)', re.UNICODE)
 # This will match non matching braces. I don't think it's an issue.
 MENTION_PATTERN = re.compile(r'(@\{?(?:[\w\-. \u263a-\U0001f645]*; *)?[\w]+@[\w\-.]+\.[\w]+}?)', re.UNICODE)
-URL_PATTERN = re.compile(r'(https?://[\w_\-.#?&/]+)', re.UNICODE)
+URL_PATTERN = re.compile(r'((?:https?://)?[\w_\-.#?&/~@!$()*,;%=+]+)', re.UNICODE)
 
 def decode_if_bytes(text):
     try:
@@ -52,7 +52,7 @@ def find_elements(soup: BeautifulSoup, pattern: re.Pattern) -> List[NavigableStr
     for candidate in soup.find_all(string=True):
         if candidate.parent.name == 'code': continue
         ns = [NavigableString(r) for r in re.split(pattern, candidate.text)]
-        candidate.replace_with(*ns)
+        if ns: candidate.replace_with(*ns)
     return list(soup.find_all(string=re.compile(r'\A'+pattern.pattern+r'\Z')))
 
 
