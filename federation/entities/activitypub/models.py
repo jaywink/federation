@@ -6,7 +6,8 @@ import traceback
 import uuid
 from operator import attrgetter
 from typing import List, Dict, Union
-from urllib.parse import urlparse
+from unicodedata import normalize
+from urllib.parse import unquote, urlparse
 
 import bleach
 from bs4 import BeautifulSoup
@@ -848,11 +849,14 @@ class Note(Object, RawContentMixin):
                     hrefs.add(tag.id.lower())
 
         for link in self._soup.find_all('a', href=True):
-            parsed = urlparse(link['href'].lower())
+            parsed = urlparse(unquote(link['href']).lower())
             # remove the query part and trailing garbage, if any
             path = re.match(r'(/[\w/]+)', parsed.path).group()
             url = f'{parsed.scheme}://{parsed.netloc}{path}'
-            links = {link['href'].lower(), url}
+            # convert accented characters to their ascii equivalent
+            normalized_path = normalize('NFD', path).encode('ascii', 'ignore')
+            normalized_url = f'{parsed.scheme}://{parsed.netloc}{normalized_path.decode()}'
+            links = {link['href'].lower(), unquote(link['href']).lower(), url, normalized_url}
             if links.intersection(hrefs):
                 tag = re.match(r'#?([\w]+)', link.text).group(1).lower()
                 link['data-hashtag'] = tag
