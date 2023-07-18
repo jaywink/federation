@@ -851,7 +851,10 @@ class Note(Object, RawContentMixin):
         for link in self._soup.find_all('a', href=True):
             parsed = urlparse(unquote(link['href']).lower())
             # remove the query part and trailing garbage, if any
-            path = re.match(r'(/[\w/]+)', parsed.path).group()
+            path = parsed.path
+            trunc = re.match(r'(/[\w/]+)', parsed.path)
+            if trunc:
+                path = trunc.group()
             url = f'{parsed.scheme}://{parsed.netloc}{path}'
             # convert accented characters to their ascii equivalent
             normalized_path = normalize('NFD', path).encode('ascii', 'ignore')
