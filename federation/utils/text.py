@@ -10,7 +10,7 @@ ILLEGAL_TAG_CHARS = "!#$%^&*+.,@£/()=?`'\\{[]}~;:\"’”—\xa0"
 TAG_PATTERN = re.compile(r'(#[\w]+)', re.UNICODE)
 # This will match non matching braces. I don't think it's an issue.
 MENTION_PATTERN = re.compile(r'(@\{?(?:[\w\-. \u263a-\U0001f645]*; *)?[\w]+@[\w\-.]+\.[\w]+}?)', re.UNICODE)
-URL_PATTERN = re.compile(r'((?:https?://)?[\w_\-.#?&/~@!$()*,;%=+]+)', re.UNICODE)
+URL_PATTERN = re.compile(r'(^|[#*_\s])((?:https?://)?[\w\-.]+\.[\w]{1}[\w_\-.#?&/~@!$()*,;%=+]*)', re.UNICODE)
 
 def decode_if_bytes(text):
     try:
@@ -49,11 +49,15 @@ def find_elements(soup: BeautifulSoup, pattern: re.Pattern) -> List[NavigableStr
     :param pattern: Compiled regular expression defined using a single group
     :return: A NavigableString list attached to the original soup
     """
+    found = []
     for candidate in soup.find_all(string=True):
-        if candidate.parent.name == 'code': continue
+        parent = candidate.find_parent()
+        if parent.name == 'code': continue
         ns = [NavigableString(r) for r in re.split(pattern, candidate.text)]
-        if ns: candidate.replace_with(*ns)
-    return list(soup.find_all(string=re.compile(r'\A'+pattern.pattern+r'\Z')))
+        if ns:
+            candidate.replace_with(*ns)
+            found.extend([child for child in parent.find_all(string=pattern) if child in ns])
+    return found
 
 
 def get_path_from_url(url: str) -> str:

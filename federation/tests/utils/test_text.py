@@ -65,37 +65,6 @@ class TestFindTags:
         assert tags == {"foobar", "barfoo"}
 
 
-# TODO: move these tests to the client app
-@pytest.mark.skip
-class TestProcessTextLinks:
-    def test_link_at_start_or_end(self):
-        assert process_text_links('https://example.org example.org\nhttp://example.org') == \
-               '<a href="https://example.org" rel="nofollow" target="_blank">https://example.org</a> ' \
-               '<a href="http://example.org" rel="nofollow" target="_blank">example.org</a>\n' \
-               '<a href="http://example.org" rel="nofollow" target="_blank">http://example.org</a>'
-
-    def test_existing_links_get_attrs_added(self):
-        assert process_text_links('<a href="https://example.org">https://example.org</a>') == \
-               '<a href="https://example.org" rel="nofollow" target="_blank">https://example.org</a>'
-
-    def test_code_sections_are_skipped(self):
-        assert process_text_links('<code>https://example.org</code><code>\nhttps://example.org\n</code>') == \
-               '<code>https://example.org</code><code>\nhttps://example.org\n</code>'
-
-    def test_emails_are_skipped(self):
-        assert process_text_links('foo@example.org') == 'foo@example.org'
-
-    def test_does_not_add_target_blank_if_link_is_internal(self):
-        assert process_text_links('<a href="/streams/tag/foobar">#foobar</a>') == \
-               '<a href="/streams/tag/foobar">#foobar</a>'
-
-    def test_does_not_remove_mention_classes(self):
-        assert process_text_links('<p><span class="h-card"><a class="u-url mention" href="https://dev.jasonrobinson.me/u/jaywink/">'
-                                  '@<span>jaywink</span></a></span> boom</p>') == \
-           '<p><span class="h-card"><a class="u-url mention" href="https://dev.jasonrobinson.me/u/jaywink/" ' \
-           'rel="nofollow" target="_blank">@<span>jaywink</span></a></span> boom</p>'
-
-
 def test_validate_handle():
     assert validate_handle("foo@bar.com")
     assert validate_handle("Foo@baR.com")
