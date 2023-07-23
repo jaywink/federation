@@ -60,7 +60,7 @@ class TestRetrieveAndParseDocument:
         entity = retrieve_and_parse_document("https://example.com/foobar")
         assert isinstance(entity, Follow)
 
-    @patch("federation.entities.activitypub.models.extract_receivers", return_value=[])
+    @patch("federation.entities.activitypub.models.get_profile_or_entity", return_value=None)
     @patch("federation.utils.activitypub.fetch_document", autospec=True, return_value=(
             json.dumps(ACTIVITYPUB_POST_OBJECT), None, None),
     )
@@ -80,7 +80,7 @@ class TestRetrieveAndParseDocument:
                                           "/foobar.jpg"
 
     @patch("federation.entities.activitypub.models.verify_ld_signature", return_value=None)
-    @patch("federation.entities.activitypub.models.extract_receivers", return_value=[])
+    @patch("federation.entities.activitypub.models.get_profile_or_entity", return_value=None)
     @patch("federation.utils.activitypub.fetch_document", autospec=True, return_value=(
         json.dumps(ACTIVITYPUB_POST), None, None),
     )

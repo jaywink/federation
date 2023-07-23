@@ -91,7 +91,8 @@ class TestActivitypubEntityMappersReceive:
         assert post.raw_content == ''
         assert post.rendered_content == '<p>boom <a class="mention hashtag" data-hashtag="test" href="https://mastodon.social/tags/test" rel="tag">#<span>test</span></a></p>'
 
-    @patch("federation.entities.activitypub.models.get_profile_or_entity", return_value=Person(finger="jaywink@dev3.jasonrobinson.me"))
+    @patch("federation.entities.activitypub.models.get_profile_or_entity",
+           return_value=Person(finger="jaywink@dev3.jasonrobinson.me",url="https://dev3.jasonrobinson.me/u/jaywink/"))
     def test_message_to_objects_simple_post__with_mentions(self, mock_get):
         entities = message_to_objects(ACTIVITYPUB_POST_WITH_MENTIONS, "https://mastodon.social/users/jaywink")
         assert len(entities) == 1
@@ -102,7 +103,8 @@ class TestActivitypubEntityMappersReceive:
         assert list(post._mentions)[0] == "jaywink@dev3.jasonrobinson.me"
 
 
-    @patch("federation.entities.activitypub.models.get_profile_or_entity", return_value=Person(finger="jaywink@dev.jasonrobinson.me"))
+    @patch("federation.entities.activitypub.models.get_profile_or_entity",
+           return_value=Person(finger="jaywink@dev.jasonrobinson.me",url="https://dev.jasonrobinson.me/u/jaywink/"))
     def test_message_to_objects_simple_post__with_source__bbcode(self, mock_get):
         entities = message_to_objects(ACTIVITYPUB_POST_WITH_SOURCE_BBCODE, "https://diaspodon.fr/users/jaywink")
         assert len(entities) == 1
@@ -113,7 +115,8 @@ class TestActivitypubEntityMappersReceive:
                                         '@<span>jaywink</span></a></span> boom</p>'
         assert post.raw_content == ''
 
-    @patch("federation.entities.activitypub.models.get_profile_or_entity", return_value=Person(finger="jaywink@dev.jasonrobinson.me"))
+    @patch("federation.entities.activitypub.models.get_profile_or_entity",
+           return_value=Person(finger="jaywink@dev.jasonrobinson.me",url="https://dev.robinson.me/u/jaywink/"))
     def test_message_to_objects_simple_post__with_source__markdown(self, mock_get):
         entities = message_to_objects(ACTIVITYPUB_POST_WITH_SOURCE_MARKDOWN, "https://diaspodon.fr/users/jaywink")
         assert len(entities) == 1
@@ -147,7 +150,8 @@ class TestActivitypubEntityMappersReceive:
         assert photo.guid == ""
         assert photo.handle == ""
 
-    @patch("federation.entities.activitypub.models.get_profile_or_entity", return_value=Person(finger="jaywink@dev.jasonrobinson.me"))
+    @patch("federation.entities.activitypub.models.get_profile_or_entity",
+           return_value=Person(finger="jaywink@dev.jasonrobinson.me", url="https://dev.jasonrobinson.me/u/jaywink/"))
     def test_message_to_objects_comment(self, mock_get):
         entities = message_to_objects(ACTIVITYPUB_COMMENT, "https://diaspodon.fr/users/jaywink")
         assert len(entities) == 1

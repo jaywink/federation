@@ -256,7 +256,8 @@ def profile():
         inboxes={
             "private": "https://example.com/bob/private",
             "public": "https://example.com/public",
-        }, public_key=PUBKEY, to=["https://www.w3.org/ns/activitystreams#Public"]
+        }, public_key=PUBKEY, to=["https://www.w3.org/ns/activitystreams#Public"],
+        url="https://example.com/alice"
     )
 
 

@@ -35,10 +35,10 @@ from federation.utils.text import with_slash, validate_handle
 logger = logging.getLogger("federation")
 
 
-def get_profile_or_entity(fid):
-    obj = get_profile(fid=fid)
-    if not obj:
-        obj = retrieve_and_parse_document(fid)
+def get_profile_or_entity(**kwargs):
+    obj = get_profile(**kwargs)
+    if not obj and kwargs.get('fid'):
+        obj = retrieve_and_parse_document(kwargs['fid'])
     return obj
     
 
@@ -586,6 +586,7 @@ class Person(Object, base.Profile):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._required += ['url']
         self._allowed_children += (Note, PropertyValue, IdentityProof)
 
     # Set finger to username@host if not provided by the platform
@@ -866,18 +867,22 @@ class Note(Object, RawContentMixin):
 
     def _find_and_mark_mentions(self):
         mentions = [mention for mention in self.tag_objects if isinstance(mention, Mention)]
-        hrefs = []
+        # There seems to be consensus on using the profile url for
+        # the link and the profile id for the Mention object href property,
+        # but some platforms will set mention.href to the profile url, so
+        # we check both.
         for mention in mentions:
-            hrefs.append(mention.href)
-            # add Mastodon's form
-            parsed = urlparse(mention.href)
-            username = mention.name.lstrip('@').split('@')[0]
-            hrefs.append(f'{parsed.scheme}://{parsed.netloc}/@{username}')
-        for href in hrefs:
-            links = self._soup.find_all(href=href)
-            for link in links:
-                profile = get_profile_or_entity(fid=link['href'])
-                if profile:
+            hrefs = []
+            profile = get_profile_or_entity(fid=mention.href, remote_url=mention.href)
+            if profile and not profile.url:
+                # This should be removed when we are confident that the remote_url property
+                # has been populated for most profiles on the client app side.
+                profile = retrieve_and_parse_profile(profile.id)
+            if profile:
+                hrefs.extend([profile.id, profile.url])
+            for href in hrefs:
+                links = self._soup.find_all(href=href)
+                for link in links:
                     link['data-mention'] = profile.finger
                     self._mentions.add(profile.finger)
 
@@ -1317,7 +1322,7 @@ def extract_receivers(entity):
     profile = None
     # don't care about receivers for payloads without an actor_id    
     if getattr(entity, 'actor_id'):
-        profile = get_profile_or_entity(entity.actor_id)
+        profile = get_profile_or_entity(fid=entity.actor_id)
     if not isinstance(profile, base.Profile):
         return receivers
     
