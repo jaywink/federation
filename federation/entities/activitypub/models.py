@@ -602,6 +602,9 @@ class Person(Object, base.Profile):
         # multi-protocol platform
         if self.finger and self.guid is not missing and self.handle is missing:
             self.handle = self.finger
+        # Some platforms don't set this property.
+        if self.url is missing:
+            self.url = self.id
 
     def to_as2(self):
         self.followers = f'{with_slash(self.id)}followers/'
