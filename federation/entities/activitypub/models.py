@@ -816,7 +816,7 @@ class Note(Object, RawContentMixin):
         mentions.sort()
         for mention in mentions:
             if validate_handle(mention):
-                profile = get_profile(finger=mention)
+                profile = get_profile(finger__iexact=mention)
                 # only add AP profiles mentions
                 if getattr(profile, 'id', None):
                     self.tag_objects.append(Mention(href=profile.id, name='@'+mention))
