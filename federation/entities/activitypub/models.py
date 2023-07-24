@@ -1205,6 +1205,7 @@ class Retraction(Announce, base.Retraction):
 
 class Tombstone(Object, base.Retraction):
     target_id = fields.Id()
+    signable = True
 
     def to_as2(self):
         if not isinstance(self.activity, type): return None
