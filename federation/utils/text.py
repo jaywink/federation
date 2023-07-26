@@ -7,7 +7,7 @@ from bs4.element import NavigableString
 from commonmark import commonmark
 
 ILLEGAL_TAG_CHARS = "!#$%^&*+.,@£/()=?`'\\{[]}~;:\"’”—\xa0"
-TAG_PATTERN = re.compile(r'(#[\w]+)', re.UNICODE)
+TAG_PATTERN = re.compile(r'(#[\w\-]+)([)\]_!?*%/.,;\s]+\s*|\Z)', re.UNICODE)
 # This will match non matching braces. I don't think it's an issue.
 MENTION_PATTERN = re.compile(r'(@\{?(?:[\w\-. \u263a-\U0001f645]*; *)?[\w]+@[\w\-.]+\.[\w]+}?)', re.UNICODE)
 URL_PATTERN = re.compile(r'(^|[#*_\s])((?:https?://)?[\w\-.]+\.[\w]{1}[\w_\-.#?&/~@!$()*,;%=+]*)', re.UNICODE)
@@ -56,7 +56,8 @@ def find_elements(soup: BeautifulSoup, pattern: re.Pattern) -> List[NavigableStr
         ns = [NavigableString(r) for r in re.split(pattern, candidate.text)]
         if ns:
             candidate.replace_with(*ns)
-            found.extend([child for child in parent.find_all(string=pattern) if child in ns])
+            found.extend([child for child in parent.find_all(
+                string=re.compile(r'\A'+pattern.pattern+r'\Z')) if child in ns])
     return found
 
 

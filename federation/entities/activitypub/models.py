@@ -856,7 +856,7 @@ class Note(Object, RawContentMixin):
             parsed = urlparse(unquote(link['href']).lower())
             # remove the query part and trailing garbage, if any
             path = parsed.path
-            trunc = re.match(r'(/[\w/]+)', parsed.path)
+            trunc = re.match(r'(/[\w/\-]+)', parsed.path)
             if trunc:
                 path = trunc.group()
             url = f'{parsed.scheme}://{parsed.netloc}{path}'
@@ -865,8 +865,9 @@ class Note(Object, RawContentMixin):
             normalized_url = f'{parsed.scheme}://{parsed.netloc}{normalized_path.decode()}'
             links = {link['href'].lower(), unquote(link['href']).lower(), url, normalized_url}
             if links.intersection(hrefs):
-                tag = re.match(r'#?([\w]+)', link.text).group(1).lower()
-                link['data-hashtag'] = tag
+                tag = re.match(r'^#?([\w\-]+$)', link.text)
+                if tag:
+                    link['data-hashtag'] = tag.group(1).lower()
 
     def _find_and_mark_mentions(self):
         mentions = [mention for mention in self.tag_objects if isinstance(mention, Mention)]
