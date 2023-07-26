@@ -113,12 +113,13 @@ class LdContextManager:
         if 'python-federation"' in s:
             ctx = json.loads(s.replace('python-federation', 'python-federation#', 1))
 
-        # some platforms have http://joinmastodon.com/ns in @context. This
-        # is not a json-ld document.
-        try:
-            ctx.pop(ctx.index('http://joinmastodon.org/ns'))
-        except ValueError:
-            pass
+        # Some platforms have reference invalid json-ld document in @context.
+        # Remove those.
+        for url in ['http://joinmastodon.org/ns', 'http://schema.org']:
+            try:
+                ctx.pop(ctx.index(url))
+            except ValueError:
+                pass
 
         # remove @language in context since this directive is not
         # processed by calamus. Pleroma adds a useless @language: 'und'
