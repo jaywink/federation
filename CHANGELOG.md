@@ -47,6 +47,8 @@
 
 * Fix process_text_links that would crash on `a` tags with no `href` attribute.
 
+* Ignore relayed AP retractions.
+
 ## [0.24.1] - 2023-03-18
 
 ### Fixed

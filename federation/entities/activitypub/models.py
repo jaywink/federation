@@ -1408,6 +1408,9 @@ def element_to_objects(element: Union[Dict, Object], sender: str = "") -> List:
             logger.error("Failed to validate entity %s: %s", entity, ex)
             return []
         except InvalidSignature as exc:
+            if isinstance(entity, base.Retraction):
+                logger.warning('Relayed retraction on %s, ignoring', entity.target_id)
+                return []
             logger.info('%s, fetching from remote', exc)
             entity = retrieve_and_parse_document(entity.id)
             if not entity:
