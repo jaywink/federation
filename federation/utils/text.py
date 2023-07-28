@@ -49,16 +49,15 @@ def find_elements(soup: BeautifulSoup, pattern: re.Pattern) -> List[NavigableStr
     :param pattern: Compiled regular expression defined using a single group
     :return: A NavigableString list attached to the original soup
     """
-    found = []
+    final = []
     for candidate in soup.find_all(string=True):
-        parent = candidate.find_parent()
-        if parent.name == 'code': continue
+        if candidate.parent.name == 'code': continue
         ns = [NavigableString(r) for r in re.split(pattern, candidate.text)]
-        if ns:
+        found = [s for s in ns if pattern.match(s.text)]
+        if found:
             candidate.replace_with(*ns)
-            found.extend([child for child in parent.find_all(
-                string=re.compile(r'\A'+pattern.pattern+r'\Z')) if child in ns])
-    return found
+            final.extend(found)
+    return final
 
 
 def get_path_from_url(url: str) -> str:
