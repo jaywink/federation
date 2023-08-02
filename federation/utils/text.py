@@ -10,7 +10,10 @@ ILLEGAL_TAG_CHARS = "!#$%^&*+.,@£/()=?`'\\{[]}~;:\"’”—\xa0"
 TAG_PATTERN = re.compile(r'(#[\w\-]+)([)\]_!?*%/.,;\s]+\s*|\Z)', re.UNICODE)
 # This will match non matching braces. I don't think it's an issue.
 MENTION_PATTERN = re.compile(r'(@\{?(?:[\w\-. \u263a-\U0001f645]*; *)?[\w]+@[\w\-.]+\.[\w]+}?)', re.UNICODE)
-URL_PATTERN = re.compile(r'(^|[#*_\s])((?:https?://)?[\w\-.]+\.[\w]{1}[\w_\-.#?&/~@!$()*,;%=+]*)', re.UNICODE)
+# based on https://stackoverflow.com/a/6041965
+URL_PATTERN = re.compile(r'((?:(?:https?|ftp)://|\b(?:\w+\.)+\w+)(?:(?:[^\s()<>]+|\((?:[^\s()<>]+|(?:\([^\s()<>]+\)))?\))+(?:\((?:[^\s()<>]+|(?:\(?:[^\s()<>]+\)))?\)|[^\s`!()\[\]{};:\'".,<>?«»“”‘’]))?)',
+           re.UNICODE)
+
 
 def decode_if_bytes(text):
     try:
@@ -52,7 +55,7 @@ def find_elements(soup: BeautifulSoup, pattern: re.Pattern) -> List[NavigableStr
     final = []
     for candidate in soup.find_all(string=True):
         if candidate.parent.name == 'code': continue
-        ns = [NavigableString(r) for r in re.split(pattern, candidate.text)]
+        ns = [NavigableString(r) for r in pattern.split(candidate.text) if r]
         found = [s for s in ns if pattern.match(s.text)]
         if found:
             candidate.replace_with(*ns)
