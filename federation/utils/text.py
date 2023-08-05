@@ -11,9 +11,8 @@ TAG_PATTERN = re.compile(r'(#[\w\-]+)([)\]_!?*%/.,;\s]+\s*|\Z)', re.UNICODE)
 # This will match non matching braces. I don't think it's an issue.
 MENTION_PATTERN = re.compile(r'(@\{?(?:[\w\-. \u263a-\U0001f645]*; *)?[\w]+@[\w\-.]+\.[\w]+}?)', re.UNICODE)
 # based on https://stackoverflow.com/a/6041965
-URL_PATTERN = re.compile(r'((?:(?:https?|ftp)://|\b(?:\w+\.)+\w+)(?:(?:[^\s()<>]+|\((?:[^\s()<>]+|(?:\([^\s()<>]+\)))?\))+(?:\((?:[^\s()<>]+|(?:\(?:[^\s()<>]+\)))?\)|[^\s`!()\[\]{};:\'".,<>?«»“”‘’]))?)',
-           re.UNICODE)
-
+URL_PATTERN = re.compile(r'((?:(?:https?|ftp)://|^|(?<=[("<\s]))+(?:[\w\-]+(?:(?:\.[\w\-]+)+))(?:[\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-]))',
+                         re.UNICODE)
 
 def decode_if_bytes(text):
     try:
