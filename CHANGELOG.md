@@ -22,7 +22,7 @@
 * For inbound payload, a cached dict of all the defined AP extensions is merged with each incoming LD context.
 
 * Better handle conflicting property defaults by having `get_base_attributes` return only attributes that
-  are not empty (or bool). This helps distinguishing between `marshmallow.missing` and empty values.
+  are not empty (or bool). This helps distinguish between `marshmallow.missing` and empty values.
 
 * JsonLD document caching now set in `activitypub/__init__.py`.
 
@@ -44,6 +44,10 @@
   sender by `message_to_object`.
 
 * In fetch_document: if response.encoding is not set, default to utf-8.
+
+* Fix process_text_links that would crash on `a` tags with no `href` attribute.
+
+* Ignore relayed AP retractions.
 
 ## [0.24.1] - 2023-03-18
 

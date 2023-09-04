@@ -113,12 +113,13 @@ class LdContextManager:
         if 'python-federation"' in s:
             ctx = json.loads(s.replace('python-federation', 'python-federation#', 1))
 
-        # some platforms have http://joinmastodon.com/ns in @context. This
-        # is not a json-ld document.
-        try:
-            ctx.pop(ctx.index('http://joinmastodon.org/ns'))
-        except ValueError:
-            pass
+        # Some platforms have reference invalid json-ld document in @context.
+        # Remove those.
+        for url in ['http://joinmastodon.org/ns', 'http://schema.org']:
+            try:
+                ctx.pop(ctx.index(url))
+            except ValueError:
+                pass
 
         # remove @language in context since this directive is not
         # processed by calamus. Pleroma adds a useless @language: 'und'
@@ -137,12 +138,17 @@ class LdContextManager:
         # Merge all defined AP extensions to the inbound context
         uris = []
         defs = {}
-        # Merge original context dicts in one dict
-        for item in ctx:
-            if isinstance(item, str):
-                uris.append(item)
-            else:
-                defs.update(item)
+        # Merge original context dicts in one dict, taking into account nested @context
+        def parse_context(ctx):
+            for item in ctx:
+                if isinstance(item, str):
+                    uris.append(item)
+                else:
+                    if '@context' in item:
+                        parse_context([item['@context']])
+                        item.pop('@context')
+                    defs.update(item)
+        parse_context(ctx)
 
         for item in self._merged:
             if isinstance(item, str) and item not in uris:

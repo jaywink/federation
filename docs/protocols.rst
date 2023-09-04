@@ -4,9 +4,8 @@ Protocols
 Currently three protocols are being focused on.
 
 * Diaspora is considered to be stable with most of the protocol implemented.
-* ActivityPub support should be considered as alpha - all the basic
-  things work but there are likely to be a lot of compatibility issues with other ActivityPub
-  implementations.
+* ActivityPub support should be considered as beta - all the basic
+  things work and we are fixing incompatibilities as they are identified.
 * Matrix support cannot be considered usable as of yet.
 
 For example implementations in real life projects check :ref:`example-projects`.
@@ -69,20 +68,21 @@ Content media type
 The following keys will be set on the entity based on the ``source`` property existing:
 
 * if the object has an ``object.source`` property:
-  * ``_media_type`` will be the source media type
-  * ``_rendered_content`` will be the object ``content``
+  * ``_media_type`` will be the source media type (only text/markdown is supported).
+  * ``rendered_content`` will be the object ``content``
   * ``raw_content`` will be the source ``content``
 * if the object has no ``object.source`` property:
   * ``_media_type`` will be ``text/html``
-  * ``_rendered_content`` will be the object ``content``
-  * ``raw_content`` will object ``content`` run through a HTML2Markdown renderer
+  * ``rendered_content`` will be the object ``content``
+  * ``raw_content`` will be empty
 
 The ``contentMap`` property is processed but content language selection is not implemented yet.
 
 For outbound entities, ``raw_content`` is expected to be in ``text/markdown``,
-specifically CommonMark. When sending payloads, ``raw_content`` will be rendered via
-the ``commonmark`` library into ``object.content``. The original ``raw_content``
-will be added to the ``object.source`` property.
+specifically CommonMark. The client applications are expected to provide the
+rendered content for protocols that require it (e.g. ActivityPub).
+When sending payloads, ``object.contentMap`` will be set to ``rendered_content``
+and ``raw_content`` will be added to the ``object.source`` property.
 
 Medias
 ......
@@ -97,6 +97,19 @@ support from client applications.
 
 For inbound entities we do this automatically by not including received image attachments in
 the entity ``_children`` attribute. Audio and video are passed through the client application.
+
+Hashtags and mentions
+.....................
+
+For outbound payloads, client applications must add/set the hashtag/mention value to
+the ``class`` attribute of rendered content linkified hashtags/mentions. These will be
+used to help build the corresponding ``Hashtag`` and ``Mention`` objects.
+
+For inbound payloads, if a markdown source is provided, hashtags/mentions will be extracted
+through the same method used for Diaspora. If only HTML content is provided, the ``a`` tags
+will be marked with a ``data-[hashtag|mention]`` attribute (based on the provided Hashtag/Mention
+objects) to facilitate the ``href`` attribute modifications lient applications might
+wish to make. This should ensure links can be replaced regardless of how the HTML is structured.
 
 .. _matrix:
 

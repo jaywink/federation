@@ -30,6 +30,7 @@ def activitypubcomment():
     with freeze_time("2019-04-27"):
         obj = models.Comment(
             raw_content="raw_content",
+            rendered_content="<p>raw_content</p>",
             public=True,
             provider_display_name="Socialhome",
             id=f"http://127.0.0.1:8000/post/123456/",
@@ -255,7 +256,8 @@ def profile():
         inboxes={
             "private": "https://example.com/bob/private",
             "public": "https://example.com/public",
-        }, public_key=PUBKEY, to=["https://www.w3.org/ns/activitystreams#Public"]
+        }, public_key=PUBKEY, to=["https://www.w3.org/ns/activitystreams#Public"],
+        url="https://example.com/alice"
     )
 
 

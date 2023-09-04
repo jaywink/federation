@@ -75,8 +75,8 @@ def verify_ld_signature(payload):
     obj_digest = hash(obj)
     digest = (sig_digest + obj_digest).encode('utf-8')
 
-    sig_value = b64decode(signature.get('signatureValue'))
     try:
+        sig_value = b64decode(signature.get('signatureValue'))
         verifier.verify(SHA256.new(digest), sig_value)
         logger.debug('ld_signature - %s has a valid signature', payload.get("id"))
         return profile.id
@@ -99,6 +99,6 @@ class NormalizedDoubles(jsonld.JsonLdProcessor):
             item['@value'] = math.floor(value)
         obj = super()._object_to_rdf(item, issuer, triples, rdfDirection)
         # This is to address https://github.com/digitalbazaar/pyld/issues/175
-        if obj.get('datatype') == jsonld.XSD_DOUBLE:
+        if obj and obj.get('datatype') == jsonld.XSD_DOUBLE:
             obj['value'] = re.sub(r'(\d)0*E\+?(-)?0*(\d)', r'\1E\2\3', obj['value'])
         return obj

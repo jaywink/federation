@@ -1,12 +1,18 @@
 import re
-from typing import Set, Tuple
+from typing import Set, List
 from urllib.parse import urlparse
 
-import bleach
-from bleach import callbacks
+from bs4 import BeautifulSoup
+from bs4.element import NavigableString
+from commonmark import commonmark
 
 ILLEGAL_TAG_CHARS = "!#$%^&*+.,@£/()=?`'\\{[]}~;:\"’”—\xa0"
-
+TAG_PATTERN = re.compile(r'(#[\w\-]+)([)\]_!?*%/.,;\s]+\s*|\Z)', re.UNICODE)
+# This will match non matching braces. I don't think it's an issue.
+MENTION_PATTERN = re.compile(r'(@\{?(?:[\w\-. \u263a-\U0001f645]*; *)?[\w]+@[\w\-.]+\.[\w]+}?)', re.UNICODE)
+# based on https://stackoverflow.com/a/6041965
+URL_PATTERN = re.compile(r'((?:(?:https?|ftp)://|^|(?<=[("<\s]))+(?:[\w\-]+(?:(?:\.[\w\-]+)+))(?:[\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-]))',
+                         re.UNICODE)
 
 def decode_if_bytes(text):
     try:
@@ -22,67 +28,38 @@ def encode_if_text(text):
         return text
 
 
-def find_tags(text: str, replacer: callable = None) -> Tuple[Set, str]:
+def find_tags(text: str) -> Set[str]:
     """Find tags in text.
 
-    Tries to ignore tags inside code blocks.
+    Ignore tags inside code blocks.
 
-    Optionally, if passed a "replacer", will also replace the tag word with the result
-    of the replacer function called with the tag word.
+    Returns a set of tags.
 
-    Returns a set of tags and the original or replaced text.
     """
-    found_tags = set()
-    # <br> and <p> tags cause issues in us finding words - add some spacing around them
-    new_text = text.replace("<br>", " <br> ").replace("<p>", " <p> ").replace("</p>", " </p> ")
-    lines = new_text.splitlines(keepends=True)
-    final_lines = []
-    code_block = False
-    final_text = None
-    # Check each line separately
-    for line in lines:
-        final_words = []
-        if line[0:3] == "```":
-            code_block = not code_block
-        if line.find("#") == -1 or line[0:4] == "    " or code_block:
-            # Just add the whole line
-            final_lines.append(line)
-            continue
-        # Check each word separately
-        words = line.split(" ")
-        for word in words:
-            if word.find('#') > -1:
-                candidate = word.strip().strip("([]),.!?:*_%/")
-                if candidate.find('<') > -1 or candidate.find('>') > -1:
-                    # Strip html
-                    candidate = bleach.clean(word, strip=True)
-                # Now split with slashes
-                candidates = candidate.split("/")
-                to_replace = []
-                for candidate in candidates:
-                    if candidate.startswith("#"):
-                        candidate = candidate.strip("#")
-                        if test_tag(candidate.lower()):
-                            found_tags.add(candidate.lower())
-                            to_replace.append(candidate)
-                if replacer:
-                    tag_word = word
-                    try:
-                        for counter, replacee in enumerate(to_replace, 1):
-                            tag_word = tag_word.replace("#%s" % replacee, replacer(replacee))
-                    except Exception:
-                        pass
-                    final_words.append(tag_word)
-                else:
-                    final_words.append(word)
-            else:
-                final_words.append(word)
-        final_lines.append(" ".join(final_words))
-    if replacer:
-        final_text = "".join(final_lines)
-    if final_text:
-        final_text = final_text.replace(" <br> ", "<br>").replace(" <p> ", "<p>").replace(" </p> ", "</p>")
-    return found_tags, final_text or text
+    tags = find_elements(BeautifulSoup(commonmark(text, ignore_html_blocks=True), 'html.parser'),
+                         TAG_PATTERN)
+    return set([tag.text.lstrip('#').lower() for tag in tags])
+
+
+def find_elements(soup: BeautifulSoup, pattern: re.Pattern) -> List[NavigableString]:
+    """
+    Split a BeautifulSoup tree strings according to a pattern, replacing each element
+    with a NavigableString. The returned list can be used to linkify the found
+    elements.
+
+    :param soup: BeautifulSoup instance of the content being searched
+    :param pattern: Compiled regular expression defined using a single group
+    :return: A NavigableString list attached to the original soup
+    """
+    final = []
+    for candidate in soup.find_all(string=True):
+        if candidate.parent.name == 'code': continue
+        ns = [NavigableString(r) for r in pattern.split(candidate.text) if r]
+        found = [s for s in ns if pattern.match(s.text)]
+        if found:
+            candidate.replace_with(*ns)
+            final.extend(found)
+    return final
 
 
 def get_path_from_url(url: str) -> str:
@@ -92,28 +69,6 @@ def get_path_from_url(url: str) -> str:
     parsed = urlparse(url)
     return parsed.path
 
-
-def process_text_links(text):
-    """Process links in text, adding some attributes and linkifying textual links."""
-    link_callbacks = [callbacks.nofollow, callbacks.target_blank]
-
-    def link_attributes(attrs, new=False):
-        """Run standard callbacks except for internal links."""
-        href_key = (None, "href")
-        if attrs.get(href_key).startswith("/"):
-            return attrs
-
-        # Run the standard callbacks
-        for callback in link_callbacks:
-            attrs = callback(attrs, new)
-        return attrs
-
-    return bleach.linkify(
-        text,
-        callbacks=[link_attributes],
-        parse_email=False,
-        skip_tags=["code"],
-    )
 
 
 def test_tag(tag: str) -> bool:

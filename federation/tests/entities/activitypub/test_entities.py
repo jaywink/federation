@@ -1,3 +1,4 @@
+import commonmark
 import pytest
 from unittest.mock import patch
 from pprint import pprint
@@ -63,8 +64,12 @@ class TestEntitiesConvertToAS2:
             'published': '2019-04-27T00:00:00',
         }
 
+    # Now handled by the client app
+    @pytest.mark.skip
     def test_comment_to_as2__url_in_raw_content(self, activitypubcomment):
         activitypubcomment.raw_content = 'raw_content http://example.com'
+        activitypubcomment.rendered_content = process_text_links(
+            commonmark.commonmark(activitypubcomment.raw_content).strip())
         activitypubcomment.pre_send()
         result = activitypubcomment.to_as2()
         assert result == {
@@ -118,6 +123,7 @@ class TestEntitiesConvertToAS2:
         }
 
     def test_post_to_as2(self, activitypubpost):
+        activitypubpost.rendered_content = commonmark.commonmark(activitypubpost.raw_content).strip()
         activitypubpost.pre_send()
         result = activitypubpost.to_as2()
         assert result == {
@@ -191,6 +197,15 @@ class TestEntitiesConvertToAS2:
         }
 
     def test_post_to_as2__with_tags(self, activitypubpost_tags):
+        activitypubpost_tags.rendered_content = '<h1>raw_content</h1>\n' \
+            '<p><a class="hashtag" ' \
+            'href="https://example.com/tag/foobar/" rel="noopener ' \
+            'noreferrer nofollow" ' \
+            'target="_blank">#<span>foobar</span></a>\n' \
+            '<a class="hashtag" ' \
+            'href="https://example.com/tag/barfoo/" rel="noopener ' \
+            'noreferrer nofollow" ' \
+            'target="_blank">#<span>barfoo</span></a></p>'
         activitypubpost_tags.pre_send()
         result = activitypubpost_tags.to_as2()
         assert result == {
@@ -204,11 +219,11 @@ class TestEntitiesConvertToAS2:
                 'url': 'http://127.0.0.1:8000/post/123456/',
                 'attributedTo': 'http://127.0.0.1:8000/profile/123456/',
                 'content': '<h1>raw_content</h1>\n'
-                           '<p><a class="mention hashtag" '
+                           '<p><a class="hashtag" '
                            'href="https://example.com/tag/foobar/" rel="noopener '
                            'noreferrer nofollow" '
                            'target="_blank">#<span>foobar</span></a>\n'
-                           '<a class="mention hashtag" '
+                           '<a class="hashtag" '
                            'href="https://example.com/tag/barfoo/" rel="noopener '
                            'noreferrer nofollow" '
                            'target="_blank">#<span>barfoo</span></a></p>',
@@ -235,6 +250,7 @@ class TestEntitiesConvertToAS2:
         }
 
     def test_post_to_as2__with_images(self, activitypubpost_images):
+        activitypubpost_images.rendered_content = '<p>raw_content</p>'
         activitypubpost_images.pre_send()
         result = activitypubpost_images.to_as2()
         assert result == {
@@ -274,6 +290,7 @@ class TestEntitiesConvertToAS2:
         }
 
     def test_post_to_as2__with_diaspora_guid(self, activitypubpost_diaspora_guid):
+        activitypubpost_diaspora_guid.rendered_content = '<p>raw_content</p>'
         activitypubpost_diaspora_guid.pre_send()
         result = activitypubpost_diaspora_guid.to_as2()
         assert result == {
@@ -417,17 +434,6 @@ class TestEntitiesPostReceive:
             "protocol": "activitypub",
             "public": False,
         }]
-
-    @patch("federation.entities.activitypub.models.bleach.linkify", autospec=True)
-    def test_post_post_receive__linkifies_if_not_markdown(self, mock_linkify, activitypubpost):
-        activitypubpost._media_type = 'text/html'
-        activitypubpost.post_receive()
-        mock_linkify.assert_called_once()
-
-    @patch("federation.entities.activitypub.models.bleach.linkify", autospec=True)
-    def test_post_post_receive__skips_linkify_if_markdown(self, mock_linkify, activitypubpost):
-        activitypubpost.post_receive()
-        mock_linkify.assert_not_called()
 
 
 class TestEntitiesPreSend:

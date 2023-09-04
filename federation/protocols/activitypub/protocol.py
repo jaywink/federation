@@ -49,6 +49,11 @@ class Protocol:
     sender = None
     user = None
 
+    def __init__(self, request=None, get_contact_key=None):
+        # this is required for calls to verify on GET requests
+        self.request = request
+        self.get_contact_key = get_contact_key
+
     def build_send(self, entity: BaseEntity, from_user: UserType, to_user_key: RsaKey = None) -> Union[str, Dict]:
         """
         Build POST data for sending out to remotes.
@@ -112,7 +117,7 @@ class Protocol:
         self.sender = signer.id if signer else self.actor
         key = getattr(signer, 'public_key', None)
         if not key:
-            key = self.get_contact_key(self.actor) if self.get_contact_key else ''
+            key = self.get_contact_key(self.actor) if self.get_contact_key and self.actor else ''
             if key:
                 # fallback to the author's key the client app may have provided
                 logger.warning("Failed to retrieve keyId for %s, trying the actor's key", sig.get('keyId'))

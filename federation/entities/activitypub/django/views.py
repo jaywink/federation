@@ -2,7 +2,7 @@ from cryptography.exceptions import InvalidSignature
 from django.http import JsonResponse, HttpResponse, HttpResponseNotFound
 
 from federation.entities.activitypub.mappers import get_outbound_entity
-from federation.protocols.activitypub.signing import verify_request_signature
+from federation.protocols.activitypub.protocol import Protocol
 from federation.types import RequestType
 from federation.utils.django import get_function_from_config
 
@@ -23,9 +23,11 @@ def get_and_verify_signer(request):
             body=request.body,
             method=request.method,
             headers=request.headers)
+    protocol = Protocol(request=req,  get_contact_key=get_public_key)
     try:
-        return verify_request_signature(req)
-    except ValueError:
+        protocol.verify()
+        return protocol.sender
+    except (ValueError, KeyError, InvalidSignature) as exc:
         return None
 
 

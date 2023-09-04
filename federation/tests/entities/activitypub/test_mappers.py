@@ -4,6 +4,9 @@ from unittest.mock import patch, Mock, DEFAULT
 import json
 import pytest
 
+from federation.entities.activitypub.models import Person
+
+
 #from federation.entities.activitypub.entities import (
 #    models.Follow, models.Accept, models.Person, models.Note, models.Note,
 #    models.Delete, models.Announce)
@@ -70,9 +73,7 @@ class TestActivitypubEntityMappersReceive:
         post = entities[0]
         assert isinstance(post, models.Note)
         assert isinstance(post, Post)
-        assert post.raw_content == '<p><span class="h-card"><a class="u-url mention" ' \
-                                   'href="https://dev.jasonrobinson.me/u/jaywink/">' \
-                                   '@<span>jaywink</span></a></span> boom</p>'
+        assert post.raw_content == ''
         assert post.rendered_content == '<p><span class="h-card"><a class="u-url mention" href="https://dev.jasonrobinson.me/u/jaywink/">' \
                                         '@<span>jaywink</span></a></span> boom</p>'
         assert post.id == "https://diaspodon.fr/users/jaywink/statuses/102356911717767237"
@@ -87,40 +88,44 @@ class TestActivitypubEntityMappersReceive:
         post = entities[0]
         assert isinstance(post, models.Note)
         assert isinstance(post, Post)
-        assert post.raw_content == '<p>boom #test</p>'
+        assert post.raw_content == ''
+        assert post.rendered_content == '<p>boom <a class="mention hashtag" data-hashtag="test" href="https://mastodon.social/tags/test" rel="tag">#<span>test</span></a></p>'
 
-    # TODO: fix this test
-    @pytest.mark.skip
-    def test_message_to_objects_simple_post__with_mentions(self):
+    @patch("federation.entities.activitypub.models.get_profile_or_entity",
+           return_value=Person(finger="jaywink@dev3.jasonrobinson.me",url="https://dev3.jasonrobinson.me/u/jaywink/"))
+    def test_message_to_objects_simple_post__with_mentions(self, mock_get):
         entities = message_to_objects(ACTIVITYPUB_POST_WITH_MENTIONS, "https://mastodon.social/users/jaywink")
         assert len(entities) == 1
         post = entities[0]
         assert isinstance(post, models.Note)
         assert isinstance(post, Post)
         assert len(post._mentions) == 1
-        assert list(post._mentions)[0] == "https://dev3.jasonrobinson.me/u/jaywink/"
+        assert list(post._mentions)[0] == "jaywink@dev3.jasonrobinson.me"
 
-    def test_message_to_objects_simple_post__with_source__bbcode(self):
+
+    @patch("federation.entities.activitypub.models.get_profile_or_entity",
+           return_value=Person(finger="jaywink@dev.jasonrobinson.me",url="https://dev.jasonrobinson.me/u/jaywink/"))
+    def test_message_to_objects_simple_post__with_source__bbcode(self, mock_get):
         entities = message_to_objects(ACTIVITYPUB_POST_WITH_SOURCE_BBCODE, "https://diaspodon.fr/users/jaywink")
         assert len(entities) == 1
         post = entities[0]
         assert isinstance(post, models.Note)
         assert isinstance(post, Post)
-        assert post.rendered_content == '<p><span class="h-card"><a class="u-url mention" href="https://dev.jasonrobinson.me/u/jaywink/">' \
+        assert post.rendered_content == '<p><span class="h-card"><a class="u-url mention" data-mention="jaywink@dev.jasonrobinson.me" href="https://dev.jasonrobinson.me/u/jaywink/">' \
                                         '@<span>jaywink</span></a></span> boom</p>'
-        assert post.raw_content == '<p><span class="h-card"><a class="u-url mention" ' \
-                                   'href="https://dev.jasonrobinson.me/u/jaywink/">' \
-                                   '@<span>jaywink</span></a></span> boom</p>'
+        assert post.raw_content == ''
 
-    def test_message_to_objects_simple_post__with_source__markdown(self):
+    @patch("federation.entities.activitypub.models.get_profile_or_entity",
+           return_value=Person(finger="jaywink@dev.jasonrobinson.me",url="https://dev.robinson.me/u/jaywink/"))
+    def test_message_to_objects_simple_post__with_source__markdown(self, mock_get):
         entities = message_to_objects(ACTIVITYPUB_POST_WITH_SOURCE_MARKDOWN, "https://diaspodon.fr/users/jaywink")
         assert len(entities) == 1
         post = entities[0]
         assert isinstance(post, models.Note)
         assert isinstance(post, Post)
-        assert post.rendered_content == '<p><span class="h-card"><a href="https://dev.jasonrobinson.me/u/jaywink/" ' \
-                                        'class="u-url mention">@<span>jaywink</span></a></span> boom</p>'
-        assert post.raw_content == "@jaywink boom"
+        assert post.rendered_content == '<p><span class="h-card"><a class="u-url mention" ' \
+                                        'href="https://dev.jasonrobinson.me/u/jaywink/">@<span>jaywink</span></a></span> boom</p>'
+        assert post.raw_content == "@jaywink@dev.jasonrobinson.me boom"
         assert post.id == "https://diaspodon.fr/users/jaywink/statuses/102356911717767237"
         assert post.actor_id == "https://diaspodon.fr/users/jaywink"
         assert post.public is True
@@ -145,15 +150,18 @@ class TestActivitypubEntityMappersReceive:
         assert photo.guid == ""
         assert photo.handle == ""
 
-    def test_message_to_objects_comment(self):
+    @patch("federation.entities.activitypub.models.get_profile_or_entity",
+           return_value=Person(finger="jaywink@dev.jasonrobinson.me", url="https://dev.jasonrobinson.me/u/jaywink/"))
+    def test_message_to_objects_comment(self, mock_get):
         entities = message_to_objects(ACTIVITYPUB_COMMENT, "https://diaspodon.fr/users/jaywink")
         assert len(entities) == 1
         comment = entities[0]
         assert isinstance(comment, models.Note)
         assert isinstance(comment, Comment)
-        assert comment.raw_content == '<p><span class="h-card"><a class="u-url mention" ' \
+        assert comment.rendered_content == '<p><span class="h-card"><a class="u-url mention" data-mention="jaywink@dev.jasonrobinson.me" ' \
                                       'href="https://dev.jasonrobinson.me/u/jaywink/">' \
                                       '@<span>jaywink</span></a></span> boom</p>'
+        assert comment.raw_content == ''
         assert comment.id == "https://diaspodon.fr/users/jaywink/statuses/102356911717767237"
         assert comment.actor_id == "https://diaspodon.fr/users/jaywink"
         assert comment.target_id == "https://dev.jasonrobinson.me/content/653bad70-41b3-42c9-89cb-c4ee587e68e4/"
