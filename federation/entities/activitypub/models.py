@@ -64,6 +64,7 @@ ldp = fields.Namespace("http://www.w3.org/ns/ldp#")
 lemmy = fields.Namespace("https://join-lemmy.org/ns#")
 litepub = fields.Namespace("http://litepub.social/ns#")
 misskey = fields.Namespace("https://misskey-hub.net/ns#")
+mitra = fields.Namespace("http://jsonld.mitra.social#")
 ostatus = fields.Namespace("http://ostatus.org#")
 pt = fields.Namespace("https://joinpeertube.org/ns#")
 pyfed = fields.Namespace("https://docs.jasonrobinson.me/ns/python-federation#")
@@ -1007,6 +1008,7 @@ class Video(Document, base.Video):
     actor_id = MixedField(as2.attributedTo, nested=['PersonSchema', 'GroupSchema'], many=True)
     url = MixedField(as2.url, nested='LinkSchema')
     signable = True
+    views = fields.Integer(pt.views)
 
     class Meta:
         unknown = EXCLUDE # required until all the pt fields are defined
@@ -1014,13 +1016,14 @@ class Video(Document, base.Video):
 
     def to_base(self):
         """Turn Peertube Video object into a Post
-        Currently assumes Video objects with a content_map
-        come from Peertube, but that's a bit weak
+        Is Peertube content if the views property is not missing
         """
         
         self.__dict__.update({'schema': True})
-        if self.content_map is not missing:
-            text = self.content_map['orig']
+        if self.views is not missing:
+            text = ""
+            if self.content_map is not missing:
+                text = self.content_map['orig']
             if getattr(self, 'media_type', None) == 'text/markdown':
                 url = ""
                 for u in self.url:
