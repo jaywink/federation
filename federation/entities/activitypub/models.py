@@ -611,6 +611,7 @@ class Person(Object, base.Profile):
         self.followers = f'{with_slash(self.id)}followers/'
         self.following = f'{with_slash(self.id)}following/'
         self.outbox = f'{with_slash(self.id)}outbox/'
+        if isinstance(self.to, str): self.to = [self.to]
 
         if hasattr(self, 'times'):
             if self.times.get('updated',0) > self.times.get('created',0):
