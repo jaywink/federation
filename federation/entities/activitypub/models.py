@@ -849,10 +849,10 @@ class Note(Object, RawContentMixin):
         for tag in self.tag_objects:
             if isinstance(tag, Hashtag):
                 if tag.href is not missing:
-                    hrefs.add(tag.href.lower())
+                    hrefs.add(unquote(tag.href).lower())
                 # Some platforms use id instead of href...
                 elif tag.id is not missing:
-                    hrefs.add(tag.id.lower())
+                    hrefs.add(unquote(tag.id).lower())
 
         for link in self._soup.find_all('a', href=True):
             parsed = urlparse(unquote(link['href']).lower())
