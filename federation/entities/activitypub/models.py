@@ -380,7 +380,7 @@ class Collection(Object, base.Collection):
     first = MixedField(as2.first, nested=['CollectionPageSchema', 'OrderedCollectionPageSchema'])
     current = IRI(as2.current)
     last = IRI(as2.last)
-    total_items = MixedInteger(as2.totalItems, metafdata={'flavor':xsd.nonNegativeInteger}, add_value_types=True)
+    total_items = MixedInteger(as2.totalItems, metadata={'flavor':xsd.nonNegativeInteger}, add_value_types=True)
 
     class Meta:
         rdf_type = as2.Collection
@@ -1368,6 +1368,10 @@ def extract_replies(replies):
     visited = []
 
     def walk_reply_collection(replies):
+        if isinstance(replies, str):
+            # deal with gotosocial reply collections
+            replies = retrieve_and_parse_document(replies, cache=False)
+        if not hasattr(replies, 'items'): return
         items = replies.items if replies.items is not missing else []
         if not isinstance(items, list): items = [items]
         for obj in items:
