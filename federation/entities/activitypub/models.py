@@ -64,6 +64,7 @@ ldp = fields.Namespace("http://www.w3.org/ns/ldp#")
 lemmy = fields.Namespace("https://join-lemmy.org/ns#")
 litepub = fields.Namespace("http://litepub.social/ns#")
 misskey = fields.Namespace("https://misskey-hub.net/ns#")
+mitra = fields.Namespace("http://jsonld.mitra.social#")
 ostatus = fields.Namespace("http://ostatus.org#")
 pt = fields.Namespace("https://joinpeertube.org/ns#")
 pyfed = fields.Namespace("https://docs.jasonrobinson.me/ns/python-federation#")
@@ -379,7 +380,7 @@ class Collection(Object, base.Collection):
     first = MixedField(as2.first, nested=['CollectionPageSchema', 'OrderedCollectionPageSchema'])
     current = IRI(as2.current)
     last = IRI(as2.last)
-    total_items = MixedInteger(as2.totalItems, metafdata={'flavor':xsd.nonNegativeInteger}, add_value_types=True)
+    total_items = MixedInteger(as2.totalItems, metadata={'flavor':xsd.nonNegativeInteger}, add_value_types=True)
 
     class Meta:
         rdf_type = as2.Collection
@@ -610,6 +611,7 @@ class Person(Object, base.Profile):
         self.followers = f'{with_slash(self.id)}followers/'
         self.following = f'{with_slash(self.id)}following/'
         self.outbox = f'{with_slash(self.id)}outbox/'
+        if isinstance(self.to, str): self.to = [self.to]
 
         if hasattr(self, 'times'):
             if self.times.get('updated',0) > self.times.get('created',0):
@@ -847,10 +849,10 @@ class Note(Object, RawContentMixin):
         for tag in self.tag_objects:
             if isinstance(tag, Hashtag):
                 if tag.href is not missing:
-                    hrefs.add(tag.href.lower())
+                    hrefs.add(unquote(tag.href).lower())
                 # Some platforms use id instead of href...
                 elif tag.id is not missing:
-                    hrefs.add(tag.id.lower())
+                    hrefs.add(unquote(tag.id).lower())
 
         for link in self._soup.find_all('a', href=True):
             parsed = urlparse(unquote(link['href']).lower())
@@ -1007,6 +1009,7 @@ class Video(Document, base.Video):
     actor_id = MixedField(as2.attributedTo, nested=['PersonSchema', 'GroupSchema'], many=True)
     url = MixedField(as2.url, nested='LinkSchema')
     signable = True
+    views = fields.Integer(pt.views)
 
     class Meta:
         unknown = EXCLUDE # required until all the pt fields are defined
@@ -1014,13 +1017,14 @@ class Video(Document, base.Video):
 
     def to_base(self):
         """Turn Peertube Video object into a Post
-        Currently assumes Video objects with a content_map
-        come from Peertube, but that's a bit weak
+        Is Peertube content if the views property is not missing
         """
         
         self.__dict__.update({'schema': True})
-        if self.content_map is not missing:
-            text = self.content_map['orig']
+        if self.views is not missing:
+            text = ""
+            if self.content_map is not missing:
+                text = self.content_map['orig']
             if getattr(self, 'media_type', None) == 'text/markdown':
                 url = ""
                 for u in self.url:
@@ -1364,6 +1368,10 @@ def extract_replies(replies):
     visited = []
 
     def walk_reply_collection(replies):
+        if isinstance(replies, str):
+            # deal with gotosocial reply collections
+            replies = retrieve_and_parse_document(replies, cache=False)
+        if not hasattr(replies, 'items'): return
         items = replies.items if replies.items is not missing else []
         if not isinstance(items, list): items = [items]
         for obj in items:
