@@ -29,7 +29,7 @@ setup(
         "beautifulsoup4>=4.11.2",
         "bleach>3.0",
         "calamus",
-        "commonmark",
+        "commonmark @ git+https://github.com/jaywink/commonmark.py.git@b853dc194cb337063da898e57a9e2e6b9d3f733d",
         "cryptography",
         "cssselect>=0.9.2",
         "dirty-validators>=0.3.0",

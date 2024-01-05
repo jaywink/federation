@@ -2,7 +2,6 @@ import copy
 import json
 import logging
 import re
-import traceback
 import uuid
 from operator import attrgetter
 from typing import List, Dict, Union
@@ -1442,7 +1441,6 @@ def model_to_objects(payload):
             entity = model.schema().load(payload)
         except (KeyError, jsonld.JsonLdError, exceptions.ValidationError) as exc :  # Just give up for now. This must be made robust
             logger.error("Error parsing jsonld payload (%s)", exc)
-            traceback.print_exception(exc)
             return None
 
         if isinstance(getattr(entity, 'object_', None), Object):
