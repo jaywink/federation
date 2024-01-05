@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.25] - Unreleased
+## [0.25.0] - 2024-01-06
 
 ### Added
 
@@ -40,8 +40,6 @@
 * Move process_text_links back to the client app.
 
 * Handle gotosocial reply collections.
-
-* 
 
 ### Fixed
 
