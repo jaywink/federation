@@ -33,6 +33,16 @@
   app AP profiles must include the keyId and the followers URIs. As a significant side effect, profile retractions
   are now more likely to succeed.
 
+* Switch to BeautifulSoup for content parsing. The client app is now expected to provide the
+  rendered content for outbound payloads. Mark inbound AP payload hashtag and mention links
+  and let the client app deal with them.
+
+* Move process_text_links back to the client app.
+
+* Handle gotosocial reply collections.
+
+* 
+
 ### Fixed
 
 * Inbound AP share retractions (undo announce) were deserialized as a `base.Retraction` class, which would
@@ -48,6 +58,14 @@
 * Fix process_text_links that would crash on `a` tags with no `href` attribute.
 
 * Ignore relayed AP retractions.
+
+* Fix AP profile processing for hubzilla, guppe and bird.makeup.
+
+* Unquote and normalize hashtag links.
+
+* Fix Peertube payload processing when the content property is missing.
+
+* Ensure the outbound AP profile to property is an array.
 
 ## [0.24.1] - 2023-03-18
 
