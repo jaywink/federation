@@ -26,7 +26,7 @@ setup(
     license="BSD 3-clause",
     install_requires=[
         "attrs",
-        "beautifulsoup>=4.11.2",
+        "beautifulsoup4>=4.11.2",
         "bleach>3.0",
         "calamus",
         "commonmark",
