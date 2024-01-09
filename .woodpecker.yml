@@ -1,13 +1,10 @@
 steps:
-  build:
+  test:
     image: python:3.10
     commands:
       python -V
       pip install virtualenv
       virtualenv venv
       source venv/bin/activate
-
-  test:
-    commands:
       pip install tox
       tox
