@@ -2,9 +2,9 @@ steps:
   test:
     image: python:3.10
     commands:
-      python -V
-      pip install virtualenv
-      virtualenv venv
-      source venv/bin/activate
-      pip install tox
-      tox
+      - python -V
+      - pip install virtualenv
+      - virtualenv venv
+      - source venv/bin/activate
+      - pip install tox
+      - tox
