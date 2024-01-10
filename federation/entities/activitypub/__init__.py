@@ -24,6 +24,7 @@ def get_loader(*args, **kwargs):
             return json.loads(cache[key])
         except KeyError:
             options['headers']['Accept'] = 'application/ld+json'
+            options['timeout'] = 10
             doc = requests_loader(url, options)
             if isinstance(cache, dict):
                 cache[key] = json.dumps(doc)
