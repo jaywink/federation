@@ -7,5 +7,4 @@ steps:
       - virtualenv venv
       - . venv/bin/activate
       - pip install tox
-      - sleep 120
       - tox
