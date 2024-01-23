@@ -16,3 +16,7 @@ sphinx:
    configuration: docs/conf.py
 
 formats: all
+
+python:
+  install:
+    - requirements: dev-requirements.txt
