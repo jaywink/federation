@@ -885,11 +885,22 @@ class Note(Object, RawContentMixin):
                 profile = retrieve_and_parse_profile(profile.id)
             if profile:
                 hrefs.extend([profile.id, profile.url])
+            else:
+                continue
             for href in hrefs:
                 links = self._soup.find_all(href=href)
                 for link in links:
                     link['data-mention'] = profile.finger
                     self._mentions.add(profile.finger)
+            if profile.finger not in self._mentions:
+                # can't find some mentions using their href property value
+                # try with the name property
+                matches = self._soup.find_all(string=mention.name)
+                for match in matches:
+                    link = match.find_parent('a')
+                    if link:
+                        link['data-mention'] = profile.finger
+                        self._mentions.add(profile.finger)
 
     def extract_mentions(self):
         """
