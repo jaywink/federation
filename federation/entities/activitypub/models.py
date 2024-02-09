@@ -966,7 +966,7 @@ class Note(Object, RawContentMixin):
                     if hasattr(child, 'to_base'):
                         child = child.to_base()
                     if isinstance(child, Image):
-                        if child.inline or (child.image and child.image in self.raw_content):
+                        if child.inline or self._soup.find('img', src=child.url):
                             continue
                     children.append(child)
             self._cached_children = children
