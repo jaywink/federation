@@ -421,6 +421,8 @@ class Document(Object):
     url = MixedField(as2.url, nested='LinkSchema')
 
     def to_base(self):
+        if self.media_type is missing:
+            return self
         self.__dict__.update({'schema': True})
         if self.media_type.startswith('image'):
             return Image(**get_base_attributes(self))
