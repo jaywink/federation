@@ -209,7 +209,11 @@ class MixedField(fields.Nested):
         ret = []
         for item in value:
             if item.get('@type'):
-                res = super()._deserialize(item, attr, data, **kwargs)
+                try:
+                    res = super()._deserialize(item, attr, data, **kwargs)
+                except KeyError as ex:
+                    logger.warning("nested field: undefined JSON-LD type %s", ex)
+                    continue
                 ret.append(res if not isinstance(res, list) else res[0])
             else:
                 ret.append(self.iri._deserialize(item, attr, data, **kwargs))
@@ -247,7 +251,7 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     icon = MixedField(as2.icon, nested='ImageSchema')
     image = MixedField(as2.image, nested='ImageSchema')
     tag_objects = MixedField(as2.tag, nested=['NoteSchema', 'HashtagSchema','MentionSchema','PropertyValueSchema','EmojiSchema'], many=True)
-    attachment = fields.Nested(as2.attachment, nested=['LinkSchema', 'NoteSchema', 'ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'],
+    attachment = MixedField(as2.attachment, nested=['LinkSchema', 'NoteSchema', 'ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'],
                                many=True, default=[])
     content_map = LanguageMap(as2.content)  # language maps are not implemented in calamus
     context = fields.RawJsonLD(as2.context)
