@@ -224,13 +224,17 @@ class RawContentMixin(BaseEntity):
         Returns a Tuple of (url, filename).
         """
         images = []
-        if self._media_type != "text/markdown" or self.raw_content is None:
-            return images
-        regex = r"!\[([\w\s\-\']*)\]\((https?://[\w\d\-\./]+\.[\w]*((?<=jpg)|(?<=gif)|(?<=png)|(?<=jpeg)))\)"
-        matches = re.finditer(regex, self.raw_content, re.MULTILINE | re.IGNORECASE)
-        for match in matches:
-            groups = match.groups()
-            images.append((groups[1], groups[0] or ""))
+        if hasattr(self, '_soup'):
+            for img in self._soup.find_all('img', src=re.compile(r'^http')):
+                images.append((img['src'], img.get('title', '') or img.get('alt', '')))
+        else:
+            if self._media_type != "text/markdown" or self.raw_content is None:
+                return images
+            regex = r"!\[([\w\s\-\']*)\]\((https?://[\w\d\-\./]+\.[\w]*((?<=jpg)|(?<=gif)|(?<=png)|(?<=jpeg)))\)"
+            matches = re.finditer(regex, self.raw_content, re.MULTILINE | re.IGNORECASE)
+            for match in matches:
+                groups = match.groups()
+                images.append((groups[1], groups[0] or ""))
         return images
 
     # Legacy. Keep this until tests are reworked
