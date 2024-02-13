@@ -872,7 +872,7 @@ class Note(Object, RawContentMixin):
             normalized_url = f'{parsed.scheme}://{parsed.netloc}{normalized_path.decode()}'
             links = {link['href'].lower(), unquote(link['href']).lower(), url, normalized_url}
             if links.intersection(hrefs):
-                tag = re.match(r'^#?([\w\-]+$)', link.text)
+                tag = re.match(r'^#?([\w\-]+)', link.text)
                 if tag:
                     link['data-hashtag'] = tag.group(1).lower()
 
