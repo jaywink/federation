@@ -6,6 +6,7 @@ from typing import List, Set, Union, Dict, Tuple
 
 from bs4 import BeautifulSoup
 from commonmark import commonmark
+from markdownify import markdownify as md
 from marshmallow import missing
 
 from federation.entities.activitypub.enums import ActivityType
@@ -262,6 +263,9 @@ class RawContentMixin(BaseEntity):
             if handle:
                 self._mentions.add(handle)
                 self.raw_content = self.raw_content.replace(mention, '@' + handle)
+                # mardownify the extracted mention in case some characters are escaped in
+                # raw_content
+                self.raw_content = self.raw_content.replace(md(mention), '@' + handle)
 
 
 class OptionalRawContentMixin(RawContentMixin):
