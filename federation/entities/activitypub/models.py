@@ -218,6 +218,7 @@ class MixedField(fields.Nested):
             else:
                 ret.append(self.iri._deserialize(item, attr, data, **kwargs))
 
+        if not ret: ret.append(None)
         return ret if len(ret) > 1 or self.many else ret[0]
         
 
