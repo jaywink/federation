@@ -57,7 +57,8 @@ class TestRetrieveAndParseDocument:
     )
     @patch.object(Follow, "post_receive")
     def test_returns_entity_for_valid_document__follow(self, mock_post_receive, mock_fetch, mock_recv):
-        entity = retrieve_and_parse_document("https://example.com/foobar")
+        entity = retrieve_and_parse_document("https://example.com/follow")
+        print(entity)
         assert isinstance(entity, Follow)
 
     @patch("federation.entities.activitypub.models.get_profile_or_entity", return_value=None)
@@ -65,7 +66,7 @@ class TestRetrieveAndParseDocument:
             json.dumps(ACTIVITYPUB_POST_OBJECT), None, None),
     )
     def test_returns_entity_for_valid_document__post__without_activity(self, mock_fetch, mock_recv):
-        entity = retrieve_and_parse_document("https://example.com/foobar")
+        entity = retrieve_and_parse_document("https://diaspodon.fr/users/jaywink/statuses/102356911717767237")
         assert isinstance(entity, Note)
 
     @patch("federation.entities.activitypub.models.extract_receivers", return_value=[])
@@ -73,7 +74,7 @@ class TestRetrieveAndParseDocument:
             json.dumps(ACTIVITYPUB_POST_OBJECT_IMAGES), None, None),
     )
     def test_returns_entity_for_valid_document__post__without_activity__with_images(self, mock_fetch, mock_recv):
-        entity = retrieve_and_parse_document("https://example.com/foobar")
+        entity = retrieve_and_parse_document("https://mastodon.social/users/foobar/statuses/34324r")
         assert isinstance(entity, Note)
         assert len(entity._children) == 1
         assert entity._children[0].url == "https://files.mastodon.social/media_attachments/files/017/792/237/original" \
@@ -86,8 +87,18 @@ class TestRetrieveAndParseDocument:
     )
     def test_returns_entity_for_valid_document__post__wrapped_in_activity(
             self, mock_fetch, mock_recv, mock_sign):
-        entity = retrieve_and_parse_document("https://example.com/foobar")
+        entity = retrieve_and_parse_document("https://diaspodon.fr/users/jaywink/statuses/102356911717767237/activity")
         assert isinstance(entity, Note)
+
+    @patch("federation.entities.activitypub.models.verify_ld_signature", return_value=None)
+    @patch("federation.entities.activitypub.models.get_profile_or_entity", return_value=None)
+    @patch("federation.utils.activitypub.fetch_document", autospec=True, return_value=(
+        json.dumps(ACTIVITYPUB_POST), None, None),
+    )
+    def test_returns_none_for_forged_document(
+            self, mock_fetch, mock_recv, mock_sign):
+        entity = retrieve_and_parse_document("https://example.com/foobar")
+        assert entity is None
 
     @patch("federation.utils.activitypub.fetch_document", autospec=True, return_value=('{"foo": "bar"}', None, None))
     def test_returns_none_for_invalid_document(self, mock_fetch):
