@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+* Address CVE-2024-23832 by ensuring that a pulled AP payload id netloc is the same as the request fid netloc.
+
 ## [0.25.0] - 2024-01-06
 
 ### Added
