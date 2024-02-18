@@ -1,6 +1,7 @@
 import json
 import logging
 from typing import Optional, Any
+from urllib.parse import urlparse
 
 from federation.protocols.activitypub.signing import get_http_authentication
 from federation.utils.network import fetch_document, try_retrieve_webfinger_document
@@ -52,8 +53,14 @@ def retrieve_and_parse_document(fid: str, cache: bool=True) -> Optional[Any]:
             return None
         entities = element_to_objects(document)
         if entities:
-            logger.info("retrieve_and_parse_document - using first entity: %s", entities[0])
-            return entities[0]
+            entity = entities[0]
+            id = entity.id or entity.activity_id
+            # check against potential payload forgery (CVE-2024-23832)
+            if urlparse(id).netloc != urlparse(fid).netloc:
+                logger.warning('retrieve_and_parse_document - payload may be forged, discarding: %s', fid)
+                return None
+            logger.info("retrieve_and_parse_document - using first entity: %s", entity)
+            return entity
 
 
 def retrieve_and_parse_profile(fid: str) -> Optional[Any]:
