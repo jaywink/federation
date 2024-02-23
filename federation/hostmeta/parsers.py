@@ -208,14 +208,17 @@ def parse_nodeinfo_document(doc, host):
     services = sorted(list(set(inbound + outbound)))
     result['services'] = services
     result['open_signups'] = doc.get('openRegistrations', False)
-    result['activity']['users']['total'] = int_or_none(doc.get('usage', {}).get('users', {}).get('total'))
-    result['activity']['users']['half_year'] = int_or_none(doc.get('usage', {}).get('users', {}).get('activeHalfyear'))
-    monthly = int_or_none(doc.get('usage', {}).get('users', {}).get('activeMonth'))
-    result['activity']['users']['monthly'] = monthly
-    if monthly:
-        result['activity']['users']['weekly'] = int(monthly * MONTHLY_USERS_WEEKLY_MULTIPLIER)
-    result['activity']['local_posts'] = int_or_none(doc.get('usage', {}).get('localPosts'))
-    result['activity']['local_comments'] = int_or_none(doc.get('usage', {}).get('localComments'))
+
+    if isinstance(doc.get('usage', {}), dict):
+        result['activity']['users']['total'] = int_or_none(doc.get('usage', {}).get('users', {}).get('total'))
+        result['activity']['users']['half_year'] = int_or_none(doc.get('usage', {}).get('users', {}).get('activeHalfyear'))
+        monthly = int_or_none(doc.get('usage', {}).get('users', {}).get('activeMonth'))
+        result['activity']['users']['monthly'] = monthly
+        if monthly:
+            result['activity']['users']['weekly'] = int(monthly * MONTHLY_USERS_WEEKLY_MULTIPLIER)
+        result['activity']['local_posts'] = int_or_none(doc.get('usage', {}).get('localPosts'))
+        result['activity']['local_comments'] = int_or_none(doc.get('usage', {}).get('localComments'))
+
     result['features'] = doc.get('metadata', {})
     admin_handle = doc.get('metadata', {}).get('adminAccount', None)
     if admin_handle:
