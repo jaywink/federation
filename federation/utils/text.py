@@ -8,8 +8,8 @@ from commonmark import commonmark
 
 ILLEGAL_TAG_CHARS = "!#$%^&*+.,@£/()=?`'\\{[]}~;:\"’”—\xa0"
 TAG_PATTERN = re.compile(r'(#[\w\-]+)([)\]_!?*%/.,;\s]+\s*|\Z)', re.UNICODE)
-# This will match non matching braces. I don't think it's an issue.
-MENTION_PATTERN = re.compile(r'(@\{?(?:[\w\-. \u263a-\U0001f645]*; *)?[\w]+@[\w\-.]+\.[\w]+}?)', re.UNICODE)
+# This will match non-matching braces. I don't think it's an issue.
+MENTION_PATTERN = re.compile(r'(@\{?(?:[\w\-. \u0250-\U0001f64f]*; *)?[\w]+@[\w\-.]+\.[\w]+}?)', re.UNICODE)
 # based on https://stackoverflow.com/a/6041965
 URL_PATTERN = re.compile(r'((?:(?:https?|ftp)://|^|(?<=[("<\s]))+(?:[\w\-]+(?:(?:\.[\w\-]+)+))'
                          r'[\w.,;:@?!$()*^=%&/~+\-#]*(?<![:;,).>"]))',

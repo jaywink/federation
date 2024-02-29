@@ -1,5 +1,41 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+* This is actually both a change and a fix. AP Image objects do not define properties matching the 
+  HTML img tag alt and title properties. Image.name is used to render both alt and title, which IMHO is
+  wrong. With this change, markdown images defining the title property will be recognized instead of
+  being thrown away (the fix) and the title property, if defined, will have precedence over the
+  alt property as the Image.name value (the change). Before this change, the client app would properly
+  render the img tag from the markdown source (with distinct alt and title properties), but the Image
+  object would not federate and hence not be displayed on other platforms (namely Mastodon).
+
+### Fixed
+
+* Note._find_and_mark_mentions: When an AP Mention object href can't be found in the rendered content,
+  try the name property.
+
+* Ignore media objects that don't define a media type.
+
+* Prevent rendered content image duplication when an image is both in the AP payload rendered content
+  and defined as an attachment that doesn't set the inlineImage property.
+
+* Instead of discarding the whole AP payload out when encountering an undefined or unlisted AP object,
+  log a warning and keep going. Ensure None is returned when a nested field only contains an undefined
+  object.
+
+* Accept the application/ld+json type for webfinger AP links.
+
+* Mark an AP mention only if profile.finger is defined.
+
+* Handle escape sequences for inbound markdown mentions.
+
+* Extend the Unicode character range allowed in markdown mentions.
+
+* Discard illegal characters from tag text. Previously, this was done only on tag links.
+
 ## [0.25.1] - 2024-02-18
 
 ### Fixed

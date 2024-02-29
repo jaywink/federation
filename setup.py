@@ -37,6 +37,7 @@ setup(
         "lxml>=3.4.0",
         "iteration_utilities",
         "jsonschema>=2.0.0",
+        "markdownify",
         "pycryptodome>=3.4.10",
         "python-dateutil>=2.4.0",
         "python-httpsig-socialhome",

@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from typing import Optional, Any
 from urllib.parse import urlparse
 
@@ -16,6 +17,7 @@ except Exception as exc:
     federation_user = None
     logger.warning("django is required for get requests signing: %s", exc)
 
+type_path = re.compile(r'^application/(activity|ld)\+json')
 
 def get_profile_id_from_webfinger(handle: str) -> Optional[str]:
     """
@@ -30,7 +32,7 @@ def get_profile_id_from_webfinger(handle: str) -> Optional[str]:
     except json.JSONDecodeError:
         return
     for link in doc.get("links", []):
-        if link.get("rel") == "self" and link.get("type") == "application/activity+json":
+        if link.get("rel") == "self" and type_path.match(link.get("type")):
             return link["href"]
     logger.debug("get_profile_id_from_webfinger: found webfinger but it has no as2 self href")
 

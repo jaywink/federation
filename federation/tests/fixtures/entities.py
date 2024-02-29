@@ -1,5 +1,6 @@
 import pytest
 # noinspection PyPackageRequirements
+from commonmark import commonmark
 from freezegun import freeze_time
 from unittest.mock import patch
 
@@ -152,8 +153,7 @@ def activitypubpost_tags():
 @pytest.fixture
 def activitypubpost_embedded_images():
     with freeze_time("2019-04-27"):
-        obj = models.Post(
-            raw_content="""
+        raw_content="""
 #Cycling #lauttasaari #sea #sun
 
 
@@ -166,7 +166,10 @@ def activitypubpost_embedded_images():
 [foo](https://jasonrobinson.me/media/uploads/2019/07/16/daa24d89-cedf-4fc7-bad8-74a9025414710.jpg)
 #only a link, not embedded
 https://jasonrobinson.me/media/uploads/2019/07/16/daa24d89-cedf-4fc7-bad8-74a9025414711.jpg
-""",
+"""
+        obj = models.Post(
+            raw_content=raw_content,
+            rendered_content=commonmark(raw_content, ignore_html_blocks=True),
             public=True,
             provider_display_name="Socialhome",
             id=f"http://127.0.0.1:8000/post/123456/",

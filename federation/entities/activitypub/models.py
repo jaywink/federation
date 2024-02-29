@@ -209,11 +209,16 @@ class MixedField(fields.Nested):
         ret = []
         for item in value:
             if item.get('@type'):
-                res = super()._deserialize(item, attr, data, **kwargs)
+                try:
+                    res = super()._deserialize(item, attr, data, **kwargs)
+                except KeyError as ex:
+                    logger.warning("nested field: undefined JSON-LD type %s", ex)
+                    continue
                 ret.append(res if not isinstance(res, list) else res[0])
             else:
                 ret.append(self.iri._deserialize(item, attr, data, **kwargs))
 
+        if not ret: ret.append(None)
         return ret if len(ret) > 1 or self.many else ret[0]
         
 
@@ -247,7 +252,7 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     icon = MixedField(as2.icon, nested='ImageSchema')
     image = MixedField(as2.image, nested='ImageSchema')
     tag_objects = MixedField(as2.tag, nested=['NoteSchema', 'HashtagSchema','MentionSchema','PropertyValueSchema','EmojiSchema'], many=True)
-    attachment = fields.Nested(as2.attachment, nested=['LinkSchema', 'NoteSchema', 'ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'],
+    attachment = MixedField(as2.attachment, nested=['LinkSchema', 'NoteSchema', 'ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'],
                                many=True, default=[])
     content_map = LanguageMap(as2.content)  # language maps are not implemented in calamus
     context = fields.RawJsonLD(as2.context)
@@ -421,6 +426,8 @@ class Document(Object):
     url = MixedField(as2.url, nested='LinkSchema')
 
     def to_base(self):
+        if self.media_type is missing:
+            return self
         self.__dict__.update({'schema': True})
         if self.media_type.startswith('image'):
             return Image(**get_base_attributes(self))
@@ -866,7 +873,7 @@ class Note(Object, RawContentMixin):
             normalized_url = f'{parsed.scheme}://{parsed.netloc}{normalized_path.decode()}'
             links = {link['href'].lower(), unquote(link['href']).lower(), url, normalized_url}
             if links.intersection(hrefs):
-                tag = re.match(r'^#?([\w\-]+$)', link.text)
+                tag = re.match(r'^#?([\w\-]+)', link.text)
                 if tag:
                     link['data-hashtag'] = tag.group(1).lower()
 
@@ -879,17 +886,28 @@ class Note(Object, RawContentMixin):
         for mention in mentions:
             hrefs = []
             profile = get_profile_or_entity(fid=mention.href, remote_url=mention.href)
-            if profile and not profile.url:
-                # This should be removed when we are confident that the remote_url property
-                # has been populated for most profiles on the client app side.
+            if profile and not (profile.url and profile.finger):
+                # This should be removed when we are confident that the remote_url and
+                # finger properties have been populated for most profiles on the client app side.
                 profile = retrieve_and_parse_profile(profile.id)
-            if profile:
+            if profile and profile.finger:
                 hrefs.extend([profile.id, profile.url])
+            else:
+                continue
             for href in hrefs:
                 links = self._soup.find_all(href=href)
                 for link in links:
                     link['data-mention'] = profile.finger
                     self._mentions.add(profile.finger)
+            if profile.finger not in self._mentions:
+                # can't find some mentions using their href property value
+                # try with the name property
+                matches = self._soup.find_all(string=mention.name)
+                for match in matches:
+                    link = match.find_parent('a')
+                    if link:
+                        link['data-mention'] = profile.finger
+                        self._mentions.add(profile.finger)
 
     def extract_mentions(self):
         """
@@ -953,7 +971,7 @@ class Note(Object, RawContentMixin):
                     if hasattr(child, 'to_base'):
                         child = child.to_base()
                     if isinstance(child, Image):
-                        if child.inline or (child.image and child.image in self.raw_content):
+                        if child.inline or self._soup.find('img', src=child.url):
                             continue
                     children.append(child)
             self._cached_children = children

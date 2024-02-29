@@ -6,6 +6,7 @@ from typing import List, Set, Union, Dict, Tuple
 
 from bs4 import BeautifulSoup
 from commonmark import commonmark
+from markdownify import markdownify
 from marshmallow import missing
 
 from federation.entities.activitypub.enums import ActivityType
@@ -224,13 +225,17 @@ class RawContentMixin(BaseEntity):
         Returns a Tuple of (url, filename).
         """
         images = []
-        if self._media_type != "text/markdown" or self.raw_content is None:
-            return images
-        regex = r"!\[([\w\s\-\']*)\]\((https?://[\w\d\-\./]+\.[\w]*((?<=jpg)|(?<=gif)|(?<=png)|(?<=jpeg)))\)"
-        matches = re.finditer(regex, self.raw_content, re.MULTILINE | re.IGNORECASE)
-        for match in matches:
-            groups = match.groups()
-            images.append((groups[1], groups[0] or ""))
+        if hasattr(self, '_soup'):
+            for img in self._soup.find_all('img', src=re.compile(r'^http')):
+                images.append((img['src'], img.get('title', '') or img.get('alt', '')))
+        else:
+            if self._media_type != "text/markdown" or self.raw_content is None:
+                return images
+            regex = r"!\[([\w\s\-\']*)\]\((https?://[\w\d\-\./]+\.[\w]*((?<=jpg)|(?<=gif)|(?<=png)|(?<=jpeg)))\)"
+            matches = re.finditer(regex, self.raw_content, re.MULTILINE | re.IGNORECASE)
+            for match in matches:
+                groups = match.groups()
+                images.append((groups[1], groups[0] or ""))
         return images
 
     # Legacy. Keep this until tests are reworked
@@ -258,6 +263,9 @@ class RawContentMixin(BaseEntity):
             if handle:
                 self._mentions.add(handle)
                 self.raw_content = self.raw_content.replace(mention, '@' + handle)
+                # mardownify the extracted mention in case some characters are escaped in
+                # raw_content
+                self.raw_content = self.raw_content.replace(markdownify(mention), '@' + handle)
 
 
 class OptionalRawContentMixin(RawContentMixin):
