@@ -19,6 +19,7 @@ except Exception as exc:
 
 type_path = re.compile(r'^application/(activity|ld)\+json')
 
+
 def get_profile_id_from_webfinger(handle: str) -> Optional[str]:
     """
     Fetch remote webfinger, if any, and try to parse an AS2 profile ID.
@@ -46,8 +47,14 @@ def retrieve_and_parse_document(fid: str, cache: bool=True) -> Optional[Any]:
     Retrieve remote document by ID and return the entity.
     """
     from federation.entities.activitypub.models import element_to_objects # Circulars
-    document, status_code, ex = fetch_document(fid, extra_headers={'accept': 'application/activity+json'}, cache=cache,
-            auth=get_http_authentication(federation_user.rsa_private_key,f'{federation_user.id}#main-key', digest=False) if federation_user else None)
+    extra_headers={'accept': 'application/activity+json, application/ld+json; profile="https://www.w3.org/ns/activitystreams"'}
+    auth=get_http_authentication(federation_user.rsa_private_key,
+                                 f'{federation_user.id}#main-key',
+                                 digest=False) if federation_user else None
+    document, status_code, ex = fetch_document(fid,
+                                               extra_headers=extra_headers,
+                                               cache=cache,
+                                               auth=auth)
     if document:
         try:
             document = json.loads(decode_if_bytes(document))
