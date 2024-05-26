@@ -55,18 +55,23 @@ def rfc7033_webfinger_view(request, *args, **kwargs):
     Django view to generate an RFC7033 webfinger.
     """
     resource = request.GET.get("resource")
+    kwargs = {}
     if not resource:
         return HttpResponseBadRequest("No resource found")
-    if not resource.startswith("acct:"):
+    if resource.startswith("acct:"):
+        kwargs['handle'] = resource.replace("acct:", "").lower()
+    elif resource.startswith("http"):
+        kwargs['fid'] = resource
+    else:
         return HttpResponseBadRequest("Invalid resource")
-    handle = resource.replace("acct:", "").lower()
-    logger.debug("%s requested with %s", handle, request)
+    kwargs['request'] = request
+    logger.debug("%s requested with %s", kwargs)
     profile_func = get_function_from_config("get_profile_function")
 
     try:
-        profile = profile_func(handle=handle, request=request)
+        profile = profile_func(**kwargs)
     except Exception as exc:
-        logger.warning("rfc7033_webfinger_view - Failed to get profile by handle %s: %s", handle, exc)
+        logger.warning("rfc7033_webfinger_view - Failed to get profile from resource %s: %s", resource, exc)
         return HttpResponseNotFound()
 
     config = get_configuration()
