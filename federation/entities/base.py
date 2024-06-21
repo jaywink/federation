@@ -140,6 +140,7 @@ class Profile(CreatedAtMixin, OptionalRawContentMixin, PublicMixin, BaseEntity):
     email = ""
     gender = ""
     image_urls = None
+    image = None
     location = ""
     name = ""
     nsfw = False
