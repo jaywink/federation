@@ -62,6 +62,8 @@ def retrieve_diaspora_hcard(handle):
     :return: str (HTML document)
     """
     webfinger = retrieve_and_parse_diaspora_webfinger(handle)
+    if not webfinger:
+        return None
     document, code, exception = fetch_document(webfinger.get("hcard_url"))
     if exception:
         return None
@@ -82,7 +84,10 @@ def retrieve_and_parse_diaspora_webfinger(handle):
     hostmeta = retrieve_diaspora_host_meta(host)
     if not hostmeta:
         return None
-    url = hostmeta.find_link(rels="lrdd").template.replace("{uri}", quote(handle))
+    lrdd = hostmeta.find_link(rels="lrdd")
+    if not lrdd:
+        return None
+    url =  lrdd.template.replace("{uri}", quote(handle))
     document, code, exception = fetch_document(url)
     if exception:
         return None
