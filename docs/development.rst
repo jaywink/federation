@@ -33,6 +33,15 @@ Building local documentation
 
 Built documentation is available at ``docs/_build/html/index.html``.
 
+Releasing
+---------
+
+::
+
+   pip install -U build twine
+   python -m build
+   python -m twine upload dist/federation-<version>*
+
 Contact for help
 ----------------
 
