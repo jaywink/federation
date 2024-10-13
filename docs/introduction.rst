@@ -43,9 +43,3 @@ License
 .......
 
 `BSD 3-clause license <https://www.tldrlegal.com/l/bsd3>`_.
-
-Author
-......
-
-Jason Robinson / `jasonrobinson.me <https://jasonrobinson.me>`_ / `@jaywink:federator.dev <https://matrix.to/#/@jaywink:federator.dev>`_ / `GitLab <https://gitlab.com/jaywink>`_ / `GitHub <https://github.com/jaywink>`_
-

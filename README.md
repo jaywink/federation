@@ -1,4 +1,4 @@
-[![pipeline status](https://gitlab.com/jaywink/federation/badges/master/pipeline.svg)](https://gitlab.com/jaywink/federation) [![issue tracker](https://img.shields.io/badge/issue%20tracker-gitlab-orange.svg)](https://gitlab.com/jaywink/federation/-/issues)
+[![issue tracker](https://img.shields.io/badge/issue%20tracker-gitlab-orange.svg)](https://codeberg.org/socialhome/federation/issues)
 
 [![PyPI version](https://badge.fury.io/py/federation.svg)](https://pypi.python.org/pypi/federation)  [![Documentation Status](http://readthedocs.org/projects/federation/badge/?version=latest)](http://federation.readthedocs.io/en/latest/?badge=latest) [![PyPI](https://img.shields.io/pypi/pyversions/federation.svg?maxAge=2592000)](https://pypi.python.org/pypi/federation) [![PyPI](https://img.shields.io/pypi/l/federation.svg?maxAge=2592000)](https://pypi.python.org/pypi/federation)
 
@@ -43,7 +43,3 @@ See [development and support documentation](http://federation.readthedocs.io/en/
 ### License
 
 [BSD 3-clause license](https://www.tldrlegal.com/l/bsd3)
-
-### Author
-
-Jason Robinson / https://jasonrobinson.me / https://gitlab.com/jaywink / https://github.com/jaywink 
