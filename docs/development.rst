@@ -3,8 +3,11 @@ Development
 
 Help is more than welcome to extend this library. Please see the following resources.
 
-* `Source code repo <https://gitlab.com/jaywink/federation>`_
-* `Issue tracker <https://gitlab.com/jaywink/federation/-/issues>`_
+* `Source code repo <https://codeberg.org/socialhome/federation>`_
+* `Issue tracker <https://codeberg.org/socialhome/federation/issues>`_
+
+NOTE! Due to bugs in the GitLab -> Codeberg migration tool, old issues before October 2024 can
+only be found in the old [GitLab issue tracker](https://gitlab.com/jaywink/federation/-/issues).
 
 Environment setup
 -----------------

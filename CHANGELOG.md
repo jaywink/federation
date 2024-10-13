@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+The project code has migrated from GitLab to Codeberg: https://codeberg.org/socialhome/federation
+
+Any issues before October 2024 are only available in the old `GitLab issue tracker <https://gitlab.com/jaywink/federation/-/issues>`_.
+
 ### Changed
 
 * This is actually both a change and a fix. AP Image objects do not define properties matching the 
