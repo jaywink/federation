@@ -1,4 +1,4 @@
-[![issue tracker](https://img.shields.io/badge/issue%20tracker-gitlab-orange.svg)](https://codeberg.org/socialhome/federation/issues)
+[![issue tracker](https://img.shields.io/badge/issue%20tracker-codeberg-orange.svg)](https://codeberg.org/socialhome/federation/issues)
 
 [![PyPI version](https://badge.fury.io/py/federation.svg)](https://pypi.python.org/pypi/federation)  [![Documentation Status](http://readthedocs.org/projects/federation/badge/?version=latest)](http://federation.readthedocs.io/en/latest/?badge=latest) [![PyPI](https://img.shields.io/pypi/pyversions/federation.svg?maxAge=2592000)](https://pypi.python.org/pypi/federation) [![PyPI](https://img.shields.io/pypi/l/federation.svg?maxAge=2592000)](https://pypi.python.org/pypi/federation)
 
