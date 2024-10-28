@@ -205,7 +205,6 @@ class MixedField(fields.Nested):
         else:
             value = [value]
 
-
         ret = []
         for item in value:
             if item.get('@type'):
@@ -226,6 +225,7 @@ OBJECTS = [
         'AnnounceSchema',
         'ApplicationSchema',
         'ArticleSchema',
+        'CreateSchema',
         'FollowSchema',
         'GroupSchema',
         'LikeSchema',
@@ -235,6 +235,7 @@ OBJECTS = [
         'PersonSchema',
         'ServiceSchema',
         'TombstoneSchema',
+        'UpdateSchema',
         'VideoSchema'
 ]
 
@@ -270,6 +271,7 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     media_type = fields.String(as2.mediaType)
     source = CompactedDict(as2.source)
     signable = False
+    url = MixedField(as2.url, nested='LinkSchema', many=True)
 
     # The following properties are defined by some platforms, but are not implemented yet
     #audience
@@ -512,7 +514,7 @@ class Mention(Link):
 
 
 class PropertyValue(Object):
-    value = fields.String(schema.value,
+    value = fields.RawJsonLD(schema.value,
                           metadata={'ctx':[{'schema':str(schema),'value':'schema:value'}]})
     ctx = [{'schema':str(schema),'PropertyValue':'schema:PropertyValue'}]
 
@@ -547,7 +549,6 @@ class Person(Object, base.Profile):
     username = fields.String(as2.preferredUsername)
     endpoints = CompactedDict(as2.endpoints)
     shared_inbox = IRI(as2.sharedInbox) # misskey adds this
-    url = MixedField(as2.url, nested='LinkSchema')
     playlists = IRI(pt.playlists)
     featured = IRI(toot.featured,
                    metadata={'ctx':[{'toot':str(toot),
@@ -576,6 +577,7 @@ class Person(Object, base.Profile):
     suspended = fields.Boolean(toot.suspended,
                                metadata={'ctx':[{'toot':str(toot),
                                                  'suspended': 'toot:suspended'}]})
+    url = MixedField(as2.url, nested='LinkSchema')
     public = True
     _cached_inboxes = None
     _cached_public_key = None
@@ -743,7 +745,6 @@ class Note(Object, RawContentMixin):
     sensitive = fields.Boolean(as2.sensitive, default=False,
                                metadata={'ctx':[{'sensitive':'as:sensitive'}]})
     summary = fields.String(as2.summary)
-    url = IRI(as2.url)
 
     _cached_raw_content = ''
     _cached_children = []
@@ -1024,7 +1025,6 @@ class Page(Note):
 class Video(Document, base.Video):
     id = fields.Id()
     actor_id = MixedField(as2.attributedTo, nested=['PersonSchema', 'GroupSchema'], many=True)
-    url = MixedField(as2.url, nested='LinkSchema')
     signable = True
     views = fields.Integer(pt.views)
 
@@ -1085,6 +1085,7 @@ class RsaSignature2017(Object):
 class Activity(Object):
     actor_id = IRI(as2.actor)
     instrument = MixedField(as2.instrument, nested='ServiceSchema')
+    target = MixedField(as2.target, nested=['CollectionSchema', 'OrderedCollectionSchema'])
     # Not implemented yet
     #result
     #origin
@@ -1257,6 +1258,10 @@ class Create(Activity):
 
     class Meta:
         rdf_type = as2.Create
+
+class Add(Create):
+    class Meta:
+        rdf_type = as2.Add
 
 # this is only a placeholder until reactions are implemented
 class Like(Activity, base.Reaction):
@@ -1461,7 +1466,8 @@ def model_to_objects(payload):
             logger.error("Error parsing jsonld payload (%s)", exc)
             return None
 
-        if isinstance(getattr(entity, 'object_', None), Object):
+        # The activity property chains the payload activity objects in reverse order
+        while isinstance(getattr(entity, 'object_', None), Object):
             entity.object_.activity = entity
             entity = entity.object_
 

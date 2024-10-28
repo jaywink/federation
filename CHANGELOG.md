@@ -16,6 +16,18 @@ Any issues before October 2024 are only available in the old [GitLab issue track
   render the img tag from the markdown source (with distinct alt and title properties), but the Image
   object would not federate and hence not be displayed on other platforms (namely Mastodon).
 
+* Enable webfinger URI resources for both requests and responses.
+
+* Add `application/ld+json, application/ld+json; profile="https://www.w3.org/ns/activitystreams` to the
+  Accept header used in utils.activitypub.retrieve_and_parse_document.
+
+* AP Groups: Define the `Add` activity class and handle nested AP activities (in support of FEP-400e). 
+  Define the `audience` property (in support of FEP-1b12). Note: current client app doesn't fully
+  support AP Groups yet.
+
+* Add an `image` property to `base.Profile` in support of AP Actor (and derived objects, e.g. Person)
+  `image` property implemented as `users.Profile.picture_url` by the client app.
+
 ### Fixed
 
 * Note._find_and_mark_mentions: When an AP Mention object href can't be found in the rendered content,
@@ -36,9 +48,11 @@ Any issues before October 2024 are only available in the old [GitLab issue track
 
 * Handle escape sequences for inbound markdown mentions.
 
-* Extend the Unicode character range allowed in markdown mentions.
-
 * Discard illegal characters from tag text. Previously, this was done only on tag links.
+
+* Do not use a Unicode character range with MENTION_PATTERN. Replaced with a complement set.  
+
+* Handle attempts to retrieve deleted Diaspora profiles more gracefully.
 
 ## [0.25.1] - 2024-02-18
 

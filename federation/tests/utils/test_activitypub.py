@@ -48,7 +48,8 @@ class TestRetrieveAndParseDocument:
         # auth argument is passed with kwargs
         auth = mock_fetch.call_args.kwargs.get('auth', None)
         mock_fetch.assert_called_once_with(
-            "https://example.com/foobar", extra_headers={'accept': 'application/activity+json'}, cache=True, auth=auth,
+            "https://example.com/foobar",
+            extra_headers={'accept': 'application/activity+json, application/ld+json; profile="https://www.w3.org/ns/activitystreams"'}, cache=True, auth=auth,
         )
 
     @patch("federation.entities.activitypub.models.extract_receivers", return_value=[])

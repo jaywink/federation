@@ -4,7 +4,7 @@ import logging
 import re
 import socket
 from typing import Optional, Dict
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 from uuid import uuid4
 
 import requests
@@ -215,17 +215,23 @@ def send_document(url, data, timeout=10, method="post", *args, **kwargs):
         return None, ex
 
 
-def try_retrieve_webfinger_document(handle: str) -> Optional[str]:
+def try_retrieve_webfinger_document(resource: str) -> Optional[str]:
     """
     Try to retrieve an RFC7033 webfinger document. Does not raise if it fails.
     """
-    try:
-        host = handle.split("@")[1]
-    except (AttributeError, IndexError):
-        logger.warning("retrieve_webfinger_document: invalid handle given: %s", handle)
-        return None
+    if resource.startswith("http://") or resource.startswith("https://"):
+        parsed_url = urlparse(resource)
+        host = parsed_url.hostname
+        request = "/.well-known/webfinger?resource=%s" % quote(resource)
+    else:
+        try:
+            host = resource.split("@")[1]
+            request = "/.well-known/webfinger?resource=acct:%s" % quote(resource)
+        except (AttributeError, IndexError):
+            logger.warning("retrieve_webfinger_document: invalid handle given: %s", resource)
+            return None
     document, code, exception = fetch_document(
-        host=host, path="/.well-known/webfinger?resource=acct:%s" % quote(handle),
+        host=host, path=request,
     )
     if exception:
         logger.debug("retrieve_webfinger_document: failed to fetch webfinger document: %s, %s", code, exception)
