@@ -84,12 +84,12 @@ class IRI(fields.IRI):
         super().__init__(*args, **kwargs)
         self.dump_derived = kwargs.get('dump_derived')
 
-    def _serialize(self, value, attr, data, **kwargs):
+    def _serialize(self, value, attr, obj, **kwargs):
         if not value and isinstance(self.dump_derived, dict):
-            fields = {f: getattr(data, f) for f in self.dump_derived['fields']}
+            fields = {f: getattr(obj, f) for f in self.dump_derived['fields']}
             value = self.dump_derived['fmt'].format(**fields)
 
-        return super()._serialize(value, attr, data, **kwargs)
+        return super()._serialize(value, attr, obj, **kwargs)
 
     def _deserialize(self, value, attr, data, **kwargs):
         if isinstance(value, list) and len(value) == 0: return value
@@ -185,12 +185,11 @@ class MixedField(fields.Nested):
         self.iri.parent = self.parent
 
     def _serialize_single_obj(self, obj, **kwargs):
+        if isinstance(obj, str): return self.iri._serialize(obj, None, None, **kwargs)
         return super()._serialize_single_obj(obj, **kwargs)
 
     def _serialize(self, value, attr, obj, **kwargs):
-        if isinstance(value, str) or (
-                isinstance(value, list) and len(value) > 0 and isinstance(value[0], str)):
-            return self.iri._serialize(value, attr, obj, **kwargs)
+        if isinstance(value, str): return self.iri._serialize(value, attr, obj, **kwargs)
         else:
             #value = value[0] if isinstance(value, list) and len(value) == 1 else value
             if isinstance(value, list) and len(value) == 0: value = None
