@@ -28,9 +28,6 @@ Any issues before October 2024 are only available in the old [GitLab issue track
 * Add an `image` property to `base.Profile` in support of AP Actor (and derived objects, e.g. Person)
   `image` property implemented as `users.Profile.picture_url` by the client app.
 
-* Add a FEDERATE variable to socialhome settings. When false, outbound federation is disabled and payloads
-  are logged to the console.
-
 ### Fixed
 
 * Note._find_and_mark_mentions: When an AP Mention object href can't be found in the rendered content,
@@ -56,9 +53,6 @@ Any issues before October 2024 are only available in the old [GitLab issue track
 * Do not use a Unicode character range with MENTION_PATTERN. Replaced with a complement set.  
 
 * Handle attempts to retrieve deleted Diaspora profiles more gracefully.
-
-* Fix issue #187. A wrong assumption about what type of AP objects can be mixed in a collection
-  was rendering bad json-ld.
 
 ## [0.25.1] - 2024-02-18
 
