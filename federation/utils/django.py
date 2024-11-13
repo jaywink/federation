@@ -78,3 +78,9 @@ def get_requests_cache_backend(namespace):
     if not config.get('redis'): return SQLiteCache()
 
     return RedisCache(namespace, **config['redis'])
+
+def federate():
+    config = get_configuration()
+    if not config.get('federate'): return True
+
+    return config['federate']

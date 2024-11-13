@@ -54,6 +54,10 @@ Any issues before October 2024 are only available in the old [GitLab issue track
 
 * Handle attempts to retrieve deleted Diaspora profiles more gracefully.
 
+* Fix issue #187. A wrong assumption about what type of AP objects can be mixed in a collection
+  was rendering bad json-ld.
+
+
 ## [0.25.1] - 2024-02-18
 
 ### Fixed

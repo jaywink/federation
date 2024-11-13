@@ -14,7 +14,11 @@ from requests.exceptions import ConnectionError
 from requests.structures import CaseInsensitiveDict
 
 from federation import __version__
-from federation.utils.django import get_requests_cache_backend
+from federation.utils.django import federate, get_requests_cache_backend
+
+if federate():
+    import json
+    from pprint import pprint
 
 logger = logging.getLogger("federation")
 
@@ -192,6 +196,12 @@ def send_document(url, data, timeout=10, method="post", *args, **kwargs):
     :arg method: Method to use, defaults to post
     :returns: Tuple of status code (int or None) and error (exception class instance or None)
     """
+    if federate():
+        try:
+            pprint(json.loads(data))
+        except:
+            pass
+        return
     logger.debug("send_document: url=%s, data=%s, timeout=%s, method=%s", url, data, timeout, method)
     if not method:
         method = "post"
