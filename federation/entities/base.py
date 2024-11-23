@@ -1,6 +1,7 @@
 from typing import Dict, Tuple
-from magic import from_file
+from filetype import guess
 from mimetypes import guess_type
+from os import unlink
 
 from dirty_validators.basic import Email
 
@@ -49,8 +50,8 @@ class Image(OptionalRawContentMixin, CreatedAtMixin, BaseEntity):
         if media_type == 'application/octet-stream':
             try:
                 file = fetch_file(self.url)
-                media_type = from_file(file, mime=True)
-                os.unlink(file)
+                media_type = guess(file).mime
+                unlink(file)
             except:
                 pass
         if media_type in self._valid_media_types:
