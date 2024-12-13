@@ -613,6 +613,9 @@ class Person(Object, base.Profile):
         # Some platforms don't set this property.
         if self.url is missing:
             self.url = self.id
+        # Bluesky bridge profiles do this
+        if isinstance(self.url, list):
+            self.url = self.url[0]
 
     def to_as2(self):
         self.followers = f'{with_slash(self.id)}followers/'
