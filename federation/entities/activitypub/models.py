@@ -622,6 +622,7 @@ class Person(Object, base.Profile):
         self.following = f'{with_slash(self.id)}following/'
         self.outbox = f'{with_slash(self.id)}outbox/'
         if isinstance(self.to, str): self.to = [self.to]
+        if isinstance(self.image, str): self.image = Image(url=self.image)
 
         if hasattr(self, 'times'):
             if self.times.get('updated',0) > self.times.get('created',0):
