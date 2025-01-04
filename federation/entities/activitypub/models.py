@@ -616,6 +616,8 @@ class Person(Object, base.Profile):
         # Bluesky bridge profiles do this
         if isinstance(self.url, list):
             self.url = self.url[0]
+        if isinstance(self.image, list):
+            self.image = self.image[0]
 
     def to_as2(self):
         self.followers = f'{with_slash(self.id)}followers/'
