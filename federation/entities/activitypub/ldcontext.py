@@ -141,7 +141,9 @@ class LdContextManager:
         # Merge original context dicts in one dict, taking into account nested @context
         def parse_context(ctx):
             for item in ctx:
-                if isinstance(item, str):
+                if isinstance(item, list):
+                    parse_context(item)
+                elif isinstance(item, str):
                     uris.append(item)
                 else:
                     if '@context' in item:
