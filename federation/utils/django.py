@@ -81,6 +81,6 @@ def get_requests_cache_backend(namespace):
 
 def federate():
     config = get_configuration()
-    if not config.get('federate'): return True
+    if 'federate' not in config: return True
 
     return config['federate']

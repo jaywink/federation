@@ -196,7 +196,7 @@ def send_document(url, data, timeout=10, method="post", *args, **kwargs):
     :arg method: Method to use, defaults to post
     :returns: Tuple of status code (int or None) and error (exception class instance or None)
     """
-    if federate():
+    if not federate():
         try:
             pprint(json.loads(data))
         except:
