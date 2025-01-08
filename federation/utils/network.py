@@ -16,7 +16,7 @@ from requests.structures import CaseInsensitiveDict
 from federation import __version__
 from federation.utils.django import federate, get_requests_cache_backend
 
-if federate():
+if not federate():
     import json
     from pprint import pprint
 
