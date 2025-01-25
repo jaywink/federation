@@ -28,7 +28,7 @@ from federation.entities.utils import get_base_attributes, get_profile
 from federation.outbound import handle_send
 from federation.types import UserType, ReceiverVariant
 from federation.utils.activitypub import retrieve_and_parse_document, retrieve_and_parse_profile, \
-    get_profile_id_from_webfinger
+    get_profile_id_from_webfinger, get_profile_finger_from_webfinger
 from federation.utils.text import with_slash, validate_handle
 
 logger = logging.getLogger("federation")
@@ -603,10 +603,14 @@ class Person(Object, base.Profile):
         if getattr(profile, 'finger', None):
             self.finger = profile.finger
         else:
-            domain = urlparse(self.id).netloc
-            finger = f'{self.username}@{domain}'
-            if get_profile_id_from_webfinger(finger) == self.id:
-                self.finger = finger
+            self.finger = get_finger_from_webfinger(self.id)
+            # maybe we don't need this as the AS2 profile id
+            # should be the source of truth
+            if not self.finger:
+                domain = urlparse(self.id).netloc
+                finger = f'{self.username}@{domain}'
+                if get_profile_id_from_webfinger(finger) == self.id:
+                    self.finger = finger
         # multi-protocol platform
         if self.finger and self.guid is not missing and self.handle is missing:
             self.handle = self.finger
