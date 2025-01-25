@@ -934,12 +934,14 @@ class Note(Object, RawContentMixin):
         content = ''
         if self.content_map:
             orig = self.content_map.pop('orig')
+            content = orig.strip()
             if len(self.content_map.keys()) > 1:
                 logger.warning('Language selection not implemented, falling back to default')
-                content = orig.strip()
             else:
-                content = orig.strip() if len(self.content_map.keys()) == 0 else next(iter(self.content_map.values())).strip()
+                alt = orig.strip() if len(self.content_map.keys()) == 0 else next(iter(self.content_map.values())).strip()
             self.content_map['orig'] = orig
+            if BeautifulSoup(alt, 'html.parser').text != alt:
+                content = alt
         # to allow for posts/replies with medias only.
         if not content: content = "<div></div>"
         self._soup = BeautifulSoup(content, 'html.parser')
