@@ -603,7 +603,7 @@ class Person(Object, base.Profile):
         if getattr(profile, 'finger', None):
             self.finger = profile.finger
         else:
-            self.finger = get_finger_from_webfinger(self.id)
+            self.finger = get_profile_finger_from_webfinger(self.id)
             # maybe we don't need this as the AS2 profile id
             # should be the source of truth
             if not self.finger:
