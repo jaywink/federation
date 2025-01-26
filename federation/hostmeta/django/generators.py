@@ -65,7 +65,7 @@ def rfc7033_webfinger_view(request, *args, **kwargs):
     else:
         return HttpResponseBadRequest("Invalid resource")
     kwargs['request'] = request
-    logger.debug("%s requested with %s", kwargs)
+    logger.debug("%s requested with %s", kwargs, resource)
     profile_func = get_function_from_config("get_profile_function")
 
     try:
