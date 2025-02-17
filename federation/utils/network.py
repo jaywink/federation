@@ -14,9 +14,9 @@ from requests.exceptions import ConnectionError
 from requests.structures import CaseInsensitiveDict
 
 from federation import __version__
-from federation.utils.django import federate, get_requests_cache_backend
+from federation.utils.django import disable_outbound_federation, get_requests_cache_backend
 
-if not federate():
+if disable_outbound_federation():
     import json
     from pprint import pprint
 
@@ -196,7 +196,7 @@ def send_document(url, data, timeout=10, method="post", *args, **kwargs):
     :arg method: Method to use, defaults to post
     :returns: Tuple of status code (int or None) and error (exception class instance or None)
     """
-    if not federate():
+    if disable_outbound_federation():
         try:
             pprint(json.loads(data))
         except:

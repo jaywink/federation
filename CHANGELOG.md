@@ -15,7 +15,7 @@ Any issues before October 2024 are only available in the old [GitLab issue track
 * Add an `image` property to `base.Profile` in support of AP Actor (and derived objects, e.g. Person)
   `image` property implemented as `users.Profile.picture_url` by the client app.
 
-* If the client FEDERATE config param is set to True, do not federate outbound payload, only log to
+* If the client's DISABLE_OUTBOUND_FEDERATION config param is set to True, do not federate outbound payload, only log to
   the console.
   
 ### Changed

@@ -79,8 +79,7 @@ def get_requests_cache_backend(namespace):
 
     return RedisCache(namespace, **config['redis'])
 
-def federate():
+def disable_outbound_federation():
     config = get_configuration()
-    if 'federate' not in config: return True
-
-    return config['federate']
+    ret = config.get('disable_outbound_federation', False)
+    return ret if isinstance(ret, bool) else False

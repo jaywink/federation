@@ -940,6 +940,9 @@ class Note(Object, RawContentMixin):
             else:
                 alt = orig.strip() if len(self.content_map.keys()) == 0 else next(iter(self.content_map.values())).strip()
             self.content_map['orig'] = orig
+            # some platforms set the content property (which content_map is part of)
+            # to plain text and the language dict to HTML while other platforms do
+            # the opposite. The next line is trying to make sure we pick the HTML.
             if BeautifulSoup(alt, 'html.parser').text != alt:
                 content = alt
         # to allow for posts/replies with medias only.
