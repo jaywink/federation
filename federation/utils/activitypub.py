@@ -51,7 +51,7 @@ def get_profile_finger_from_webfinger(fid: str) -> Optional[str]:
     except json.JSONDecodeError:
         return
 
-    finger = doc.get('subject', '').replace('acct:', '')
+    finger = '' if not isinstance(doc, dict) else doc.get('subject', '').replace('acct:', '')
     return finger if validate_handle(finger) else None
 
 
