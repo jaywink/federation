@@ -6,6 +6,18 @@ The project code has migrated from GitLab to Codeberg: https://codeberg.org/soci
 
 Any issues before October 2024 are only available in the old [GitLab issue tracker](https://gitlab.com/jaywink/federation/-/issues).
 
+### Added
+
+* AP Groups: Define the `Add` activity class and handle nested AP activities (in support of FEP-400e). 
+  Define the `audience` property (in support of FEP-1b12). Note: current client app doesn't fully
+  support AP Groups yet.
+
+* Add an `image` property to `base.Profile` in support of AP Actor (and derived objects, e.g. Person)
+  `image` property implemented as `users.Profile.picture_url` by the client app.
+
+* If the client's DISABLE_OUTBOUND_FEDERATION config param is set to True, do not federate outbound payload, only log to
+  the console.
+  
 ### Changed
 
 * This is actually both a change and a fix. AP Image objects do not define properties matching the 
@@ -21,12 +33,7 @@ Any issues before October 2024 are only available in the old [GitLab issue track
 * Add `application/ld+json, application/ld+json; profile="https://www.w3.org/ns/activitystreams` to the
   Accept header used in utils.activitypub.retrieve_and_parse_document.
 
-* AP Groups: Define the `Add` activity class and handle nested AP activities (in support of FEP-400e). 
-  Define the `audience` property (in support of FEP-1b12). Note: current client app doesn't fully
-  support AP Groups yet.
-
-* Add an `image` property to `base.Profile` in support of AP Actor (and derived objects, e.g. Person)
-  `image` property implemented as `users.Profile.picture_url` by the client app.
+* Enable requesting and responding to webfinger queries using a profile fid.
 
 ### Fixed
 
@@ -53,6 +60,22 @@ Any issues before October 2024 are only available in the old [GitLab issue track
 * Do not use a Unicode character range with MENTION_PATTERN. Replaced with a complement set.  
 
 * Handle attempts to retrieve deleted Diaspora profiles more gracefully.
+
+* Fix issue #187. A wrong assumption about what type of AP objects can be mixed in a collection
+  was rendering bad json-ld.
+
+* Fix activitypub.models.MixedField for cases where a field payload may contain a mix of
+  objects and URIs.
+
+* Handle some platforms (Bluesky bridge) profile image and url properties being a list.
+
+* Handle cases where the AP context is a nested array of contexts.
+
+* Accept `-` in the user part of mentions.
+
+* In the inbound AP content map, ensure rendered (i.e. using some html tags) is preferred over
+  plain text.
+
 
 ## [0.25.1] - 2024-02-18
 

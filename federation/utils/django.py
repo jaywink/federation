@@ -78,3 +78,8 @@ def get_requests_cache_backend(namespace):
     if not config.get('redis'): return SQLiteCache()
 
     return RedisCache(namespace, **config['redis'])
+
+def disable_outbound_federation():
+    config = get_configuration()
+    ret = config.get('disable_outbound_federation', False)
+    return ret if isinstance(ret, bool) else False

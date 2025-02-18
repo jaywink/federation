@@ -38,6 +38,23 @@ def get_profile_id_from_webfinger(handle: str) -> Optional[str]:
     logger.debug("get_profile_id_from_webfinger: found webfinger but it has no as2 self href")
 
 
+def get_profile_finger_from_webfinger(fid: str) -> Optional[str]:
+    """
+    Fetch remote webfinger subject acct (finger) using AS2 profile ID
+    """
+    document = try_retrieve_webfinger_document(fid)
+    if not document:
+        return
+
+    try:
+        doc = json.loads(document)
+    except json.JSONDecodeError:
+        return
+
+    finger = '' if not isinstance(doc, dict) else doc.get('subject', '').replace('acct:', '')
+    return finger if validate_handle(finger) else None
+
+
 def retrieve_and_parse_content(**kwargs) -> Optional[Any]:
     return retrieve_and_parse_document(kwargs.get("id"), cache=kwargs.get('cache',True))
 

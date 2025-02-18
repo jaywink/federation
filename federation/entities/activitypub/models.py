@@ -28,7 +28,7 @@ from federation.entities.utils import get_base_attributes, get_profile
 from federation.outbound import handle_send
 from federation.types import UserType, ReceiverVariant
 from federation.utils.activitypub import retrieve_and_parse_document, retrieve_and_parse_profile, \
-    get_profile_id_from_webfinger
+    get_profile_id_from_webfinger, get_profile_finger_from_webfinger
 from federation.utils.text import with_slash, validate_handle
 
 logger = logging.getLogger("federation")
@@ -603,22 +603,32 @@ class Person(Object, base.Profile):
         if getattr(profile, 'finger', None):
             self.finger = profile.finger
         else:
-            domain = urlparse(self.id).netloc
-            finger = f'{self.username}@{domain}'
-            if get_profile_id_from_webfinger(finger) == self.id:
-                self.finger = finger
+            self.finger = get_profile_finger_from_webfinger(self.id)
+            # maybe we don't need this as the AS2 profile id
+            # should be the source of truth
+            if not self.finger:
+                domain = urlparse(self.id).netloc
+                finger = f'{self.username}@{domain}'
+                if get_profile_id_from_webfinger(finger) == self.id:
+                    self.finger = finger
         # multi-protocol platform
         if self.finger and self.guid is not missing and self.handle is missing:
             self.handle = self.finger
         # Some platforms don't set this property.
         if self.url is missing:
             self.url = self.id
+        # Bluesky bridge profiles do this
+        if isinstance(self.url, list):
+            self.url = self.url[0]
+        if isinstance(self.image, list):
+            self.image = self.image[0]
 
     def to_as2(self):
         self.followers = f'{with_slash(self.id)}followers/'
         self.following = f'{with_slash(self.id)}following/'
         self.outbox = f'{with_slash(self.id)}outbox/'
         if isinstance(self.to, str): self.to = [self.to]
+        if isinstance(self.image, str): self.image = Image(url=self.image)
 
         if hasattr(self, 'times'):
             if self.times.get('updated',0) > self.times.get('created',0):
@@ -924,12 +934,17 @@ class Note(Object, RawContentMixin):
         content = ''
         if self.content_map:
             orig = self.content_map.pop('orig')
+            content = orig.strip()
             if len(self.content_map.keys()) > 1:
                 logger.warning('Language selection not implemented, falling back to default')
-                content = orig.strip()
             else:
-                content = orig.strip() if len(self.content_map.keys()) == 0 else next(iter(self.content_map.values())).strip()
+                alt = orig.strip() if len(self.content_map.keys()) == 0 else next(iter(self.content_map.values())).strip()
             self.content_map['orig'] = orig
+            # some platforms set the content property (which content_map is part of)
+            # to plain text and the language dict to HTML while other platforms do
+            # the opposite. The next line is trying to make sure we pick the HTML.
+            if BeautifulSoup(alt, 'html.parser').text != alt:
+                content = alt
         # to allow for posts/replies with medias only.
         if not content: content = "<div></div>"
         self._soup = BeautifulSoup(content, 'html.parser')
