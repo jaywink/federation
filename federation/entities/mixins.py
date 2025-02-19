@@ -2,6 +2,7 @@ import datetime
 import importlib
 import re
 import warnings
+from mimetypes import guess_type
 from typing import List, Set, Union, Dict, Tuple
 
 from bs4 import BeautifulSoup
@@ -11,6 +12,7 @@ from marshmallow import missing
 
 from federation.entities.activitypub.enums import ActivityType
 from federation.entities.utils import get_name_for_profile, get_profile
+from federation.utils.network import fetch_content_type
 from federation.utils.text import find_elements, find_tags, MENTION_PATTERN
 
 
@@ -290,3 +292,27 @@ class EntityTypeMixin(BaseEntity):
 class ProviderDisplayNameMixin(BaseEntity):
     """Provides a field for provider display name."""
     provider_display_name = ""
+
+
+class MediaMixin(BaseEntity):
+    """
+    Fetches the media_type if not set
+    """
+    url: str = ""
+    media_type: str = ""
+
+    _default_activity = ActivityType.CREATE
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._required += ["url"]
+        self._required.remove("id")
+        self._required.remove("actor_id")
+        if self.url and not self.media_type:
+            self.media_type = self.get_media_type()
+
+    def get_media_type(self) -> str:
+        media_type = guess_type(self.url)[0] or fetch_content_type(self.url)
+        if media_type in self._valid_media_types:
+            return media_type
+        return ""
