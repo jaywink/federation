@@ -419,9 +419,6 @@ class OrderedCollectionPage(OrderedCollection, CollectionPage):
 # AP defines [Ii]mage and [Aa]udio objects/properties, but only one Video object
 # seen with Peertube payloads only so far
 class Document(Object):
-    # The next two properties should be merged once we're confident
-    # all instances are running a recent federation version.
-    # (through fedidb maybe?)
     height = MixedInteger(as2.height, default=0, metadata={'flavor':xsd.nonNegativeInteger}, add_value_types=True)
     width = MixedInteger(as2.width, default=0, metadata={'flavor':xsd.nonNegativeInteger}, add_value_types=True)
     blurhash = fields.String(toot.blurHash,
@@ -442,10 +439,12 @@ class Document(Object):
         
     class Meta:
         rdf_type = as2.Document
-        #fields = ('image', 'url', 'name', 'media_type', 'inline', 'inlineMedia')
 
 
 class Image(Document, base.Image):
+    # The next property should be become inlineMedia once we're confident
+    # all instances are running a recent federation version.
+    # (through fedidb maybe?)
     inline = fields.Boolean(pyfed.inlineImage, default=False,
                             metadata={'ctx':[{'pyfed':str(pyfed)}]})
 
@@ -456,7 +455,6 @@ class Image(Document, base.Image):
         rdf_type = as2.Image
         fields = ('image', 'url', 'name', 'media_type', 'inline')
 
-# haven't seen this one so far..
 class Audio(Document, base.Audio):
     inlineMedia = fields.Boolean(pyfed.inlineMedia, default=False,
                             metadata={'ctx':[{'pyfed':str(pyfed),'inlineMedia':'pyfed:inlineMedia'}]})
