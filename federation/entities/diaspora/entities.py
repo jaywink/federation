@@ -2,17 +2,11 @@ from lxml import etree
 
 from federation.entities.base import (
     Comment, Post, Reaction, Profile, Retraction, Follow, Share, Image)
-from federation.entities.diaspora.mixins import DiasporaEntityMixin, DiasporaRelayableMixin
+from federation.entities.diaspora.mixins import DiasporaEntityMixin, DiasporaPreSendMixin, DiasporaRelayableMixin
 from federation.entities.diaspora.utils import format_dt, struct_to_xml
 from federation.utils.diaspora import get_private_endpoint, get_public_endpoint
 
-class DiasporaMentionMixin:
-    def pre_send(self):
-        # add curly braces to mentions
-        for mention in self._mentions:
-            self.raw_content = self.raw_content.replace('@'+mention, '@{'+mention+'}')
-
-class DiasporaComment(DiasporaMentionMixin, DiasporaRelayableMixin, Comment):
+class DiasporaComment(DiasporaPreSendMixin, DiasporaRelayableMixin, Comment):
     """Diaspora comment."""
     _tag_name = "comment"
 
@@ -40,7 +34,7 @@ class DiasporaImage(DiasporaEntityMixin, Image):
     _tag_name = "photo"
 
 
-class DiasporaPost(DiasporaMentionMixin, DiasporaEntityMixin, Post):
+class DiasporaPost(DiasporaPreSendMixin, DiasporaEntityMixin, Post):
     """Diaspora post, ie status message."""
     _tag_name = "status_message"
 

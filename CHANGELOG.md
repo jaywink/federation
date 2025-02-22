@@ -15,6 +15,9 @@ Any issues before October 2024 are only available in the old [GitLab issue track
 * Add an `image` property to `base.Profile` in support of AP Actor (and derived objects, e.g. Person)
   `image` property implemented as `users.Profile.picture_url` by the client app.
 
+* In support of the new UI, generate outbound AP audio and video attachments. Add the `inlineMedia` pyfed property to
+  allow inline rendering for Socialhome. Replace these tags with a back link for outbound Diaspora payloads.
+  
 * If the client's DISABLE_OUTBOUND_FEDERATION config param is set to True, do not federate outbound payload, only log to
   the console.
   
@@ -76,6 +79,7 @@ Any issues before October 2024 are only available in the old [GitLab issue track
 * In the inbound AP content map, ensure rendered (i.e. using some html tags) is preferred over
   plain text.
 
+* Fix a regression preventing outbound mentions to be rendered properly by remote Diaspora instances.
 
 ## [0.25.1] - 2024-02-18
 

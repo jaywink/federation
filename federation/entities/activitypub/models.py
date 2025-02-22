@@ -252,7 +252,8 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     icon = MixedField(as2.icon, nested='ImageSchema')
     image = MixedField(as2.image, nested='ImageSchema')
     tag_objects = MixedField(as2.tag, nested=['NoteSchema', 'HashtagSchema','MentionSchema','PropertyValueSchema','EmojiSchema'], many=True)
-    attachment = MixedField(as2.attachment, nested=['LinkSchema', 'NoteSchema', 'ImageSchema', 'AudioSchema', 'DocumentSchema','PropertyValueSchema','IdentityProofSchema'],
+    attachment = MixedField(as2.attachment, nested=['LinkSchema', 'NoteSchema', 'ImageSchema', 'AudioSchema', 'VideoSchema',
+                                                    'DocumentSchema','PropertyValueSchema','IdentityProofSchema'],
                                many=True, default=[])
     content_map = LanguageMap(as2.content)  # language maps are not implemented in calamus
     context = fields.RawJsonLD(as2.context)
@@ -415,11 +416,9 @@ class OrderedCollectionPage(OrderedCollection, CollectionPage):
         
 
 # This mimics that federation currently handles AP Document as AP Image
-# AP defines [Ii]mage and [Aa]udio objects/properties, but only a Video object
+# AP defines [Ii]mage and [Aa]udio objects/properties, but only one Video object
 # seen with Peertube payloads only so far
 class Document(Object):
-    inline = fields.Boolean(pyfed.inlineImage, default=False,
-                            metadata={'ctx':[{'pyfed':str(pyfed)}]})
     height = MixedInteger(as2.height, default=0, metadata={'flavor':xsd.nonNegativeInteger}, add_value_types=True)
     width = MixedInteger(as2.width, default=0, metadata={'flavor':xsd.nonNegativeInteger}, add_value_types=True)
     blurhash = fields.String(toot.blurHash,
@@ -440,10 +439,15 @@ class Document(Object):
         
     class Meta:
         rdf_type = as2.Document
-        fields = ('image', 'url', 'name', 'media_type', 'inline')
 
 
 class Image(Document, base.Image):
+    # The next property should be become inlineMedia once we're confident
+    # all instances are running a recent federation version.
+    # (through fedidb maybe?)
+    inline = fields.Boolean(pyfed.inlineImage, default=False,
+                            metadata={'ctx':[{'pyfed':str(pyfed)}]})
+
     def to_base(self):
         return self
 
@@ -451,14 +455,16 @@ class Image(Document, base.Image):
         rdf_type = as2.Image
         fields = ('image', 'url', 'name', 'media_type', 'inline')
 
-# haven't seen this one so far..
 class Audio(Document, base.Audio):
+    inlineMedia = fields.Boolean(pyfed.inlineMedia, default=False,
+                            metadata={'ctx':[{'pyfed':str(pyfed),'inlineMedia':'pyfed:inlineMedia'}]})
+
     def to_base(self):
         return self
 
     class Meta:
         rdf_type = as2.Audio
-        fields = ('image', 'url', 'name', 'media_type', 'inline')
+        fields = ('image', 'url', 'name', 'media_type', 'inlineMedia')
 
 class Infohash(Object):
 
@@ -806,19 +812,36 @@ class Note(Object, RawContentMixin):
         set_public(entity)
         return entity
 
+    def embedded_media(self) -> None:
+        media = []
+        if hasattr(self, '_soup'):
+            for img in self._soup.find_all('img', src=re.compile(r'^http')):
+                media.append(Image(
+                                   url=img['src'],
+                                   name=img.get('title', '') or img.get('alt', ''),
+                                   inline=True
+                             ))
+
+            # client provided audio and video media must use the source element
+            for source in self._soup.find_all('source', src=re.compile(r'^http')):
+                if source.parent.name == 'audio': media_cls = Audio
+                elif source.parent.name == 'video': media_cls = Video
+                else: continue
+                media.append(media_cls(
+                                 url=source['src'],
+                                 media_type=source.get('type', ''),
+                                 inlineMedia=True
+                             ))
+                
+        self._children = media
+        
     def pre_send(self) -> None:
         """
-        Attach any embedded images from raw_content.
+        Attach any embedded media from rendered_content.
         Add Hashtag and Mention objects (the client app must define the class tag/mention property)
         """
         super().pre_send()
-        self._children = [
-                Image(
-                    url=image[0],
-                    name=image[1],
-                    inline=True,
-                ) for image in self.embedded_images
-                ]
+        self.embedded_media()
 
         # Add Hashtag objects
         for el in self._soup('a', attrs={'class':'hashtag'}):
@@ -988,6 +1011,8 @@ class Note(Object, RawContentMixin):
                     if isinstance(child, Image):
                         if child.inline or self._soup.find('img', src=child.url):
                             continue
+                    if isinstance(child, (Audio, Video)):
+                        if child.inlineMedia: continue
                     children.append(child)
             self._cached_children = children
 
@@ -997,7 +1022,7 @@ class Note(Object, RawContentMixin):
     def _children(self, value):
         if not value: return
         self._cached_children = value
-        self.attachment = [Image.from_base(i) for i in value]
+        self.attachment = [type(i).from_base(i) for i in value]
 
     def validate_actor_id(self):
         if not self.actor_id.startswith('http'):
@@ -1041,9 +1066,12 @@ class Video(Document, base.Video):
     actor_id = MixedField(as2.attributedTo, nested=['PersonSchema', 'GroupSchema'], many=True)
     signable = True
     views = fields.Integer(pt.views)
+    inlineMedia = fields.Boolean(pyfed.inlineMedia, default=False,
+                            metadata={'ctx':[{'pyfed':str(pyfed),'inlineMedia':'pyfed:inlineMedia'}]})
 
     class Meta:
         unknown = EXCLUDE # required until all the pt fields are defined
+        exclude = ('width', 'height')
         rdf_type = as2.Video
 
     def to_base(self):
@@ -1491,7 +1519,9 @@ def model_to_objects(payload):
 
 
 CLASSES_WITH_CONTEXT_EXTENSIONS = (
-    Document,
+    Audio,
+    Image,
+    Video,
     Emoji,
     Hashtag,
     IdentityProof,

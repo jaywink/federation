@@ -1,14 +1,13 @@
 from typing import Dict, Tuple
 from magic import from_file
-from mimetypes import guess_type
 
 from dirty_validators.basic import Email
 
 from federation.entities.activitypub.enums import ActivityType
 from federation.entities.mixins import (
     PublicMixin, TargetIDMixin, ParticipationMixin, CreatedAtMixin, RawContentMixin, OptionalRawContentMixin,
-    EntityTypeMixin, ProviderDisplayNameMixin, RootTargetIDMixin, BaseEntity)
-from federation.utils.network import fetch_content_type, fetch_file
+    EntityTypeMixin, ProviderDisplayNameMixin, RootTargetIDMixin, MediaMixin, BaseEntity)
+from federation.utils.network import fetch_file
 
 
 class Accept(CreatedAtMixin, TargetIDMixin, BaseEntity):
@@ -20,32 +19,21 @@ class Accept(CreatedAtMixin, TargetIDMixin, BaseEntity):
         self._required.remove('id')
 
 
-class Image(OptionalRawContentMixin, CreatedAtMixin, BaseEntity):
+class Image(MediaMixin, OptionalRawContentMixin, CreatedAtMixin, BaseEntity):
     """Reflects a single image, possibly linked to another object."""
-    url: str = ""
-    name: str = ""
     height: int = 0
     width: int = 0
+    name: str = ""
     inline: bool = False
-    media_type: str = ""
 
-    _default_activity = ActivityType.CREATE
     _valid_media_types: Tuple[str] = (
         "image/jpeg",
         "image/png",
         "image/gif",
     )
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._required += ["url"]
-        self._required.remove("id")
-        self._required.remove("actor_id")
-        if self.url and not self.media_type:
-            self.media_type = self.get_media_type()
-
     def get_media_type(self) -> str:
-        media_type = guess_type(self.url)[0] or fetch_content_type(self.url)
+        media_type = super().get_media_type()
         if media_type == 'application/octet-stream':
             try:
                 file = fetch_file(self.url)
@@ -53,16 +41,31 @@ class Image(OptionalRawContentMixin, CreatedAtMixin, BaseEntity):
                 os.unlink(file)
             except:
                 pass
-        if media_type in self._valid_media_types:
-            return media_type
-        return ""
+        return media_type
 
 
-class Audio(OptionalRawContentMixin, CreatedAtMixin, BaseEntity):
-    pass
+class Audio(MediaMixin, OptionalRawContentMixin, BaseEntity):
+    inlineMedia: bool = False
 
-class Video(OptionalRawContentMixin, CreatedAtMixin, BaseEntity):
-    pass
+    _valid_media_types: Tuple[str] = (
+        "audio/aac",
+        "audio/mpeg",
+        "audio/ogg",
+        "audio/wav",
+        "audio/webm"
+    )
+
+class Video(MediaMixin, OptionalRawContentMixin, BaseEntity):
+    inlineMedia: bool = False
+
+    _valid_media_types: Tuple[str] = (
+        "video/mp4",
+        "video/mpeg",
+        "video/ogg",
+        "video/x-msvideo",
+        "video/webm",
+    )
+    
 
 class Comment(RawContentMixin, ParticipationMixin, CreatedAtMixin, RootTargetIDMixin, BaseEntity):
     """Represents a comment, linked to another object."""
