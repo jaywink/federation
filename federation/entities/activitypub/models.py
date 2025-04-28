@@ -955,6 +955,7 @@ class Note(Object, RawContentMixin):
     def rendered_content(self):
         if self._soup: return str(self._soup)
         content = ''
+        alt = ''
         if self.content_map:
             orig = self.content_map.pop('orig')
             content = orig.strip()
