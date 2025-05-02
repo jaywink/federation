@@ -9,7 +9,7 @@ from unicodedata import normalize
 from urllib.parse import unquote, urlparse
 
 import bleach
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from calamus import fields
 from calamus.schema import JsonLDAnnotation, JsonLDSchema, JsonLDSchemaOpts
 from calamus.utils import normalize_value
@@ -955,6 +955,7 @@ class Note(Object, RawContentMixin):
     def rendered_content(self):
         if self._soup: return str(self._soup)
         content = ''
+        alt = ''
         if self.content_map:
             orig = self.content_map.pop('orig')
             content = orig.strip()
@@ -1056,6 +1057,34 @@ class Article(Note):
 
 
 class Page(Note):
+    def to_base(self):
+        # seen with Lemmmy: some payloads with or without a content property.
+        # extract content from the name, image and attachment properties
+        # and create a page header with it.
+
+        header = self._soup.new_tag('p')
+
+        header.append(Tag(name='h3'))
+        if self.name:
+            header.h3.string = self.name
+
+        if self.attachment is not missing and len(self.attachment) > 0:
+            # use the first Link object. other types will be handled by
+            # the parent class
+            for attachment in self.attachment:
+                if isinstance(attachment, Link) and attachment.href is not missing:
+                    if not header.h3.string: header.h3.string = attachment.href
+                    header.h3.string.wrap(Tag(name='a', attrs={'href':attachment.href}))
+                    break
+
+        if header.h3.string:
+            self._soup.insert(0, header)
+            self.source = None
+            self._cached_raw_content = ''
+            self._media_type = 'text/html'
+
+        return super().to_base()
+                    
     class Meta:
         rdf_type = as2.Page
 
