@@ -381,7 +381,7 @@ class Home(metaclass=JsonLDAnnotation):
 
 
 class Collection(Object, base.Collection):
-    id = fields.Id()
+    id = fields.Id(default=None) # some platforms (akkoma) don't send an id
     items = MixedField(as2.items, nested=OBJECTS, many=True)
     first = MixedField(as2.first, nested=['CollectionPageSchema', 'OrderedCollectionPageSchema'])
     current = IRI(as2.current)
