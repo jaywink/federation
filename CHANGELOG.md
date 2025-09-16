@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+* Add a '-' to the last part of domain names in the MENTION_PATTERN regex. This fixes Socialhome issue #649 by
+  sucessfully matching puyncode domains (xn--). This was preventing punycode encoded mentions from being added
+  to AP comments as Mention objects, which resulted in the OP not being notified (observed only with Mastodon).
+   
 ## [0.26.0] - 2025-05-24
 
 The project code has migrated from GitLab to Codeberg: https://codeberg.org/socialhome/federation
