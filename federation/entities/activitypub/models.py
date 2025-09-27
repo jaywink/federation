@@ -853,19 +853,19 @@ class Note(Object, RawContentMixin):
             if el.text == '#nsfw': self.sensitive = True
 
         # Add Mention objects
-        mentions = []
+        fids = []
         for el in self._soup('a', attrs={'class':'mention'}):
-            mentions.append(el.text.lstrip('@'))
+            fids.append(el['href'])
 
-        mentions.sort()
-        for mention in mentions:
-            if validate_handle(mention):
-                profile = get_profile(finger__iexact=mention)
-                # only add AP profiles mentions
-                if getattr(profile, 'id', None):
-                    self.tag_objects.append(Mention(href=profile.id, name='@'+mention))
-                    # some platforms only render diaspora style markdown if it is available
-                    self.source['content'] = self.source['content'].replace(mention, '{' + mention + '}')
+        fids.sort()
+        print('fids', fids)
+        for fid in fids:
+            profile = get_profile(remote_url=fid, fid=fid)
+            # only add AP profiles mentions
+            if getattr(profile, 'id', None):
+                self.tag_objects.append(Mention(href=profile.id, name='@'+profile.finger))
+                # some platforms only render diaspora style markdown if it is available
+                self.source['content'] = self.source['content'].replace(profile.finger, '{' + profile.finger + '}')
 
 
     def post_receive(self) -> None:
