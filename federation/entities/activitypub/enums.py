@@ -7,7 +7,7 @@ class EnumBase(Enum):
         return [value.value for value in cls.__members__.values()]
 
 
-class ActivityType(EnumBase):
+class ActivityType(Enum):
     ACCEPT = "Accept"
     ANNOUNCE = "Announce"
     CREATE = "Create"
