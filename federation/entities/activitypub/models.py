@@ -937,7 +937,6 @@ class Note(Object, RawContentMixin):
             fids.append(el['href'])
 
         fids.sort()
-        print('fids', fids)
         for fid in fids:
             profile = get_profile(remote_url=fid, fid=fid)
             # only add AP profiles mentions
