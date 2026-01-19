@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+_Note: the code has been validated for django >=3.2 and <5. Using it with a django client app outside
+this version range may or may not work. If your code breaks, please open an issue._
+
 ### Changed
 
 * Make payload debug info less verbose.
