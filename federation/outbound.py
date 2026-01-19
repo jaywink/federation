@@ -21,7 +21,7 @@ from federation.utils.network import send_document
 
 if disable_outbound_federation():
     import json
-    from pprint import pprint
+    from pprint import pformat
 
 logger = logging.getLogger("federation")
 
@@ -357,9 +357,9 @@ def handle_send(
     if disable_outbound_federation():
         seen_payload = False
         for payload in payloads:
-            print('urls:', payload["urls"])
+            logger.warning(pformat({'urls': payload["urls"]}))
             try:
-                if not seen_payload: pprint(json.loads(payload["payload"]))
+                if not seen_payload: logger.warning(pformat(json.loads(payload["payload"])))
                 seen_payload = True
             except:
                 pass
