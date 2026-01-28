@@ -282,6 +282,69 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     #bcc
     #duration
 
+    def _find_and_mark_hashtags(self):
+        hrefs = set()
+        for tag in self.tag_objects:
+            if isinstance(tag, Hashtag):
+                if tag.href is not missing:
+                    hrefs.add(unquote(tag.href).lower())
+                # Some platforms use id instead of href...
+                elif tag.id is not missing:
+                    hrefs.add(unquote(tag.id).lower())
+
+        for link in self._soup.find_all('a', href=True):
+            parsed = urlparse(unquote(link['href']).lower())
+            # remove the query part and trailing garbage, if any
+            path = parsed.path
+            trunc = re.match(r'(/[\w/\-]+)', parsed.path)
+            if trunc:
+                path = trunc.group()
+            url = f'{parsed.scheme}://{parsed.netloc}{path}'
+            # convert accented characters to their ascii equivalent
+            normalized_path = normalize('NFD', path).encode('ascii', 'ignore')
+            normalized_url = f'{parsed.scheme}://{parsed.netloc}{normalized_path.decode()}'
+            links = {link['href'].lower(), unquote(link['href']).lower(), url, normalized_url}
+            if links.intersection(hrefs):
+                tag = re.match(r'^#?([\w\-]+)', link.text)
+                if tag:
+                    link['data-hashtag'] = tag.group(1).lower()
+
+    def _find_and_mark_mentions(self):
+        mentions = [mention for mention in self.tag_objects if isinstance(mention, Mention)]
+        # Look for mentions that don't have a corresponding Mention object
+        extras = [tag['href'] for tag in self._soup.find_all('a', class_=lambda value: 'mention' in value if value else [])
+            if 'hashtag' not in tag['class']]
+        mentions.extend([Mention(href=href) for href in extras if href not in [mention.href for mention in mentions]])
+        # There seems to be consensus on using the profile url for
+        # the link and the profile id for the Mention object href property,
+        # but some platforms will set mention.href to the profile url, so
+        # we check both.
+        for mention in mentions:
+            hrefs = []
+            profile = get_profile_or_entity(fid=mention.href, remote_url=mention.href)
+            if profile and not (profile.url and profile.finger):
+                # This should be removed when we are confident that the remote_url and
+                # finger properties have been populated for most profiles on the client app side.
+                profile = retrieve_and_parse_profile(profile.id)
+            if profile and profile.finger:
+                hrefs.extend([profile.id, profile.url])
+            else:
+                continue
+            for href in hrefs:
+                links = self._soup.find_all(href=href)
+                for link in links:
+                    link['data-mention'] = profile.finger
+                    self._mentions.add(profile.finger)
+            if profile.finger not in self._mentions:
+                # can't find some mentions using their href property value
+                # try with the name property
+                matches = self._soup.find_all(string=mention.name)
+                for match in matches:
+                    link = match.find_parent('a')
+                    if link:
+                        link['data-mention'] = profile.finger
+                        self._mentions.add(profile.finger)
+
     def to_as2(self):
         obj = self.activity if isinstance(self.activity, Activity) else self
         return context_manager.compact(obj)
@@ -381,7 +444,7 @@ class Home(metaclass=JsonLDAnnotation):
 
 
 class Collection(Object, base.Collection):
-    id = fields.Id()
+    id = fields.Id(default=None) # some platforms (akkoma) don't send an id
     items = MixedField(as2.items, nested=OBJECTS, many=True)
     first = MixedField(as2.first, nested=['CollectionPageSchema', 'OrderedCollectionPageSchema'])
     current = IRI(as2.current)
@@ -599,9 +662,20 @@ class Person(Object, base.Profile):
     #signClientKey
 
     def __init__(self, *args, **kwargs):
+        self.tag_objects = [] # mutable objects...
         super().__init__(*args, **kwargs)
         self._required += ['url']
         self._allowed_children += (Note, PropertyValue, IdentityProof)
+        self._soup = BeautifulSoup(self.raw_content, 'html.parser')
+
+    def pre_send(self):
+        # Add Hashtag objects for summary (raw_content)
+        for el in self._soup('a', attrs={'class':'hashtag'}):
+            self.tag_objects.append(Hashtag(
+                href = el.attrs['href'],
+                name = el.text
+            ))
+            self.tag_objects = sorted(self.tag_objects, key=attrgetter('name'))
 
     # Set finger to username@host if not provided by the platform
     def post_receive(self):
@@ -628,6 +702,11 @@ class Person(Object, base.Profile):
             self.url = self.url[0]
         if isinstance(self.image, list):
             self.image = self.image[0]
+
+        #find mentions and hashtags in the profile bio (as2.summary -> self.raw_content here)
+        self._find_and_mark_hashtags()
+        self._find_and_mark_mentions()
+        self.raw_content = str(self._soup)
 
     def to_as2(self):
         self.followers = f'{with_slash(self.id)}followers/'
@@ -853,19 +932,18 @@ class Note(Object, RawContentMixin):
             if el.text == '#nsfw': self.sensitive = True
 
         # Add Mention objects
-        mentions = []
+        fids = []
         for el in self._soup('a', attrs={'class':'mention'}):
-            mentions.append(el.text.lstrip('@'))
+            fids.append(el['href'])
 
-        mentions.sort()
-        for mention in mentions:
-            if validate_handle(mention):
-                profile = get_profile(finger__iexact=mention)
-                # only add AP profiles mentions
-                if getattr(profile, 'id', None):
-                    self.tag_objects.append(Mention(href=profile.id, name='@'+mention))
-                    # some platforms only render diaspora style markdown if it is available
-                    self.source['content'] = self.source['content'].replace(mention, '{' + mention + '}')
+        fids.sort()
+        for fid in fids:
+            profile = get_profile(remote_url=fid, fid=fid)
+            # only add AP profiles mentions
+            if getattr(profile, 'id', None):
+                self.tag_objects.append(Mention(href=profile.id, name='@'+profile.finger))
+                # some platforms only render diaspora style markdown if it is available
+                self.source['content'] = self.source['content'].replace(profile.finger, '{' + profile.finger + '}')
 
 
     def post_receive(self) -> None:
@@ -882,65 +960,6 @@ class Note(Object, RawContentMixin):
         self._find_and_mark_mentions()
 
         if getattr(self, 'target_id'): self.entity_type = 'Comment'
-
-    def _find_and_mark_hashtags(self):
-        hrefs = set()
-        for tag in self.tag_objects:
-            if isinstance(tag, Hashtag):
-                if tag.href is not missing:
-                    hrefs.add(unquote(tag.href).lower())
-                # Some platforms use id instead of href...
-                elif tag.id is not missing:
-                    hrefs.add(unquote(tag.id).lower())
-
-        for link in self._soup.find_all('a', href=True):
-            parsed = urlparse(unquote(link['href']).lower())
-            # remove the query part and trailing garbage, if any
-            path = parsed.path
-            trunc = re.match(r'(/[\w/\-]+)', parsed.path)
-            if trunc:
-                path = trunc.group()
-            url = f'{parsed.scheme}://{parsed.netloc}{path}'
-            # convert accented characters to their ascii equivalent
-            normalized_path = normalize('NFD', path).encode('ascii', 'ignore')
-            normalized_url = f'{parsed.scheme}://{parsed.netloc}{normalized_path.decode()}'
-            links = {link['href'].lower(), unquote(link['href']).lower(), url, normalized_url}
-            if links.intersection(hrefs):
-                tag = re.match(r'^#?([\w\-]+)', link.text)
-                if tag:
-                    link['data-hashtag'] = tag.group(1).lower()
-
-    def _find_and_mark_mentions(self):
-        mentions = [mention for mention in self.tag_objects if isinstance(mention, Mention)]
-        # There seems to be consensus on using the profile url for
-        # the link and the profile id for the Mention object href property,
-        # but some platforms will set mention.href to the profile url, so
-        # we check both.
-        for mention in mentions:
-            hrefs = []
-            profile = get_profile_or_entity(fid=mention.href, remote_url=mention.href)
-            if profile and not (profile.url and profile.finger):
-                # This should be removed when we are confident that the remote_url and
-                # finger properties have been populated for most profiles on the client app side.
-                profile = retrieve_and_parse_profile(profile.id)
-            if profile and profile.finger:
-                hrefs.extend([profile.id, profile.url])
-            else:
-                continue
-            for href in hrefs:
-                links = self._soup.find_all(href=href)
-                for link in links:
-                    link['data-mention'] = profile.finger
-                    self._mentions.add(profile.finger)
-            if profile.finger not in self._mentions:
-                # can't find some mentions using their href property value
-                # try with the name property
-                matches = self._soup.find_all(string=mention.name)
-                for match in matches:
-                    link = match.find_parent('a')
-                    if link:
-                        link['data-mention'] = profile.finger
-                        self._mentions.add(profile.finger)
 
     def extract_mentions(self):
         """

@@ -15,8 +15,13 @@ from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
 from federation.entities.mixins import BaseEntity
 from federation.protocols.activitypub.signing import get_http_authentication
 from federation.types import UserType
+from federation.utils.django import disable_outbound_federation
 from federation.utils.matrix import get_matrix_configuration
 from federation.utils.network import send_document
+
+if disable_outbound_federation():
+    import json
+    from pprint import pformat
 
 logger = logging.getLogger("federation")
 
@@ -348,6 +353,17 @@ def handle_send(
         })
 
     logger.debug("handle_send - %s", payloads)
+
+    if disable_outbound_federation():
+        seen_payload = False
+        for payload in payloads:
+            logger.warning(pformat({'urls': payload["urls"]}))
+            try:
+                if not seen_payload: logger.warning(pformat(json.loads(payload["payload"])))
+                seen_payload = True
+            except:
+                pass
+        return
 
     # Do actual sending
     for payload in payloads:

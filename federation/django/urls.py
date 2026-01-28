@@ -1,10 +1,10 @@
 # noinspection PyPackageRequirements
-from django.conf.urls import url
+from django.urls import re_path
 # noinspection PyPackageRequirements
 from django.urls import include
 
 urlpatterns = [
-    url(r'', include("federation.hostmeta.django.urls")),
-    url(r'ap/', include("federation.entities.activitypub.django.urls")),
-    url(r'^matrix/', include("federation.entities.matrix.django.urls")),
+    re_path(r'', include("federation.hostmeta.django.urls")),
+    re_path(r'ap/', include("federation.entities.activitypub.django.urls")),
+    re_path(r'^matrix/', include("federation.entities.matrix.django.urls")),
 ]

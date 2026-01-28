@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+_Note: the code has been validated for django >=3.2 and <5. Using it with a django client app outside
+this version range may or may not work. If your code breaks, please open an issue._
+
+### Changed
+
+* Make payload debug info less verbose.
+
+* Since the rendered mention links text could be unicode, use the `remote_url|fid` backend properties
+  to fetch the profile used to create AP Mention objects.
+
+* Replace the deprecated `url` method with `re_path` for django >=4.2.
+
+* Use `Enum` as the base class for `ActivityType` to comply with `django-enum`.
+
+* Make the required changes to support hashtag, mentions and links for the  `Person` object `raw_content`
+  property (aka AP `summary`).
+
 ### Fixed
 
 * Add a '-' to the last part of domain names in the MENTION_PATTERN regex. This fixes Socialhome issue #649 by
