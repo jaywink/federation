@@ -335,7 +335,7 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
                 continue
             for href in hrefs:
                 links = self._soup.find_all(href=href)
-            for link in links:
+                for link in links:
                     link['data-mention'] = profile.finger
                     self._mentions.add(profile.finger)
             if profile.finger not in self._mentions:
