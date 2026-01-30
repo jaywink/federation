@@ -321,11 +321,14 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
         # we check both.
         for mention in mentions:
             hrefs = []
-            profile = get_profile_or_entity(fid=mention.href, remote_url=mention.href)
-            if profile and not (profile.url and profile.finger):
-                # This should be removed when we are confident that the remote_url and
-                # finger properties have been populated for most profiles on the client app side.
-                profile = retrieve_and_parse_profile(profile.id)
+            if mention.href in (self.id, self.url):
+                profile = self # This is to prevent an infinite loop
+            else:
+                profile = get_profile_or_entity(fid=mention.href, remote_url=mention.href)
+                if profile and not (profile.url and profile.finger):
+                    # This should be removed when we are confident that the remote_url and
+                    # finger properties have been populated for most profiles on the client app side.
+                    profile = retrieve_and_parse_profile(profile.id)
             if profile and profile.finger:
                 hrefs.extend([profile.id, profile.url])
             else:
