@@ -708,7 +708,8 @@ class Person(Object, base.Profile):
 
         #find mentions and hashtags in the profile bio (as2.summary -> self.raw_content here)
         self._find_and_mark_hashtags()
-        self._find_and_mark_mentions()
+        # TODO: keep the next line commented out until we figure out how to prevent infinite recursion
+        # self._find_and_mark_mentions()
         self.raw_content = str(self._soup)
 
     def to_as2(self):
