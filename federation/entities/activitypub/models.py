@@ -312,7 +312,7 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     def _find_and_mark_mentions(self):
         mentions = [mention for mention in self.tag_objects if isinstance(mention, Mention)]
         # Look for mentions that don't have a corresponding Mention object
-        extras = [tag['href'] for tag in self._soup.find_all('a', class_=lambda value: 'mention' in value if value else [])
+        extras = [tag['href'] for tag in self._soup.find_all('a', href=True, class_=lambda value: 'mention' in value if value else [])
             if 'hashtag' not in tag['class']]
         mentions.extend([Mention(href=href) for href in extras if href not in [mention.href for mention in mentions]])
         # There seems to be consensus on using the profile url for
