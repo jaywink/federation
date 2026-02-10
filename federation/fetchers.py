@@ -46,4 +46,4 @@ def retrieve_remote_profile(id: str) -> Optional[Profile]:
         utils = importlib.import_module(f"federation.utils.{protocol.PROTOCOL_NAME}")
         profile = utils.retrieve_and_parse_profile(id)
         if profile:
-            return profile
+            return profile.merge_profiles()

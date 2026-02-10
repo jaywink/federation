@@ -26,6 +26,7 @@ from federation.entities.activitypub.ldsigning import create_ld_signature, verif
 from federation.entities.mixins import BaseEntity, RawContentMixin
 from federation.entities.utils import get_base_attributes, get_profile
 from federation.outbound import handle_send
+from federation.protocols.enums import ProtocolType
 from federation.types import UserType, ReceiverVariant
 from federation.utils.activitypub import retrieve_and_parse_document, retrieve_and_parse_profile, \
     get_profile_id_from_webfinger, get_profile_finger_from_webfinger
@@ -649,6 +650,7 @@ class Person(Object, base.Profile):
                                metadata={'ctx':[{'toot':str(toot),
                                                  'suspended': 'toot:suspended'}]})
     url = MixedField(as2.url, nested='LinkSchema')
+    protocols = (ProtocolType.ACTIVITYPUB,)
     public = True
     _cached_inboxes = None
     _cached_public_key = None
@@ -731,6 +733,25 @@ class Person(Object, base.Profile):
                         to=self.to,
                         )
         return super().to_as2()
+
+    def validate_protocols(self):
+        if not self.protocols or ProtocolType.ACTIVITYPUB not in self.protocols:
+            raise(ValueError, "Protocols can not be empty")
+
+    def merge_profiles(self):
+        protocols = (ProtocolType.ACTIVITYPUB, ProtocolType.DIASPORA)
+        if self.guid:
+            self.protocols = protocols
+        else:
+            from federation.utils.diaspora import retrieve_and_parse_profile
+            try:
+                profile = retrieve_and_parse_profile(self.finger)
+                self.guid = getattr(profile, 'guid', None)
+                self.handle = self.finger
+                self.protocols = protocols
+            except ValueError:
+                pass
+        return self
 
     @property
     def inboxes(self):

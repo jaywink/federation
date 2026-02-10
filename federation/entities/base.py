@@ -7,6 +7,7 @@ from federation.entities.activitypub.enums import ActivityType
 from federation.entities.mixins import (
     PublicMixin, TargetIDMixin, ParticipationMixin, CreatedAtMixin, RawContentMixin, OptionalRawContentMixin,
     EntityTypeMixin, ProviderDisplayNameMixin, RootTargetIDMixin, MediaMixin, BaseEntity)
+from federation.protocols.enums import ProtocolType
 from federation.utils.network import fetch_file
 
 
@@ -152,6 +153,7 @@ class Profile(CreatedAtMixin, OptionalRawContentMixin, PublicMixin, BaseEntity):
     url = ""
     username = ""
     inboxes: Dict = None
+    protocols: Tuple[ProtocolType] = None
 
     _allowed_children = (Image,)
 

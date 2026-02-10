@@ -4,6 +4,7 @@ from federation.entities.base import (
     Comment, Post, Reaction, Profile, Retraction, Follow, Share, Image)
 from federation.entities.diaspora.mixins import DiasporaEntityMixin, DiasporaPreSendMixin, DiasporaRelayableMixin
 from federation.entities.diaspora.utils import format_dt, struct_to_xml
+from federation.protocols.enums import ProtocolType
 from federation.utils.diaspora import get_private_endpoint, get_public_endpoint
 
 class DiasporaComment(DiasporaPreSendMixin, DiasporaRelayableMixin, Comment):
@@ -99,6 +100,7 @@ class DiasporaContact(DiasporaEntityMixin, Follow):
 class DiasporaProfile(DiasporaEntityMixin, Profile):
     """Diaspora profile."""
     _tag_name = "profile"
+    protocols = (ProtocolType.DIASPORA,)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -130,6 +132,20 @@ class DiasporaProfile(DiasporaEntityMixin, Profile):
             })
         struct_to_xml(element, properties)
         return element
+
+    def merge_profiles(self):
+        from federation.utils.activitypub import retrieve_and_parse_profile
+        profile = retrieve_and_parse_profile(self.finger)
+        if profile:
+            profile.guid = self.guid
+            profile.handle = self.handle
+            profile.protocols = (ProtocolType.ACTIVITYPUB, ProtocolType.DIASPORA)
+            return profile
+        return self
+    
+    def validate_protocols(self):
+        if not self.protocols or ProtocolType.DIASPORA not in self.protocols:
+            raise(ValueError, "Protocols can not be empty")
 
 
 class DiasporaRetraction(DiasporaEntityMixin, Retraction):
