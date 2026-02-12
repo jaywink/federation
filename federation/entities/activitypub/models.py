@@ -980,12 +980,16 @@ class Note(Object, RawContentMixin):
         if self._media_type == "text/markdown":
             # Skip when markdown
             return
-
-        self._find_and_mark_hashtags()
-        self._find_and_mark_mentions()
+        else:
+            self._find_and_mark_hashtags()
+            self._find_and_mark_mentions()
 
         if getattr(self, 'target_id'): self.entity_type = 'Comment'
 
+        # we are only interested in the replies id. some platforms
+        # return a Collection, others a URL.
+        self.replies = getattr(self.replies, "id", self.replies)
+        
     def extract_mentions(self):
         """
         Attempt to extract mentions from raw_content if available
