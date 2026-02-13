@@ -984,8 +984,8 @@ class Note(Object, RawContentMixin):
         if getattr(self, 'target_id'): self.entity_type = 'Comment'
 
         # We are only interested in the replies id. some platforms
-        # return a Collection, others a URL.
-        if getattr(self.replies, "id", None): self.replies = self.replies.id
+        # return a Collection (in some cases without an id property), others a URL.
+        if isinstance(self.replies, Collection): self.replies = getattr(self.replies, "id", None)
         
     def extract_mentions(self):
         """
