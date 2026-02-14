@@ -49,7 +49,7 @@ class TestRetrieveDiasporaHCard:
     })
     def test_retrieve_webfinger_is_called(self, mock_retrieve):
         retrieve_diaspora_hcard("bob@localhost")
-        assert mock_retrieve.called_with("bob@localhost")
+        mock_retrieve.assert_called_with("bob@localhost")
 
     @patch("federation.utils.diaspora.fetch_document")
     @patch("federation.utils.diaspora.retrieve_and_parse_diaspora_webfinger", return_value={
