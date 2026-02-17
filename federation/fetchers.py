@@ -20,17 +20,14 @@ def retrieve_remote_content(
     ``sender_key_fetcher`` is an optional function to use to fetch sender public key. If not given, network will be used
     to fetch the profile and the key. Function must take federation id as only parameter and return a public key.
     """
-    if handle and validate_handle(handle):
-        protocol_name = "diaspora"
-        if not guid:
-            guid = id
-    else:
-        protocol_name = identify_protocol_by_id(id).PROTOCOL_NAME
-    utils = importlib.import_module("federation.utils.%s" % protocol_name)
-    return utils.retrieve_and_parse_content(
-        id=id, guid=guid, handle=handle, entity_type=entity_type, 
-        cache=cache, sender_key_fetcher=sender_key_fetcher,
-    )
+    protocols = (activitypub_protocol, diaspora_protocol)
+    for protocol in protocols:
+        utils = importlib.import_module(f"federation.utils.{protocol.PROTOCOL_NAME}")
+        content = utils.retrieve_and_parse_content(
+            id=id, guid=guid, handle=handle, entity_type=entity_type, 
+            cache=cache, sender_key_fetcher=sender_key_fetcher,
+        )
+        if content: return content
 
 
 def retrieve_remote_profile(id: str) -> Optional[Profile]:
@@ -38,10 +35,7 @@ def retrieve_remote_profile(id: str) -> Optional[Profile]:
 
     Retrieve the profile from a remote location, using protocols based on the given ID.
     """
-    if validate_handle(id):
-        protocols = (activitypub_protocol, diaspora_protocol)
-    else:
-        protocols = (identify_protocol_by_id(id),)
+    protocols = (activitypub_protocol, diaspora_protocol)
     for protocol in protocols:
         utils = importlib.import_module(f"federation.utils.{protocol.PROTOCOL_NAME}")
         profile = utils.retrieve_and_parse_profile(id)
