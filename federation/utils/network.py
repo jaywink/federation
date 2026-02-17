@@ -232,7 +232,7 @@ def try_retrieve_webfinger_document(resource: str) -> Optional[str]:
             logger.warning("retrieve_webfinger_document: invalid handle given: %s", resource)
             return None
     document, code, exception = fetch_document(
-        host=host, path=request,
+        host=host, path=request, extra_headers={"accept": "application/jrd+json"}
     )
     if exception:
         logger.debug("retrieve_webfinger_document: failed to fetch webfinger document: %s, %s", code, exception)
