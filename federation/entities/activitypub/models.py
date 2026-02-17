@@ -650,12 +650,13 @@ class Person(Object, base.Profile):
                                metadata={'ctx':[{'toot':str(toot),
                                                  'suspended': 'toot:suspended'}]})
     url = MixedField(as2.url, nested='LinkSchema')
-    protocols = (ProtocolType.ACTIVITYPUB,)
     public = True
+    finger = None
     _cached_inboxes = None
     _cached_public_key = None
     _cached_image_urls = None
     _media_type = 'text/plain' # embedded_images shouldn't parse the profile summary
+    _protocols = (ProtocolType.ACTIVITYPUB,)
 
     # Not implemented yet
     #liked is a collection
@@ -694,8 +695,10 @@ class Person(Object, base.Profile):
             if not self.finger:
                 domain = urlparse(self.id).netloc
                 finger = f'{self.username}@{domain}'
-                if get_profile_id_from_webfinger(finger) == self.id:
+                if get_profile_id_from_webfinger(finger):
                     self.finger = finger
+        if not self.finger:
+            logger.warning("models.Person - failed to set profile finger property for: %s", self.id)
         # multi-protocol platform
         if self.finger and self.guid is not missing and self.handle is missing:
             self.handle = self.finger
@@ -734,21 +737,18 @@ class Person(Object, base.Profile):
                         )
         return super().to_as2()
 
-    def validate_protocols(self):
-        if not self.protocols or ProtocolType.ACTIVITYPUB not in self.protocols:
-            raise(ValueError, "Protocols can not be empty")
-
     def merge_profiles(self):
         protocols = (ProtocolType.ACTIVITYPUB, ProtocolType.DIASPORA)
         if self.guid:
-            self.protocols = protocols
+            self._protocols = protocols
         else:
             from federation.utils.diaspora import retrieve_and_parse_profile
             try:
+                if not self.finger: return self
                 profile = retrieve_and_parse_profile(self.finger)
                 self.guid = getattr(profile, 'guid', None)
                 self.handle = self.finger
-                self.protocols = protocols
+                self._protocols = protocols
             except ValueError:
                 pass
         return self

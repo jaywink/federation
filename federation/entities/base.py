@@ -153,7 +153,7 @@ class Profile(CreatedAtMixin, OptionalRawContentMixin, PublicMixin, BaseEntity):
     url = ""
     username = ""
     inboxes: Dict = None
-    protocols: Tuple[ProtocolType] = None
+    _protocols: Tuple[ProtocolType] = None
 
     _allowed_children = (Image,)
 
