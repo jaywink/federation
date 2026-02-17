@@ -2,7 +2,7 @@ import json
 import logging
 import xml
 from typing import Callable, Dict
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 from lxml import html
 from xrd import XRD
@@ -177,9 +177,19 @@ def retrieve_and_parse_content(
         to fetch the profile and the key. Function must take handle as only parameter and return a public key.
     :returns: Entity object instance or ``None``
     """
-    if not validate_handle(handle):
-        return
-    _username, domain = handle.split("@")
+    domain = None
+    if handle and validate_handle(handle):
+        _username, domain = handle.split("@")
+        if not guid: guid = id
+    else:
+        parsed = urlparse(id)
+        if parsed.scheme.startswith('http'):
+            domain = parsed.netloc
+            guid = parsed.path.split('/')[-1]
+            entity_type = 'post'
+
+    if not domain: return
+    
     url = get_fetch_content_endpoint(domain, entity_type.lower(), guid)
     document, status_code, error = fetch_document(url, cache=cache)
     if status_code == 200:
@@ -205,9 +215,16 @@ def retrieve_and_parse_profile(handle):
     """
     Retrieve the remote user and return a Profile object.
 
-    :arg handle: User handle in username@domain.tld format
+    :arg handle: User handle in username@domain.tld or https://domain.tld/u/username format
     :returns: ``federation.entities.Profile`` instance or None
     """
+
+    if not validate_handle(handle):
+        parsed = urlparse(handle)
+        if parsed.netloc and parsed.path.startswith("/u/"):
+            handle = parsed.path.rstrip("/").split("/")[-1] + "@" + parsed.netloc
+        else: return None
+    
     hcard = retrieve_diaspora_hcard(handle)
     if not hcard:
         return None
