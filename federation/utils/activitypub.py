@@ -88,6 +88,9 @@ def retrieve_and_parse_document(fid: str, cache: bool=True) -> Optional[Any]:
                 return None
             logger.info("retrieve_and_parse_document - using first entity: %s", entity)
             return entity
+    elif status_code == 404:
+        logger.warning("retrieve_and_parse_content - remote content %s not found", fid)
+        return
 
 
 def retrieve_and_parse_profile(fid: str) -> Optional[Any]:
