@@ -226,6 +226,7 @@ OBJECTS = [
         'ApplicationSchema',
         'ArticleSchema',
         'CreateSchema',
+        'DislikeSchema',
         'FollowSchema',
         'GroupSchema',
         'LikeSchema',
@@ -250,6 +251,7 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     atom_url = fields.String(ostatus.atomUri)
     also_known_as = IRI(as2.alsoKnownAs,
                         metadata={'ctx':[{ 'alsoKnownAs':{'@id':'as:alsoKnownAs','@type':'@id'}}]})
+    audience = IRI(as2.audience)
     icon = MixedField(as2.icon, nested='ImageSchema')
     image = MixedField(as2.image, nested='ImageSchema')
     tag_objects = MixedField(as2.tag, nested=['NoteSchema', 'HashtagSchema','MentionSchema','PropertyValueSchema','EmojiSchema'], many=True)
@@ -275,7 +277,6 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     url = MixedField(as2.url, nested='LinkSchema', many=True)
 
     # The following properties are defined by some platforms, but are not implemented yet
-    #audience
     #endtime
     #location
     #preview
@@ -1296,16 +1297,19 @@ class Follow(Activity, base.Follow):
 
 class Announce(Activity, base.Share):
     id = fields.Id()
-    target_id = IRI(as2.object)
+    object_ = MixedField(as2.object, nested=['CreateSchema', 'LikeSchema', 'DislikeSchema', 'UpdateSchema'])
     signable = True
+    target_id = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if isinstance(self.object_, str): self.target_id = self.object_
+        elif self.object_ is missing: self.object_ = self.target_id = kwargs.get('target_id', None)
         self._required += ['target_id']
 
     def validate_target_id(self):
-        if not self.target_id.startswith('http'):
-            raise ValueError(f'Invalid target_id for activitypub ({self.target_id})')
+        if not (isinstance(self.target_id, str) and self.target_id.startswith('http')) and not isinstance(self.target_id, Activity):
+            raise ValueError(f'Unsupported target_id ({self.target_id})')
 
     def to_as2(self):
         if isinstance(self.activity, type):
@@ -1323,8 +1327,9 @@ class Announce(Activity, base.Share):
 
         if self.activity == self:
             entity = self
-        else:
-            self.target_id = self.id
+            
+        if isinstance(self.activity, Undo):
+            self.object_ = self.id
             self.entity_type = 'Object'
             self.__dict__.update({'schema': True})
             entity = Retraction(**get_base_attributes(self, keep=('_source_object',)))
@@ -1389,6 +1394,18 @@ class Like(Activity, base.Reaction):
 
     class Meta:
         rdf_type = as2.Like
+
+
+# this is only a placeholder until reactions are implemented
+class Dislike(Activity, base.Reaction):
+    id = fields.Id()
+    reaction = fields.String(diaspora.like)
+
+    def validate(self, direction='inbound'):
+        pass
+
+    class Meta:
+        rdf_type = as2.Dislike
 
 
 # inbound Accept is a noop...
@@ -1583,9 +1600,12 @@ def model_to_objects(payload):
             return None
 
         # The activity property chains the payload activity objects in reverse order
-        while isinstance(getattr(entity, 'object_', None), Object):
-            entity.object_.activity = entity
-            entity = entity.object_
+        while isinstance(entity, Activity):
+            obj = getattr(entity, 'object_', None)
+            if isinstance(obj, (Activity, Object)):
+                obj.activity = entity
+                entity = obj
+            else: break
 
         entity._source_object = original_payload
         return entity
