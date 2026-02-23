@@ -1296,7 +1296,7 @@ class Follow(Activity, base.Follow):
 
 class Announce(Activity, base.Share):
     id = fields.Id()
-    object_ = MixedField(as2.object, nested=['CreateSchema', 'LikeSchema', 'DeleteSchema', 'DislikeSchema', 'UpdateSchema'])
+    object_ = MixedField(as2.object, nested=['CreateSchema', 'LikeSchema', 'DeleteSchema', 'DislikeSchema', 'UndoSchema', 'UpdateSchema'])
     signable = True
     target_id = None
 
