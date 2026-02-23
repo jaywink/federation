@@ -649,7 +649,6 @@ class Person(Object, base.Profile):
     suspended = fields.Boolean(toot.suspended,
                                metadata={'ctx':[{'toot':str(toot),
                                                  'suspended': 'toot:suspended'}]})
-    url = MixedField(as2.url, nested='LinkSchema')
     public = True
     finger = None
     _cached_inboxes = None
@@ -699,15 +698,13 @@ class Person(Object, base.Profile):
                     self.finger = finger
         if not self.finger:
             logger.warning("models.Person - failed to set profile finger property for: %s", self.id)
-        # multi-protocol platform
-        if self.finger and self.guid is not missing and self.handle is missing:
-            self.handle = self.finger
         # Some platforms don't set this property.
         if self.url is missing:
             self.url = self.id
-        # Bluesky bridge profiles do this
+        # Peertube and Bluesky bridge profiles do this
         if isinstance(self.url, list):
             self.url = self.url[0]
+            if isinstance(self.url, Link): self.url = self.url.href
         if isinstance(self.image, list):
             self.image = self.image[0]
 
@@ -738,17 +735,19 @@ class Person(Object, base.Profile):
         return super().to_as2()
 
     def merge_profiles(self):
+        if not self.finger: return self # no point trying this without a finger value
         protocols = (ProtocolType.ACTIVITYPUB, ProtocolType.DIASPORA)
         if self.guid:
+            self.handle = self.finger.lower()
             self._protocols = protocols
         else:
             from federation.utils.diaspora import retrieve_and_parse_profile
             try:
-                if not self.finger: return self
                 profile = retrieve_and_parse_profile(self.finger)
-                self.guid = getattr(profile, 'guid', None)
-                self.handle = self.finger
-                self._protocols = protocols
+                if profile:
+                    self.guid = getattr(profile, 'guid', None)
+                    self.handle = self.finger.lower()
+                    self._protocols = protocols
             except ValueError:
                 pass
         return self
