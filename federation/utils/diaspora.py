@@ -62,7 +62,7 @@ def retrieve_diaspora_hcard(handle):
     :return: str (HTML document)
     """
     webfinger = retrieve_and_parse_diaspora_webfinger(handle)
-    if not webfinger:
+    if not webfinger or not webfinger.get("hcard_url"):
         return None
     document, code, exception = fetch_document(webfinger.get("hcard_url"))
     if exception:
