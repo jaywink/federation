@@ -685,18 +685,14 @@ class Person(Object, base.Profile):
 
     # Set finger to username@host if not provided by the platform
     def post_receive(self):
-        profile = get_profile(fid=self.id)
-        if getattr(profile, 'finger', None):
-            self.finger = profile.finger
-        else:
-            self.finger = get_profile_finger_from_webfinger(self.id)
-            # maybe we don't need this as the AS2 profile id
-            # should be the source of truth
-            if not self.finger:
-                domain = urlparse(self.id).netloc
-                finger = f'{self.username}@{domain}'
-                if get_profile_id_from_webfinger(finger):
-                    self.finger = finger
+        self.finger = get_profile_finger_from_webfinger(self.id)
+        # maybe we don't need this as the AS2 profile id
+        # should be the source of truth
+        if not self.finger:
+            domain = urlparse(self.id).netloc
+            finger = f'{self.username}@{domain}'
+            if get_profile_id_from_webfinger(finger):
+                self.finger = finger
         if not self.finger:
             logger.warning("models.Person - failed to set profile finger property for: %s", self.id)
         # Some platforms don't set this property.
