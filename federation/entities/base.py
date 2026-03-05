@@ -1,4 +1,4 @@
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 from magic import from_file
 
 from dirty_validators.basic import Email
@@ -153,7 +153,7 @@ class Profile(CreatedAtMixin, OptionalRawContentMixin, PublicMixin, BaseEntity):
     url = ""
     username = ""
     inboxes: Dict = None
-    _protocols: Tuple[ProtocolType] = None
+    _protocols: List[ProtocolType] = None
 
     _allowed_children = (Image,)
 

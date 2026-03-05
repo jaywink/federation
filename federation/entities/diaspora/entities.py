@@ -100,7 +100,7 @@ class DiasporaContact(DiasporaEntityMixin, Follow):
 class DiasporaProfile(DiasporaEntityMixin, Profile):
     """Diaspora profile."""
     _tag_name = "profile"
-    _protocols = (ProtocolType.DIASPORA,)
+    _protocols = [ProtocolType.DIASPORA]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -139,7 +139,7 @@ class DiasporaProfile(DiasporaEntityMixin, Profile):
         if profile:
             profile.guid = self.guid
             profile.handle = self.handle
-            profile._protocols = (ProtocolType.ACTIVITYPUB, ProtocolType.DIASPORA)
+            profile._protocols = [ProtocolType.ACTIVITYPUB, ProtocolType.DIASPORA]
             return profile
         return self
     

@@ -656,7 +656,7 @@ class Person(Object, base.Profile):
     _cached_public_key = None
     _cached_image_urls = None
     _media_type = 'text/plain' # embedded_images shouldn't parse the profile summary
-    _protocols = (ProtocolType.ACTIVITYPUB,)
+    _protocols = [ProtocolType.ACTIVITYPUB]
 
     # Not implemented yet
     #liked is a collection
@@ -733,7 +733,7 @@ class Person(Object, base.Profile):
 
     def merge_profiles(self):
         if not self.finger: return self # no point trying this without a finger value
-        protocols = (ProtocolType.ACTIVITYPUB, ProtocolType.DIASPORA)
+        protocols = [ProtocolType.ACTIVITYPUB, ProtocolType.DIASPORA]
         if self.guid:
             self.handle = self.finger.lower()
             self._protocols = protocols
