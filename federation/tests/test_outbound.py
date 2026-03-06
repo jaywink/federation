@@ -3,6 +3,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from federation.entities.diaspora.entities import DiasporaPost
+from federation.protocols.enums import ProtocolType
 from federation.outbound import handle_create_payload, handle_send
 from federation.tests.fixtures.keys import get_dummy_private_key
 from federation.types import UserType
@@ -28,28 +29,28 @@ class TestHandleSend:
         recipients = [
             {
                 "endpoint": "https://127.0.0.1/receive/users/1234", "public_key": key.publickey(), "public": False,
-                "protocol": "diaspora", "fid": "",
+                "protocols": [ProtocolType.DIASPORA], "fid": "",
             },
             {
-                "endpoint": "https://example.com/receive/public", "public": True, "protocol": "diaspora",
+                "endpoint": "https://example.com/receive/public", "public": True, "protocols": [ProtocolType.DIASPORA],
                 "fid": "",
             },
             {
-                "endpoint": "https://example.net/receive/public", "public": True, "protocol": "diaspora",
+                "endpoint": "https://example.net/receive/public", "public": True, "protocols": [ProtocolType.DIASPORA],
                 "fid": "",
             },
             # Same twice to ensure one delivery only per unique
             {
-                "endpoint": "https://example.net/receive/public", "public": True, "protocol": "diaspora",
+                "endpoint": "https://example.net/receive/public", "public": True, "protocols": [ProtocolType.DIASPORA],
                 "fid": "",
             },
             {
                 "endpoint": "https://example.net/foobar/inbox", "fid": "https://example.net/foobar", "public": False,
-                "protocol": "activitypub",
+                "protocols": [ProtocolType.ACTIVITYPUB],
             },
             {
                 "endpoint": "https://example.net/inbox", "fid": "https://example.net/foobar", "public": True,
-                "protocol": "activitypub",
+                "protocols": [ProtocolType.ACTIVITYPUB],
             }
         ]
         author = UserType(
@@ -105,12 +106,12 @@ class TestHandleSend:
         diasporacomment.outbound_doc = diasporacomment.to_xml()
         recipients = [
             {
-                "endpoint": "https://example.com/receive/public", "public": True, "protocol": "diaspora",
+                "endpoint": "https://example.com/receive/public", "public": True, "protocols": [ProtocolType.DIASPORA],
                 "fid": "",
             },
             {
                 "endpoint": "https://example.net/inbox", "fid": "https://example.net/foobar", "public": True,
-                "protocol": "activitypub",
+                "protocols": [ProtocolType.ACTIVITYPUB],
             }
         ]
         author = UserType(
@@ -133,16 +134,16 @@ class TestHandleSend:
         share.target_handle = None  # Ensure diaspora payload fails
         recipients = [
             {
-                "endpoint": "https://example.com/receive/public", "public": True, "protocol": "diaspora",
+                "endpoint": "https://example.com/receive/public", "public": True, "protocols": [ProtocolType.DIASPORA],
                 "fid": "",
             },
             {
-                "endpoint": "https://example.tld/receive/public", "public": True, "protocol": "diaspora",
+                "endpoint": "https://example.tld/receive/public", "public": True, "protocols": [ProtocolType.DIASPORA],
                 "fid": "",
             },
             {
                 "endpoint": "https://example.net/inbox", "fid": "https://example.net/foobar", "public": True,
-                "protocol": "activitypub",
+                "protocols": [ProtocolType.ACTIVITYPUB],
             }
         ]
         author = UserType(
