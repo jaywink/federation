@@ -29,7 +29,7 @@ class TestHandleSend:
         recipients = [
             {
                 "endpoint": "https://127.0.0.1/receive/users/1234", "public_key": key.publickey(), "public": False,
-                "protocols": [ProtocolType.DIASPORA], "fid": "",
+                "protocols": [ProtocolType.DIASPORA], "fid": "", "guid": "1234",
             },
             {
                 "endpoint": "https://example.com/receive/public", "public": True, "protocols": [ProtocolType.DIASPORA],

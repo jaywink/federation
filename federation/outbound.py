@@ -4,6 +4,7 @@ import json
 import logging
 import traceback
 from typing import List, Dict, Union
+from urllib.parse import urljoin
 
 # noinspection PyPackageRequirements
 from Crypto.PublicKey import RSA
@@ -195,6 +196,7 @@ def handle_send(
         payload = None
         endpoint = recipient["endpoint"]
         fid = recipient["fid"]
+        guid = recipient.get("guid")
         public_key = recipient.get("public_key")
         if isinstance(public_key, str):
             public_key = RSA.importKey(public_key)
@@ -251,6 +253,14 @@ def handle_send(
                 "urls": {endpoint},
             })
         elif protocol == "diaspora":
+            # Currently, multi protocol profiles endpoints are to activitypub.
+            # Since diaspora profiles don't include endpoints, we can build
+            # them dynamically here.
+            if public:
+                endpoint = urljoin(endpoint, "/receive/public")
+            else:
+                endpoint = urljoin(endpoint, f"/receive/users/{guid}")
+                
             if type(entity.__class__) == "calamus.schema.JsonLDAnnotation" or entity.__class__.__name__.startswith("Matrix"):
                 # Don't try to do anything with these entities currently
                 skip_ready_payload["diaspora"] = True
