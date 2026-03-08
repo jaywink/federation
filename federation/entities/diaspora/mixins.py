@@ -78,9 +78,9 @@ class DiasporaRelayableMixin(DiasporaEntityMixin):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._required += ["signature"]
 
     def _validate_signatures(self):
+        if not self.signature: return
         super()._validate_signatures()
         if not self._sender_key:
             raise SignatureVerificationError("Cannot verify entity signature - no sender key available")
