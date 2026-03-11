@@ -50,6 +50,7 @@ setup(
         "redis",
         "requests>=2.8.0",
         "requests-cache",
+        "setuptools<81"
     ],
     include_package_data=True,
     classifiers=[
