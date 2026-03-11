@@ -5,7 +5,36 @@
 _Note: the code has been validated for django >=3.2 and <5. Using it with a django client app outside
 this version range may or may not work. If your code breaks, please open an issue._
 
-### Changed
+### Added
+
+* Remote profiles are now merged. With this, the client app can make decisions based
+  on a remote profile protocols capabilities (currently limited to Activitypub and Diaspora).
+
+  * A `ProtocolType` enum has been defined.
+
+  * The `base.Profile._protocols` property is an array that includes a remote profile supported
+    protocols.
+
+  * `federation.fetchers.retrieve_remote_profile` will try to retrieve a profile for both supported
+    protocols by default but now accepts a `protocol` argument which can be used in cases where
+    the client knows which protocol to fetch.
+
+  * In cases where `retrieve_remote_profile` successfully fetches profiles for all supported
+    protocols, they are merged.
+
+  * Profiles without a `finger` property are not merged.
+
+* Add support for nested `activitypub.models.Announce` activities. Some platforms relay group activities
+  using an `Announce` activity.
+
+* Add the `activitypub.models.Object.audience` property. Unused currently, but may be leveraged to enhance
+  group support for clients that will implement it.
+
+* Add support for `Link` object arrays used with the AP `url` property.
+
+* Add gotosocial namespace. Will be required when/if content quoting support is implemented.
+  
+  ### Changed
 
 * Make payload debug info less verbose.
 
@@ -19,12 +48,40 @@ this version range may or may not work. If your code breaks, please open an issu
 * Make the required changes to support hashtag, mentions and links for the  `Person` object `raw_content`
   property (aka AP `summary`).
 
+* Instead of throwing an exception, make `utils.diaspora.retrieve_diaspora_hcard` return `None` when no `hcard_url`
+  is included in a webfinger payload.
+
+* Diaspora content and profiles can now be fetched using URLs.
+
+* Do not fetch the `finger` property from the client DB as it makes updates impossible.
+
+* `outbound.handle_send` will not generate a payload if the target profile protocol (reply, share or retraction)
+  doesn't match the recipient's profile protocol. In case both profile support muliple protocols, Activitypub takes
+  precedence.
+
 ### Fixed
 
 * Add a '-' to the last part of domain names in the MENTION_PATTERN regex. This fixes Socialhome issue #649 by
   sucessfully matching puyncode domains (xn--). This was preventing punycode encoded mentions from being added
   to AP comments as Mention objects, which resulted in the OP not being notified (observed only with Mastodon).
    
+* Fix wrong assumptions about the `activitypub.models.Person.replies` property. Only return the replies id.
+
+* Set the accept header to `application/jrd+json` for webfinger requests.
+
+* Ensure `retrieve_remote_profile` returns a `Profile` instance.
+
+* `utils.network.fetch_document` now returns the `status_code` on request error.
+
+* As it is for Diaspora, log a message instead of throwing an exception on 404 errors for Activitypub remote
+  content fetches.
+
+* Diaspora inbound reponses to self are not signed: remove the `signature` property from the `_required` array.
+  Signatures, if present, are still validated.
+
+* Fix a long standing (but unnoticed) issue that had outbound private Diaspora payloads modified after the
+  signature was generated.
+  
 ## [0.26.0] - 2025-05-24
 
 The project code has migrated from GitLab to Codeberg: https://codeberg.org/socialhome/federation
