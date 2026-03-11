@@ -33,6 +33,7 @@ setup(
         "cryptography",
         "cssselect>=0.9.2",
         "dirty-validators>=0.3.0",
+        "enum-properties",
         "funcy",
         "lxml>=3.4.0",
         "iteration_utilities",
