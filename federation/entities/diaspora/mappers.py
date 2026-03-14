@@ -279,6 +279,8 @@ def get_outbound_entity(entity: BaseEntity, private_key: RsaKey):
         outbound = DiasporaReshare.from_base(entity)
     if not outbound:
         raise ValueError("Don't know how to convert this base entity to Diaspora protocol entities.")
+    if hasattr(outbound, "pre_send"):
+        outbound.pre_send()
     if isinstance(outbound, DiasporaRelayableMixin) and not outbound.signature:
         # Sign by author if not signed yet. We don't want to overwrite any existing signature in the case
         # that this is being sent by the parent author
@@ -287,8 +289,6 @@ def get_outbound_entity(entity: BaseEntity, private_key: RsaKey):
         # in all situations but is apparently being removed.
         # TODO: remove this once Diaspora removes the extra signature
         outbound.parent_signature = outbound.signature
-    if hasattr(outbound, "pre_send"):
-        outbound.pre_send()
     # Validate the entity
     outbound.validate(direction="outbound")
     return outbound

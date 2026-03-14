@@ -4,6 +4,7 @@ import re
 from typing import Optional, Any
 from urllib.parse import urlparse
 
+from federation.entities.base import Profile
 from federation.protocols.activitypub.signing import get_http_authentication
 from federation.utils.network import fetch_document, try_retrieve_webfinger_document
 from federation.utils.text import decode_if_bytes, validate_handle
@@ -87,6 +88,9 @@ def retrieve_and_parse_document(fid: str, cache: bool=True) -> Optional[Any]:
                 return None
             logger.info("retrieve_and_parse_document - using first entity: %s", entity)
             return entity
+    elif status_code == 404:
+        logger.warning("retrieve_and_parse_content - remote content %s not found", fid)
+        return
 
 
 def retrieve_and_parse_profile(fid: str) -> Optional[Any]:
@@ -100,7 +104,7 @@ def retrieve_and_parse_profile(fid: str) -> Optional[Any]:
     else:
         profile_id = fid
     profile = retrieve_and_parse_document(profile_id)
-    if not profile:
+    if not profile or not isinstance(profile, Profile):
         return
     try:
         profile.validate()

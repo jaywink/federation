@@ -58,6 +58,7 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
     logger.debug("fetch_document: url=%s, host=%s, path=%s, timeout=%s, raise_ssl_errors=%s",
                  url, host, path, timeout, raise_ssl_errors)
     headers = {'user-agent': USER_AGENT}
+    response = None
     if extra_headers:
         headers.update(extra_headers)
     if url:
@@ -72,7 +73,7 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
             return response.text, response.status_code, None
         except RequestException as ex:
             logger.debug("fetch_document: exception %s", ex)
-            return None, None, ex
+            return None, getattr(response, 'status_code', None), ex
     # Build url with some little sanitizing
     host_string = host.replace("http://", "").replace("https://", "").strip("/")
     path_string = path if path.startswith("/") else "/%s" % path
@@ -86,7 +87,7 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
     except (HTTPError, SSLError, ConnectionError) as ex:
         if isinstance(ex, SSLError) and raise_ssl_errors:
             logger.debug("fetch_document: exception %s", ex)
-            return None, None, ex
+            return None, getattr(response, 'status_code', None), ex
         # Try http then
         url = url.replace("https://", "http://")
         logger.debug("fetch_document: trying %s", url)
@@ -97,10 +98,10 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
             return response.text, response.status_code, None
         except RequestException as ex:
             logger.debug("fetch_document: exception %s", ex)
-            return None, None, ex
+            return None, getattr(response, 'status_code', None), ex
     except RequestException as ex:
         logger.debug("fetch_document: exception %s", ex)
-        return None, None, ex
+        return None, getattr(response, 'status_code', None), ex
 
 
 def fetch_host_ip(host: str) -> str:
@@ -232,7 +233,7 @@ def try_retrieve_webfinger_document(resource: str) -> Optional[str]:
             logger.warning("retrieve_webfinger_document: invalid handle given: %s", resource)
             return None
     document, code, exception = fetch_document(
-        host=host, path=request,
+        host=host, path=request, extra_headers={"accept": "application/jrd+json"}
     )
     if exception:
         logger.debug("retrieve_webfinger_document: failed to fetch webfinger document: %s, %s", code, exception)

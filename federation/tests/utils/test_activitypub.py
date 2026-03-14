@@ -125,7 +125,8 @@ class TestRetrieveAndParseProfile:
 
     @patch("federation.utils.activitypub.retrieve_and_parse_document", autospec=True)
     def test_calls_profile_validate(self, mock_retrieve):
-        mock_profile = Mock()
-        mock_retrieve.return_value = mock_profile
-        retrieve_and_parse_profile("https://example.com/profile")
-        assert mock_profile.validate.called
+        with patch("federation.utils.activitypub.Profile", new=Mock) as mock_profile:
+            mock_profile.validate = Mock()
+            mock_retrieve.return_value = mock_profile()
+            retrieve_and_parse_profile("https://example.com/profile")
+            assert mock_profile.validate.called

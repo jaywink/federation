@@ -49,7 +49,7 @@ class TestRetrieveDiasporaHCard:
     })
     def test_retrieve_webfinger_is_called(self, mock_retrieve):
         retrieve_diaspora_hcard("bob@localhost")
-        assert mock_retrieve.called_with("bob@localhost")
+        mock_retrieve.assert_called_with("bob@localhost")
 
     @patch("federation.utils.diaspora.fetch_document")
     @patch("federation.utils.diaspora.retrieve_and_parse_diaspora_webfinger", return_value={
@@ -215,8 +215,8 @@ class TestParseProfileFromHCard:
 class TestRetrieveAndParseProfile:
     @patch("federation.utils.diaspora.retrieve_diaspora_hcard", return_value=None)
     def test_retrieve_diaspora_hcard_is_called(self, mock_retrieve):
-        retrieve_and_parse_profile("foo@bar")
-        mock_retrieve.assert_called_with("foo@bar")
+        retrieve_and_parse_profile("foo@bar.com")
+        mock_retrieve.assert_called_with("foo@bar.com")
 
     @patch("federation.utils.diaspora.parse_profile_from_hcard")
     @patch("federation.utils.diaspora.retrieve_diaspora_hcard")
@@ -236,8 +236,8 @@ class TestRetrieveAndParseProfile:
             username="username",
         )
         mock_retrieve.return_value = hcard
-        retrieve_and_parse_profile("foo@bar")
-        mock_parse.assert_called_with(hcard, "foo@bar")
+        retrieve_and_parse_profile("foo@bar.com")
+        mock_parse.assert_called_with(hcard, "foo@bar.com")
 
     @patch("federation.utils.diaspora.parse_profile_from_hcard")
     @patch("federation.utils.diaspora.retrieve_diaspora_hcard")

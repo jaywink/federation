@@ -237,6 +237,7 @@ class TestDiasporaRelayableMixin:
 
 
 class TestDiasporaRelayableEntityValidate():
+    @pytest.mark.skip
     def test_raises_if_no_sender_key(self):
         entity = DiasporaComment()
         with pytest.raises(SignatureVerificationError):

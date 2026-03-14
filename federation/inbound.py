@@ -2,6 +2,7 @@ import importlib
 import logging
 from typing import Tuple, List, Callable
 
+from federation.entities.base import Profile
 from federation import identify_protocol_by_request
 from federation.types import UserType, RequestType
 
@@ -42,7 +43,11 @@ def handle_receive(
     logger.debug("handle_receive: sender %s, message %s", sender, message)
 
     mappers = importlib.import_module("federation.entities.%s.mappers" % found_protocol.PROTOCOL_NAME)
-    entities = mappers.message_to_objects(message, sender, sender_key_fetcher, user)
+    entities = []
+    for entity in mappers.message_to_objects(message, sender, sender_key_fetcher, user):
+        if isinstance(entity, Profile): entities.append(entity.merge_profiles())
+        else: entities.append(entity)
+    
     logger.debug("handle_receive: entities %s", entities)
 
     return sender, found_protocol.PROTOCOL_NAME, entities

@@ -26,6 +26,7 @@ from federation.entities.activitypub.ldsigning import create_ld_signature, verif
 from federation.entities.mixins import BaseEntity, RawContentMixin
 from federation.entities.utils import get_base_attributes, get_profile
 from federation.outbound import handle_send
+from federation.protocols.enums import ProtocolType
 from federation.types import UserType, ReceiverVariant
 from federation.utils.activitypub import retrieve_and_parse_document, retrieve_and_parse_profile, \
     get_profile_id_from_webfinger, get_profile_finger_from_webfinger
@@ -59,6 +60,7 @@ fields.DateTime.SERIALIZATION_FUNCS['iso'] = isoformat
 as2 = fields.Namespace("https://www.w3.org/ns/activitystreams#")
 dc = fields.Namespace("http://purl.org/dc/terms/")
 diaspora = fields.Namespace("https://diasporafoundation.org/ns/")
+gts = fields.Namespace("https://gotosocial.org/ns#")
 ldp = fields.Namespace("http://www.w3.org/ns/ldp#")
 lemmy = fields.Namespace("https://join-lemmy.org/ns#")
 litepub = fields.Namespace("http://litepub.social/ns#")
@@ -249,6 +251,7 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     atom_url = fields.String(ostatus.atomUri)
     also_known_as = IRI(as2.alsoKnownAs,
                         metadata={'ctx':[{ 'alsoKnownAs':{'@id':'as:alsoKnownAs','@type':'@id'}}]})
+    audience = IRI(as2.audience)
     icon = MixedField(as2.icon, nested='ImageSchema')
     image = MixedField(as2.image, nested='ImageSchema')
     tag_objects = MixedField(as2.tag, nested=['NoteSchema', 'HashtagSchema','MentionSchema','PropertyValueSchema','EmojiSchema'], many=True)
@@ -274,7 +277,6 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     url = MixedField(as2.url, nested='LinkSchema', many=True)
 
     # The following properties are defined by some platforms, but are not implemented yet
-    #audience
     #endtime
     #location
     #preview
@@ -648,12 +650,13 @@ class Person(Object, base.Profile):
     suspended = fields.Boolean(toot.suspended,
                                metadata={'ctx':[{'toot':str(toot),
                                                  'suspended': 'toot:suspended'}]})
-    url = MixedField(as2.url, nested='LinkSchema')
     public = True
+    finger = None
     _cached_inboxes = None
     _cached_public_key = None
     _cached_image_urls = None
     _media_type = 'text/plain' # embedded_images shouldn't parse the profile summary
+    _protocols = [ProtocolType.ACTIVITYPUB]
 
     # Not implemented yet
     #liked is a collection
@@ -682,27 +685,23 @@ class Person(Object, base.Profile):
 
     # Set finger to username@host if not provided by the platform
     def post_receive(self):
-        profile = get_profile(fid=self.id)
-        if getattr(profile, 'finger', None):
-            self.finger = profile.finger
-        else:
-            self.finger = get_profile_finger_from_webfinger(self.id)
-            # maybe we don't need this as the AS2 profile id
-            # should be the source of truth
-            if not self.finger:
-                domain = urlparse(self.id).netloc
-                finger = f'{self.username}@{domain}'
-                if get_profile_id_from_webfinger(finger) == self.id:
-                    self.finger = finger
-        # multi-protocol platform
-        if self.finger and self.guid is not missing and self.handle is missing:
-            self.handle = self.finger
+        self.finger = get_profile_finger_from_webfinger(self.id)
+        # maybe we don't need this as the AS2 profile id
+        # should be the source of truth
+        if not self.finger:
+            domain = urlparse(self.id).netloc
+            finger = f'{self.username}@{domain}'
+            if get_profile_id_from_webfinger(finger):
+                self.finger = finger
+        if not self.finger:
+            logger.warning("models.Person - failed to set profile finger property for: %s", self.id)
         # Some platforms don't set this property.
         if self.url is missing:
             self.url = self.id
-        # Bluesky bridge profiles do this
+        # Peertube and Bluesky bridge profiles do this
         if isinstance(self.url, list):
             self.url = self.url[0]
+            if isinstance(self.url, Link): self.url = self.url.href
         if isinstance(self.image, list):
             self.image = self.image[0]
 
@@ -731,6 +730,24 @@ class Person(Object, base.Profile):
                         to=self.to,
                         )
         return super().to_as2()
+
+    def merge_profiles(self):
+        if not self.finger: return self # no point trying this without a finger value
+        protocols = [ProtocolType.ACTIVITYPUB, ProtocolType.DIASPORA]
+        if self.guid:
+            self.handle = self.finger.lower()
+            self._protocols = protocols
+        else:
+            from federation.utils.diaspora import retrieve_and_parse_profile
+            try:
+                profile = retrieve_and_parse_profile(self.finger)
+                if profile:
+                    self.guid = getattr(profile, 'guid', None)
+                    self.handle = self.finger.lower()
+                    self._protocols = protocols
+            except ValueError:
+                pass
+        return self
 
     @property
     def inboxes(self):
@@ -956,15 +973,16 @@ class Note(Object, RawContentMixin):
         """
         super().post_receive()
 
-        if self._media_type == "text/markdown":
-            # Skip when markdown
-            return
-
-        self._find_and_mark_hashtags()
-        self._find_and_mark_mentions()
+        if self._media_type != "text/markdown":
+            self._find_and_mark_hashtags()
+            self._find_and_mark_mentions()
 
         if getattr(self, 'target_id'): self.entity_type = 'Comment'
 
+        # We are only interested in the replies id. some platforms
+        # return a Collection (in some cases without an id property), others a URL.
+        if isinstance(self.replies, Collection): self.replies = getattr(self.replies, "id", None)
+        
     def extract_mentions(self):
         """
         Attempt to extract mentions from raw_content if available
@@ -1274,16 +1292,19 @@ class Follow(Activity, base.Follow):
 
 class Announce(Activity, base.Share):
     id = fields.Id()
-    target_id = IRI(as2.object)
+    object_ = MixedField(as2.object, nested=['CreateSchema', 'LikeSchema', 'DeleteSchema', 'DislikeSchema', 'UndoSchema', 'UpdateSchema'])
     signable = True
+    target_id = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if isinstance(self.object_, str): self.target_id = self.object_
+        elif self.object_ is missing: self.object_ = self.target_id = kwargs.get('target_id', None)
         self._required += ['target_id']
 
     def validate_target_id(self):
-        if not self.target_id.startswith('http'):
-            raise ValueError(f'Invalid target_id for activitypub ({self.target_id})')
+        if not (isinstance(self.target_id, str) and self.target_id.startswith('http')) and not isinstance(self.target_id, Activity):
+            raise ValueError(f'Unsupported target_id ({self.target_id})')
 
     def to_as2(self):
         if isinstance(self.activity, type):
@@ -1301,8 +1322,9 @@ class Announce(Activity, base.Share):
 
         if self.activity == self:
             entity = self
-        else:
-            self.target_id = self.id
+            
+        if isinstance(self.activity, Undo):
+            self.object_ = self.id
             self.entity_type = 'Object'
             self.__dict__.update({'schema': True})
             entity = Retraction(**get_base_attributes(self, keep=('_source_object',)))
@@ -1367,6 +1389,18 @@ class Like(Activity, base.Reaction):
 
     class Meta:
         rdf_type = as2.Like
+
+
+# this is only a placeholder until reactions are implemented
+class Dislike(Activity, base.Reaction):
+    id = fields.Id()
+    reaction = fields.String(diaspora.like)
+
+    def validate(self, direction='inbound'):
+        pass
+
+    class Meta:
+        rdf_type = as2.Dislike
 
 
 # inbound Accept is a noop...
@@ -1561,9 +1595,12 @@ def model_to_objects(payload):
             return None
 
         # The activity property chains the payload activity objects in reverse order
-        while isinstance(getattr(entity, 'object_', None), Object):
-            entity.object_.activity = entity
-            entity = entity.object_
+        while isinstance(entity, Activity):
+            obj = getattr(entity, 'object_', None)
+            if isinstance(obj, (Activity, Object)):
+                obj.activity = entity
+                entity = obj
+            else: break
 
         entity._source_object = original_payload
         return entity

@@ -4,6 +4,7 @@ import json
 import logging
 import traceback
 from typing import List, Dict, Union
+from urllib.parse import urljoin
 
 # noinspection PyPackageRequirements
 from Crypto.PublicKey import RSA
@@ -14,7 +15,8 @@ from iteration_utilities import unique_everseen
 from federation.entities.activitypub.constants import NAMESPACE_PUBLIC
 from federation.entities.mixins import BaseEntity
 from federation.protocols.activitypub.signing import get_http_authentication
-from federation.types import UserType
+from federation.protocols.enums import ProtocolType
+from federation.types  import UserType
 from federation.utils.django import disable_outbound_federation
 from federation.utils.matrix import get_matrix_configuration
 from federation.utils.network import send_document
@@ -71,6 +73,7 @@ def handle_send(
         entity: BaseEntity,
         author_user: UserType,
         recipients: List[Dict],
+        target_protocols: List[ProtocolType] = [],
         parent_user: UserType = None,
         payload_logger: callable = None,
 ) -> None:
@@ -135,6 +138,8 @@ def handle_send(
                             "public": True,
                         }
                      ]
+    :arg target_protocols: (Optional) Protocols supported by the target user (i.e. for shares and replies). Ensures
+                           multi-protocol instances receive all they can handle.
     :arg parent_user: (Optional) User object of the parent object, if there is one. This must be given for the
                       Diaspora protocol if a parent object exists, so that a proper ``parent_author_signature`` can
                       be generated. If given, the payload will be sent as this user. For Activitypub, the
@@ -180,13 +185,21 @@ def handle_send(
 
     # Generate payloads and collect urls
     for recipient in unique_recipients:
+        # this assumes a constant ordering with activitypub at index 0
+        protocols = recipient["protocols"]
+        if target_protocols:
+            select = list(set(protocols).intersection(set(target_protocols)))
+            if select: protocol = select[0].string
+            else: continue
+        else: protocol = protocols[0].string
+
         payload = None
         endpoint = recipient["endpoint"]
         fid = recipient["fid"]
+        guid = recipient.get("guid")
         public_key = recipient.get("public_key")
         if isinstance(public_key, str):
             public_key = RSA.importKey(public_key)
-        protocol = recipient["protocol"]
         public = recipient["public"]
 
         if protocol == "activitypub":
@@ -240,7 +253,15 @@ def handle_send(
                 "urls": {endpoint},
             })
         elif protocol == "diaspora":
-            if entity.__class__.__name__.startswith("Activitypub") or entity.__class__.__name__.startswith("Matrix"):
+            # Currently, multi protocol profiles endpoints are to activitypub.
+            # Since diaspora profiles don't include endpoints, we can build
+            # them dynamically here.
+            if public:
+                endpoint = urljoin(endpoint, "/receive/public")
+            else:
+                endpoint = urljoin(endpoint, f"/receive/users/{guid}")
+                
+            if type(entity.__class__) == "calamus.schema.JsonLDAnnotation" or entity.__class__.__name__.startswith("Matrix"):
                 # Don't try to do anything with these entities currently
                 skip_ready_payload["diaspora"] = True
                 logger.debug('Skipping diaspora payload as payload is activitypub or matrix')
@@ -291,7 +312,7 @@ def handle_send(
             if skip_ready_payload["matrix"]:
                 logger.debug('Skipping matrix payload as skip_ready_payload set')
                 continue
-            if entity.__class__.__name__.startswith("Activitypub") or entity.__class__.__name__.startswith("Diaspora"):
+            if type(entity.__class__) == "calamus.schema.JsonLDAnnotation" or entity.__class__.__name__.startswith("Diaspora"):
                 # Don't try to do anything with these entities currently
                 skip_ready_payload["matrix"] = True
                 logger.debug('Skipping matrix payload as payload is activitypub or diaspora')
