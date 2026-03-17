@@ -137,6 +137,10 @@ def element_to_objects(
     for child in element:
         # noinspection PyProtectedMember
         entity._children.extend(element_to_objects(child, sender, user=user))
+
+    if getattr(entity, 'raw_content', '').lower().find("#nsfw") > -1:
+        entity.sensitive = True
+        
     # Add to entities list
     entities.append(entity)
     return entities
