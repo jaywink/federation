@@ -212,6 +212,7 @@ class RawContentMixin(BaseEntity):
     _mentions: Set = None
     rendered_content: str = ""
     raw_content: str = ""
+    sensitive: bool = False
 
     def __init__(self, *args, **kwargs):
         self._mentions = set()
