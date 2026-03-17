@@ -18,7 +18,7 @@ class TestGetBaseAttributes:
         attrs = get_base_attributes(entity).keys()
         assert set(attrs) == {
             'activity', 'actor_id', 'created_at', 'guid', 'handle', 'id',
-            'provider_display_name', 'public', 'raw_content'}
+            'provider_display_name', 'public', 'raw_content', 'sensitive'}
         entity = diasporaprofile
         attrs = get_base_attributes(entity).keys()
         assert set(attrs) == {
