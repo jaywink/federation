@@ -33,6 +33,8 @@ this version range may or may not work. If your code breaks, please open an issu
 * Add support for `Link` object arrays used with the AP `url` property.
 
 * Add gotosocial namespace. Will be required when/if content quoting support is implemented.
+
+* Add the `sensitive` property to base entities. Default is `false`.
   
   ### Changed
 
@@ -58,6 +60,10 @@ this version range may or may not work. If your code breaks, please open an issu
 * `outbound.handle_send` will not generate a payload if the target profile protocol (reply, share or retraction)
   doesn't match the recipient's profile protocol. In case both profile support muliple protocols, Activitypub takes
   precedence.
+
+* Based on the client supplied `sensitive` property being `true`, add the `#nfsw` tag to outbound Diaspora payloads.
+
+* For inbound Diaspora payloads, set the `sensitive` property to `true` if the `#nsfw` tag is found in the text.
 
 ### Fixed
 
