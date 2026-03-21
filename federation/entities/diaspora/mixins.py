@@ -69,6 +69,8 @@ class DiasporaPreSendMixin:
         for mention in self._mentions:
             self.raw_content = self.raw_content.replace('@'+mention, '@{'+mention+'}')
 
+        if self.sensitive and self.raw_content.lower().find("#nsfw") == -1:
+            self.raw_content += '\n#nsfw\n'
             
         
 

@@ -18,12 +18,12 @@ class TestGetBaseAttributes:
         attrs = get_base_attributes(entity).keys()
         assert set(attrs) == {
             'activity', 'actor_id', 'created_at', 'guid', 'handle', 'id',
-            'provider_display_name', 'public', 'raw_content'}
+            'provider_display_name', 'public', 'raw_content', 'sensitive'}
         entity = diasporaprofile
         attrs = get_base_attributes(entity).keys()
         assert set(attrs) == {
             'created_at', 'guid', 'handle', 'id', 'image_urls', 'inboxes',
-            'name', 'nsfw', 'public', 'raw_content', 'tag_list'}
+            'name', 'nsfw', 'public', 'raw_content', 'sensitive', 'tag_list'}
 
 
 class TestGetFullXMLRepresentation:
