@@ -1279,6 +1279,7 @@ class Follow(Activity, base.Follow):
                     "endpoint": profile.inboxes["private"],
                     "fid": self.actor_id,
                     "protocol": "activitypub",
+                    "protocols": [ProtocolType.ACTIVITYPUB, ProtocolType.DIASPORA],
                     "public": False,
                 }],
             )

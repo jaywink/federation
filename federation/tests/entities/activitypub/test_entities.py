@@ -8,6 +8,7 @@ from Crypto.PublicKey.RSA import RsaKey
 
 from federation.entities.activitypub.models import context_manager
 from federation.entities.activitypub.models import Accept
+from federation.protocols.enums import ProtocolType
 from federation.tests.fixtures.keys import PUBKEY
 from federation.types import UserType
 
@@ -432,6 +433,7 @@ class TestEntitiesPostReceive:
             "endpoint": "https://example.com/bob/private",
             "fid": "https://localhost/profile",
             "protocol": "activitypub",
+            "protocols": [ProtocolType.ACTIVITYPUB, ProtocolType.DIASPORA],
             "public": False,
         }]
 
