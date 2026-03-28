@@ -5,6 +5,8 @@
 _Note: the code has been validated for django >=3.2 and <5. Using it with a django client app outside
 this version range may or may not work. If your code breaks, please open an issue._
 
+Minimum Python version tested against is now 3.10.
+
 ### Added
 
 * Remote profiles are now merged. With this, the client app can make decisions based
@@ -36,7 +38,7 @@ this version range may or may not work. If your code breaks, please open an issu
 
 * Add the `sensitive` property to base entities. Default is `false`.
   
-  ### Changed
+### Changed
 
 * Make payload debug info less verbose.
 
