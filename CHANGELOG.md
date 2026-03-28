@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [0.27.0] - 2026-03-28
 
 _Note: the code has been validated for django >=3.2 and <5. Using it with a django client app outside
 this version range may or may not work. If your code breaks, please open an issue._
