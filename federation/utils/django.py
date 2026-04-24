@@ -78,7 +78,7 @@ def get_requests_cache_backend(namespace):
     config = get_configuration()
     if not config.get('redis_uri'): return None
 
-    return RedisBackend(cache_name=namespace, address=config['redis'])
+    return RedisBackend(cache_name=namespace, address=config['redis_uri'])
 
 def disable_outbound_federation():
     config = get_configuration()
