@@ -1,4 +1,4 @@
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
@@ -12,19 +12,19 @@ from federation.utils.text import encode_if_text
 
 class TestHandleCreatePayloadBuildsAPayload:
     @patch("federation.protocols.diaspora.protocol.MagicEnvelope", autospec=True)
-    def test_handle_create_payload___diaspora__calls_magic_envelope_render(self, mock_me):
+    async def test_handle_create_payload___diaspora__calls_magic_envelope_render(self, mock_me):
         mock_render = Mock()
         mock_me.return_value = Mock(render=mock_render)
         author_user = Mock()
         entity = DiasporaPost()
-        entity.validate = Mock()
-        handle_create_payload(entity, author_user, "diaspora")
+        entity.validate = AsyncMock()
+        await handle_create_payload(entity, author_user, "diaspora")
         mock_render.assert_called_once_with()
 
 
-@patch("federation.outbound.send_document")
+@patch("federation.outbound.send_document", new_callable=AsyncMock)
 class TestHandleSend:
-    def test_calls_handle_create_payload(self, mock_send, profile):
+    async def test_calls_handle_create_payload(self, mock_send, profile):
         key = get_dummy_private_key()
         recipients = [
             {
@@ -56,7 +56,7 @@ class TestHandleSend:
         author = UserType(
             private_key=key, id="foo@example.com", handle="foo@example.com",
         )
-        handle_send(profile, author, recipients)
+        await handle_send(profile, author, recipients)
 
         # Ensure first call is a private diaspora payload
         args, kwargs = mock_send.call_args_list[0]
@@ -101,7 +101,7 @@ class TestHandleSend:
             mock_send.call_args_list[5]
 
     @patch("federation.outbound.logger.error", autospec=True)
-    def test_no_error_for_diaspora_entities_on_activitypub_recipients(self, mock_logger, mock_send, diasporacomment):
+    async def test_no_error_for_diaspora_entities_on_activitypub_recipients(self, mock_logger, mock_send, diasporacomment):
         key = get_dummy_private_key()
         diasporacomment.outbound_doc = diasporacomment.to_xml()
         recipients = [
@@ -117,7 +117,7 @@ class TestHandleSend:
         author = UserType(
             private_key=key, id="foo@example.com", handle="foo@example.com",
         )
-        handle_send(diasporacomment, author, recipients)
+        await handle_send(diasporacomment, author, recipients)
 
         # Ensure first call is a public diaspora payload
         args, kwargs = mock_send.call_args_list[0]
@@ -129,7 +129,7 @@ class TestHandleSend:
         # Ensure no error logged
         assert mock_logger.call_count == 0
 
-    def test_survives_sending_share_if_diaspora_payload_cannot_be_created(self, mock_send, share):
+    async def test_survives_sending_share_if_diaspora_payload_cannot_be_created(self, mock_send, share):
         key = get_dummy_private_key()
         share.target_handle = None  # Ensure diaspora payload fails
         recipients = [
@@ -149,7 +149,7 @@ class TestHandleSend:
         author = UserType(
             private_key=key, id="foo@example.com", handle="foo@example.com",
         )
-        handle_send(share, author, recipients)
+        await handle_send(share, author, recipients)
 
         # Ensure first call is a public activitypub payload
         args, kwargs = mock_send.call_args_list[0]

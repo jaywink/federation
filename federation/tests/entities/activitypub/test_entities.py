@@ -382,7 +382,7 @@ class TestEntitiesConvertToAS2:
             }
         }
 
-    def test_retraction_to_as2(self, activitypubretraction):
+    async def test_retraction_to_as2(self, activitypubretraction):
         result = activitypubretraction.to_as2()
         assert result == {
             '@context': context_manager.build_context(activitypubretraction),
@@ -396,7 +396,7 @@ class TestEntitiesConvertToAS2:
             'published': '2019-04-27T00:00:00',
         }
 
-    def test_retraction_to_as2__announce(self, activitypubretraction_announce):
+    async def test_retraction_to_as2__announce(self, activitypubretraction_announce):
         result = activitypubretraction_announce.to_as2()
         assert result == {
             '@context': context_manager.build_context(activitypubretraction_announce),
@@ -416,11 +416,11 @@ class TestEntitiesConvertToAS2:
 class TestEntitiesPostReceive:
     @patch("federation.entities.activitypub.models.retrieve_and_parse_profile", autospec=True)
     @patch("federation.entities.activitypub.models.handle_send", autospec=True)
-    def test_follow_post_receive__sends_correct_accept_back(
+    async def test_follow_post_receive__sends_correct_accept_back(
             self, mock_send, mock_retrieve, activitypubfollow, profile
     ):
         mock_retrieve.return_value = profile
-        activitypubfollow.post_receive()
+        await activitypubfollow.post_receive()
         args, kwargs = mock_send.call_args_list[0]
         assert isinstance(args[0], Accept)
         assert args[0].activity_id.startswith("https://example.com/profile#accept-")

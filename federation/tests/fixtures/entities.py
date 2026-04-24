@@ -212,7 +212,7 @@ def activitypubprofile_diaspora_guid(mock_fetch):
 
 
 @pytest.fixture
-def activitypubretraction():
+async def activitypubretraction():
     with freeze_time("2019-04-27"):
         obj = Retraction(
             target_id="http://127.0.0.1:8000/post/123456/",
@@ -220,11 +220,11 @@ def activitypubretraction():
             actor_id="http://127.0.0.1:8000/profile/123456/",
             entity_type="Post",
         )
-        return get_outbound_entity(obj, None)
+        return await get_outbound_entity(obj, None)
 
 
 @pytest.fixture
-def activitypubretraction_announce():
+async def activitypubretraction_announce():
     with freeze_time("2019-04-27"):
         obj = Retraction(
             id="http://127.0.0.1:8000/post/123456/activity",
@@ -233,7 +233,7 @@ def activitypubretraction_announce():
             actor_id="http://127.0.0.1:8000/profile/123456/",
             entity_type="Share",
         )
-        return get_outbound_entity(obj, None)
+        return await get_outbound_entity(obj, None)
 
 
 @pytest.fixture

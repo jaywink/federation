@@ -1,4 +1,4 @@
-from unittest.mock import patch, Mock, call
+from unittest.mock import patch, AsyncMock, Mock, call
 from urllib.parse import quote
 
 import pytest
@@ -30,10 +30,10 @@ class TestParseDiasporaWebfinger:
         assert result == {"hcard_url": None}
 
 
-@patch("federation.utils.diaspora.retrieve_and_parse_profile", autospec=True)
-def test_fetch_public_key(mock_retrieve):
+@patch("federation.utils.diaspora.retrieve_and_parse_profile", new_callable=AsyncMock)
+async def test_fetch_public_key(mock_retrieve):
     mock_retrieve.return_value = Mock(public_key="public key")
-    result = fetch_public_key("spam@eggs")
+    result = await fetch_public_key("spam@eggs")
     mock_retrieve.assert_called_once_with("spam@eggs")
     assert result == "public key"
 
@@ -44,58 +44,58 @@ def test_get_fetch_content_endpoint():
 
 
 class TestRetrieveDiasporaHCard:
-    @patch("federation.utils.diaspora.retrieve_and_parse_diaspora_webfinger", return_value={
+    @patch("federation.utils.diaspora.retrieve_and_parse_diaspora_webfinger", new_callable=AsyncMock, return_value={
         "hcard_url": "http://localhost",
     })
-    def test_retrieve_webfinger_is_called(self, mock_retrieve):
-        retrieve_diaspora_hcard("bob@localhost")
+    async def test_retrieve_webfinger_is_called(self, mock_retrieve):
+        await retrieve_diaspora_hcard("bob@localhost")
         mock_retrieve.assert_called_with("bob@localhost")
 
-    @patch("federation.utils.diaspora.fetch_document")
-    @patch("federation.utils.diaspora.retrieve_and_parse_diaspora_webfinger", return_value={
+    @patch("federation.utils.diaspora.fetch_document", new_callable=AsyncMock)
+    @patch("federation.utils.diaspora.retrieve_and_parse_diaspora_webfinger", new_callable=AsyncMock, return_value={
         "hcard_url": "http://localhost",
     })
-    def test_fetch_document_is_called(self, mock_retrieve, mock_fetch):
+    async def test_fetch_document_is_called(self, mock_retrieve, mock_fetch):
         mock_fetch.return_value = "document", None, None
-        retrieve_diaspora_hcard("bob@localhost")
+        await retrieve_diaspora_hcard("bob@localhost")
         mock_fetch.assert_called_with("http://localhost")
 
-    @patch("federation.utils.diaspora.fetch_document")
-    @patch("federation.utils.diaspora.retrieve_and_parse_diaspora_webfinger", return_value={
+    @patch("federation.utils.diaspora.fetch_document", new_callable=AsyncMock)
+    @patch("federation.utils.diaspora.retrieve_and_parse_diaspora_webfinger", new_callable=AsyncMock, return_value={
         "hcard_url": "http://localhost",
     })
-    def test_returns_none_on_fetch_document_exception(self, mock_retrieve, mock_fetch):
+    async def test_returns_none_on_fetch_document_exception(self, mock_retrieve, mock_fetch):
         mock_fetch.return_value = None, None, ValueError()
-        result = retrieve_diaspora_hcard("bob@localhost")
+        result = await retrieve_diaspora_hcard("bob@localhost")
         mock_fetch.assert_called_with("http://localhost")
         assert result is None
 
 
 class TestRetrieveAndParseDiasporaWebfinger:
-    @patch("federation.utils.diaspora.retrieve_diaspora_host_meta", return_value=None)
-    def test_retrieve_host_meta_is_called(self, mock_retrieve):
-        retrieve_and_parse_diaspora_webfinger("bob@localhost")
+    @patch("federation.utils.diaspora.retrieve_diaspora_host_meta", new_callable=AsyncMock, return_value=None)
+    async def test_retrieve_host_meta_is_called(self, mock_retrieve):
+        await retrieve_and_parse_diaspora_webfinger("bob@localhost")
         mock_retrieve.assert_called_with("localhost")
 
-    @patch("federation.utils.diaspora.try_retrieve_webfinger_document", return_value=None)
-    @patch("federation.utils.diaspora.retrieve_diaspora_host_meta", return_value=None)
-    def test_try_retrieve_webfinger_document_is_called(self, mock_retrieve, mock_fetch):
-        retrieve_and_parse_diaspora_webfinger("bob@localhost")
+    @patch("federation.utils.diaspora.try_retrieve_webfinger_document", new_callable=AsyncMock, return_value=None)
+    @patch("federation.utils.diaspora.retrieve_diaspora_host_meta", new_callable=AsyncMock, return_value=None)
+    async def test_try_retrieve_webfinger_document_is_called(self, mock_retrieve, mock_fetch):
+        await retrieve_and_parse_diaspora_webfinger("bob@localhost")
         mock_fetch.assert_called_once_with("bob@localhost")
 
     @patch("federation.utils.diaspora.XRD.parse_xrd")
-    @patch("federation.utils.diaspora.fetch_document", return_value=(None, None, None))
+    @patch("federation.utils.diaspora.fetch_document", new_callable=AsyncMock, return_value=(None, None, None))
     @patch("federation.utils.diaspora.parse_diaspora_webfinger", return_value={'hcard_url': None})
-    @patch("federation.utils.diaspora.retrieve_diaspora_host_meta", return_value=None)
-    @patch("federation.utils.diaspora.try_retrieve_webfinger_document", return_value=None)
-    def test_fetch_document_is_called__to_fetch_xml_webfinger(
+    @patch("federation.utils.diaspora.retrieve_diaspora_host_meta", new_callable=AsyncMock, return_value=None)
+    @patch("federation.utils.diaspora.try_retrieve_webfinger_document", new_callable=AsyncMock, return_value=None)
+    async def test_fetch_document_is_called__to_fetch_xml_webfinger(
             self, mock_try, mock_retrieve, mock_parse, mock_fetch, mock_xrd,
     ):
         mock_retrieve.return_value = DiasporaHostMeta(
             webfinger_host="https://localhost"
         ).xrd
         mock_xrd.return_value = "document"
-        result = retrieve_and_parse_diaspora_webfinger("bob@localhost")
+        result = await retrieve_and_parse_diaspora_webfinger("bob@localhost")
         mock_try.assert_called_once_with("bob@localhost")
         calls = [
             call("https://localhost/webfinger?q=%s" % quote("bob@localhost")),
@@ -106,58 +106,58 @@ class TestRetrieveAndParseDiasporaWebfinger:
 
 class TestRetrieveDiasporaHostMeta:
     @patch("federation.utils.diaspora.XRD.parse_xrd")
-    @patch("federation.utils.diaspora.fetch_document")
-    def test_fetch_document_is_called(self, mock_fetch, mock_xrd):
+    @patch("federation.utils.diaspora.fetch_document", new_callable=AsyncMock)
+    async def test_fetch_document_is_called(self, mock_fetch, mock_xrd):
         mock_fetch.return_value = "document", None, None
         mock_xrd.return_value = "document"
-        document = retrieve_diaspora_host_meta("localhost")
+        document = await retrieve_diaspora_host_meta("localhost")
         mock_fetch.assert_called_with(host="localhost", path="/.well-known/host-meta")
         assert document == "document"
 
-    @patch("federation.utils.diaspora.fetch_document")
-    def test_returns_none_on_fetch_document_exception(self, mock_fetch):
+    @patch("federation.utils.diaspora.fetch_document", new_callable=AsyncMock)
+    async def test_returns_none_on_fetch_document_exception(self, mock_fetch):
         mock_fetch.return_value = None, None, ValueError()
-        document = retrieve_diaspora_host_meta("localhost")
+        document = await retrieve_diaspora_host_meta("localhost")
         mock_fetch.assert_called_with(host="localhost", path="/.well-known/host-meta")
         assert document is None
 
 
 class TestRetrieveAndParseContent:
-    @patch("federation.utils.diaspora.fetch_document", return_value=(None, 404, None))
+    @patch("federation.utils.diaspora.fetch_document", new_callable=AsyncMock, return_value=(None, 404, None))
     @patch("federation.utils.diaspora.get_fetch_content_endpoint", return_value="https://example.com/fetch/spam/eggs")
-    def test_calls_fetch_document(self, mock_get, mock_fetch):
-        retrieve_and_parse_content(id="eggs", guid="eggs", handle="user@example.com", entity_type="spam")
+    async def test_calls_fetch_document(self, mock_get, mock_fetch):
+        await retrieve_and_parse_content(id="eggs", guid="eggs", handle="user@example.com", entity_type="spam")
         mock_fetch.assert_called_once_with("https://example.com/fetch/spam/eggs", cache=True)
 
-    @patch("federation.utils.diaspora.fetch_document", return_value=(None, 404, None))
+    @patch("federation.utils.diaspora.fetch_document", new_callable=AsyncMock, return_value=(None, 404, None))
     @patch("federation.utils.diaspora.get_fetch_content_endpoint")
-    def test_calls_get_fetch_content_endpoint(self, mock_get, mock_fetch):
-        retrieve_and_parse_content(id="eggs", guid="eggs", handle="user@example.com", entity_type="spam")
+    async def test_calls_get_fetch_content_endpoint(self, mock_get, mock_fetch):
+        await retrieve_and_parse_content(id="eggs", guid="eggs", handle="user@example.com", entity_type="spam")
         mock_get.assert_called_once_with("example.com", "spam", "eggs")
         mock_get.reset_mock()
-        retrieve_and_parse_content(id="eggs", guid="eggs@spam", handle="user@example.com", entity_type="spam")
+        await retrieve_and_parse_content(id="eggs", guid="eggs@spam", handle="user@example.com", entity_type="spam")
         mock_get.assert_called_once_with("example.com", "spam", "eggs@spam")
 
-    @patch("federation.utils.diaspora.fetch_document", return_value=(DIASPORA_PUBLIC_PAYLOAD, 200, None))
+    @patch("federation.utils.diaspora.fetch_document", new_callable=AsyncMock, return_value=(DIASPORA_PUBLIC_PAYLOAD, 200, None))
     @patch("federation.utils.diaspora.get_fetch_content_endpoint", return_value="https://example.com/fetch/spam/eggs")
-    @patch("federation.utils.diaspora.handle_receive", return_value=("sender", "protocol", ["entity"]))
-    def test_calls_handle_receive(self, mock_handle, mock_get, mock_fetch):
-        entity = retrieve_and_parse_content(
+    @patch("federation.utils.diaspora.handle_receive", new_callable=AsyncMock, return_value=("sender", "protocol", ["entity"]))
+    async def test_calls_handle_receive(self, mock_handle, mock_get, mock_fetch):
+        entity = await retrieve_and_parse_content(
             id="eggs", guid="eggs", handle="user@example.com", entity_type="spam", sender_key_fetcher=sum,
         )
         mock_handle.assert_called_once_with(RequestType(body=DIASPORA_PUBLIC_PAYLOAD), sender_key_fetcher=sum)
         assert entity == "entity"
 
-    @patch("federation.utils.diaspora.fetch_document", return_value=(None, None, Exception()))
+    @patch("federation.utils.diaspora.fetch_document", new_callable=AsyncMock, return_value=(None, None, Exception()))
     @patch("federation.utils.diaspora.get_fetch_content_endpoint", return_value="https://example.com/fetch/spam/eggs")
-    def test_raises_on_fetch_error(self, mock_get, mock_fetch):
+    async def test_raises_on_fetch_error(self, mock_get, mock_fetch):
         with pytest.raises(Exception):
-            retrieve_and_parse_content(id="eggs", guid="eggs", handle="user@example.com", entity_type="spam")
+            await retrieve_and_parse_content(id="eggs", guid="eggs", handle="user@example.com", entity_type="spam")
 
-    @patch("federation.utils.diaspora.fetch_document", return_value=(None, 404, None))
+    @patch("federation.utils.diaspora.fetch_document", new_callable=AsyncMock, return_value=(None, 404, None))
     @patch("federation.utils.diaspora.get_fetch_content_endpoint", return_value="https://example.com/fetch/spam/eggs")
-    def test_returns_on_404(self, mock_get, mock_fetch):
-        result = retrieve_and_parse_content(id="eggs", guid="eggs", handle="user@example.com", entity_type="spam")
+    async def test_returns_on_404(self, mock_get, mock_fetch):
+        result = await retrieve_and_parse_content(id="eggs", guid="eggs", handle="user@example.com", entity_type="spam")
         assert not result
 
 
@@ -213,14 +213,14 @@ class TestParseProfileFromHCard:
 
 
 class TestRetrieveAndParseProfile:
-    @patch("federation.utils.diaspora.retrieve_diaspora_hcard", return_value=None)
-    def test_retrieve_diaspora_hcard_is_called(self, mock_retrieve):
-        retrieve_and_parse_profile("foo@bar.com")
+    @patch("federation.utils.diaspora.retrieve_diaspora_hcard", new_callable=AsyncMock, return_value=None)
+    async def test_retrieve_diaspora_hcard_is_called(self, mock_retrieve):
+        await retrieve_and_parse_profile("foo@bar.com")
         mock_retrieve.assert_called_with("foo@bar.com")
 
     @patch("federation.utils.diaspora.parse_profile_from_hcard")
-    @patch("federation.utils.diaspora.retrieve_diaspora_hcard")
-    def test_parse_profile_from_hcard_called(self, mock_retrieve, mock_parse):
+    @patch("federation.utils.diaspora.retrieve_diaspora_hcard", new_callable=AsyncMock)
+    async def test_parse_profile_from_hcard_called(self, mock_retrieve, mock_parse):
         hcard = generate_hcard(
             "diaspora",
             hostname="https://hostname",
@@ -236,12 +236,12 @@ class TestRetrieveAndParseProfile:
             username="username",
         )
         mock_retrieve.return_value = hcard
-        retrieve_and_parse_profile("foo@bar.com")
+        await retrieve_and_parse_profile("foo@bar.com")
         mock_parse.assert_called_with(hcard, "foo@bar.com")
 
     @patch("federation.utils.diaspora.parse_profile_from_hcard")
-    @patch("federation.utils.diaspora.retrieve_diaspora_hcard")
-    def test_profile_that_doesnt_validate_returns_none(self, mock_retrieve, mock_parse):
+    @patch("federation.utils.diaspora.retrieve_diaspora_hcard", new_callable=AsyncMock)
+    async def test_profile_that_doesnt_validate_returns_none(self, mock_retrieve, mock_parse):
         hcard = generate_hcard(
             "diaspora",
             hostname="https://hostname",
@@ -258,12 +258,12 @@ class TestRetrieveAndParseProfile:
         )
         mock_retrieve.return_value = hcard
         mock_parse.return_value = Profile(guid="123")
-        profile = retrieve_and_parse_profile("foo@bar")
+        profile = await retrieve_and_parse_profile("foo@bar")
         assert profile == None
 
     @patch("federation.utils.diaspora.parse_profile_from_hcard")
-    @patch("federation.utils.diaspora.retrieve_diaspora_hcard")
-    def test_profile_validate_is_called(self, mock_retrieve, mock_parse):
+    @patch("federation.utils.diaspora.retrieve_diaspora_hcard", new_callable=AsyncMock)
+    async def test_profile_validate_is_called(self, mock_retrieve, mock_parse):
         hcard = generate_hcard(
             "diaspora",
             hostname="https://hostname",
@@ -279,10 +279,10 @@ class TestRetrieveAndParseProfile:
             username="username",
         )
         mock_retrieve.return_value = hcard
-        mock_profile = Mock()
+        mock_profile = AsyncMock()
         mock_parse.return_value = mock_profile
-        retrieve_and_parse_profile("foo@bar")
-        assert mock_profile.validate.called
+        await retrieve_and_parse_profile("foo@bar")
+        assert mock_profile.validate.awaited
 
 
 class TestGetPublicEndpoint:

@@ -1,4 +1,4 @@
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 from lxml import etree
 import pytest
@@ -25,7 +25,7 @@ def mock_get_contact_key(contact):
     return "foobar"
 
 
-def mock_not_found_get_contact_key(contact):
+async def mock_not_found_get_contact_key(contact):
     return None
 
 
@@ -44,46 +44,46 @@ class DiasporaTestBase:
 
 
 class TestDiasporaProtocol(DiasporaTestBase):
-    def test_receive_unencrypted_returns_sender_and_content(self):
+    async def test_receive_unencrypted_returns_sender_and_content(self):
         protocol = self.init_protocol()
         user = self.get_mock_user()
         protocol.get_message_content = self.mock_get_message_content
-        sender, content = protocol.receive(RequestType(body=DIASPORA_PUBLIC_PAYLOAD), user, mock_get_contact_key,
+        sender, content = await protocol.receive(RequestType(body=DIASPORA_PUBLIC_PAYLOAD), user, mock_get_contact_key,
                                            skip_author_verification=True)
         assert sender == "foobar@example.com"
         assert content == "<content />"
 
-    @patch("federation.protocols.diaspora.protocol.fetch_public_key", autospec=True)
-    def test_receive_raises_if_sender_key_cannot_be_found(self, mock_fetch):
+    @patch("federation.protocols.diaspora.protocol.fetch_public_key", new_callable=AsyncMock)
+    async def test_receive_raises_if_sender_key_cannot_be_found(self, mock_fetch):
         protocol = self.init_protocol()
         user = self.get_mock_user()
         with pytest.raises(NoSenderKeyFoundError):
-            protocol.receive(RequestType(body=DIASPORA_PUBLIC_PAYLOAD), user, mock_not_found_get_contact_key)
+            await protocol.receive(RequestType(body=DIASPORA_PUBLIC_PAYLOAD), user, mock_not_found_get_contact_key)
         assert not mock_fetch.called
 
-    @patch("federation.protocols.diaspora.protocol.fetch_public_key", autospec=True, return_value=None)
-    def test_receive_calls_fetch_public_key_if_key_fetcher_not_given(self, mock_fetch):
+    @patch("federation.protocols.diaspora.protocol.fetch_public_key", new_callable=AsyncMock, return_value=None)
+    async def test_receive_calls_fetch_public_key_if_key_fetcher_not_given(self, mock_fetch):
         protocol = self.init_protocol()
         user = self.get_mock_user()
         with pytest.raises(NoSenderKeyFoundError):
-            protocol.receive(RequestType(body=DIASPORA_PUBLIC_PAYLOAD), user)
+            await protocol.receive(RequestType(body=DIASPORA_PUBLIC_PAYLOAD), user)
         mock_fetch.assert_called_once_with("foobar@example.com")
 
     @patch("federation.protocols.diaspora.protocol.MagicEnvelope", autospec=True)
-    @patch("federation.protocols.diaspora.protocol.fetch_public_key", autospec=True, return_value="key")
-    def test_receive_creates_and_verifies_magic_envelope_instance(self, mock_fetch, mock_env):
+    @patch("federation.protocols.diaspora.protocol.fetch_public_key", new_callable=AsyncMock, return_value="key")
+    async def test_receive_creates_and_verifies_magic_envelope_instance(self, mock_fetch, mock_env):
         protocol = self.init_protocol()
         user = self.get_mock_user()
-        protocol.receive(RequestType(body=DIASPORA_PUBLIC_PAYLOAD), user)
+        await protocol.receive(RequestType(body=DIASPORA_PUBLIC_PAYLOAD), user)
         mock_env.assert_called_once_with(doc=protocol.doc, public_key="key", verify=True)
 
-    @patch("federation.protocols.diaspora.protocol.fetch_public_key", autospec=True)
-    def test_receive_raises_on_signature_verification_failure(self, mock_fetch):
+    @patch("federation.protocols.diaspora.protocol.fetch_public_key", new_callable=AsyncMock)
+    async def test_receive_raises_on_signature_verification_failure(self, mock_fetch):
         mock_fetch.return_value = PUBKEY
         protocol = self.init_protocol()
         user = self.get_mock_user()
         with pytest.raises(SignatureVerificationError):
-            protocol.receive(RequestType(body=DIASPORA_PUBLIC_PAYLOAD), user)
+            await protocol.receive(RequestType(body=DIASPORA_PUBLIC_PAYLOAD), user)
 
     def test_get_message_content(self):
         protocol = self.init_protocol()
@@ -105,15 +105,15 @@ class TestDiasporaProtocol(DiasporaTestBase):
         assert identify_request(RequestType(body=DIASPORA_RESHARE_PAYLOAD)) is True
 
     @patch("federation.protocols.diaspora.protocol.MagicEnvelope")
-    def test_build_send_does_right_calls(self, mock_me):
+    async def test_build_send_does_right_calls(self, mock_me):
         mock_render = Mock(return_value="rendered")
         mock_me_instance = Mock(render=mock_render)
         mock_me.return_value = mock_me_instance
         protocol = Protocol()
         entity = DiasporaPost()
-        entity.validate = Mock()
+        entity.validate = AsyncMock()
         private_key = get_dummy_private_key()
-        outbound_entity = get_outbound_entity(entity, private_key)
+        outbound_entity = await get_outbound_entity(entity, private_key)
         data = protocol.build_send(outbound_entity, from_user=UserType(
             private_key=private_key, id="johnny@localhost",
             handle="johnny@localhost",
@@ -126,15 +126,15 @@ class TestDiasporaProtocol(DiasporaTestBase):
 
     @patch("federation.protocols.diaspora.protocol.MagicEnvelope")
     @patch("federation.protocols.diaspora.protocol.EncryptedPayload.encrypt", return_value="encrypted")
-    def test_build_send_does_right_calls__private_payload(self, mock_encrypt, mock_me):
+    async def test_build_send_does_right_calls__private_payload(self, mock_encrypt, mock_me):
         mock_render = Mock(return_value="rendered")
         mock_me_instance = Mock(render=mock_render)
         mock_me.return_value = mock_me_instance
         protocol = Protocol()
         entity = DiasporaPost()
-        entity.validate = Mock()
+        entity.validate = AsyncMock()
         private_key = get_dummy_private_key()
-        outbound_entity = get_outbound_entity(entity, private_key)
+        outbound_entity = await get_outbound_entity(entity, private_key)
         data = protocol.build_send(outbound_entity, to_user_key="public key", from_user=UserType(
             private_key=private_key, id="johnny@localhost",
             handle="johnny@localhost",

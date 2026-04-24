@@ -23,8 +23,9 @@ arrow
 freezegun
 
 # Django support
-django>=3.2,<5
+django>=3.2,<6
 pytest-django
+pytest-asyncio
 
 # Releasing
 twine

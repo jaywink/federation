@@ -1,6 +1,6 @@
 import datetime
 import re
-from unittest.mock import patch, Mock
+from unittest.mock import patch, AsyncMock, Mock
 
 import arrow
 from lxml import etree
@@ -27,10 +27,10 @@ class TestGetBaseAttributes:
 
 
 class TestGetFullXMLRepresentation:
-    @patch.object(DiasporaPost, "validate", new=Mock())
-    def test_returns_xml_document(self):
+    @patch.object(DiasporaPost, "validate", new_callable=AsyncMock)
+    async def test_returns_xml_document(self, mock_validate):
         entity = Post()
-        document = get_full_xml_representation(entity, "")
+        document = await get_full_xml_representation(entity, "")
         document = re.sub(r"<created_at>.*</created_at>", "", document)  # Dates are annoying to compare
         assert document == "<XML><post><status_message><text></text><guid></guid>" \
                            "<author></author><public>false</public>" \

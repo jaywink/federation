@@ -1,5 +1,5 @@
 import json
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 
 from federation.hostmeta.parsers import (
     parse_nodeinfo_document, parse_nodeinfo2_document, parse_statisticsjson_document, int_or_none,
@@ -17,14 +17,14 @@ class TestIntOrNone:
 
 class TestParseMastodonDocument:
     @patch('federation.hostmeta.fetchers.fetch_nodeinfo_document', autospec=True)
-    def test_calls_nodeinfo_fetcher_if_pleroma(self, mock_fetch):
-        parse_mastodon_document(json.loads(PLEROMA_MASTODON_API_DOC), 'example.com')
+    async def test_calls_nodeinfo_fetcher_if_pleroma(self, mock_fetch):
+        await parse_mastodon_document(json.loads(PLEROMA_MASTODON_API_DOC), 'example.com')
         mock_fetch.assert_called_once_with('example.com')
 
-    @patch('federation.hostmeta.parsers.fetch_document')
-    def test_parse_mastodon_document(self, mock_fetch):
+    @patch('federation.hostmeta.parsers.fetch_document', new_callable=AsyncMock)
+    async def test_parse_mastodon_document(self, mock_fetch):
         mock_fetch.return_value = MASTODON_ACTIVITY_DOC, 200, None
-        result = parse_mastodon_document(json.loads(MASTODON_DOC), 'example.com')
+        result = await parse_mastodon_document(json.loads(MASTODON_DOC), 'example.com')
         assert result == {
             'organization': {
                 'account': 'https://mastodon.local/@Admin',
@@ -54,9 +54,9 @@ class TestParseMastodonDocument:
         }
 
     @patch('federation.hostmeta.parsers.fetch_document')
-    def test_parse_mastodon_document__null_contact_account(self, mock_fetch):
+    async def test_parse_mastodon_document__null_contact_account(self, mock_fetch):
         mock_fetch.return_value = MASTODON_ACTIVITY_DOC, 200, None
-        result = parse_mastodon_document(json.loads(MASTODON_DOC_NULL_CONTACT), 'example.com')
+        result = await parse_mastodon_document(json.loads(MASTODON_DOC_NULL_CONTACT), 'example.com')
         assert result == {
             'organization': {
                 'account': '',
@@ -86,9 +86,9 @@ class TestParseMastodonDocument:
         }
 
     @patch('federation.hostmeta.parsers.fetch_document')
-    def test_parse_mastodon_document__rc_version(self, mock_fetch):
+    async def test_parse_mastodon_document__rc_version(self, mock_fetch):
         mock_fetch.return_value = MASTODON_ACTIVITY_DOC, 200, None
-        result = parse_mastodon_document(json.loads(MASTODON_RC_DOC), 'example.com')
+        result = await parse_mastodon_document(json.loads(MASTODON_RC_DOC), 'example.com')
         assert result == {
             'organization': {
                 'account': 'https://mastodon.local/@Admin',
@@ -118,9 +118,9 @@ class TestParseMastodonDocument:
         }
 
     @patch('federation.hostmeta.parsers.fetch_document')
-    def test_parse_mastodon_document__protocols(self, mock_fetch):
+    async def test_parse_mastodon_document__protocols(self, mock_fetch):
         mock_fetch.return_value = MASTODON_ACTIVITY_DOC, 200, None
-        result = parse_mastodon_document(json.loads(MASTODON_DOC_3), 'example.com')
+        result = await parse_mastodon_document(json.loads(MASTODON_DOC_3), 'example.com')
         assert result == {
             'organization': {
                 'account': 'https://mastodon.local/@Admin',
@@ -152,8 +152,8 @@ class TestParseMastodonDocument:
 
 class TestParseMatrixDocument:
     @patch('federation.hostmeta.parsers.send_document', autospec=True, return_value=(403, None))
-    def test_parse_matrix_document__signups_closed(self, mock_send):
-        result = parse_matrix_document(json.loads(MATRIX_SYNAPSE_DOC), 'feneas.org')
+    async def test_parse_matrix_document__signups_closed(self, mock_send):
+        result = await parse_matrix_document(json.loads(MATRIX_SYNAPSE_DOC), 'feneas.org')
         assert result == {
             'organization': {
                 'account': '',
@@ -183,8 +183,8 @@ class TestParseMatrixDocument:
         }
 
     @patch('federation.hostmeta.parsers.send_document', autospec=True, return_value=(401, None))
-    def test_parse_matrix_document__signups_open(self, mock_send):
-        result = parse_matrix_document(json.loads(MATRIX_SYNAPSE_DOC), 'feneas.org')
+    async def test_parse_matrix_document__signups_open(self, mock_send):
+        result = await parse_matrix_document(json.loads(MATRIX_SYNAPSE_DOC), 'feneas.org')
         assert result == {
             'organization': {
                 'account': '',
