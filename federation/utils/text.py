@@ -7,7 +7,7 @@ from bs4.element import NavigableString
 from commonmark import commonmark
 
 ILLEGAL_TAG_CHARS = "!#$%^&*+.,@£/()=?`'\\{[]}~;:\"’”—\xa0"
-TAG_PATTERN = re.compile(r'(#[\w\-]+)([)\]_!?*%/.,;\s]+\s*|\Z)', re.UNICODE)
+TAG_PATTERN = re.compile(r'(#[\w\-]+)([)\]_!?*%/.,:;\s]+\s*|\Z)', re.UNICODE)
 # This will match non-matching braces. I don't think it's an issue.
 MENTION_PATTERN = re.compile(r'(@\{?(?:[^{}@;]*; *)?[\w\-.]+@[\w\-.]+\.[\w\-]+}?)', re.UNICODE)
 # based on https://stackoverflow.com/a/6041965
