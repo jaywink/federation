@@ -35,10 +35,10 @@ from federation.utils.text import with_slash, validate_handle
 logger = logging.getLogger("federation")
 
 
-def get_profile_or_entity(**kwargs):
-    obj = get_profile(**kwargs)
+async def get_profile_or_entity(**kwargs):
+    obj = await get_profile(**kwargs)
     if not obj and kwargs.get('fid'):
-        obj = retrieve_and_parse_document(kwargs['fid'])
+        obj = await retrieve_and_parse_document(kwargs['fid'])
     return obj
     
 
@@ -311,7 +311,7 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
                 if tag:
                     link['data-hashtag'] = tag.group(1).lower()
 
-    def _find_and_mark_mentions(self):
+    async def _find_and_mark_mentions(self):
         mentions = [mention for mention in self.tag_objects if isinstance(mention, Mention)]
         # Look for mentions that don't have a corresponding Mention object
         extras = [tag['href'] for tag in self._soup.find_all('a', href=True, class_=lambda value: 'mention' in value if value else [])
@@ -326,11 +326,11 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
             if mention.href in (self.id, self.url):
                 profile = self # This is to prevent an infinite loop
             else:
-                profile = get_profile_or_entity(fid=mention.href, remote_url=mention.href)
+                profile = await get_profile_or_entity(fid=mention.href, remote_url=mention.href)
                 if profile and not (profile.url and profile.finger):
                     # This should be removed when we are confident that the remote_url and
                     # finger properties have been populated for most profiles on the client app side.
-                    profile = retrieve_and_parse_profile(profile.id)
+                    profile = await retrieve_and_parse_profile(profile.id)
             if profile and profile.finger:
                 hrefs.extend([profile.id, profile.url])
             else:
@@ -375,23 +375,23 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     # Before validation, assign None to fields that are set to marshmallow.missing
     # Setting missing fields to marshmallow.missing starts with calamus 0.4.1
     # TODO: rework validation
-    def validate(self, direction='inbound'):
+    async def validate(self, direction='inbound'):
         if direction == 'inbound':
             # ensure marshmallow.missing is not sent to the client app
             for attr in type(self).schema().load_fields.keys():
                 if getattr(self, attr) is missing:
                     setattr(self, attr, None)
 
-        super().validate(direction)
+        await super().validate(direction)
 
-    def _validate_signatures(self):
+    async def _validate_signatures(self):
         # Objects extracted from collections don't have a source object.
         # To avoid infinite recursion, only verify a profile signature
         # if it was sent, not retrieved.
         if not self._source_object or (not self._sender and isinstance(self, Person)):
             return
         # Always verify inbound LD signature, for monitoring purposes
-        actor = verify_ld_signature(self._source_object)
+        actor = await verify_ld_signature(self._source_object)
         if not self._sender:
             return
         if self.signable and self._sender not in (self.id, getattr(self, 'actor_id', None)):
@@ -684,14 +684,14 @@ class Person(Object, base.Profile):
             self.tag_objects = sorted(self.tag_objects, key=attrgetter('name'))
 
     # Set finger to username@host if not provided by the platform
-    def post_receive(self):
-        self.finger = get_profile_finger_from_webfinger(self.id)
+    async def post_receive(self):
+        self.finger = await get_profile_finger_from_webfinger(self.id)
         # maybe we don't need this as the AS2 profile id
         # should be the source of truth
         if not self.finger:
             domain = urlparse(self.id).netloc
             finger = f'{self.username}@{domain}'
-            if get_profile_id_from_webfinger(finger):
+            if await get_profile_id_from_webfinger(finger):
                 self.finger = finger
         if not self.finger:
             logger.warning("models.Person - failed to set profile finger property for: %s", self.id)
@@ -731,7 +731,7 @@ class Person(Object, base.Profile):
                         )
         return super().to_as2()
 
-    def merge_profiles(self):
+    async def merge_profiles(self):
         if not self.finger: return self # no point trying this without a finger value
         protocols = [ProtocolType.ACTIVITYPUB, ProtocolType.DIASPORA]
         if self.guid:
@@ -740,7 +740,7 @@ class Person(Object, base.Profile):
         else:
             from federation.utils.diaspora import retrieve_and_parse_profile
             try:
-                profile = retrieve_and_parse_profile(self.finger)
+                profile = await retrieve_and_parse_profile(self.finger)
                 if profile:
                     self.guid = getattr(profile, 'guid', None)
                     self.handle = self.finger.lower()
@@ -967,16 +967,15 @@ class Note(Object, RawContentMixin):
                 self.source['content'] = self.source['content'].replace(profile.finger, '{' + profile.finger + '}')
 
 
-    def post_receive(self) -> None:
+    async def post_receive(self) -> None:
         """
         Mark linkified tags and mentions with a data-{mention, tag} attribute.
         """
-        super().post_receive()
+        await super().post_receive()
 
         if self._media_type != "text/markdown":
             self._find_and_mark_hashtags()
-            self._find_and_mark_mentions()
-
+            await self._find_and_mark_mentions()
         if getattr(self, 'target_id'): self.entity_type = 'Comment'
 
         # We are only interested in the replies id. some platforms
@@ -1171,6 +1170,8 @@ class Video(Document, base.Video):
                 for a in act:
                     if isinstance(a, Person):
                         new_act.append(a.id)
+                    elif isinstance(a, str):
+                        new_act.append(a)
                 # TODO: fix extract_receivers which can't handle multiple actors!
                 self.actor_id = new_act[0]
             
@@ -1235,11 +1236,11 @@ class Follow(Activity, base.Follow):
 
         return self
 
-    def post_receive(self) -> None:
+    async def post_receive(self) -> None:
         """
         Post receive hook - send back follow ack.
         """
-        super().post_receive()
+        await super().post_receive()
 
         if not self.following:
             return
@@ -1251,7 +1252,7 @@ class Follow(Activity, base.Follow):
             logger.warning("Activitypub Follow.post_receive - Unable to send automatic Accept back, only supported on "
                            "Django currently")
             return
-        key = get_private_key_function(self.target_id)
+        key = await get_private_key_function(self.target_id)
         if not key:
             logger.warning("Activitypub Follow.post_receive - Failed to send automatic Accept back: could not find "
                            "profile to sign it with")
@@ -1264,7 +1265,7 @@ class Follow(Activity, base.Follow):
         )
         # noinspection PyBroadException
         try:
-            profile = retrieve_and_parse_profile(self.actor_id)
+            profile = await retrieve_and_parse_profile(self.actor_id)
         except Exception:
             profile = None
         if not profile:
@@ -1447,7 +1448,7 @@ class View(Create):
 def process_followers(obj, base_url):
     pass
 
-def extract_receiver(author, receiver):
+async def extract_receiver(author, receiver):
     """
     Transform a single receiver ID to a UserType.
     """
@@ -1457,7 +1458,7 @@ def extract_receiver(author, receiver):
         return []
 
     # First try to get receiver entity locally or remotely
-    obj = get_profile_or_entity(fid=receiver)
+    obj = await get_profile_or_entity(fid=receiver)
 
     if isinstance(obj, base.Profile):
         return [UserType(id=receiver, receiver_variant=ReceiverVariant.ACTOR)]
@@ -1465,7 +1466,7 @@ def extract_receiver(author, receiver):
     # This handles cases where the actor is sending to other actors
     # followers (seen on PeerTube)
     if isinstance(obj, base.Collection):
-        profile = get_profile(followers_fid=obj.id)
+        profile = await get_profile(followers_fid=obj.id)
         if profile:
             return [UserType(id=profile.id, receiver_variant=ReceiverVariant.FOLLOWERS)]
 
@@ -1474,7 +1475,7 @@ def extract_receiver(author, receiver):
 
     return []
 
-def extract_receivers(entity):
+async def extract_receivers(entity):
     """
     Extract receivers from a payload.
     """
@@ -1482,7 +1483,7 @@ def extract_receivers(entity):
     profile = None
     # don't care about receivers for payloads without an actor_id    
     if getattr(entity, 'actor_id'):
-        profile = get_profile_or_entity(fid=entity.actor_id)
+        profile = await get_profile_or_entity(fid=entity.actor_id)
     if not isinstance(profile, base.Profile):
         return receivers
     
@@ -1491,37 +1492,36 @@ def extract_receivers(entity):
         if isinstance(receiver, str): receiver = [receiver]
         if isinstance(receiver, list):
             for item in receiver:
-                extracted = extract_receiver(profile, item)
+                extracted = await extract_receiver(profile, item)
                 if extracted:
                     receivers += extracted
     return receivers
 
 
-def extract_and_validate(entity):
+async def extract_and_validate(entity):
     # Add protocol name
     entity._source_protocol = "activitypub"
     # Extract receivers
-    entity._receivers = extract_receivers(entity)
+    entity._receivers = await extract_receivers(entity)
 
     # Extract mentions
     if hasattr(entity, "extract_mentions"):
         entity.extract_mentions()
 
     if hasattr(entity, "post_receive"):
-        entity.post_receive()
+        await entity.post_receive()
 
-    if hasattr(entity, 'validate'): entity.validate()
+    if hasattr(entity, 'validate'): await entity.validate()
 
 
-
-def extract_replies(replies):
+async def extract_replies(replies):
     objs = []
     visited = []
 
-    def walk_reply_collection(replies):
+    async def walk_reply_collection(replies):
         if isinstance(replies, str):
             # deal with gotosocial reply collections
-            replies = retrieve_and_parse_document(replies, cache=False)
+            replies = await retrieve_and_parse_document(replies, cache=False)
         if not hasattr(replies, 'items'): return
         items = replies.items if replies.items is not missing else []
         if not isinstance(items, list): items = [items]
@@ -1529,7 +1529,7 @@ def extract_replies(replies):
             if isinstance(obj, Note):
                 try:
                     obj = obj.to_base()
-                    extract_and_validate(obj)
+                    await extract_and_validate(obj)
                 except ValueError as ex:
                     logger.error("extract_replies - Failed to validate entity %s: %s", obj, ex)
                     continue
@@ -1537,16 +1537,16 @@ def extract_replies(replies):
             objs.append(obj)
         if getattr(replies, 'next_', None) not in (missing, None):
             if (replies.id != replies.next_) and (replies.next_ not in visited):
-                resp = retrieve_and_parse_document(replies.next_, cache=False)
+                resp = await retrieve_and_parse_document(replies.next_, cache=False)
                 if resp:
                     visited.append(replies.next_)
-                    walk_reply_collection(resp)
+                    await walk_reply_collection(resp)
 
-    walk_reply_collection(replies)
+    await walk_reply_collection(replies)
     return objs
 
 
-def element_to_objects(element: Union[Dict, Object], sender: str = "") -> List:
+async def element_to_objects(element: Union[Dict, Object], sender: str = "") -> List:
     """
     Transform an Element to a list of entities.
     """
@@ -1562,7 +1562,7 @@ def element_to_objects(element: Union[Dict, Object], sender: str = "") -> List:
         base.Retraction, base.Accept,)
         ):
         try:
-            extract_and_validate(entity)
+            await extract_and_validate(entity)
         except ValueError as ex:
             logger.error("Failed to validate entity %s: %s", entity, ex)
             return []
@@ -1571,14 +1571,14 @@ def element_to_objects(element: Union[Dict, Object], sender: str = "") -> List:
                 logger.warning('Relayed retraction on %s, ignoring', entity.target_id)
                 return []
             logger.info('%s, fetching from remote', exc)
-            entity = retrieve_and_parse_document(entity.id)
+            entity = await retrieve_and_parse_document(entity.id)
             if not entity:
                 return []
         logger.info('Entity type "%s" was handled through the json-ld processor', entity.__class__.__name__)
         return [entity]
     elif entity:
         logger.info('Entity type "%s" was handled through the json-ld processor but is not a base entity', entity.__class__.__name__)
-        entity._receivers = extract_receivers(entity)
+        entity._receivers = await extract_receivers(entity)
         return [entity]
     else:
         logger.warning("Payload not implemented by the json-ld processor, skipping")
