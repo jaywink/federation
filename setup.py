@@ -25,6 +25,7 @@ setup(
     packages=find_packages(),
     license="BSD 3-clause",
     install_requires=[
+        "aiohttp-cache-client",
         "attrs",
         "beautifulsoup4>=4.11.2",
         "bleach>3.0",

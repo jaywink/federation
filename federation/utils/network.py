@@ -7,8 +7,9 @@ from typing import Optional, Dict
 from urllib.parse import quote, urlparse
 from uuid import uuid4
 
+import aiohttp
+from aiohttp_client_cache import CachedSession, RedisBackend
 import requests
-from requests_cache import CachedSession, DO_NOT_CACHE
 from requests.exceptions import RequestException, HTTPError, SSLError
 from requests.exceptions import ConnectionError
 from requests.structures import CaseInsensitiveDict
@@ -20,8 +21,8 @@ logger = logging.getLogger("federation")
 
 USER_AGENT = "python/federation/%s" % __version__
 
-session = CachedSession('fed_cache', backend=get_requests_cache_backend('fed_cache'))
-EXPIRATION = datetime.timedelta(hours=6)
+redis_cache = get_requests_cache_backend('fed_cache')
+EXPIRATION = datetime.timedelta(minutes=10)
 
 def fetch_content_type(url: str) -> Optional[str]:
     """
@@ -35,7 +36,7 @@ def fetch_content_type(url: str) -> Optional[str]:
         return response.headers.get('Content-Type')
 
 
-def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=True, extra_headers=None, cache=True, **kwargs):
+def sync_fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=True, extra_headers=None, cache=True, **kwargs):
     """Helper method to fetch remote document.
 
     Must be given either the ``url`` or ``host``.
@@ -102,6 +103,92 @@ def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=T
     except RequestException as ex:
         logger.debug("fetch_document: exception %s", ex)
         return None, getattr(response, 'status_code', None), ex
+
+
+class HTTPSignatureMiddleware:
+    def __init__(self, signer):
+        self.signer = signer
+
+    async def __call__(self, req, handler):
+        # aiohttp uses yarl.URL, not requests
+        url = req.url
+        req.url = str(url)
+        req.path_url = url.path
+        req = self.signer(req)
+        req.url = url
+        return await handler(req)
+
+    
+async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=True, extra_headers=None, cache=True, **kwargs):
+    """Helper method to asynchronously fetch remote document.
+
+    Must be given either the ``url`` or ``host``.
+    If ``url`` is given, only that will be tried without falling back to http from https.
+    If ``host`` given, `path` will be added to it. Will fall back to http on non-success status code.
+
+    :arg url: Full url to fetch, including protocol
+    :arg host: Domain part only without path or protocol
+    :arg path: Path without domain (defaults to "/")
+    :arg timeout: Seconds to wait for response (defaults to 10)
+    :arg raise_ssl_errors: Pass False if you want to try HTTP even for sites with SSL errors (default True)
+    :arg extra_headers: Optional extra headers dictionary to add to requests
+    :arg kwargs holds extra args passed to requests.get
+    :returns: Tuple of document (str or None), status code (int or None) and error (an exception class instance or None)
+    :raises ValueError: If neither url nor host are given as parameters
+    """
+    if not url and not host:
+        raise ValueError("Need url or host.")
+
+    logger.debug("fetch_document: url=%s, host=%s, path=%s, timeout=%s, raise_ssl_errors=%s",
+                 url, host, path, timeout, raise_ssl_errors)
+    headers = {'user-agent': USER_AGENT}
+    response = None
+    if extra_headers:
+        headers.update(extra_headers)
+
+    middleware = (HTTPSignatureMiddleware(kwargs.get('auth')),) if kwargs.get('auth', None) else () 
+    
+    async with CachedSession(cache=redis_cache, expire_after=EXPIRATION if cache else 0) as session:
+        if url:
+            # Use url since it was given
+            logger.debug("fetch_document: trying %s", url)
+            try:
+                async with session.get(url, headers=headers, middlewares=middleware) as response:
+                    logger.debug("fetch_document: found document, code %s", response.status)
+                    response.raise_for_status()
+                    #if not response.get_encoding(): response.encoding = 'utf-8'
+                    return await response.text(), response.status, None
+            except (aiohttp.ClientConnectorDNSError, aiohttp.ClientConnectionError, aiohttp.ClientResponseError) as ex:
+                logger.debug("fetch_document: exception %s", ex)
+                return None, getattr(response, 'status', None), ex
+        # Build url with some little sanitizing
+        host_string = host.replace("http://", "").replace("https://", "").strip("/")
+        path_string = path if path.startswith("/") else "/%s" % path
+        url = "https://%s%s" % (host_string, path_string)
+        logger.debug("fetch_document: trying %s", url)
+        try:
+            async with session.get(url, headers=headers, middlewares=middleware) as response:
+                logger.debug("fetch_document: found document, code %s", response.status)
+                response.raise_for_status()
+                return await response.text(), response.status, None
+        except (aiohttp.ClientConnectorDNSError, aiohttp.ClientSSLError, aiohttp.ClientConnectionError, aiohttp.ClientResponseError) as ex:
+            if isinstance(ex, aiohttp.ClientSSLError) and raise_ssl_errors:
+                logger.debug("fetch_document: exception %s", ex)
+                return None, getattr(response, 'status', None), ex
+            # Try http then
+            url = url.replace("https://", "http://")
+            logger.debug("fetch_document: trying %s", url)
+            try:
+                async with session.get(url, headers=headers, middlewares=middleware) as response:
+                    logger.debug("fetch_document: found document, code %s", response.status)
+                    response.raise_for_status()
+                    return await response.text(), response.status, None
+            except (aiohttp.ClientConnectorDNSError, aiohttp.ClientConnectionError, aiohttp.ClientResponseError) as ex:
+                logger.debug("fetch_document: exception %s", ex)
+                return None, getattr(response, 'status', None), ex
+        except RequestException as ex:
+            logger.debug("fetch_document: exception %s", ex)
+            return None, getattr(response, 'status', None), ex
 
 
 def fetch_host_ip(host: str) -> str:
@@ -182,7 +269,7 @@ def parse_http_date(date):
         raise ValueError("%r is not a valid date" % date) from exc
 
 
-def send_document(url, data, timeout=10, method="post", *args, **kwargs):
+async def send_document(url, data, timeout=10, method="post", *args, **kwargs):
     """Helper method to send a document via POST.
 
     Additional ``*args`` and ``**kwargs`` will be passed on to ``requests.post``.
@@ -204,20 +291,21 @@ def send_document(url, data, timeout=10, method="post", *args, **kwargs):
         # Update from kwargs
         headers.update(kwargs.get("headers"))
     kwargs.update({
-        "data": data, "timeout": timeout, "headers": headers
+        "data": data, "headers": headers
     })
-    request_func = getattr(requests, method)
-    try:
-        response = request_func(url, *args, **kwargs)
-        logger.debug("send_document: response status code %s", response.status_code)
-        return response.status_code, None
-    # TODO support rate limit 429 code
-    except RequestException as ex:
-        logger.debug("send_document: exception %s", ex)
-        return None, ex
+    async with aiohttp.ClientSession() as session:
+        request_func = getattr(session, method)
+        try:
+            response = await request_func(url, *args, **kwargs)
+            logger.debug("send_document: response status code %s", response.status)
+            return response.status, None
+        # TODO support rate limit 429 code
+        except aiohttp.ClientResponseError as ex:
+            logger.debug("send_document: exception %s", ex)
+            return None, ex
 
 
-def try_retrieve_webfinger_document(resource: str) -> Optional[str]:
+async def try_retrieve_webfinger_document(resource: str) -> Optional[str]:
     """
     Try to retrieve an RFC7033 webfinger document. Does not raise if it fails.
     """
@@ -232,7 +320,7 @@ def try_retrieve_webfinger_document(resource: str) -> Optional[str]:
         except (AttributeError, IndexError):
             logger.warning("retrieve_webfinger_document: invalid handle given: %s", resource)
             return None
-    document, code, exception = fetch_document(
+    document, code, exception = await fetch_document(
         host=host, path=request, extra_headers={"accept": "application/jrd+json"}
     )
     if exception:

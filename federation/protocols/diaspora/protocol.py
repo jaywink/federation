@@ -82,7 +82,7 @@ class Protocol:
             logger.debug("diaspora.protocol.store_magic_envelope_doc: json payload: %s", json_payload)
             self.doc = self.get_json_payload_magic_envelope(json_payload)
 
-    def receive(
+    async def receive(
             self,
             request: RequestType,
             user: UserType = None,
@@ -100,7 +100,7 @@ class Protocol:
         self.sender_handle = self.get_sender()
         # Verify the message is from who it claims to be
         if not skip_author_verification:
-            self.verify_signature()
+            await self.verify_signature()
         return self.sender_handle, self.content
 
     def _get_user_key(self):
@@ -123,15 +123,15 @@ class Protocol:
         logger.debug("diaspora.protocol.get_message_content: %s", body)
         return body
 
-    def verify_signature(self):
+    async def verify_signature(self):
         """
         Verify the signed XML elements to have confidence that the claimed
         author did actually generate this message.
         """
         if self.get_contact_key:
-            sender_key = self.get_contact_key(self.sender_handle)
+            sender_key = await self.get_contact_key(self.sender_handle)
         else:
-            sender_key = fetch_public_key(self.sender_handle)
+            sender_key = await fetch_public_key(self.sender_handle)
         if not sender_key:
             raise NoSenderKeyFoundError("Could not find a sender contact to retrieve key")
         MagicEnvelope(doc=self.doc, public_key=sender_key, verify=True)

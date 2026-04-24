@@ -74,7 +74,7 @@ def check_sender_and_entity_handle_match(sender_handle, entity_handle):
     return True
 
 
-def element_to_objects(
+async def element_to_objects(
         element: etree.ElementTree, sender: str, sender_key_fetcher: Callable[[str], str] = None, user: UserType = None,
 ) -> List:
     """Transform an Element to a list of entities recursively.
@@ -90,7 +90,7 @@ def element_to_objects(
         return []
 
     attrs = xml_children_as_dict(element)
-    transformed = transform_attributes(attrs, cls)
+    transformed = await transform_attributes(attrs, cls)
     if hasattr(cls, "fill_extra_attributes"):
         transformed = cls.fill_extra_attributes(transformed)
     entity = cls(**transformed)
@@ -111,9 +111,9 @@ def element_to_objects(
         # If relayable, fetch sender key for validation
         entity._xml_tags = get_element_child_info(element, "tag")
         if sender_key_fetcher:
-            entity._sender_key = sender_key_fetcher(entity.actor_id)
+            entity._sender_key = await sender_key_fetcher(entity.actor_id)
         else:
-            profile = retrieve_and_parse_profile(entity.handle)
+            profile = await retrieve_and_parse_profile(entity.handle)
             if profile:
                 entity._sender_key = profile.public_key
     else:
@@ -121,7 +121,7 @@ def element_to_objects(
         if not check_sender_and_entity_handle_match(sender, entity.handle):
             return []
     try:
-        entity.validate()
+        await entity.validate()
     except ValueError as ex:
         logger.error("Failed to validate entity %s: %s", entity, ex, extra={
             "attrs": attrs,
@@ -136,7 +136,7 @@ def element_to_objects(
     # Do child elements
     for child in element:
         # noinspection PyProtectedMember
-        entity._children.extend(element_to_objects(child, sender, user=user))
+        entity._children.extend(await element_to_objects(child, sender, user=user))
 
     if getattr(entity, 'raw_content', '').lower().find("#nsfw") > -1:
         entity.sensitive = True
@@ -146,7 +146,7 @@ def element_to_objects(
     return entities
 
 
-def message_to_objects(
+async def message_to_objects(
         message: str, sender: str, sender_key_fetcher:Callable[[str], str]=None, user: UserType =None,
 ) -> List:
     """Takes in a message extracted by a protocol and maps it to entities.
@@ -162,11 +162,11 @@ def message_to_objects(
     """
     doc = etree.fromstring(message)
     if doc.tag in TAGS:
-        return element_to_objects(doc, sender, sender_key_fetcher, user)
+        return await element_to_objects(doc, sender, sender_key_fetcher, user)
     return []
 
 
-def transform_attributes(attrs, cls):
+async def transform_attributes(attrs, cls):
     """Transform some attribute keys.
 
     :param attrs: Properties from the XML
@@ -185,7 +185,7 @@ def transform_attributes(attrs, cls):
         elif key == "author":
             if cls == DiasporaProfile:
                 # Diaspora Profile XML message contains no GUID. We need the guid. Fetch it.
-                profile = retrieve_and_parse_profile(value)
+                profile = await retrieve_and_parse_profile(value)
                 transformed['id'] = value
                 transformed["guid"] = profile.guid
             else:
@@ -244,7 +244,7 @@ def transform_attributes(attrs, cls):
     return transformed
 
 
-def get_outbound_entity(entity: BaseEntity, private_key: RsaKey):
+async def get_outbound_entity(entity: BaseEntity, private_key: RsaKey):
     """Get the correct outbound entity for this protocol.
 
     We might have to look at entity values to decide the correct outbound entity.
@@ -294,5 +294,5 @@ def get_outbound_entity(entity: BaseEntity, private_key: RsaKey):
         # TODO: remove this once Diaspora removes the extra signature
         outbound.parent_signature = outbound.signature
     # Validate the entity
-    outbound.validate(direction="outbound")
+    await outbound.validate(direction="outbound")
     return outbound

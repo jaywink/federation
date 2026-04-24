@@ -68,7 +68,7 @@ class BaseEntity:
             # Fill a default activity if not given and type of entity class has one
             self.activity = getattr(self, "_default_activity", None)
 
-    def post_receive(self):
+    async def post_receive(self):
         """
         Run any actions after deserializing the payload into an entity.
         """
@@ -80,7 +80,7 @@ class BaseEntity:
         """
         pass
 
-    def validate(self, direction: str = "inbound") -> None:
+    async def validate(self, direction: str = "inbound") -> None:
         """Do validation.
 
         1) Check `_required` have been given
@@ -104,7 +104,7 @@ class BaseEntity:
         self._validate_attributes(validates)
         self._validate_children()
         if direction == "inbound":
-            self._validate_signatures()
+            await self._validate_signatures()
 
     def _validate_required(self, attributes):
         """Ensure required attributes are present."""
@@ -139,7 +139,7 @@ class BaseEntity:
                     )
                 )
 
-    def _validate_signatures(self):
+    async def _validate_signatures(self):
         """Override in subclasses where necessary"""
         pass
 
@@ -165,8 +165,8 @@ class TargetIDMixin(BaseEntity):
     target_handle = ""
     target_guid = ""
 
-    def validate(self, *args, **kwargs) -> None:
-        super().validate(*args, **kwargs)
+    async def validate(self, *args, **kwargs) -> None:
+        await super().validate(*args, **kwargs)
         # Ensure one of the target attributes is filled at least
         if not self.target_id and not self.target_handle and not self.target_guid:
             raise ValueError("Must give one of the target attributes for TargetIDMixin.")

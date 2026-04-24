@@ -53,17 +53,17 @@ def int_or_none(value):
         return None
 
 
-def parse_mastodon_document(doc, host):
+async def parse_mastodon_document(doc, host):
     # Check first this is not actually Pleroma or Misskey
     if doc.get('version', '').find('Pleroma') > -1 or doc.get('version', '').find('Pixelfed') > -1 or \
             doc.get('version', '').find('Kibou') > -1 or doc.get('version', '').find('Kroeg') > -1:
         # Use NodeInfo instead, otherwise this is logged as Mastodon
         from federation.hostmeta.fetchers import fetch_nodeinfo_document
-        return fetch_nodeinfo_document(host)
+        return await fetch_nodeinfo_document(host)
     elif doc.get('version', '').find('misskey') > -1:
         # Use Misskey instead, otherwise this is logged as Mastodon
         from federation.hostmeta.fetchers import fetch_misskey_document
-        return fetch_misskey_document(host, mastodon_document=doc)
+        return await fetch_misskey_document(host, mastodon_document=doc)
 
     result = deepcopy(defaults)
     result['host'] = host
@@ -73,7 +73,7 @@ def parse_mastodon_document(doc, host):
 
     # Awkward parsing of signups from about page
     # TODO remove if fixed, issue logged: https://github.com/tootsuite/mastodon/issues/9350
-    about_doc, _status_code, _error = fetch_document(host=host, path='/about')
+    about_doc, _status_code, _error = await fetch_document(host=host, path='/about')
     if about_doc:
         result['open_signups'] = about_doc.find("<div class='closed-registrations-message'>") == -1
 
@@ -98,7 +98,7 @@ def parse_mastodon_document(doc, host):
     result['organization']['contact'] = doc.get('email', '')
     result['organization']['name'] = contact_account.get('display_name', '')
 
-    activity_doc, _status_code, _error = fetch_document(host=host, path='/api/v1/instance/activity')
+    activity_doc, _status_code, _error = await fetch_document(host=host, path='/api/v1/instance/activity')
     if activity_doc:
         try:
             activity_doc = json.loads(activity_doc)
@@ -125,7 +125,7 @@ def parse_mastodon_document(doc, host):
     return result
 
 
-def parse_matrix_document(doc: Dict, host: str) -> Dict:
+async def parse_matrix_document(doc: Dict, host: str) -> Dict:
     result = deepcopy(defaults)
     result['host'] = host
     result['name'] = host
@@ -134,7 +134,7 @@ def parse_matrix_document(doc: Dict, host: str) -> Dict:
     result['version'] = doc["server"]["version"]
 
     # Get signups status by posting to register endpoint and analyzing the status code coming back
-    status_code, _error = send_document(
+    status_code, _error = await send_document(
         f'https://{host}/_matrix/client/r0/register',
         data=json.dumps({'auth': {}}),
     )
@@ -146,7 +146,7 @@ def parse_matrix_document(doc: Dict, host: str) -> Dict:
     return result
 
 
-def parse_misskey_document(doc: Dict, host: str, mastodon_document: Dict=None) -> Dict:
+async def parse_misskey_document(doc: Dict, host: str, mastodon_document: Dict=None) -> Dict:
     result = deepcopy(defaults)
     result['host'] = host
 
@@ -170,7 +170,7 @@ def parse_misskey_document(doc: Dict, host: str, mastodon_document: Dict=None) -
 
     if not mastodon_document:
         # Fetch also Mastodon API doc to get some counts...
-        api_doc, _status_code, _error = fetch_document(host=host, path='/api/v1/instance')
+        api_doc, _status_code, _error = await fetch_document(host=host, path='/api/v1/instance')
         if api_doc:
             try:
                 mastodon_document = json.loads(api_doc)

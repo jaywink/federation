@@ -21,18 +21,14 @@ def get_base_attributes(entity, keep=()):
     return attributes
 
 
-def get_name_for_profile(fid: str) -> Optional[str]:
+async def get_name_for_profile(fid: str) -> Optional[str]:
     """
     Get a profile display name from a profile via the configured profile getter.
 
     Currently only works with Django configuration.
     """
     try:
-        from federation.utils.django import get_function_from_config
-        profile_func = get_function_from_config("get_profile_function")
-        if not profile_func:
-            return
-        profile = profile_func(fid=fid)
+        profile = await get_profile(fid=fid)
         if not profile:
             return
         if profile.name == fid and profile.username:
@@ -43,7 +39,7 @@ def get_name_for_profile(fid: str) -> Optional[str]:
         pass
 
 
-def get_profile(**kwargs):
+async def get_profile(**kwargs):
     # type: (str) -> Profile
     """
     Get a profile via the configured profile getter.
@@ -55,6 +51,6 @@ def get_profile(**kwargs):
         profile_func = get_function_from_config("get_profile_function")
         if not profile_func:
             return
-        return profile_func(**kwargs)
+        return await profile_func(**kwargs)
     except Exception:
         pass

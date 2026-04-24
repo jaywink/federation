@@ -28,7 +28,7 @@ if disable_outbound_federation():
 logger = logging.getLogger("federation")
 
 
-def handle_create_payload(
+async def handle_create_payload(
         entity: BaseEntity,
         author_user: UserType,
         protocol_name: str,
@@ -56,7 +56,7 @@ def handle_create_payload(
     # noinspection PyUnresolvedReferences
     protocol = protocol.Protocol()
     # noinspection PyUnresolvedReferences
-    outbound_entity = mappers.get_outbound_entity(entity, author_user.rsa_private_key)
+    outbound_entity = await mappers.get_outbound_entity(entity, author_user.rsa_private_key)
     if parent_user:
         outbound_entity.sign_with_parent(parent_user.rsa_private_key)
     send_as_user = parent_user if parent_user else author_user
@@ -69,7 +69,7 @@ def handle_create_payload(
     return data
 
 
-def handle_send(
+async def handle_send(
         entity: BaseEntity,
         author_user: UserType,
         recipients: List[Dict],
@@ -216,7 +216,7 @@ def handle_send(
                 if not ready_payloads[protocol]["payload"]:
                     try:
                         # noinspection PyTypeChecker
-                        ready_payloads[protocol]["payload"] = handle_create_payload(
+                        ready_payloads[protocol]["payload"] = await handle_create_payload(
                             entity, author_user, protocol, parent_user=parent_user, payload_logger=payload_logger,
                         )
                     except ValueError as ex:
@@ -276,7 +276,7 @@ def handle_send(
                 if not ready_payloads[protocol]["payload"]:
                     try:
                         # noinspection PyTypeChecker
-                        ready_payloads[protocol]["payload"] = handle_create_payload(
+                        ready_payloads[protocol]["payload"] = await handle_create_payload(
                             entity, author_user, protocol, parent_user=parent_user, payload_logger=payload_logger,
                         )
                     except Exception as ex:
@@ -292,7 +292,7 @@ def handle_send(
                     continue
                 # Private payload
                 try:
-                    payload = handle_create_payload(
+                    payload = await handle_create_payload(
                         entity, author_user, "diaspora", to_user_key=public_key, parent_user=parent_user,
                         payload_logger=payload_logger,
                     )
@@ -391,7 +391,7 @@ def handle_send(
         for url in payload["urls"]:
             try:
                 # TODO send_document and fetch_document need to handle rate limits
-                send_document(
+                await send_document(
                     url,
                     payload["payload"],
                     auth=payload.get("auth"),

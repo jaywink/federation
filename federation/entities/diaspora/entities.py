@@ -133,9 +133,9 @@ class DiasporaProfile(DiasporaEntityMixin, Profile):
         struct_to_xml(element, properties)
         return element
 
-    def merge_profiles(self):
+    async def merge_profiles(self):
         from federation.utils.activitypub import retrieve_and_parse_profile
-        profile = retrieve_and_parse_profile(self.finger)
+        profile = await retrieve_and_parse_profile(self.finger)
         if profile:
             profile.guid = self.guid
             profile.handle = self.handle

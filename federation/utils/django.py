@@ -1,7 +1,8 @@
 import importlib
 import redis
-from requests_cache import RedisCache, SQLiteCache
+from aiohttp_client_cache import RedisBackend
 
+from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from federation.types import UserType
@@ -56,7 +57,7 @@ def get_federation_user():
     except AttributeError:
         return None
 
-    key = get_key(config['federation_id'])
+    key = async_to_sync(get_key)(config['federation_id'])
     if not key: return None
 
     return UserType(id=config['federation_id'], private_key=key)
@@ -72,12 +73,12 @@ def get_redis():
 
 def get_requests_cache_backend(namespace):
     """
-    Use RedisCache is available, else fallback to SQLiteCache
+    Use RedisBackend if available, else None
     """
     config = get_configuration()
-    if not config.get('redis'): return SQLiteCache()
+    if not config.get('redis_uri'): return None
 
-    return RedisCache(namespace, **config['redis'])
+    return RedisBackend(cache_name=namespace, address=config['redis'])
 
 def disable_outbound_federation():
     config = get_configuration()
