@@ -234,7 +234,7 @@ async def retrieve_and_parse_profile(handle):
         return None
     profile = parse_profile_from_hcard(hcard, handle)
     try:
-        profile.validate()
+        await profile.validate()
     except ValueError as ex:
         logger.warning("retrieve_and_parse_profile - found profile %s but it didn't validate: %s",
                        profile, ex)

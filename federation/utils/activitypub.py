@@ -107,7 +107,7 @@ async def retrieve_and_parse_profile(fid: str) -> Optional[Any]:
     if not profile or not isinstance(profile, Profile):
         return
     try:
-        profile.validate()
+        await profile.validate()
     except ValueError as ex:
         logger.warning("retrieve_and_parse_profile - found profile %s but it didn't validate: %s",
                        profile, ex)
