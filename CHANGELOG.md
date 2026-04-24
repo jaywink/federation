@@ -1,5 +1,31 @@
 # Changelog
 
+## Unreleased
+
+**Breaking change**: remote fetchers as well as inbound and outbound requests functions must be called
+from within an async context. For sync django apps, this may mean using the `async_to_sync` utility. Also,
+the provided django views are now async, which means a django client app must serve requests through
+ASGI (daphne, uvicorn, ...).
+
+_Note: the code has been validated for django >=3.2 and <**6**. Using it with a django client app outside
+this version range may or may not work. If your code breaks, please open an issue._
+
+### Changed
+
+* Modify `utils.network.fetch_document`, replacing the `requests` library with `aiohttp-client-cache` in
+  order to turn it in a non-blocking function.
+
+* Ensure all functions and methods that may call `fetch_document` down the call chain are converted to
+  async.
+
+* Adapt tests to an async context.
+
+### Fixed
+
+* Add the ':' character to the list of forbidden characters in tags.
+
+* Do not assume peertube actors are always AP objects.
+
 ## [0.27.0] - 2026-03-28
 
 _Note: the code has been validated for django >=3.2 and <5. Using it with a django client app outside
