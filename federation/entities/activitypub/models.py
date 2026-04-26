@@ -802,9 +802,7 @@ class Person(Object, base.Profile):
         self._cached_image_urls = value
         if value.get('large'):
             try:
-                profile_icon = Image(url=value.get('large'))
-                if profile_icon.media_type:
-                    self.icon = profile_icon
+                self.icon = Image(url=value.get('large'))
             except Exception as ex:
                 logger.warning("models.Person - failed to set profile icon: %s", ex)
 
