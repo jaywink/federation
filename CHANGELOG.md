@@ -13,12 +13,18 @@ this version range may or may not work. If your code breaks, please open an issu
 ### Changed
 
 * Modify `utils.network.fetch_document`, replacing the `requests` library with `aiohttp-client-cache` in
-  order to turn it in a non-blocking function.
+  order to turn it into a non-blocking function.
 
-* Ensure all functions and methods that may call `fetch_document` down the call chain are converted to
-  async.
+* `utils.network.fetch_content_type` also uses `aiohttp-client-cache`. It  now uses a partial `GET` and
+  `magic.from_buffer` when `HEAD` returns `application/octet-stream`.
 
-* Adapt tests to an async context.
+* Convert all functions and methods that may call `fetch_document` or `fetch_content_type`down the call
+  chain to async.
+
+* The `entities.activitypub.django.views.activitypub_object_view` decorator as been refactored as the
+  `ActivitypubObjectView` class that be used directly as an async view.
+  
+* Adapt many tests to an async context.
 
 ### Fixed
 
