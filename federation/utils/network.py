@@ -1,17 +1,16 @@
 import calendar
 import datetime
 import logging
+import magic
 import re
 import socket
 from typing import Optional, Dict
 from urllib.parse import quote, urlparse
 from uuid import uuid4
 
+import aiofiles
 import aiohttp
 from aiohttp_client_cache import CachedSession, RedisBackend
-import requests
-from requests.exceptions import RequestException, HTTPError, SSLError
-from requests.exceptions import ConnectionError
 from requests.structures import CaseInsensitiveDict
 
 from federation import __version__
@@ -24,86 +23,32 @@ USER_AGENT = "python/federation/%s" % __version__
 redis_cache = get_requests_cache_backend('fed_cache')
 EXPIRATION = datetime.timedelta(minutes=10)
 
-def fetch_content_type(url: str) -> Optional[str]:
+async def fetch_content_type(url: str) -> Optional[str]:
     """
     Fetch the HEAD of the remote url to determine the content type.
+    If application/octet-stream is returned, do a partial GET and
+    analyse with the magic library.
     """
-    try:
-        response = session.head(url, headers={'user-agent': USER_AGENT}, timeout=10)
-    except RequestException as ex:
-        logger.warning("fetch_content_type - %s when fetching url %s", ex, url)
-    else:
-        return response.headers.get('Content-Type')
-
-
-def sync_fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=True, extra_headers=None, cache=True, **kwargs):
-    """Helper method to fetch remote document.
-
-    Must be given either the ``url`` or ``host``.
-    If ``url`` is given, only that will be tried without falling back to http from https.
-    If ``host`` given, `path` will be added to it. Will fall back to http on non-success status code.
-
-    :arg url: Full url to fetch, including protocol
-    :arg host: Domain part only without path or protocol
-    :arg path: Path without domain (defaults to "/")
-    :arg timeout: Seconds to wait for response (defaults to 10)
-    :arg raise_ssl_errors: Pass False if you want to try HTTP even for sites with SSL errors (default True)
-    :arg extra_headers: Optional extra headers dictionary to add to requests
-    :arg kwargs holds extra args passed to requests.get
-    :returns: Tuple of document (str or None), status code (int or None) and error (an exception class instance or None)
-    :raises ValueError: If neither url nor host are given as parameters
-    """
-    if not url and not host:
-        raise ValueError("Need url or host.")
-
-    logger.debug("fetch_document: url=%s, host=%s, path=%s, timeout=%s, raise_ssl_errors=%s",
-                 url, host, path, timeout, raise_ssl_errors)
-    headers = {'user-agent': USER_AGENT}
-    response = None
-    if extra_headers:
-        headers.update(extra_headers)
-    if url:
-        # Use url since it was given
-        logger.debug("fetch_document: trying %s", url)
+    content_type = ""
+    async with CachedSession(cache=redis_cache) as session:
         try:
-            response = session.get(url, timeout=timeout, headers=headers, 
-                    expire_after=EXPIRATION if cache else DO_NOT_CACHE, **kwargs)
-            logger.debug("fetch_document: found document, code %s", response.status_code)
-            response.raise_for_status()
-            if not response.encoding: response.encoding = 'utf-8'
-            return response.text, response.status_code, None
-        except RequestException as ex:
-            logger.debug("fetch_document: exception %s", ex)
-            return None, getattr(response, 'status_code', None), ex
-    # Build url with some little sanitizing
-    host_string = host.replace("http://", "").replace("https://", "").strip("/")
-    path_string = path if path.startswith("/") else "/%s" % path
-    url = "https://%s%s" % (host_string, path_string)
-    logger.debug("fetch_document: trying %s", url)
-    try:
-        response = session.get(url, timeout=timeout, headers=headers)
-        logger.debug("fetch_document: found document, code %s", response.status_code)
-        response.raise_for_status()
-        return response.text, response.status_code, None
-    except (HTTPError, SSLError, ConnectionError) as ex:
-        if isinstance(ex, SSLError) and raise_ssl_errors:
-            logger.debug("fetch_document: exception %s", ex)
-            return None, getattr(response, 'status_code', None), ex
-        # Try http then
-        url = url.replace("https://", "http://")
-        logger.debug("fetch_document: trying %s", url)
-        try:
-            response = session.get(url, timeout=timeout, headers=headers)
-            logger.debug("fetch_document: found document, code %s", response.status_code)
-            response.raise_for_status()
-            return response.text, response.status_code, None
-        except RequestException as ex:
-            logger.debug("fetch_document: exception %s", ex)
-            return None, getattr(response, 'status_code', None), ex
-    except RequestException as ex:
-        logger.debug("fetch_document: exception %s", ex)
-        return None, getattr(response, 'status_code', None), ex
+            response = await session.head(url, headers={'user-agent': USER_AGENT}, timeout=10)
+        except aiohttp.ClientResponseError as ex:
+            logger.warning("fetch_content_type - %s when fetching url %s", ex, url)
+        else:
+            content_type =  response.headers.get('Content-Type')
+            if content_type == "application/octet-stream":
+                try:
+                    response = await session.get(url, headers={'user-agent': USER_AGENT, 'range': 'bytes=0-2047'}, timeout=10)
+                except aiohttp.ClientResponseError as ex:
+                    logger.warning("fetch_content_type - %s when fetching url %s", ex, url)
+                else:
+                    content = await response.read()
+                    content_type = magic.from_buffer(content, mime=True)
 
+    return content_type
+            
+            
 
 class HTTPSignatureMiddleware:
     def __init__(self, signer):
@@ -148,12 +93,12 @@ async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_er
 
     middleware = (HTTPSignatureMiddleware(kwargs.get('auth')),) if kwargs.get('auth', None) else () 
     
-    async with CachedSession(cache=redis_cache, expire_after=EXPIRATION if cache else 0) as session:
+    async with CachedSession(middlewares=middleware, cache=redis_cache, expire_after=EXPIRATION if cache else 0) as session:
         if url:
             # Use url since it was given
             logger.debug("fetch_document: trying %s", url)
             try:
-                async with session.get(url, headers=headers, middlewares=middleware) as response:
+                async with session.get(url, headers=headers) as response:
                     logger.debug("fetch_document: found document, code %s", response.status)
                     response.raise_for_status()
                     #if not response.get_encoding(): response.encoding = 'utf-8'
@@ -167,7 +112,7 @@ async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_er
         url = "https://%s%s" % (host_string, path_string)
         logger.debug("fetch_document: trying %s", url)
         try:
-            async with session.get(url, headers=headers, middlewares=middleware) as response:
+            async with session.get(url, headers=headers) as response:
                 logger.debug("fetch_document: found document, code %s", response.status)
                 response.raise_for_status()
                 return await response.text(), response.status, None
@@ -179,14 +124,14 @@ async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_er
             url = url.replace("https://", "http://")
             logger.debug("fetch_document: trying %s", url)
             try:
-                async with session.get(url, headers=headers, middlewares=middleware) as response:
+                async with session.get(url, headers=headers) as response:
                     logger.debug("fetch_document: found document, code %s", response.status)
                     response.raise_for_status()
                     return await response.text(), response.status, None
             except (aiohttp.ClientConnectorDNSError, aiohttp.ClientConnectionError, aiohttp.ClientResponseError) as ex:
                 logger.debug("fetch_document: exception %s", ex)
                 return None, getattr(response, 'status', None), ex
-        except RequestException as ex:
+        except aiohttp.ClientError as ex:
             logger.debug("fetch_document: exception %s", ex)
             return None, getattr(response, 'status', None), ex
 
@@ -203,19 +148,24 @@ def fetch_host_ip(host: str) -> str:
     return ip
 
 
-def fetch_file(url: str, timeout: int = 30, extra_headers: Dict = None) -> str:
+async def fetch_file(url: str, timeout: int = 30, extra_headers: Dict = None) -> str:
     """
     Download a file with a temporary name and return the name.
     """
+    name = None
     headers = {'user-agent': USER_AGENT}
     if extra_headers:
         headers.update(extra_headers)
-    response = session.get(url, timeout=timeout, headers=headers, stream=True)
-    response.raise_for_status()
-    name = f"/tmp/{str(uuid4())}"
-    with open(name, "wb") as f:
-        for chunk in response.iter_content(chunk_size=8192):
-            f.write(chunk)
+    async with CachedSession() as session:
+        try:
+            async with session.get(url, timeout=timeout, headers=headers, chunked=8192) as response:
+                response.raise_for_status()
+                name = f"/tmp/{str(uuid4())}"
+                async with aiofiles.open(name, "wb") as f:
+                    async for chunk, _ in response.content.iter_chunks():
+                        await f.write(chunk)
+        except Exception as ex:
+            logger.error("fetch_file: exception %s", ex)
     return name
 
 
