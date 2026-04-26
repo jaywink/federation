@@ -2,7 +2,7 @@ import pytest
 # noinspection PyPackageRequirements
 from commonmark import commonmark
 from freezegun import freeze_time
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 
 from federation.entities.activitypub.mappers import get_outbound_entity
 import federation.entities.activitypub.models as models
@@ -181,8 +181,7 @@ https://jasonrobinson.me/media/uploads/2019/07/16/daa24d89-cedf-4fc7-bad8-74a902
 
 
 @pytest.fixture
-@patch.object(models.base.Image, 'get_media_type', return_value="image/jpeg")
-def activitypubprofile(mock_fetch):
+def activitypubprofile():
     with freeze_time("2022-09-06"):
         return models.Person(
             id="https://example.com/bob", raw_content="foobar", name="Bob Bobertson", public=True,
@@ -196,8 +195,7 @@ def activitypubprofile(mock_fetch):
 
 
 @pytest.fixture
-@patch.object(models.base.Image, 'get_media_type', return_value="image/jpeg")
-def activitypubprofile_diaspora_guid(mock_fetch):
+def activitypubprofile_diaspora_guid():
     with freeze_time("2022-09-06"):
         return models.Person(
             id="https://example.com/bob", raw_content="foobar", name="Bob Bobertson", public=True,

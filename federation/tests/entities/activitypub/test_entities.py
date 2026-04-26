@@ -1,13 +1,13 @@
 import commonmark
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 from pprint import pprint
 
 # noinspection PyPackageRequirements
 from Crypto.PublicKey.RSA import RsaKey
 
 from federation.entities.activitypub.models import context_manager
-from federation.entities.activitypub.models import Accept
+from federation.entities.activitypub.models import Accept, Image
 from federation.protocols.enums import ProtocolType
 from federation.tests.fixtures.keys import PUBKEY
 from federation.types import UserType
@@ -317,7 +317,9 @@ class TestEntitiesConvertToAS2:
         }
 
     # noinspection PyUnusedLocal
-    def test_profile_to_as2(self, activitypubprofile):
+    @patch.object(Image, 'get_media_type', return_value="image/jpeg")
+    async def test_profile_to_as2(self, mock_get, activitypubprofile):
+        await activitypubprofile.icon.validate()
         result = activitypubprofile.to_as2()
         assert result == {
             "@context": context_manager.build_context(activitypubprofile),
@@ -349,7 +351,9 @@ class TestEntitiesConvertToAS2:
         }
 
     # noinspection PyUnusedLocal
-    def test_profile_to_as2__with_diaspora_guid(self, activitypubprofile_diaspora_guid):
+    @patch.object(Image, 'get_media_type', new_callable=AsyncMock, return_value="image/jpeg")
+    async def test_profile_to_as2__with_diaspora_guid(self, mock_get, activitypubprofile_diaspora_guid):
+        await activitypubprofile_diaspora_guid.icon.validate()
         result = activitypubprofile_diaspora_guid.to_as2()
         assert result == {
             "@context": context_manager.build_context(activitypubprofile_diaspora_guid),

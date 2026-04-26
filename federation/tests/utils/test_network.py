@@ -12,7 +12,7 @@ from federation.utils.network import (
 
 
 class TestFetchDocument:
-    call_args = {"middlewares": (), "headers": {'user-agent': USER_AGENT}}
+    call_args = {"headers": {'user-agent': USER_AGENT}}
     mock_response = AsyncMock()
     mock_response.status = 200
     mock_response.text.return_value = "bla"
@@ -21,7 +21,7 @@ class TestFetchDocument:
     async def test_extra_headers(self, mock_get):
         mock_get.__aenter__.return_value = self.mock_response
         await fetch_document("https://example.com/foo", extra_headers={'accept': 'application/activity+json'})
-        mock_get.assert_called_once_with('https://example.com/foo', middlewares=(), headers={
+        mock_get.assert_called_once_with('https://example.com/foo', headers={
             'user-agent': USER_AGENT, 'accept': 'application/activity+json'})
 
     async def test_raises_without_url_and_host(self):
@@ -94,12 +94,12 @@ class TestFetchDocument:
 
     @patch.object(aiohttp.ClientSession, "get")
     async def test_exception_is_raised_on_network_error(self, mock_get):
-        mock_get.side_effect = RequestException
+        mock_get.side_effect = aiohttp.ClientError
         doc, code, exc = await fetch_document(host="localhost")
         assert mock_get.call_count == 1
         assert doc == None
         assert code == None
-        assert exc.__class__ == RequestException
+        assert exc.__class__ == aiohttp.ClientError
 
 
 class TestFetchHostIp:

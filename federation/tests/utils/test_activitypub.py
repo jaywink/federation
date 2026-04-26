@@ -127,7 +127,7 @@ class TestRetrieveAndParseProfile:
     @patch("federation.utils.activitypub.retrieve_and_parse_document", new_callable=AsyncMock)
     async def test_calls_profile_validate(self, mock_retrieve):
         with patch("federation.utils.activitypub.Profile", new=Mock) as mock_profile:
-            mock_profile.validate = Mock()
+            mock_profile.validate = AsyncMock()
             mock_retrieve.return_value = mock_profile()
             await retrieve_and_parse_profile("https://example.com/profile")
             assert mock_profile.validate.called

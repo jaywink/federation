@@ -218,7 +218,7 @@ class TestRetrieveAndParseProfile:
         await retrieve_and_parse_profile("foo@bar.com")
         mock_retrieve.assert_called_with("foo@bar.com")
 
-    @patch("federation.utils.diaspora.parse_profile_from_hcard")
+    @patch("federation.utils.diaspora.parse_profile_from_hcard", return_value=AsyncMock())
     @patch("federation.utils.diaspora.retrieve_diaspora_hcard", new_callable=AsyncMock)
     async def test_parse_profile_from_hcard_called(self, mock_retrieve, mock_parse):
         hcard = generate_hcard(
