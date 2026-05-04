@@ -59,11 +59,13 @@ async def handle_create_payload(
     outbound_entity = await mappers.get_outbound_entity(entity, author_user.rsa_private_key)
     if parent_user:
         outbound_entity.sign_with_parent(parent_user.rsa_private_key)
+    if hasattr(outbound_entity, 'sign_as2') and not hasattr(outbound_entity, 'outbound_doc'):
+        outbound_entity.sign_as2(author_user)
     send_as_user = parent_user if parent_user else author_user
     data = protocol.build_send(entity=outbound_entity, from_user=send_as_user, to_user_key=to_user_key)
     if payload_logger:
         try:
-            payload_logger(data, protocol_name, author_user.id)
+            await payload_logger(data, protocol_name, author_user.id)
         except Exception as ex:
             logger.warning("handle_create_payload | Failed to log payload: %s" % ex)
     return data
@@ -182,6 +184,8 @@ async def handle_send(
     logger.debug('handle_send / unique_recipients - %s', unique_recipients)
 
     matrix_config = None
+    local_user = author_user if author_user.rsa_private_key else parent_user
+    ap_auth = get_http_authentication(local_user.rsa_private_key, f"{local_user.id}#main-key")
 
     # Generate payloads and collect urls
     for recipient in unique_recipients:
@@ -242,10 +246,8 @@ async def handle_send(
                     }
                 )
                 continue
-            # The parent_user MUST be local
-            local_user = author_user if author_user.rsa_private_key else parent_user
             payloads.append({
-                "auth": get_http_authentication(local_user.rsa_private_key, f"{local_user.id}#main-key"),
+                "auth": ap_auth,
                 "headers": {
                     "Content-Type": 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
                 },
