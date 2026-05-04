@@ -54,7 +54,7 @@ class ActivitypubObjectView(View):
             return JsonResponse({"result": "bad request content-type"}, content_type='application/json', status=400)
 
         get_object_function = get_function_from_config('get_object_function')
-        obj = await get_object_function(request, get_and_verify_signer(request))
+        obj = await get_object_function(request, await get_and_verify_signer(request))
         if not obj:
             return HttpResponseNotFound()
         

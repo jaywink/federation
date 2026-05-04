@@ -357,6 +357,7 @@ class Object(BaseEntity, metaclass=JsonLDAnnotation):
     def sign_as2(self, sender=None):
         obj = self.to_as2()
         if self.signable and sender: create_ld_signature(obj, sender)
+        self.outbound_doc = obj
         return obj
 
     @classmethod
@@ -1271,7 +1272,7 @@ class Follow(Activity, base.Follow):
             return
         # noinspection PyBroadException
         try:
-            handle_send(
+            await handle_send(
                 accept,
                 UserType(id=self.target_id, private_key=key),
                 recipients=[{
