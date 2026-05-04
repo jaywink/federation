@@ -208,11 +208,6 @@ async def retrieve_and_parse_content(
     elif status_code == 404:
         logger.warning("retrieve_and_parse_content - remote content %s not found", guid)
         return
-    if error:
-        raise error
-    raise Exception("retrieve_and_parse_content - unknown problem when fetching document: %s, %s, %s" % (
-        document, status_code, error,
-    ))
 
 
 async def retrieve_and_parse_profile(handle):
