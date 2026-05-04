@@ -11,6 +11,7 @@ FEDERATION = {
     "get_profile_function": "federation.tests.django.utils.get_profile",
     "matrix_config_function": "federation.tests.django.utils.matrix_config_func",
     "process_payload_function": "federation.tests.django.utils.process_payload",
+    "redis": {"host":"localhost","port":6379,"db":0}, # for pyld
     "search_path": "/search?q=",
     "tags_path": "/tag/:tag:/",
 }
