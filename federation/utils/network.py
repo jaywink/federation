@@ -91,20 +91,21 @@ async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_er
     if extra_headers:
         headers.update(extra_headers)
 
+    sentinel = aiohttp.ClientTimeout(sock_connect=timeout) if isinstance(timeout, int) else None
     middleware = (HTTPSignatureMiddleware(kwargs.get('auth')),) if kwargs.get('auth', None) else () 
     
-    async with CachedSession(middlewares=middleware, cache=redis_cache, expire_after=EXPIRATION if cache else 0) as session:
+    async with CachedSession(middlewares=middleware, cache=redis_cache, expire_after=EXPIRATION if cache else 0, timeout=sentinel) as session:
         if url:
             # Use url since it was given
             logger.debug("fetch_document: trying %s", url)
             try:
-                async with session.get(url, headers=headers) as response:
+                async with session.get(url, headers=headers, timeout=sentinel) as response:
                     logger.debug("fetch_document: found document, code %s", response.status)
                     response.raise_for_status()
                     #if not response.get_encoding(): response.encoding = 'utf-8'
                     return await response.text(), response.status, None
-            except (aiohttp.ClientConnectorDNSError, aiohttp.ClientConnectionError, aiohttp.ClientResponseError) as ex:
-                logger.debug("fetch_document: exception %s", ex)
+            except (aiohttp.ConnectionTimeoutError, aiohttp.ClientConnectorDNSError, aiohttp.ClientConnectionError, aiohttp.ClientResponseError) as ex:
+                logger.error("fetch_document: exception %s", ex)
                 return None, getattr(response, 'status', None), ex
         # Build url with some little sanitizing
         host_string = host.replace("http://", "").replace("https://", "").strip("/")
@@ -112,27 +113,27 @@ async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_er
         url = "https://%s%s" % (host_string, path_string)
         logger.debug("fetch_document: trying %s", url)
         try:
-            async with session.get(url, headers=headers) as response:
+            async with session.get(url, headers=headers, timeout=sentinel) as response:
                 logger.debug("fetch_document: found document, code %s", response.status)
                 response.raise_for_status()
                 return await response.text(), response.status, None
-        except (aiohttp.ClientConnectorDNSError, aiohttp.ClientSSLError, aiohttp.ClientConnectionError, aiohttp.ClientResponseError) as ex:
+        except (aiohttp.ConnectionTimeoutError, aiohttp.ClientConnectorDNSError, aiohttp.ClientSSLError, aiohttp.ClientConnectionError, aiohttp.ClientResponseError) as ex:
             if isinstance(ex, aiohttp.ClientSSLError) and raise_ssl_errors:
-                logger.debug("fetch_document: exception %s", ex)
+                logger.error("fetch_document: exception %s", ex)
                 return None, getattr(response, 'status', None), ex
             # Try http then
             url = url.replace("https://", "http://")
             logger.debug("fetch_document: trying %s", url)
             try:
-                async with session.get(url, headers=headers) as response:
+                async with session.get(url, headers=headers, timeout=sentinel) as response:
                     logger.debug("fetch_document: found document, code %s", response.status)
                     response.raise_for_status()
                     return await response.text(), response.status, None
-            except (aiohttp.ClientConnectorDNSError, aiohttp.ClientConnectionError, aiohttp.ClientResponseError) as ex:
-                logger.debug("fetch_document: exception %s", ex)
+            except (aiohttp.ConnectionTimeoutError, aiohttp.ClientConnectorDNSError, aiohttp.ClientConnectionError, aiohttp.ClientResponseError) as ex:
+                logger.error("fetch_document: exception %s", ex)
                 return None, getattr(response, 'status', None), ex
         except aiohttp.ClientError as ex:
-            logger.debug("fetch_document: exception %s", ex)
+            logger.error("fetch_document: exception %s", ex)
             return None, getattr(response, 'status', None), ex
 
 
