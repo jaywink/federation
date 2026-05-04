@@ -134,7 +134,7 @@ class Protocol:
             sender_key = await fetch_public_key(self.sender_handle)
         if not sender_key:
             raise NoSenderKeyFoundError("Could not find a sender contact to retrieve key")
-        MagicEnvelope(doc=self.doc, public_key=sender_key, verify=True)
+        await MagicEnvelope(doc=self.doc, public_key=sender_key).verify()
 
     def build_send(self, entity: BaseEntity, from_user: UserType, to_user_key: RsaKey = None) -> Union[str, Dict]:
         """

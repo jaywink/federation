@@ -1,4 +1,4 @@
-from unittest.mock import patch, Mock
+from unittest.mock import patch, AsyncMock, Mock
 
 import pytest
 from lxml import etree
@@ -40,18 +40,18 @@ class TestMagicEnvelope:
         assert env.author_handle == "foobar@example.com"
         assert env.message == b"<status_message><foo>bar</foo></status_message>"
 
-    @patch("federation.protocols.diaspora.magic_envelope.fetch_public_key", autospec=True)
-    def test_fetch_public_key__calls_sender_key_fetcher(self, mock_fetch):
-        mock_fetcher = Mock(return_value="public key")
+    @patch("federation.protocols.diaspora.magic_envelope.fetch_public_key", new_callable=AsyncMock)
+    async def test_fetch_public_key__calls_sender_key_fetcher(self, mock_fetch):
+        mock_fetcher = AsyncMock(return_value="public key")
         env = MagicEnvelope(author_handle="spam@eggs", sender_key_fetcher=mock_fetcher)
-        env.fetch_public_key()
+        await env.fetch_public_key()
         mock_fetcher.assert_called_once_with("spam@eggs")
         assert not mock_fetch.called
 
-    @patch("federation.protocols.diaspora.magic_envelope.fetch_public_key", autospec=True)
-    def test_fetch_public_key__calls_fetch_public_key(self, mock_fetch):
+    @patch("federation.protocols.diaspora.magic_envelope.fetch_public_key", new_callable=AsyncMock)
+    async def test_fetch_public_key__calls_fetch_public_key(self, mock_fetch):
         env = MagicEnvelope(author_handle="spam@eggs")
-        env.fetch_public_key()
+        await env.fetch_public_key()
         mock_fetch.assert_called_once_with("spam@eggs")
 
     def test_message_from_doc(self, diaspora_public_payload):
@@ -64,7 +64,7 @@ class TestMagicEnvelope:
         assert env.author_handle == "foobar@example.com"
         assert env.message == b"<status_message><foo>bar</foo></status_message>"
 
-    def test_verify(self, private_key, public_key):
+    async def test_verify(self, private_key, public_key):
         me = MagicEnvelope(
             message="<status_message><foo>bar</foo></status_message>",
             private_key=private_key,
@@ -73,18 +73,19 @@ class TestMagicEnvelope:
         me.build()
         output = me.render()
 
-        MagicEnvelope(payload=output, public_key=public_key, verify=True)
+        await MagicEnvelope(payload=output, public_key=public_key).verify()
 
         with pytest.raises(SignatureVerificationError):
-            MagicEnvelope(payload=output, public_key=PUBKEY, verify=True)
+            await MagicEnvelope(payload=output, public_key=PUBKEY).verify()
 
-    def test_verify__calls_fetch_public_key(self, diaspora_public_payload):
+    async def test_verify__calls_fetch_public_key(self, diaspora_public_payload):
         me = MagicEnvelope(payload=diaspora_public_payload)
         with pytest.raises(TypeError):
             with patch.object(me, "fetch_public_key") as mock_fetch:
-                me.verify()
+                await me.verify()
                 mock_fetch.assert_called_once_with()
 
+    @pytest.mark.skip # await verify can't be called from __init__, must be called explicitely
     @patch("federation.protocols.diaspora.magic_envelope.MagicEnvelope.verify")
     def test_verify_on_init(self, mock_verify, diaspora_public_payload):
         MagicEnvelope(payload=diaspora_public_payload)
