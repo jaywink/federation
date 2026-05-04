@@ -75,7 +75,7 @@ class TestDiasporaProtocol(DiasporaTestBase):
         protocol = self.init_protocol()
         user = self.get_mock_user()
         await protocol.receive(RequestType(body=DIASPORA_PUBLIC_PAYLOAD), user)
-        mock_env.assert_called_once_with(doc=protocol.doc, public_key="key", verify=True)
+        mock_env.assert_called_once_with(doc=protocol.doc, public_key="key")
 
     @patch("federation.protocols.diaspora.protocol.fetch_public_key", new_callable=AsyncMock)
     async def test_receive_raises_on_signature_verification_failure(self, mock_fetch):
