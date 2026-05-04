@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import patch, AsyncMock, Mock
 
 import pytest
 
@@ -99,8 +99,9 @@ class TestProfileEntity:
             await entity.validate()
 
 
+@patch('federation.entities.mixins.fetch_content_type', new_callable=AsyncMock, return_value="image/jpeg")
 class TestImageEntity:
-    async def test_instance_creation(self):
+    async def test_instance_creation(self, mock_fetch):
         entity = ImageFactory()
         await entity.validate()
 
