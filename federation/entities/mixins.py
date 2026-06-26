@@ -75,7 +75,7 @@ class BaseEntity:
         """
         pass
 
-    def pre_send(self):
+    async def pre_send(self):
         """
         Run any actions before serializing the entity for sending.
         """

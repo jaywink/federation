@@ -675,7 +675,7 @@ class Person(Object, base.Profile):
         self._allowed_children += (Note, PropertyValue, IdentityProof)
         self._soup = BeautifulSoup(self.raw_content, 'html.parser')
 
-    def pre_send(self):
+    async def pre_send(self):
         # Add Hashtag objects for summary (raw_content)
         for el in self._soup('a', attrs={'class':'hashtag'}):
             self.tag_objects.append(Hashtag(
@@ -934,7 +934,7 @@ class Note(Object, RawContentMixin):
                 
         self._children = media
         
-    def pre_send(self) -> None:
+    async def pre_send(self) -> None:
         """
         Attach any embedded media from rendered_content.
         Add Hashtag and Mention objects (the client app must define the class tag/mention property)
@@ -958,7 +958,7 @@ class Note(Object, RawContentMixin):
 
         fids.sort()
         for fid in fids:
-            profile = get_profile(remote_url=fid, fid=fid)
+            profile = await get_profile(remote_url=fid, fid=fid)
             # only add AP profiles mentions
             if getattr(profile, 'id', None):
                 self.tag_objects.append(Mention(href=profile.id, name='@'+profile.finger))

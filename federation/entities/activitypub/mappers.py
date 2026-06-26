@@ -71,7 +71,7 @@ async def get_outbound_entity(entity: BaseEntity, private_key):
     #     # TODO: remove this once Diaspora removes the extra signature
     #     outbound.parent_signature = outbound.signature
     if hasattr(outbound, "pre_send"):
-        outbound.pre_send()
+        await outbound.pre_send()
     # Validate the entity
     await outbound.validate(direction="outbound")
     return outbound
