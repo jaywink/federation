@@ -93,8 +93,9 @@ async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_er
 
     sentinel = aiohttp.ClientTimeout(sock_connect=timeout) if isinstance(timeout, int) else None
     middleware = (HTTPSignatureMiddleware(kwargs.get('auth')),) if kwargs.get('auth', None) else () 
+    redis_cache.expire_after = EXPIRATION if cache else 0
     
-    async with CachedSession(middlewares=middleware, cache=redis_cache, expire_after=EXPIRATION if cache else 0, timeout=sentinel) as session:
+    async with CachedSession(middlewares=middleware, cache=redis_cache, timeout=sentinel) as session:
         if url:
             # Use url since it was given
             logger.debug("fetch_document: trying %s", url)
