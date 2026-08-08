@@ -63,7 +63,7 @@ class ActivitypubObjectView(View):
 
     async def post(self, request, *args, **kwargs):
         process_payload_function = get_function_from_config('process_payload_function')
-        result = await sync_to_async(process_payload_function)(request)
+        result = await process_payload_function(request)
         if result:
             return JsonResponse({}, content_type='application/json', status=202)
         else:
