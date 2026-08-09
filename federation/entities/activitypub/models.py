@@ -752,11 +752,12 @@ class Person(Object, base.Profile):
 
     @property
     def inboxes(self):
+        if self._cached_inboxes: return self._cached_inboxes
         self._cached_inboxes['private'] = getattr(self, 'inbox', None)
         if hasattr(self, 'endpoints') and isinstance(self.endpoints, dict):
             self._cached_inboxes['public'] = self.endpoints.get('sharedInbox', None)
         else:
-            self._cached_inboxes['public'] = getattr(self,'shared_inbox',None)
+            self._cached_inboxes['public'] = getattr(self,'shared_inbox',None) or self._cached_inboxes['private']
         return self._cached_inboxes
 
     @inboxes.setter
@@ -939,7 +940,6 @@ class Note(Object, RawContentMixin):
         Attach any embedded media from rendered_content.
         Add Hashtag and Mention objects (the client app must define the class tag/mention property)
         """
-        super().pre_send()
         self.embedded_media()
 
         # Add Hashtag objects
