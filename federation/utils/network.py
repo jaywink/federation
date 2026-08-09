@@ -1,7 +1,9 @@
+import asyncio
 import calendar
 import datetime
 import logging
 import magic
+import random
 import re
 import socket
 from typing import Optional, Dict
@@ -232,7 +234,11 @@ async def send_document(url, data, timeout=10, method="post", *args, **kwargs):
     :arg method: Method to use, defaults to post
     :returns: Tuple of status code (int or None) and error (exception class instance or None)
     """
-    if disable_outbound_federation(): return
+    if disable_outbound_federation():
+        logger.warning("url: %s", url)
+        await asyncio.sleep(random.uniform(0.1, 1.0))
+        return
+    
     logger.debug("send_document: url=%s, data=%s, timeout=%s, method=%s", url, data, timeout, method)
     if not method:
         method = "post"

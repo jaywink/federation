@@ -1,7 +1,9 @@
+import asyncio
 import copy
 import importlib
 import json
 import logging
+import time
 import traceback
 from typing import List, Dict, Union
 from urllib.parse import urljoin
@@ -378,27 +380,30 @@ async def handle_send(
     logger.debug("handle_send - %s", payloads)
 
     if disable_outbound_federation():
-        seen_payload = False
         for payload in payloads:
-            logger.warning(pformat({'urls': payload["urls"]}))
             try:
-                if not seen_payload: logger.warning(pformat(json.loads(payload["payload"])))
-                seen_payload = True
+                logger.warning(pformat(json.loads(payload["payload"])))
+                break
             except:
-                pass
-        return
+                continue
 
     # Do actual sending
+    start = time.time()
+    tasks = []
     for payload in payloads:
         for url in payload["urls"]:
-            try:
-                # TODO send_document and fetch_document need to handle rate limits
-                await send_document(
-                    url,
-                    payload["payload"],
-                    auth=payload.get("auth"),
-                    headers=payload.get("headers"),
-                    method=payload.get("method"),
-                )
-            except Exception as ex:
-                logger.error("handle_send - failed to send payload to %s: %s, payload: %s", url, ex, payload["payload"])
+            # TODO send_document and fetch_document need to handle rate limits
+            tasks.append(asyncio.create_task(send_document(
+                url,
+                payload["payload"],
+                auth=payload.get("auth"),
+                headers=payload.get("headers"),
+                method=payload.get("method"),
+            )))
+    for task in asyncio.as_completed(tasks):
+        try:
+            await task
+        except Exception as ex:
+            # TODO: find a way to generate a more useful message
+            logger.error("handle_send - failed to send payload to %s: %s", task, ex)
+    logger.info("handle_send - elapsed time %s", time.time() - start)
