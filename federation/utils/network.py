@@ -95,19 +95,19 @@ async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_er
 
     sentinel = aiohttp.ClientTimeout(sock_connect=timeout) if isinstance(timeout, int) else None
     middleware = (HTTPSignatureMiddleware(kwargs.get('auth')),) if kwargs.get('auth', None) else () 
-    redis_cache.expire_after = EXPIRATION if cache else 0
+    if redis_cache: redis_cache.expire_after = EXPIRATION if cache else 0
     
     async with CachedSession(middlewares=middleware, cache=redis_cache, timeout=sentinel) as session:
         if url:
             # Use url since it was given
             logger.debug("fetch_document: trying %s", url)
             try:
-                async with session.get(url, headers=headers, timeout=sentinel) as response:
+                async with session.get(url, headers=headers) as response:
                     logger.debug("fetch_document: found document, code %s", response.status)
                     response.raise_for_status()
                     #if not response.get_encoding(): response.encoding = 'utf-8'
                     return await response.text(), response.status, None
-            except (aiohttp.ConnectionTimeoutError, aiohttp.ClientConnectorDNSError, aiohttp.ClientConnectionError, aiohttp.ClientResponseError) as ex:
+            except (aiohttp.ConnectionTimeoutError, aiohttp.ClientConnectorError, aiohttp.ClientConnectorDNSError, aiohttp.ClientSSLError, aiohttp.ClientConnectionError, aiohttp.ClientResponseError) as ex:
                 logger.error("fetch_document: exception %s", ex)
                 return None, getattr(response, 'status', None), ex
         # Build url with some little sanitizing
@@ -116,7 +116,7 @@ async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_er
         url = "https://%s%s" % (host_string, path_string)
         logger.debug("fetch_document: trying %s", url)
         try:
-            async with session.get(url, headers=headers, timeout=sentinel) as response:
+            async with session.get(url, headers=headers) as response:
                 logger.debug("fetch_document: found document, code %s", response.status)
                 response.raise_for_status()
                 return await response.text(), response.status, None
@@ -128,7 +128,7 @@ async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_er
             url = url.replace("https://", "http://")
             logger.debug("fetch_document: trying %s", url)
             try:
-                async with session.get(url, headers=headers, timeout=sentinel) as response:
+                async with session.get(url, headers=headers) as response:
                     logger.debug("fetch_document: found document, code %s", response.status)
                     response.raise_for_status()
                     return await response.text(), response.status, None
