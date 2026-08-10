@@ -752,7 +752,7 @@ class Person(Object, base.Profile):
 
     @property
     def inboxes(self):
-        if self._cached_inboxes: return self._cached_inboxes
+        if self._cached_inboxes['public']: return self._cached_inboxes
         self._cached_inboxes['private'] = getattr(self, 'inbox', None)
         if hasattr(self, 'endpoints') and isinstance(self.endpoints, dict):
             self._cached_inboxes['public'] = self.endpoints.get('sharedInbox', None)
