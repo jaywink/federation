@@ -10,6 +10,10 @@ ASGI (daphne, uvicorn, ...).
 _Note: the code has been validated for django >=3.2 and <**6**. Using it with a django client app outside
 this version range may or may not work. If your code breaks, please open an issue._
 
+### Added
+
+* `handle_send` now logs the elapsed time taken to send content.
+
 ### Changed
 
 * Modify `utils.network.fetch_document`, replacing the `requests` library with `aiohttp-client-cache` in
@@ -23,6 +27,9 @@ this version range may or may not work. If your code breaks, please open an issu
 
 * The `entities.activitypub.django.views.activitypub_object_view` decorator as been refactored as the
   `ActivitypubObjectView` class that be used directly as an async view.
+
+* The `handle_send` function now creates an asyncio task for each `send_content` call and loops on
+  `asyncio.as_completed`.
   
 * Adapt many tests to an async context.
 
@@ -31,6 +38,9 @@ this version range may or may not work. If your code breaks, please open an issu
 * Add the ':' character to the list of forbidden characters in tags.
 
 * Do not assume peertube actors are always AP objects.
+
+* Ensure a public inbox is set. Some single user platforms only provide a private inbox. In this case,
+  set public to private.
 
 ## [0.27.0] - 2026-03-28
 
