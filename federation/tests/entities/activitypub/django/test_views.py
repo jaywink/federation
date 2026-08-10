@@ -11,7 +11,7 @@ from federation.entities.activitypub.django.views import ActivitypubObjectView
 from federation.tests.fixtures.entities import activitypubprofile
 
 
-def dummy_get_object_function(request, signer=None):
+async def dummy_get_object_function(request, signer=None):
     if request.method == 'GET':
         return False
     return True

@@ -40,8 +40,8 @@ class TestEntitiesConvertToAS2:
             'published': '2019-08-05T00:00:00',
         }
 
-    def test_comment_to_as2(self, activitypubcomment):
-        activitypubcomment.pre_send()
+    async def test_comment_to_as2(self, activitypubcomment):
+        await activitypubcomment.pre_send()
         result = activitypubcomment.to_as2()
         assert result == {
             '@context': context_manager.build_context(activitypubcomment),
@@ -123,9 +123,9 @@ class TestEntitiesConvertToAS2:
             }
         }
 
-    def test_post_to_as2(self, activitypubpost):
+    async def test_post_to_as2(self, activitypubpost):
         activitypubpost.rendered_content = commonmark.commonmark(activitypubpost.raw_content).strip()
-        activitypubpost.pre_send()
+        await activitypubpost.pre_send()
         result = activitypubpost.to_as2()
         assert result == {
             '@context': context_manager.build_context(activitypubpost),
@@ -197,7 +197,7 @@ class TestEntitiesConvertToAS2:
             'published': '2019-04-27T00:00:00',
         }
 
-    def test_post_to_as2__with_tags(self, activitypubpost_tags):
+    async def test_post_to_as2__with_tags(self, activitypubpost_tags):
         activitypubpost_tags.rendered_content = '<h1>raw_content</h1>\n' \
             '<p><a class="hashtag" ' \
             'href="https://example.com/tag/foobar/" rel="noopener ' \
@@ -207,7 +207,7 @@ class TestEntitiesConvertToAS2:
             'href="https://example.com/tag/barfoo/" rel="noopener ' \
             'noreferrer nofollow" ' \
             'target="_blank">#<span>barfoo</span></a></p>'
-        activitypubpost_tags.pre_send()
+        await activitypubpost_tags.pre_send()
         result = activitypubpost_tags.to_as2()
         assert result == {
             '@context': context_manager.build_context(activitypubpost_tags),
@@ -250,9 +250,9 @@ class TestEntitiesConvertToAS2:
             'published': '2019-04-27T00:00:00',
         }
 
-    def test_post_to_as2__with_images(self, activitypubpost_images):
+    async def test_post_to_as2__with_images(self, activitypubpost_images):
         activitypubpost_images.rendered_content = '<p>raw_content</p>'
-        activitypubpost_images.pre_send()
+        await activitypubpost_images.pre_send()
         result = activitypubpost_images.to_as2()
         assert result == {
             '@context': context_manager.build_context(activitypubpost_images),
@@ -290,9 +290,9 @@ class TestEntitiesConvertToAS2:
             'published': '2019-04-27T00:00:00',
         }
 
-    def test_post_to_as2__with_diaspora_guid(self, activitypubpost_diaspora_guid):
+    async def test_post_to_as2__with_diaspora_guid(self, activitypubpost_diaspora_guid):
         activitypubpost_diaspora_guid.rendered_content = '<p>raw_content</p>'
-        activitypubpost_diaspora_guid.pre_send()
+        await activitypubpost_diaspora_guid.pre_send()
         result = activitypubpost_diaspora_guid.to_as2()
         assert result == {
             '@context': context_manager.build_context(activitypubpost_diaspora_guid),
@@ -443,8 +443,8 @@ class TestEntitiesPostReceive:
 
 
 class TestEntitiesPreSend:
-    def test_post_inline_images_are_attached(self, activitypubpost_embedded_images):
-        activitypubpost_embedded_images.pre_send()
+    async def test_post_inline_images_are_attached(self, activitypubpost_embedded_images):
+        await activitypubpost_embedded_images.pre_send()
         assert len(activitypubpost_embedded_images._children) == 4
         image = activitypubpost_embedded_images._children[0]
         assert image.url == "https://example.com/media/uploads/2019/07/16/daa24d89-cedf-4fc7-bad8-74a902541476.jpeg"

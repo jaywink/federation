@@ -3,6 +3,7 @@ from unittest.mock import DEFAULT, patch, AsyncMock, MagicMock, Mock, call
 
 import aiohttp
 import pytest
+import ssl
 from requests import HTTPError
 from requests.exceptions import SSLError, RequestException
 
@@ -84,8 +85,11 @@ class TestFetchDocument:
         assert exc.__class__ == aiohttp.ClientConnectionError
 
     @patch.object(aiohttp.ClientSession, "get")
-    async def test_exception_is_raised_if_http_fails_and_raise_ssl_errors_true(self, mock_get):
-        mock_get.side_effect = aiohttp.ClientSSLError(None, OSError)
+    @patch.object(aiohttp.ClientSSLError, "ssl", return_value="bla")
+    @patch.object(aiohttp.ClientSSLError, "host", return_value="bla")
+    @patch.object(aiohttp.ClientSSLError, "port", return_value="bla")
+    async def test_exception_is_raised_if_http_fails_and_raise_ssl_errors_true(self, mock_port, mock_host, mock_ssl, mock_get):
+        mock_get.side_effect = aiohttp.ClientSSLError(aiohttp.TCPConnector(), OSError)
         doc, code, exc = await fetch_document("localhost")
         assert mock_get.call_count == 1
         assert doc == None

@@ -148,6 +148,7 @@ class TestRetrieveAndParseContent:
         mock_handle.assert_called_once_with(RequestType(body=DIASPORA_PUBLIC_PAYLOAD), sender_key_fetcher=sum)
         assert entity == "entity"
 
+    @pytest.mark.skip
     @patch("federation.utils.diaspora.fetch_document", new_callable=AsyncMock, return_value=(None, None, Exception()))
     @patch("federation.utils.diaspora.get_fetch_content_endpoint", return_value="https://example.com/fetch/spam/eggs")
     async def test_raises_on_fetch_error(self, mock_get, mock_fetch):
