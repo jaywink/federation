@@ -246,6 +246,7 @@ async def send_document(url, data, timeout=10, method="post", *args, **kwargs):
     logger.debug("send_document: url=%s, data=%s, timeout=%s, method=%s", url, data, timeout, method)
     if not method:
         method = "post"
+    sentinel = aiohttp.ClientTimeout(sock_connect=timeout) if isinstance(timeout, int) else None
     headers = CaseInsensitiveDict({
         'User-Agent': USER_AGENT,
     })
@@ -253,7 +254,7 @@ async def send_document(url, data, timeout=10, method="post", *args, **kwargs):
         # Update from kwargs
         headers.update(kwargs.get("headers"))
     kwargs.update({
-        "data": data, "headers": headers
+        "data": data, "timeout": sentinel, "headers": headers
     })
     async with aiohttp.ClientSession() as session:
         request_func = getattr(session, method)
