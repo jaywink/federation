@@ -119,7 +119,8 @@ async def mock_resp(*args, **kwargs):
 
 
 class TestSendDocument:
-    call_args = {"headers": {'user-agent': USER_AGENT}}
+    call_args = {"headers": {'user-agent': USER_AGENT}, 'timeout': 10}
+    actual_args = {"headers": {'user-agent': USER_AGENT}, 'timeout': aiohttp.ClientTimeout(sock_connect=10)}
     mock_response = AsyncMock()
     mock_response.status = 200
 
@@ -127,9 +128,8 @@ class TestSendDocument:
     async def test_post_is_called(self, mock_post):
         mock_post.return_value = self.mock_response
         code, exc = await send_document("http://localhost", {"foo": "bar"})
-        print(dir(mock_post.return_value))
         mock_post.assert_called_once_with(
-            "http://localhost", data={"foo": "bar"}, **self.call_args
+            "http://localhost", data={"foo": "bar"}, **self.actual_args
         )
         assert code == 200
         assert exc == None
@@ -147,7 +147,7 @@ class TestSendDocument:
         mock_post.return_value = self.mock_response
         await send_document("http://localhost", {"foo": "bar"}, **self.call_args)
         mock_post.assert_called_once_with(
-            "http://localhost", data={"foo": "bar"}, **self.call_args
+            "http://localhost", data={"foo": "bar"}, **self.actual_args
         )
 
     @patch.object(aiohttp.ClientSession, "post", new_callable=AsyncMock)
@@ -155,10 +155,10 @@ class TestSendDocument:
         mock_post.return_value = self.mock_response
         await send_document("http://localhost", {"foo": "bar"}, **self.call_args)
         mock_post.assert_called_once_with(
-            "http://localhost", data={"foo": "bar"}, headers={'user-agent': USER_AGENT}
+            "http://localhost", data={"foo": "bar"}, headers={'user-agent': USER_AGENT}, timeout=aiohttp.ClientTimeout(sock_connect=10)
         )
         mock_post.reset_mock()
         await send_document("http://localhost", {"foo": "bar"}, headers={'User-Agent': USER_AGENT})
         mock_post.assert_called_once_with(
-            "http://localhost", data={"foo": "bar"}, headers={'User-Agent': USER_AGENT}
+            "http://localhost", data={"foo": "bar"}, headers={'User-Agent': USER_AGENT}, timeout=aiohttp.ClientTimeout(sock_connect=10)
         )
