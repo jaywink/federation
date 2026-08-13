@@ -382,6 +382,7 @@ async def handle_send(
     if disable_outbound_federation():
         for payload in payloads:
             try:
+                logger.warning("handle_send - FEDERATION_DISABLED - the following payload would be sent:")
                 logger.warning(pformat(json.loads(payload["payload"])))
                 break
             except:

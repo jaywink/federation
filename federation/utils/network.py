@@ -239,8 +239,8 @@ async def send_document(url, data, timeout=10, method="post", *args, **kwargs):
     :returns: Tuple of status code (int or None) and error (exception class instance or None)
     """
     if disable_outbound_federation():
-        logger.warning("url: %s", url)
         await asyncio.sleep(random.uniform(0.1, 1.0))
+        logger.warning("send_content - FEDERATION DISABLED - would send to url: %s", url)
         return
     
     logger.debug("send_document: url=%s, data=%s, timeout=%s, method=%s", url, data, timeout, method)
