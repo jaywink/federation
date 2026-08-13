@@ -6,6 +6,7 @@ import magic
 import random
 import re
 import socket
+from charset_normalizer import detect
 from typing import Optional, Dict
 from urllib.parse import quote, urlparse
 from uuid import uuid4
@@ -97,7 +98,11 @@ async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_er
     middleware = (HTTPSignatureMiddleware(kwargs.get('auth')),) if kwargs.get('auth', None) else () 
     if redis_cache: redis_cache.expire_after = EXPIRATION if cache else 0
     
-    async with CachedSession(middlewares=middleware, cache=redis_cache, timeout=sentinel) as session:
+    async with CachedSession(middlewares=middleware,
+                             cache=redis_cache,
+                             timeout=sentinel,
+                             fallback_charset_resolver=lambda r, b: detect(b)["encoding"] or "utf-8"
+                         ) as session:
         if url:
             # Use url since it was given
             logger.debug("fetch_document: trying %s", url)
@@ -105,7 +110,6 @@ async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_er
                 async with session.get(url, headers=headers) as response:
                     logger.debug("fetch_document: found document, code %s", response.status)
                     response.raise_for_status()
-                    #if not response.get_encoding(): response.encoding = 'utf-8'
                     return await response.text(), response.status, None
             except (aiohttp.ConnectionTimeoutError, aiohttp.ClientConnectorError, aiohttp.ClientConnectorDNSError, aiohttp.ClientSSLError, aiohttp.ClientConnectionError, aiohttp.ClientResponseError) as ex:
                 logger.error("fetch_document: exception %s", ex)

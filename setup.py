@@ -32,6 +32,7 @@ setup(
         "beautifulsoup4>=4.11.2",
         "bleach>3.0",
         "calamus",
+        "charset-normalizer",
         "commonmark_socialhome>=0.9.1.post2",
         "cryptography",
         "cssselect>=0.9.2",
