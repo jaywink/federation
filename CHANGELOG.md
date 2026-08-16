@@ -30,6 +30,9 @@ this version range may or may not work. If your code breaks, please open an issu
 
 * The `handle_send` function now creates an asyncio task for each `send_content` call and loops on
   `asyncio.as_completed`.
+
+* The CPU intensive http signature signer hash is now computed once per `handle_send` call, instead of once per
+  target remote instance.
   
 * Adapt many tests to an async context.
 
