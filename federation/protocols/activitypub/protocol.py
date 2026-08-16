@@ -76,7 +76,7 @@ class Protocol:
         else:
             self.actor = self.payload.get('actor')
 
-    def receive(
+    async def receive(
             self,
             request: RequestType,
             user: UserType = None,
@@ -96,13 +96,13 @@ class Protocol:
         if not skip_author_verification:
             try:
                 # Verify the HTTP signature
-                self.verify()
+                await self.verify()
             except (ValueError, KeyError, InvalidSignature) as exc:
                 logger.warning('HTTP signature verification failed: %s', exc)
                 return self.actor, {}
         return self.sender, self.payload
 
-    def verify(self):
+    async def verify(self):
         sig_struct = self.request.headers.get("Signature", None)
         if not sig_struct:
             raise ValueError("A signature is required but was not provided")
@@ -111,13 +111,13 @@ class Protocol:
         # keyId, algorithm, headers and signature
         sig = {i.split("=", 1)[0]: i.split("=", 1)[1].strip('"') for i in sig_struct.split(",")}
 
-        signer = get_profile(key_id=sig.get('keyId'))
+        signer = await get_profile(key_id=sig.get('keyId'))
         if not signer:
-            signer = retrieve_and_parse_document(sig.get('keyId'))
+            signer = await retrieve_and_parse_document(sig.get('keyId'))
         self.sender = signer.id if signer else self.actor
         key = getattr(signer, 'public_key', None)
         if not key:
-            key = self.get_contact_key(self.actor) if self.get_contact_key and self.actor else ''
+            key = await self.get_contact_key(self.actor) if self.get_contact_key and self.actor else ''
             if key:
                 # fallback to the author's key the client app may have provided
                 logger.warning("Failed to retrieve keyId for %s, trying the actor's key", sig.get('keyId'))

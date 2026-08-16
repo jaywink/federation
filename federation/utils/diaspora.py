@@ -15,13 +15,13 @@ from federation.utils.text import validate_handle
 logger = logging.getLogger("federation")
 
 
-def fetch_public_key(handle):
+async def fetch_public_key(handle):
     """Fetch public key over the network.
 
     :param handle: Remote handle to retrieve public key for.
     :return: Public key in str format from parsed profile.
     """
-    profile = retrieve_and_parse_profile(handle)
+    profile = await retrieve_and_parse_profile(handle)
     return profile.public_key
 
 
@@ -54,58 +54,62 @@ def parse_diaspora_webfinger(document: str) -> Dict:
     return webfinger
 
 
-def retrieve_diaspora_hcard(handle):
+async def retrieve_diaspora_hcard(handle):
     """
     Retrieve a remote Diaspora hCard document.
 
     :arg handle: Remote handle to retrieve
     :return: str (HTML document)
     """
-    webfinger = retrieve_and_parse_diaspora_webfinger(handle)
+    webfinger = await retrieve_and_parse_diaspora_webfinger(handle)
     if not webfinger or not webfinger.get("hcard_url"):
         return None
-    document, code, exception = fetch_document(webfinger.get("hcard_url"))
+    document, code, exception = await fetch_document(webfinger.get("hcard_url"))
     if exception:
         return None
     return document
 
 
-def retrieve_and_parse_diaspora_webfinger(handle):
+async def retrieve_and_parse_diaspora_webfinger(handle):
     """
     Retrieve a and parse a remote Diaspora webfinger document.
 
     :arg handle: Remote handle to retrieve
     :returns: dict
     """
-    document = try_retrieve_webfinger_document(handle)
+    document = await try_retrieve_webfinger_document(handle)
     if document:
         return parse_diaspora_webfinger(document)
     host = handle.split("@")[1]
-    hostmeta = retrieve_diaspora_host_meta(host)
+    hostmeta = await retrieve_diaspora_host_meta(host)
     if not hostmeta:
         return None
     lrdd = hostmeta.find_link(rels="lrdd")
     if not lrdd:
         return None
     url =  lrdd.template.replace("{uri}", quote(handle))
-    document, code, exception = fetch_document(url)
+    document, code, exception = await fetch_document(url)
     if exception:
         return None
     return parse_diaspora_webfinger(document)
 
 
-def retrieve_diaspora_host_meta(host):
+async def retrieve_diaspora_host_meta(host):
     """
     Retrieve a remote Diaspora host-meta document.
 
     :arg host: Host to retrieve from
     :returns: ``XRD`` instance
     """
-    document, code, exception = fetch_document(host=host, path="/.well-known/host-meta")
+    document, code, exception = await fetch_document(host=host, path="/.well-known/host-meta")
     if exception:
         return None
-    xrd = XRD.parse_xrd(document)
-    return xrd
+    try:
+        xrd = XRD.parse_xrd(document)
+        return xrd
+    except (xml.parsers.expat.ExpatError, TypeError):
+        logger.warning("retrieve_diaspora_host_meta: found XML host-meta but it fails to parse")
+        return None
 
 
 def _get_element_text_or_none(document, selector):
@@ -166,7 +170,7 @@ def parse_profile_from_hcard(hcard: str, handle: str):
     return profile
 
 
-def retrieve_and_parse_content(
+async def retrieve_and_parse_content(
         id: str, guid: str, handle: str, entity_type: str, cache: bool=True, 
         sender_key_fetcher: Callable[[str], str]=None):
     """Retrieve remote content and return an Entity class instance.
@@ -191,10 +195,10 @@ def retrieve_and_parse_content(
     if not domain: return
     
     url = get_fetch_content_endpoint(domain, entity_type.lower(), guid)
-    document, status_code, error = fetch_document(url, cache=cache)
+    document, status_code, error = await fetch_document(url, cache=cache)
     if status_code == 200:
         request = RequestType(body=document)
-        _sender, _protocol, entities = handle_receive(request, sender_key_fetcher=sender_key_fetcher)
+        _sender, _protocol, entities = await handle_receive(request, sender_key_fetcher=sender_key_fetcher)
         if len(entities) > 1:
             logger.warning("retrieve_and_parse_content - more than one entity parsed from remote even though we"
                            "expected only one! ID %s", guid)
@@ -204,14 +208,9 @@ def retrieve_and_parse_content(
     elif status_code == 404:
         logger.warning("retrieve_and_parse_content - remote content %s not found", guid)
         return
-    if error:
-        raise error
-    raise Exception("retrieve_and_parse_content - unknown problem when fetching document: %s, %s, %s" % (
-        document, status_code, error,
-    ))
 
 
-def retrieve_and_parse_profile(handle):
+async def retrieve_and_parse_profile(handle):
     """
     Retrieve the remote user and return a Profile object.
 
@@ -225,12 +224,12 @@ def retrieve_and_parse_profile(handle):
             handle = parsed.path.rstrip("/").split("/")[-1] + "@" + parsed.netloc
         else: return None
     
-    hcard = retrieve_diaspora_hcard(handle)
+    hcard = await retrieve_diaspora_hcard(handle)
     if not hcard:
         return None
     profile = parse_profile_from_hcard(hcard, handle)
     try:
-        profile.validate()
+        await profile.validate()
     except ValueError as ex:
         logger.warning("retrieve_and_parse_profile - found profile %s but it didn't validate: %s",
                        profile, ex)

@@ -2,7 +2,7 @@ import pytest
 # noinspection PyPackageRequirements
 from commonmark import commonmark
 from freezegun import freeze_time
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 
 from federation.entities.activitypub.mappers import get_outbound_entity
 import federation.entities.activitypub.models as models
@@ -181,8 +181,7 @@ https://jasonrobinson.me/media/uploads/2019/07/16/daa24d89-cedf-4fc7-bad8-74a902
 
 
 @pytest.fixture
-@patch.object(models.base.Image, 'get_media_type', return_value="image/jpeg")
-def activitypubprofile(mock_fetch):
+def activitypubprofile():
     with freeze_time("2022-09-06"):
         return models.Person(
             id="https://example.com/bob", raw_content="foobar", name="Bob Bobertson", public=True,
@@ -196,8 +195,7 @@ def activitypubprofile(mock_fetch):
 
 
 @pytest.fixture
-@patch.object(models.base.Image, 'get_media_type', return_value="image/jpeg")
-def activitypubprofile_diaspora_guid(mock_fetch):
+def activitypubprofile_diaspora_guid():
     with freeze_time("2022-09-06"):
         return models.Person(
             id="https://example.com/bob", raw_content="foobar", name="Bob Bobertson", public=True,
@@ -212,7 +210,7 @@ def activitypubprofile_diaspora_guid(mock_fetch):
 
 
 @pytest.fixture
-def activitypubretraction():
+async def activitypubretraction():
     with freeze_time("2019-04-27"):
         obj = Retraction(
             target_id="http://127.0.0.1:8000/post/123456/",
@@ -220,11 +218,11 @@ def activitypubretraction():
             actor_id="http://127.0.0.1:8000/profile/123456/",
             entity_type="Post",
         )
-        return get_outbound_entity(obj, None)
+        return await get_outbound_entity(obj, None)
 
 
 @pytest.fixture
-def activitypubretraction_announce():
+async def activitypubretraction_announce():
     with freeze_time("2019-04-27"):
         obj = Retraction(
             id="http://127.0.0.1:8000/post/123456/activity",
@@ -233,7 +231,7 @@ def activitypubretraction_announce():
             actor_id="http://127.0.0.1:8000/profile/123456/",
             entity_type="Share",
         )
-        return get_outbound_entity(obj, None)
+        return await get_outbound_entity(obj, None)
 
 
 @pytest.fixture

@@ -1,5 +1,4 @@
 from typing import Dict, List, Tuple
-from magic import from_file
 
 from dirty_validators.basic import Email
 
@@ -8,7 +7,6 @@ from federation.entities.mixins import (
     PublicMixin, TargetIDMixin, ParticipationMixin, CreatedAtMixin, RawContentMixin, OptionalRawContentMixin,
     EntityTypeMixin, ProviderDisplayNameMixin, RootTargetIDMixin, MediaMixin, BaseEntity)
 from federation.protocols.enums import ProtocolType
-from federation.utils.network import fetch_file
 
 
 class Accept(CreatedAtMixin, TargetIDMixin, BaseEntity):
@@ -33,17 +31,6 @@ class Image(MediaMixin, OptionalRawContentMixin, CreatedAtMixin, BaseEntity):
         "image/gif",
     )
 
-    def get_media_type(self) -> str:
-        media_type = super().get_media_type()
-        if media_type == 'application/octet-stream':
-            try:
-                file = fetch_file(self.url)
-                media_type = from_file(file, mime=True)
-                os.unlink(file)
-            except:
-                pass
-        return media_type
-
 
 class Audio(MediaMixin, OptionalRawContentMixin, BaseEntity):
     inlineMedia: bool = False
@@ -55,6 +42,7 @@ class Audio(MediaMixin, OptionalRawContentMixin, BaseEntity):
         "audio/wav",
         "audio/webm"
     )
+
 
 class Video(MediaMixin, OptionalRawContentMixin, BaseEntity):
     inlineMedia: bool = False

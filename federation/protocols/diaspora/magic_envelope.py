@@ -34,7 +34,7 @@ class MagicEnvelope:
     }
 
     def __init__(self, message=None, private_key=None, author_handle=None, payload=None,
-                 public_key=None, sender_key_fetcher=None, verify=False, doc=None):
+                 public_key=None, sender_key_fetcher=None, doc=None):
         """
         All parameters are optional. Some are required for signing, some for opening.
 
@@ -46,7 +46,6 @@ class MagicEnvelope:
         :param sender_key_fetcher: Function to use to fetch sender public key, if public key not given. Will fall back
             to network fetch of the profile and the key. Function must take handle as only parameter and return
             a public key string.
-        :param verify: Verify after creating object, defaults to False.
         :param doc: MagicEnvelope document.
         """
         self._message = message
@@ -61,8 +60,6 @@ class MagicEnvelope:
             self.doc = doc
         else:
             self.doc = None
-        if verify:
-            self.verify()
 
     def extract_payload(self):
         payload = decode_if_bytes(self.payload)
@@ -71,11 +68,11 @@ class MagicEnvelope:
         self.author_handle = self.get_sender(self.doc)
         self.message = self.message_from_doc()
 
-    def fetch_public_key(self):
+    async def fetch_public_key(self):
         if self.sender_key_fetcher:
-            self.public_key = self.sender_key_fetcher(self.author_handle)
+            self.public_key = await self.sender_key_fetcher(self.author_handle)
             return
-        self.public_key = fetch_public_key(self.author_handle)
+        self.public_key = await fetch_public_key(self.author_handle)
 
     @staticmethod
     def get_sender(doc):
@@ -139,10 +136,10 @@ class MagicEnvelope:
             self.build()
         return etree.tostring(self.doc, encoding="unicode")
 
-    def verify(self):
+    async def verify(self):
         """Verify Magic Envelope document against public key."""
         if not self.public_key:
-            self.fetch_public_key()
+            await self.fetch_public_key()
         data = self.doc.find(".//{http://salmon-protocol.org/ns/magic-env}data").text
         sig = self.doc.find(".//{http://salmon-protocol.org/ns/magic-env}sig").text
         sig_contents = '.'.join([

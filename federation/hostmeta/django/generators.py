@@ -12,12 +12,12 @@ from federation.utils.text import get_path_from_url
 logger = logging.getLogger("federation")
 
 
-def nodeinfo2_view(request, *args, **kwargs):
+async def nodeinfo2_view(request, *args, **kwargs):
     try:
         nodeinfo2_func = get_function_from_config("nodeinfo2_function")
     except AttributeError:
         return HttpResponseBadRequest("Not configured")
-    nodeinfo2 = nodeinfo2_func()
+    nodeinfo2 = await nodeinfo2_func()
 
     return JsonResponse(generate_nodeinfo2_document(**nodeinfo2))
 
@@ -50,7 +50,7 @@ def matrix_server_wellknown_view(request, *args, **kwargs):
     return JsonResponse(wellknown.render())
 
 
-def rfc7033_webfinger_view(request, *args, **kwargs):
+async def rfc7033_webfinger_view(request, *args, **kwargs):
     """
     Django view to generate an RFC7033 webfinger.
     """
@@ -69,7 +69,7 @@ def rfc7033_webfinger_view(request, *args, **kwargs):
     profile_func = get_function_from_config("get_profile_function")
 
     try:
-        profile = profile_func(**kwargs)
+        profile = await profile_func(**kwargs)
     except Exception as exc:
         logger.warning("rfc7033_webfinger_view - Failed to get profile from resource %s: %s", resource, exc)
         return HttpResponseNotFound()

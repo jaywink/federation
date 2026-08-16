@@ -10,7 +10,7 @@ import federation.entities.activitypub.models as models
 logger = logging.getLogger("federation")
 
 
-def get_outbound_entity(entity: BaseEntity, private_key):
+async def get_outbound_entity(entity: BaseEntity, private_key):
     """Get the correct outbound entity for this protocol.
 
     We might have to look at entity values to decide the correct outbound entity.
@@ -71,19 +71,19 @@ def get_outbound_entity(entity: BaseEntity, private_key):
     #     # TODO: remove this once Diaspora removes the extra signature
     #     outbound.parent_signature = outbound.signature
     if hasattr(outbound, "pre_send"):
-        outbound.pre_send()
+        await outbound.pre_send()
     # Validate the entity
-    outbound.validate(direction="outbound")
+    await outbound.validate(direction="outbound")
     return outbound
 
 
-def message_to_objects(
+async def message_to_objects(
         message: Dict, sender: str = "", sender_key_fetcher: Callable[[str], str] = None, user: UserType = None,
 ) -> List:
     """
     Takes in a message extracted by a protocol and maps it to entities.
     """
     # We only really expect one element here for ActivityPub.
-    return element_to_objects(message, sender)
+    return await element_to_objects(message, sender)
 
 

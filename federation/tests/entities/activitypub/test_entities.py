@@ -1,13 +1,13 @@
 import commonmark
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 from pprint import pprint
 
 # noinspection PyPackageRequirements
 from Crypto.PublicKey.RSA import RsaKey
 
 from federation.entities.activitypub.models import context_manager
-from federation.entities.activitypub.models import Accept
+from federation.entities.activitypub.models import Accept, Image
 from federation.protocols.enums import ProtocolType
 from federation.tests.fixtures.keys import PUBKEY
 from federation.types import UserType
@@ -40,8 +40,8 @@ class TestEntitiesConvertToAS2:
             'published': '2019-08-05T00:00:00',
         }
 
-    def test_comment_to_as2(self, activitypubcomment):
-        activitypubcomment.pre_send()
+    async def test_comment_to_as2(self, activitypubcomment):
+        await activitypubcomment.pre_send()
         result = activitypubcomment.to_as2()
         assert result == {
             '@context': context_manager.build_context(activitypubcomment),
@@ -123,9 +123,9 @@ class TestEntitiesConvertToAS2:
             }
         }
 
-    def test_post_to_as2(self, activitypubpost):
+    async def test_post_to_as2(self, activitypubpost):
         activitypubpost.rendered_content = commonmark.commonmark(activitypubpost.raw_content).strip()
-        activitypubpost.pre_send()
+        await activitypubpost.pre_send()
         result = activitypubpost.to_as2()
         assert result == {
             '@context': context_manager.build_context(activitypubpost),
@@ -197,7 +197,7 @@ class TestEntitiesConvertToAS2:
             'published': '2019-04-27T00:00:00',
         }
 
-    def test_post_to_as2__with_tags(self, activitypubpost_tags):
+    async def test_post_to_as2__with_tags(self, activitypubpost_tags):
         activitypubpost_tags.rendered_content = '<h1>raw_content</h1>\n' \
             '<p><a class="hashtag" ' \
             'href="https://example.com/tag/foobar/" rel="noopener ' \
@@ -207,7 +207,7 @@ class TestEntitiesConvertToAS2:
             'href="https://example.com/tag/barfoo/" rel="noopener ' \
             'noreferrer nofollow" ' \
             'target="_blank">#<span>barfoo</span></a></p>'
-        activitypubpost_tags.pre_send()
+        await activitypubpost_tags.pre_send()
         result = activitypubpost_tags.to_as2()
         assert result == {
             '@context': context_manager.build_context(activitypubpost_tags),
@@ -250,9 +250,9 @@ class TestEntitiesConvertToAS2:
             'published': '2019-04-27T00:00:00',
         }
 
-    def test_post_to_as2__with_images(self, activitypubpost_images):
+    async def test_post_to_as2__with_images(self, activitypubpost_images):
         activitypubpost_images.rendered_content = '<p>raw_content</p>'
-        activitypubpost_images.pre_send()
+        await activitypubpost_images.pre_send()
         result = activitypubpost_images.to_as2()
         assert result == {
             '@context': context_manager.build_context(activitypubpost_images),
@@ -290,9 +290,9 @@ class TestEntitiesConvertToAS2:
             'published': '2019-04-27T00:00:00',
         }
 
-    def test_post_to_as2__with_diaspora_guid(self, activitypubpost_diaspora_guid):
+    async def test_post_to_as2__with_diaspora_guid(self, activitypubpost_diaspora_guid):
         activitypubpost_diaspora_guid.rendered_content = '<p>raw_content</p>'
-        activitypubpost_diaspora_guid.pre_send()
+        await activitypubpost_diaspora_guid.pre_send()
         result = activitypubpost_diaspora_guid.to_as2()
         assert result == {
             '@context': context_manager.build_context(activitypubpost_diaspora_guid),
@@ -317,7 +317,9 @@ class TestEntitiesConvertToAS2:
         }
 
     # noinspection PyUnusedLocal
-    def test_profile_to_as2(self, activitypubprofile):
+    @patch.object(Image, 'get_media_type', return_value="image/jpeg")
+    async def test_profile_to_as2(self, mock_get, activitypubprofile):
+        await activitypubprofile.icon.validate()
         result = activitypubprofile.to_as2()
         assert result == {
             "@context": context_manager.build_context(activitypubprofile),
@@ -349,7 +351,9 @@ class TestEntitiesConvertToAS2:
         }
 
     # noinspection PyUnusedLocal
-    def test_profile_to_as2__with_diaspora_guid(self, activitypubprofile_diaspora_guid):
+    @patch.object(Image, 'get_media_type', new_callable=AsyncMock, return_value="image/jpeg")
+    async def test_profile_to_as2__with_diaspora_guid(self, mock_get, activitypubprofile_diaspora_guid):
+        await activitypubprofile_diaspora_guid.icon.validate()
         result = activitypubprofile_diaspora_guid.to_as2()
         assert result == {
             "@context": context_manager.build_context(activitypubprofile_diaspora_guid),
@@ -382,7 +386,7 @@ class TestEntitiesConvertToAS2:
             }
         }
 
-    def test_retraction_to_as2(self, activitypubretraction):
+    async def test_retraction_to_as2(self, activitypubretraction):
         result = activitypubretraction.to_as2()
         assert result == {
             '@context': context_manager.build_context(activitypubretraction),
@@ -396,7 +400,7 @@ class TestEntitiesConvertToAS2:
             'published': '2019-04-27T00:00:00',
         }
 
-    def test_retraction_to_as2__announce(self, activitypubretraction_announce):
+    async def test_retraction_to_as2__announce(self, activitypubretraction_announce):
         result = activitypubretraction_announce.to_as2()
         assert result == {
             '@context': context_manager.build_context(activitypubretraction_announce),
@@ -416,11 +420,11 @@ class TestEntitiesConvertToAS2:
 class TestEntitiesPostReceive:
     @patch("federation.entities.activitypub.models.retrieve_and_parse_profile", autospec=True)
     @patch("federation.entities.activitypub.models.handle_send", autospec=True)
-    def test_follow_post_receive__sends_correct_accept_back(
+    async def test_follow_post_receive__sends_correct_accept_back(
             self, mock_send, mock_retrieve, activitypubfollow, profile
     ):
         mock_retrieve.return_value = profile
-        activitypubfollow.post_receive()
+        await activitypubfollow.post_receive()
         args, kwargs = mock_send.call_args_list[0]
         assert isinstance(args[0], Accept)
         assert args[0].activity_id.startswith("https://example.com/profile#accept-")
@@ -439,8 +443,8 @@ class TestEntitiesPostReceive:
 
 
 class TestEntitiesPreSend:
-    def test_post_inline_images_are_attached(self, activitypubpost_embedded_images):
-        activitypubpost_embedded_images.pre_send()
+    async def test_post_inline_images_are_attached(self, activitypubpost_embedded_images):
+        await activitypubpost_embedded_images.pre_send()
         assert len(activitypubpost_embedded_images._children) == 4
         image = activitypubpost_embedded_images._children[0]
         assert image.url == "https://example.com/media/uploads/2019/07/16/daa24d89-cedf-4fc7-bad8-74a902541476.jpeg"

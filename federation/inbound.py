@@ -9,7 +9,7 @@ from federation.types import UserType, RequestType
 logger = logging.getLogger("federation")
 
 
-def handle_receive(
+async def handle_receive(
         request: RequestType,
         user: UserType = None,
         sender_key_fetcher: Callable[[str], str] = None,
@@ -38,14 +38,14 @@ def handle_receive(
 
     logger.debug("handle_receive: using protocol %s", found_protocol.PROTOCOL_NAME)
     protocol = found_protocol.Protocol()
-    sender, message = protocol.receive(
+    sender, message = await protocol.receive(
         request, user, sender_key_fetcher, skip_author_verification=skip_author_verification)
     logger.debug("handle_receive: sender %s, message %s", sender, message)
 
     mappers = importlib.import_module("federation.entities.%s.mappers" % found_protocol.PROTOCOL_NAME)
     entities = []
-    for entity in mappers.message_to_objects(message, sender, sender_key_fetcher, user):
-        if isinstance(entity, Profile): entities.append(entity.merge_profiles())
+    for entity in await mappers.message_to_objects(message, sender, sender_key_fetcher, user):
+        if isinstance(entity, Profile): entities.append(await entity.merge_profiles())
         else: entities.append(entity)
     
     logger.debug("handle_receive: entities %s", entities)

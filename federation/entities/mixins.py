@@ -2,6 +2,7 @@ import datetime
 import importlib
 import re
 import warnings
+from asgiref.sync import iscoroutinefunction
 from mimetypes import guess_type
 from typing import List, Set, Union, Dict, Tuple
 
@@ -68,19 +69,19 @@ class BaseEntity:
             # Fill a default activity if not given and type of entity class has one
             self.activity = getattr(self, "_default_activity", None)
 
-    def post_receive(self):
+    async def post_receive(self):
         """
         Run any actions after deserializing the payload into an entity.
         """
         pass
 
-    def pre_send(self):
+    async def pre_send(self):
         """
         Run any actions before serializing the entity for sending.
         """
         pass
 
-    def validate(self, direction: str = "inbound") -> None:
+    async def validate(self, direction: str = "inbound") -> None:
         """Do validation.
 
         1) Check `_required` have been given
@@ -101,10 +102,10 @@ class BaseEntity:
                     attributes.append(attr)
         self._validate_empty_attributes(attributes)
         self._validate_required(attributes)
-        self._validate_attributes(validates)
-        self._validate_children()
+        await self._validate_attributes(validates)
+        await self._validate_children()
         if direction == "inbound":
-            self._validate_signatures()
+            await self._validate_signatures()
 
     def _validate_required(self, attributes):
         """Ensure required attributes are present."""
@@ -114,10 +115,11 @@ class BaseEntity:
                 "Not all required attributes fulfilled. Required: {required}".format(required=set(self._required))
             )
 
-    def _validate_attributes(self, validates):
+    async def _validate_attributes(self, validates):
         """Call individual attribute validators."""
         for validator in validates:
-            validator()
+            if iscoroutinefunction(validator): await validator()
+            else: validator()
 
     def _validate_empty_attributes(self, attributes):
         """Check that required attributes are not empty."""
@@ -129,7 +131,7 @@ class BaseEntity:
                     "Attribute %s cannot be None or an empty string since it is required." % attr
                 )
 
-    def _validate_children(self):
+    async def _validate_children(self):
         """Check that the children we have are allowed here."""
         for child in self._children:
             if not isinstance(child, self._allowed_children):
@@ -138,8 +140,9 @@ class BaseEntity:
                         child, self.__class__
                     )
                 )
+            await child.validate()
 
-    def _validate_signatures(self):
+    async def _validate_signatures(self):
         """Override in subclasses where necessary"""
         pass
 
@@ -165,8 +168,8 @@ class TargetIDMixin(BaseEntity):
     target_handle = ""
     target_guid = ""
 
-    def validate(self, *args, **kwargs) -> None:
-        super().validate(*args, **kwargs)
+    async def validate(self, *args, **kwargs) -> None:
+        await super().validate(*args, **kwargs)
         # Ensure one of the target attributes is filled at least
         if not self.target_id and not self.target_handle and not self.target_guid:
             raise ValueError("Must give one of the target attributes for TargetIDMixin.")
@@ -299,9 +302,9 @@ class MediaMixin(BaseEntity):
     """
     Fetches the media_type if not set
     """
-    url: str = ""
     media_type: str = ""
-
+    url: str = ""
+    
     _default_activity = ActivityType.CREATE
 
     def __init__(self, *args, **kwargs):
@@ -309,11 +312,16 @@ class MediaMixin(BaseEntity):
         self._required += ["url"]
         self._required.remove("id")
         self._required.remove("actor_id")
-        if self.url and not self.media_type:
-            self.media_type = self.get_media_type()
 
-    def get_media_type(self) -> str:
-        media_type = guess_type(self.url)[0] or fetch_content_type(self.url)
-        if media_type in self._valid_media_types:
-            return media_type
-        return ""
+    async def get_media_type(self) -> str:
+        if not hasattr(self, "_cached_media_type"):
+            media_type = guess_type(self.url)[0] or await fetch_content_type(self.url)
+            self._cached_media_type = ""
+            if media_type in self._valid_media_types:
+                self._cached_media_type = media_type
+        return self._cached_media_type
+
+    async def validate_media_type(self):
+        if not self.media_type:
+            self.media_type = await self.get_media_type()
+

@@ -1,5 +1,50 @@
 # Changelog
 
+## Unreleased
+
+**Breaking change**: remote fetchers as well as inbound and outbound requests functions must be called
+from within an async context. For sync django apps, this may mean using the `async_to_sync` utility. Also,
+the provided django views are now async, which means a django client app must serve requests through
+ASGI (daphne, uvicorn, ...).
+
+_Note: the code has been validated for django >=3.2 and <**6**. Using it with a django client app outside
+this version range may or may not work. If your code breaks, please open an issue._
+
+### Added
+
+* `handle_send` now logs the elapsed time taken to send content.
+
+### Changed
+
+* Modify `utils.network.fetch_document`, replacing the `requests` library with `aiohttp-client-cache` in
+  order to turn it into a non-blocking function.
+
+* `utils.network.fetch_content_type` also uses `aiohttp-client-cache`. It  now uses a partial `GET` and
+  `magic.from_buffer` when `HEAD` returns `application/octet-stream`.
+
+* Convert all functions and methods that may call `fetch_document` or `fetch_content_type`down the call
+  chain to async.
+
+* The `entities.activitypub.django.views.activitypub_object_view` decorator as been refactored as the
+  `ActivitypubObjectView` class that be used directly as an async view.
+
+* The `handle_send` function now creates an asyncio task for each `send_content` call and loops on
+  `asyncio.as_completed`.
+
+* The CPU intensive http signature signer hash is now computed once per `handle_send` call, instead of once per
+  target remote instance.
+  
+* Adapt many tests to an async context.
+
+### Fixed
+
+* Add the ':' character to the list of forbidden characters in tags.
+
+* Do not assume peertube actors are always AP objects.
+
+* Ensure a public inbox is set. Some single user platforms only provide a private inbox. In this case,
+  set public to private.
+
 ## [0.27.0] - 2026-03-28
 
 _Note: the code has been validated for django >=3.2 and <5. Using it with a django client app outside

@@ -1,7 +1,9 @@
+import asyncio
 import copy
 import importlib
 import json
 import logging
+import time
 import traceback
 from typing import List, Dict, Union
 from urllib.parse import urljoin
@@ -28,7 +30,7 @@ if disable_outbound_federation():
 logger = logging.getLogger("federation")
 
 
-def handle_create_payload(
+async def handle_create_payload(
         entity: BaseEntity,
         author_user: UserType,
         protocol_name: str,
@@ -56,20 +58,22 @@ def handle_create_payload(
     # noinspection PyUnresolvedReferences
     protocol = protocol.Protocol()
     # noinspection PyUnresolvedReferences
-    outbound_entity = mappers.get_outbound_entity(entity, author_user.rsa_private_key)
+    outbound_entity = await mappers.get_outbound_entity(entity, author_user.rsa_private_key)
     if parent_user:
         outbound_entity.sign_with_parent(parent_user.rsa_private_key)
+    if hasattr(outbound_entity, 'sign_as2') and not hasattr(outbound_entity, 'outbound_doc'):
+        outbound_entity.sign_as2(author_user)
     send_as_user = parent_user if parent_user else author_user
     data = protocol.build_send(entity=outbound_entity, from_user=send_as_user, to_user_key=to_user_key)
     if payload_logger:
         try:
-            payload_logger(data, protocol_name, author_user.id)
+            await payload_logger(data, protocol_name, author_user.id)
         except Exception as ex:
             logger.warning("handle_create_payload | Failed to log payload: %s" % ex)
     return data
 
 
-def handle_send(
+async def handle_send(
         entity: BaseEntity,
         author_user: UserType,
         recipients: List[Dict],
@@ -182,6 +186,8 @@ def handle_send(
     logger.debug('handle_send / unique_recipients - %s', unique_recipients)
 
     matrix_config = None
+    local_user = author_user if author_user.rsa_private_key else parent_user
+    ap_auth = get_http_authentication(local_user.rsa_private_key, f"{local_user.id}#main-key")
 
     # Generate payloads and collect urls
     for recipient in unique_recipients:
@@ -216,7 +222,7 @@ def handle_send(
                 if not ready_payloads[protocol]["payload"]:
                     try:
                         # noinspection PyTypeChecker
-                        ready_payloads[protocol]["payload"] = handle_create_payload(
+                        ready_payloads[protocol]["payload"] = await handle_create_payload(
                             entity, author_user, protocol, parent_user=parent_user, payload_logger=payload_logger,
                         )
                     except ValueError as ex:
@@ -242,10 +248,8 @@ def handle_send(
                     }
                 )
                 continue
-            # The parent_user MUST be local
-            local_user = author_user if author_user.rsa_private_key else parent_user
             payloads.append({
-                "auth": get_http_authentication(local_user.rsa_private_key, f"{local_user.id}#main-key"),
+                "auth": ap_auth,
                 "headers": {
                     "Content-Type": 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
                 },
@@ -276,7 +280,7 @@ def handle_send(
                 if not ready_payloads[protocol]["payload"]:
                     try:
                         # noinspection PyTypeChecker
-                        ready_payloads[protocol]["payload"] = handle_create_payload(
+                        ready_payloads[protocol]["payload"] = await handle_create_payload(
                             entity, author_user, protocol, parent_user=parent_user, payload_logger=payload_logger,
                         )
                     except Exception as ex:
@@ -292,7 +296,7 @@ def handle_send(
                     continue
                 # Private payload
                 try:
-                    payload = handle_create_payload(
+                    payload = await handle_create_payload(
                         entity, author_user, "diaspora", to_user_key=public_key, parent_user=parent_user,
                         payload_logger=payload_logger,
                     )
@@ -376,27 +380,31 @@ def handle_send(
     logger.debug("handle_send - %s", payloads)
 
     if disable_outbound_federation():
-        seen_payload = False
         for payload in payloads:
-            logger.warning(pformat({'urls': payload["urls"]}))
             try:
-                if not seen_payload: logger.warning(pformat(json.loads(payload["payload"])))
-                seen_payload = True
+                logger.warning("handle_send - FEDERATION_DISABLED - the following payload would be sent:")
+                logger.warning(pformat(json.loads(payload["payload"])))
+                break
             except:
-                pass
-        return
+                continue
 
     # Do actual sending
+    start = time.time()
+    tasks = []
     for payload in payloads:
         for url in payload["urls"]:
-            try:
-                # TODO send_document and fetch_document need to handle rate limits
-                send_document(
-                    url,
-                    payload["payload"],
-                    auth=payload.get("auth"),
-                    headers=payload.get("headers"),
-                    method=payload.get("method"),
-                )
-            except Exception as ex:
-                logger.error("handle_send - failed to send payload to %s: %s, payload: %s", url, ex, payload["payload"])
+            # TODO send_document and fetch_document need to handle rate limits
+            tasks.append(asyncio.create_task(send_document(
+                url,
+                payload["payload"],
+                auth=payload.get("auth"),
+                headers=payload.get("headers"),
+                method=payload.get("method"),
+            )))
+    for task in asyncio.as_completed(tasks):
+        try:
+            await task
+        except Exception as ex:
+            # TODO: find a way to generate a more useful message
+            logger.error("handle_send - failed to send payload to %s: %s", task, ex)
+    logger.info("handle_send - elapsed time %s", time.time() - start)

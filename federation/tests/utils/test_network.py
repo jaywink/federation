@@ -1,101 +1,109 @@
 from datetime import timedelta
-from unittest.mock import patch, Mock, call
+from unittest.mock import DEFAULT, patch, AsyncMock, MagicMock, Mock, call
 
+import aiohttp
 import pytest
+import ssl
 from requests import HTTPError
 from requests.exceptions import SSLError, RequestException
 
 from federation.utils.network import (
-    fetch_document, USER_AGENT, send_document, fetch_host_ip,
+    fetch_document, USER_AGENT, send_document, fetch_host_ip
 )
 
 
 class TestFetchDocument:
-    call_args = {"timeout": 10, "headers": {'user-agent': USER_AGENT}}
+    call_args = {"headers": {'user-agent': USER_AGENT}}
+    mock_response = AsyncMock()
+    mock_response.status = 200
+    mock_response.text.return_value = "bla"
 
-    @patch("federation.utils.network.session.get", return_value=Mock(status_code=200, text="foo"))
-    def test_extra_headers(self, mock_get):
-        fetch_document("https://example.com/foo", extra_headers={'accept': 'application/activity+json'})
-        mock_get.assert_called_once_with('https://example.com/foo', timeout=10, headers={
-            'user-agent': USER_AGENT, 'accept': 'application/activity+json'},
-            expire_after=timedelta(hours=6)
-        )
+    @patch.object(aiohttp.ClientSession, "get")
+    async def test_extra_headers(self, mock_get):
+        mock_get.__aenter__.return_value = self.mock_response
+        await fetch_document("https://example.com/foo", extra_headers={'accept': 'application/activity+json'})
+        mock_get.assert_called_once_with('https://example.com/foo', headers={
+            'user-agent': USER_AGENT, 'accept': 'application/activity+json'})
 
-    def test_raises_without_url_and_host(self):
+    async def test_raises_without_url_and_host(self):
         with pytest.raises(ValueError):
-            fetch_document()
+            await fetch_document()
 
-    @patch("federation.utils.network.session.get")
-    def test_url_is_called(self, mock_get):
-        mock_get.return_value = Mock(status_code=200, text="foo")
-        fetch_document("https://localhost")
+    @patch.object(aiohttp.ClientSession, "get")
+    async def test_url_is_called(self, mock_get):
+        mock_get.__aenter__.return_value = self.mock_response
+        await fetch_document("https://localhost")
         assert mock_get.called
 
-    @patch("federation.utils.network.session.get")
-    def test_host_is_called_with_https_first_then_http(self, mock_get):
+    @patch.object(aiohttp.ClientSession, "get")
+    async def test_host_is_called_with_https_first_then_http(self, mock_get):
         def mock_failing_https_get(url, *args, **kwargs):
             if url.find("https://") > -1:
-                raise HTTPError()
-            return Mock(status_code=200, text="foo")
+                raise aiohttp.ClientResponseError(None, None)
+            return self.mock_response
         mock_get.side_effect = mock_failing_https_get
-        fetch_document(host="localhost")
+        mock_get.__aenter__.return_value = self.mock_response
+        await fetch_document(host="localhost")
         assert mock_get.call_count == 2
         assert mock_get.call_args_list == [
             call("https://localhost/", **self.call_args),
             call("http://localhost/", **self.call_args),
         ]
 
-    @patch("federation.utils.network.session.get")
-    def test_host_is_sanitized(self, mock_get):
-        mock_get.return_value = Mock(status_code=200, text="foo")
-        fetch_document(host="http://localhost")
+    @patch.object(aiohttp.ClientSession, "get")
+    async def test_host_is_sanitized(self, mock_get):
+        mock_get.__aenter__.return_value = self.mock_response
+        await fetch_document(host="http://localhost")
         assert mock_get.call_args_list == [
             call("https://localhost/", **self.call_args)
         ]
 
-    @patch("federation.utils.network.session.get")
-    def test_path_is_sanitized(self, mock_get):
-        mock_get.return_value = Mock(status_code=200, text="foo")
-        fetch_document(host="localhost", path="foobar/bazfoo")
+    @patch.object(aiohttp.ClientSession, "get")
+    async def test_path_is_sanitized(self, mock_get):
+        mock_get.__aenter__.return_value = self.mock_response
+        await fetch_document(host="localhost", path="foobar/bazfoo")
         assert mock_get.call_args_list == [
             call("https://localhost/foobar/bazfoo", **self.call_args)
         ]
 
-    @patch("federation.utils.network.session.get")
-    def test_exception_is_raised_if_both_protocols_fail(self, mock_get):
-        mock_get.side_effect = HTTPError
-        doc, code, exc = fetch_document(host="localhost")
+    @patch.object(aiohttp.ClientSession, "get")
+    async def test_exception_is_raised_if_both_protocols_fail(self, mock_get):
+        mock_get.side_effect = aiohttp.ClientConnectionError
+        doc, code, exc = await fetch_document(host="localhost")
         assert mock_get.call_count == 2
         assert doc == None
         assert code == None
-        assert exc.__class__ == HTTPError
+        assert exc.__class__ == aiohttp.ClientConnectionError
 
-    @patch("federation.utils.network.session.get")
-    def test_exception_is_raised_if_url_fails(self, mock_get):
-        mock_get.side_effect = HTTPError
-        doc, code, exc = fetch_document("localhost")
+    @patch.object(aiohttp.ClientSession, "get")
+    async def test_exception_is_raised_if_url_fails(self, mock_get):
+        mock_get.side_effect = aiohttp.ClientConnectionError
+        doc, code, exc = await fetch_document("localhost")
         assert mock_get.call_count == 1
         assert doc == None
         assert code == None
-        assert exc.__class__ == HTTPError
+        assert exc.__class__ == aiohttp.ClientConnectionError
 
-    @patch("federation.utils.network.session.get")
-    def test_exception_is_raised_if_http_fails_and_raise_ssl_errors_true(self, mock_get):
-        mock_get.side_effect = SSLError
-        doc, code, exc = fetch_document("localhost")
+    @patch.object(aiohttp.ClientSession, "get")
+    @patch.object(aiohttp.ClientSSLError, "ssl", return_value="bla")
+    @patch.object(aiohttp.ClientSSLError, "host", return_value="bla")
+    @patch.object(aiohttp.ClientSSLError, "port", return_value="bla")
+    async def test_exception_is_raised_if_http_fails_and_raise_ssl_errors_true(self, mock_port, mock_host, mock_ssl, mock_get):
+        mock_get.side_effect = aiohttp.ClientSSLError(aiohttp.TCPConnector(), OSError)
+        doc, code, exc = await fetch_document("localhost")
         assert mock_get.call_count == 1
         assert doc == None
         assert code == None
-        assert exc.__class__ == SSLError
+        assert exc.__class__ == aiohttp.ClientSSLError
 
-    @patch("federation.utils.network.session.get")
-    def test_exception_is_raised_on_network_error(self, mock_get):
-        mock_get.side_effect = RequestException
-        doc, code, exc = fetch_document(host="localhost")
+    @patch.object(aiohttp.ClientSession, "get")
+    async def test_exception_is_raised_on_network_error(self, mock_get):
+        mock_get.side_effect = aiohttp.ClientError
+        doc, code, exc = await fetch_document(host="localhost")
         assert mock_get.call_count == 1
         assert doc == None
         assert code == None
-        assert exc.__class__ == RequestException
+        assert exc.__class__ == aiohttp.ClientError
 
 
 class TestFetchHostIp:
@@ -106,41 +114,51 @@ class TestFetchHostIp:
         mock_get_ip.assert_called_once_with('domain.local')
 
 
-class TestSendDocument:
-    call_args = {"timeout": 10, "headers": {'user-agent': USER_AGENT}}
+async def mock_resp(*args, **kwargs):
+    return await AsyncMock(status=200)
 
-    @patch("federation.utils.network.requests.post", return_value=Mock(status_code=200))
-    def test_post_is_called(self, mock_post):
-        code, exc = send_document("http://localhost", {"foo": "bar"})
+
+class TestSendDocument:
+    call_args = {"headers": {'user-agent': USER_AGENT}, 'timeout': 10}
+    actual_args = {"headers": {'user-agent': USER_AGENT}, 'timeout': aiohttp.ClientTimeout(sock_connect=10)}
+    mock_response = AsyncMock()
+    mock_response.status = 200
+
+    @patch.object(aiohttp.ClientSession, "post", new_callable=AsyncMock)
+    async def test_post_is_called(self, mock_post):
+        mock_post.return_value = self.mock_response
+        code, exc = await send_document("http://localhost", {"foo": "bar"})
         mock_post.assert_called_once_with(
-            "http://localhost", data={"foo": "bar"}, **self.call_args
+            "http://localhost", data={"foo": "bar"}, **self.actual_args
         )
         assert code == 200
         assert exc == None
 
-    @patch("federation.utils.network.requests.post", side_effect=RequestException)
-    def test_post_raises_and_returns_exception(self, mock_post):
-        code, exc = send_document("http://localhost", {"foo": "bar"})
+    @patch.object(aiohttp.ClientSession, "post", side_effect=aiohttp.ClientResponseError(None, None))
+    async def test_post_raises_and_returns_exception(self, mock_post):
+        code, exc = await send_document("http://localhost", {"foo": "bar"})
         assert code == None
-        assert exc.__class__ == RequestException
+        assert exc.__class__ == aiohttp.ClientResponseError
 
-    @patch("federation.utils.network.requests.post", return_value=Mock(status_code=200))
-    def test_post_called_with_only_one_headers_kwarg(self, mock_post):
+    @patch.object(aiohttp.ClientSession, "post", new_callable=AsyncMock)
+    async def test_post_called_with_only_one_headers_kwarg(self, mock_post):
         # A failure might raise:
         # TypeError: MagicMock object got multiple values for keyword argument 'headers'
-        send_document("http://localhost", {"foo": "bar"}, **self.call_args)
+        mock_post.return_value = self.mock_response
+        await send_document("http://localhost", {"foo": "bar"}, **self.call_args)
         mock_post.assert_called_once_with(
-            "http://localhost", data={"foo": "bar"}, **self.call_args
+            "http://localhost", data={"foo": "bar"}, **self.actual_args
         )
 
-    @patch("federation.utils.network.requests.post", return_value=Mock(status_code=200))
-    def test_headers_in_either_case_are_handled_without_exception(self, mock_post):
-        send_document("http://localhost", {"foo": "bar"}, **self.call_args)
+    @patch.object(aiohttp.ClientSession, "post", new_callable=AsyncMock)
+    async def test_headers_in_either_case_are_handled_without_exception(self, mock_post):
+        mock_post.return_value = self.mock_response
+        await send_document("http://localhost", {"foo": "bar"}, **self.call_args)
         mock_post.assert_called_once_with(
-            "http://localhost", data={"foo": "bar"}, headers={'user-agent': USER_AGENT}, timeout=10
+            "http://localhost", data={"foo": "bar"}, headers={'user-agent': USER_AGENT}, timeout=aiohttp.ClientTimeout(sock_connect=10)
         )
         mock_post.reset_mock()
-        send_document("http://localhost", {"foo": "bar"}, headers={'User-Agent': USER_AGENT})
+        await send_document("http://localhost", {"foo": "bar"}, headers={'User-Agent': USER_AGENT})
         mock_post.assert_called_once_with(
-            "http://localhost", data={"foo": "bar"}, headers={'User-Agent': USER_AGENT}, timeout=10
+            "http://localhost", data={"foo": "bar"}, headers={'User-Agent': USER_AGENT}, timeout=aiohttp.ClientTimeout(sock_connect=10)
         )

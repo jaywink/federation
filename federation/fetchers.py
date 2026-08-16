@@ -12,7 +12,7 @@ from federation.utils.text import validate_handle
 logger = logging.getLogger("federation")
 
 
-def retrieve_remote_content(
+async def retrieve_remote_content(
         id: str, guid: str = None, handle: str = None, entity_type: str = None,
         sender_key_fetcher: Callable[[str], str] = None, cache: bool=True,
         protocol: ProtocolType = None
@@ -25,14 +25,14 @@ def retrieve_remote_content(
     protocols = (ProtocolType.ACTIVITYPUB, ProtocolType.DIASPORA) if protocol == None else (protocol,)
     for protocol in protocols:
         utils = importlib.import_module(f"federation.utils.{protocol.string}")
-        content = utils.retrieve_and_parse_content(
+        content = await utils.retrieve_and_parse_content(
             id=id, guid=guid, handle=handle, entity_type=entity_type, 
             cache=cache, sender_key_fetcher=sender_key_fetcher,
         )
         if content: return content
 
 
-def retrieve_remote_profile(id: str) -> Optional[Profile]:
+async def retrieve_remote_profile(id: str) -> Optional[Profile]:
     """High level retrieve profile method.
 
     Retrieve the profile from a remote location, using protocols based on the given ID.
@@ -40,6 +40,6 @@ def retrieve_remote_profile(id: str) -> Optional[Profile]:
     protocols = (activitypub_protocol, diaspora_protocol)
     for protocol in protocols:
         utils = importlib.import_module(f"federation.utils.{protocol.PROTOCOL_NAME}")
-        profile = utils.retrieve_and_parse_profile(id)
+        profile = await utils.retrieve_and_parse_profile(id)
         if profile:
-            return profile.merge_profiles()
+            return await profile.merge_profiles()

@@ -1,6 +1,6 @@
 from datetime import datetime
 from lxml import etree
-from unittest.mock import patch, Mock
+from unittest.mock import patch, AsyncMock, Mock
 
 import pytest
 
@@ -24,16 +24,16 @@ from federation.types import UserType, ReceiverVariant
 
 
 class TestDiasporaEntityMappersReceive:
-    def test_message_to_objects_mentions_are_extracted(self):
-        entities = message_to_objects(
+    async def test_message_to_objects_mentions_are_extracted(self):
+        entities = await message_to_objects(
             DIASPORA_POST_SIMPLE_WITH_MENTION, "alice@alice.diaspora.example.org"
         )
         assert len(entities) == 1
         post = entities[0]
         assert post._mentions == {'jaywink@jasonrobinson.me'}
 
-    def test_message_to_objects_post__with_activitypub_id(self):
-        entities = message_to_objects(DIASPORA_POST_ACTIVITYPUB_ID, "alice@alice.diaspora.example.org")
+    async def test_message_to_objects_post__with_activitypub_id(self):
+        entities = await message_to_objects(DIASPORA_POST_ACTIVITYPUB_ID, "alice@alice.diaspora.example.org")
         assert len(entities) == 1
         post = entities[0]
         assert isinstance(post, DiasporaPost)
@@ -42,8 +42,8 @@ class TestDiasporaEntityMappersReceive:
         assert post.handle == "alice@alice.diaspora.example.org"
         assert post.id == "https://alice.diaspora.example.org/posts/1"
 
-    def test_message_to_objects_simple_post(self):
-        entities = message_to_objects(DIASPORA_POST_SIMPLE, "alice@alice.diaspora.example.org")
+    async def test_message_to_objects_simple_post(self):
+        entities = await message_to_objects(DIASPORA_POST_SIMPLE, "alice@alice.diaspora.example.org")
         assert len(entities) == 1
         post = entities[0]
         assert isinstance(post, DiasporaPost)
@@ -55,8 +55,8 @@ class TestDiasporaEntityMappersReceive:
         assert post.created_at == datetime(2011, 7, 20, 1, 36, 7)
         assert post.provider_display_name == "Socialhome"
 
-    def test_message_to_objects_post_with_photos(self):
-        entities = message_to_objects(DIASPORA_POST_WITH_PHOTOS, "alice@alice.diaspora.example.org")
+    async def test_message_to_objects_post_with_photos(self):
+        entities = await message_to_objects(DIASPORA_POST_WITH_PHOTOS, "alice@alice.diaspora.example.org")
         assert len(entities) == 1
         post = entities[0]
         assert isinstance(post, DiasporaPost)
@@ -71,10 +71,10 @@ class TestDiasporaEntityMappersReceive:
         assert photo.handle == "alice@alice.diaspora.example.org"
         assert photo.created_at == datetime(2011, 7, 20, 1, 36, 7)
 
-    @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
-    def test_message_to_objects_comment(self, mock_validate):
-        entities = message_to_objects(DIASPORA_POST_COMMENT, "alice@alice.diaspora.example.org",
-                                      sender_key_fetcher=Mock())
+    @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures", new_callable=AsyncMock)
+    async def test_message_to_objects_comment(self, mock_validate):
+        entities = await message_to_objects(DIASPORA_POST_COMMENT, "alice@alice.diaspora.example.org",
+                                      sender_key_fetcher=AsyncMock())
         assert len(entities) == 1
         comment = entities[0]
         assert isinstance(comment, DiasporaComment)
@@ -89,12 +89,12 @@ class TestDiasporaEntityMappersReceive:
         assert comment._xml_tags == [
             "guid", "parent_guid", "text", "author",
         ]
-        mock_validate.assert_called_once_with()
+        mock_validate.assert_awaited_once()
 
-    @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
-    def test_message_to_objects_comment__activitypub_id(self, mock_validate):
-        entities = message_to_objects(DIASPORA_POST_COMMENT_ACTIVITYPUB_ID, "alice@alice.diaspora.example.org",
-                                      sender_key_fetcher=Mock())
+    @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures", new_callable=AsyncMock)
+    async def test_message_to_objects_comment__activitypub_id(self, mock_validate):
+        entities = await message_to_objects(DIASPORA_POST_COMMENT_ACTIVITYPUB_ID, "alice@alice.diaspora.example.org",
+                                      sender_key_fetcher=AsyncMock())
         assert len(entities) == 1
         comment = entities[0]
         assert isinstance(comment, DiasporaComment)
@@ -104,12 +104,12 @@ class TestDiasporaEntityMappersReceive:
         assert comment.guid == "((guidguidguidguidguidguid))"
         assert comment.handle == "alice@alice.diaspora.example.org"
         assert comment.id == "https://alice.diaspora.example.org/comments/1"
-        mock_validate.assert_called_once_with()
+        mock_validate.assert_awaited_once()
 
-    @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
-    def test_message_to_objects_nested_comment(self, mock_validate):
-        entities = message_to_objects(DIASPORA_POST_COMMENT_NESTED, "alice@alice.diaspora.example.org",
-                                      sender_key_fetcher=Mock())
+    @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures", new_callable=AsyncMock)
+    async def test_message_to_objects_nested_comment(self, mock_validate):
+        entities = await message_to_objects(DIASPORA_POST_COMMENT_NESTED, "alice@alice.diaspora.example.org",
+                                      sender_key_fetcher=AsyncMock())
         assert len(entities) == 1
         comment = entities[0]
         assert isinstance(comment, DiasporaComment)
@@ -124,12 +124,12 @@ class TestDiasporaEntityMappersReceive:
         assert comment._xml_tags == [
             "guid", "parent_guid", "thread_parent_guid", "text", "author",
         ]
-        mock_validate.assert_called_once_with()
+        mock_validate.assert_awaited_once()
 
-    @patch("federation.entities.diaspora.mappers.DiasporaLike._validate_signatures")
-    def test_message_to_objects_like(self, mock_validate):
-        entities = message_to_objects(
-            DIASPORA_POST_LIKE, "alice@alice.diaspora.example.org", sender_key_fetcher=Mock()
+    @patch("federation.entities.diaspora.mappers.DiasporaLike._validate_signatures", new_callable=AsyncMock)
+    async def test_message_to_objects_like(self, mock_validate):
+        entities = await message_to_objects(
+            DIASPORA_POST_LIKE, "alice@alice.diaspora.example.org", sender_key_fetcher=AsyncMock()
         )
         assert len(entities) == 1
         like = entities[0]
@@ -144,13 +144,13 @@ class TestDiasporaEntityMappersReceive:
         assert like._xml_tags == [
             "parent_type", "guid", "parent_guid", "positive", "author",
         ]
-        mock_validate.assert_called_once_with()
+        mock_validate.assert_awaited_once()
 
-    @patch("federation.entities.diaspora.mappers.retrieve_and_parse_profile", return_value=Mock(
+    @patch("federation.entities.diaspora.mappers.retrieve_and_parse_profile", return_value=AsyncMock(
         id="bob@example.com",
     ))
-    def test_message_to_objects_profile(self, mock_parse):
-        entities = message_to_objects(DIASPORA_PROFILE, "bob@example.com")
+    async def test_message_to_objects_profile(self, mock_parse):
+        entities = await message_to_objects(DIASPORA_PROFILE, "bob@example.com")
         assert len(entities) == 1
         profile = entities[0]
         assert profile.handle == "bob@example.com"
@@ -167,35 +167,35 @@ class TestDiasporaEntityMappersReceive:
         assert profile.nsfw == False
         assert profile.tag_list == ["socialfederation", "federation"]
 
-    @patch("federation.entities.diaspora.mappers.retrieve_and_parse_profile", return_value=Mock(
+    @patch("federation.entities.diaspora.mappers.retrieve_and_parse_profile", return_value=AsyncMock(
         id="bob@example.com",
     ))
-    def test_message_to_objects_profile__activitypub_id(self, mock_parse):
-        entities = message_to_objects(DIASPORA_PROFILE_ACTIVITYPUB_ID, "bob@example.com")
+    async def test_message_to_objects_profile__activitypub_id(self, mock_parse):
+        entities = await message_to_objects(DIASPORA_PROFILE_ACTIVITYPUB_ID, "bob@example.com")
         assert len(entities) == 1
         profile = entities[0]
         assert profile.handle == "bob@example.com"
         assert profile.id == "https://example.com/bob"
 
-    @patch("federation.entities.diaspora.mappers.retrieve_and_parse_profile", return_value=Mock(
+    @patch("federation.entities.diaspora.mappers.retrieve_and_parse_profile", return_value=AsyncMock(
         id="bob@example.com",
     ))
-    def test_message_to_objects_profile__first_name_only(self, mock_parse):
-        entities = message_to_objects(DIASPORA_PROFILE_FIRST_NAME_ONLY, "bob@example.com")
+    async def test_message_to_objects_profile__first_name_only(self, mock_parse):
+        entities = await message_to_objects(DIASPORA_PROFILE_FIRST_NAME_ONLY, "bob@example.com")
         assert len(entities) == 1
         profile = entities[0]
         assert profile.name == "Bob"
 
-    @patch("federation.entities.diaspora.mappers.retrieve_and_parse_profile", return_value=Mock(
+    @patch("federation.entities.diaspora.mappers.retrieve_and_parse_profile", return_value=AsyncMock(
         id="bob@example.com",
     ))
-    def test_message_to_objects_profile_survives_empty_tag_string(self, mock_parse):
-        entities = message_to_objects(DIASPORA_PROFILE_EMPTY_TAGS, "bob@example.com")
+    async def test_message_to_objects_profile_survives_empty_tag_string(self, mock_parse):
+        entities = await message_to_objects(DIASPORA_PROFILE_EMPTY_TAGS, "bob@example.com")
         assert len(entities) == 1
 
-    def test_message_to_objects_receivers_are_saved__followers_receiver(self):
+    async def test_message_to_objects_receivers_are_saved__followers_receiver(self):
         # noinspection PyTypeChecker
-        entities = message_to_objects(
+        entities = await message_to_objects(
             DIASPORA_POST_SIMPLE,
             "alice@alice.diaspora.example.org",
         )
@@ -204,18 +204,18 @@ class TestDiasporaEntityMappersReceive:
             id="alice@alice.diaspora.example.org", receiver_variant=ReceiverVariant.FOLLOWERS,
         )]
 
-    def test_message_to_objects_receivers_are_saved__single_receiver(self):
+    async def test_message_to_objects_receivers_are_saved__single_receiver(self):
         # noinspection PyTypeChecker
-        entities = message_to_objects(
+        entities = await message_to_objects(
             DIASPORA_POST_SIMPLE,
             "alice@alice.diaspora.example.org",
-            user=Mock(id="bob@example.com")
+            user=AsyncMock(id="bob@example.com")
         )
         entity = entities[0]
         assert entity._receivers == [UserType(id="bob@example.com", receiver_variant=ReceiverVariant.ACTOR)]
 
-    def test_message_to_objects_retraction(self):
-        entities = message_to_objects(DIASPORA_RETRACTION, "bob@example.com")
+    async def test_message_to_objects_retraction(self):
+        entities = await message_to_objects(DIASPORA_RETRACTION, "bob@example.com")
         assert len(entities) == 1
         entity = entities[0]
         assert isinstance(entity, DiasporaRetraction)
@@ -223,8 +223,8 @@ class TestDiasporaEntityMappersReceive:
         assert entity.target_guid == "x" * 16
         assert entity.entity_type == "Post"
 
-    def test_message_to_objects_contact(self):
-        entities = message_to_objects(DIASPORA_CONTACT, "alice@example.com")
+    async def test_message_to_objects_contact(self):
+        entities = await message_to_objects(DIASPORA_CONTACT, "alice@example.com")
         assert len(entities) == 1
         entity = entities[0]
         assert isinstance(entity, DiasporaContact)
@@ -232,8 +232,8 @@ class TestDiasporaEntityMappersReceive:
         assert entity.target_handle == "bob@example.org"
         assert entity.following is True
 
-    def test_message_to_objects_reshare(self):
-        entities = message_to_objects(DIASPORA_RESHARE, "alice@example.org")
+    async def test_message_to_objects_reshare(self):
+        entities = await message_to_objects(DIASPORA_RESHARE, "alice@example.org")
         assert len(entities) == 1
         entity = entities[0]
         assert isinstance(entity, DiasporaReshare)
@@ -246,8 +246,8 @@ class TestDiasporaEntityMappersReceive:
         assert entity.entity_type == "Post"
         assert entity.raw_content == ""
 
-    def test_message_to_objects_reshare_extra_properties(self):
-        entities = message_to_objects(DIASPORA_RESHARE_WITH_EXTRA_PROPERTIES, "alice@example.org")
+    async def test_message_to_objects_reshare_extra_properties(self):
+        entities = await message_to_objects(DIASPORA_RESHARE_WITH_EXTRA_PROPERTIES, "alice@example.org")
         assert len(entities) == 1
         entity = entities[0]
         assert isinstance(entity, DiasporaReshare)
@@ -255,124 +255,126 @@ class TestDiasporaEntityMappersReceive:
         assert entity.entity_type == "Comment"
 
     @patch("federation.entities.diaspora.mappers.logger.error")
-    def test_invalid_entity_logs_an_error(self, mock_logger):
-        entities = message_to_objects(DIASPORA_POST_INVALID, "alice@alice.diaspora.example.org")
+    async def test_invalid_entity_logs_an_error(self, mock_logger):
+        entities = await message_to_objects(DIASPORA_POST_INVALID, "alice@alice.diaspora.example.org")
         assert len(entities) == 0
         assert mock_logger.called
 
-    def test_adds_source_protocol_to_entity(self):
-        entities = message_to_objects(DIASPORA_POST_SIMPLE, "alice@alice.diaspora.example.org")
+    async def test_adds_source_protocol_to_entity(self):
+        entities = await message_to_objects(DIASPORA_POST_SIMPLE, "alice@alice.diaspora.example.org")
         assert entities[0]._source_protocol == "diaspora"
 
-    @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
-    def test_source_object(self, mock_validate):
-        entities = message_to_objects(DIASPORA_POST_COMMENT, "alice@alice.diaspora.example.org",
-                                      sender_key_fetcher=Mock())
+    @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures", new_callable=AsyncMock)
+    async def test_source_object(self, mock_validate):
+        entities = await message_to_objects(DIASPORA_POST_COMMENT, "alice@alice.diaspora.example.org",
+                                      sender_key_fetcher=AsyncMock())
         entity = entities[0]
         assert entity._source_object == etree.tostring(etree.fromstring(DIASPORA_POST_COMMENT))
 
-    @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
-    def test_element_to_objects_calls_sender_key_fetcher(self, mock_validate):
-        mock_fetcher = Mock()
-        message_to_objects(DIASPORA_POST_COMMENT, "alice@alice.diaspora.example.org", mock_fetcher)
-        mock_fetcher.assert_called_once_with(
+    @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures", new_callable=AsyncMock)
+    async def test_element_to_objects_calls_sender_key_fetcher(self, mock_validate):
+        mock_fetcher = AsyncMock()
+        await message_to_objects(DIASPORA_POST_COMMENT, "alice@alice.diaspora.example.org", mock_fetcher)
+        mock_fetcher.assert_awaited_once_with(
             "alice@alice.diaspora.example.org",
         )
 
-    @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
-    @patch("federation.entities.diaspora.mappers.retrieve_and_parse_profile")
-    def test_element_to_objects_calls_retrieve_remote_profile(self, mock_retrieve, mock_validate):
-        message_to_objects(DIASPORA_POST_COMMENT, "alice@alice.diaspora.example.org")
+    @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures", new_callable=AsyncMock)
+    @patch("federation.entities.diaspora.mappers.retrieve_and_parse_profile", new_callable=AsyncMock)
+    async def test_element_to_objects_calls_retrieve_remote_profile(self, mock_retrieve, mock_validate):
+        await message_to_objects(DIASPORA_POST_COMMENT, "alice@alice.diaspora.example.org")
         mock_retrieve.assert_called_once_with("alice@alice.diaspora.example.org")
 
-    @patch("federation.entities.diaspora.mappers.check_sender_and_entity_handle_match")
-    def test_element_to_objects_verifies_handles_are_the_same(self, mock_check):
-        message_to_objects(DIASPORA_POST_SIMPLE, "bob@example.org")
+    @patch("federation.entities.diaspora.mappers.check_sender_and_entity_handle_match", new_callable=AsyncMock)
+    async def test_element_to_objects_verifies_handles_are_the_same(self, mock_check):
+        await message_to_objects(DIASPORA_POST_SIMPLE, "bob@example.org")
         mock_check.assert_called_once_with("bob@example.org", "alice@alice.diaspora.example.org")
 
-    def test_element_to_objects_returns_no_entity_if_handles_are_different(self):
-        entities = message_to_objects(DIASPORA_POST_SIMPLE, "bob@example.org")
+    async def test_element_to_objects_returns_no_entity_if_handles_are_different(self):
+        entities = await message_to_objects(DIASPORA_POST_SIMPLE, "bob@example.org")
         assert not entities
 
 
 class TestGetOutboundEntity:
-    def test_already_fine_entities_are_returned_as_is(self, private_key):
+    async def test_already_fine_entities_are_returned_as_is(self, private_key):
         entity = DiasporaPost()
-        entity.validate = Mock()
-        assert get_outbound_entity(entity, private_key) == entity
+        entity.validate = AsyncMock()
+        assert await get_outbound_entity(entity, private_key) == entity
         entity = DiasporaLike()
-        entity.validate = Mock()
-        assert get_outbound_entity(entity, private_key) == entity
+        entity.validate = AsyncMock()
+        assert await get_outbound_entity(entity, private_key) == entity
         entity = DiasporaComment()
-        entity.validate = Mock()
-        assert get_outbound_entity(entity, private_key) == entity
+        entity.validate = AsyncMock()
+        assert await get_outbound_entity(entity, private_key) == entity
         entity = DiasporaProfile(handle="foobar@example.com", guid="1234")
-        entity.validate = Mock()
-        assert get_outbound_entity(entity, private_key) == entity
+        entity.validate = AsyncMock()
+        assert await get_outbound_entity(entity, private_key) == entity
         entity = DiasporaContact()
-        entity.validate = Mock()
-        assert get_outbound_entity(entity, private_key) == entity
+        entity.validate = AsyncMock()
+        assert await get_outbound_entity(entity, private_key) == entity
         entity = DiasporaReshare()
-        entity.validate = Mock()
-        assert get_outbound_entity(entity, private_key) == entity
+        entity.validate = AsyncMock()
+        assert await get_outbound_entity(entity, private_key) == entity
 
-    @patch.object(DiasporaPost, "validate", new=Mock())
-    def test_post_is_converted_to_diasporapost(self, private_key):
+    @patch.object(DiasporaPost, "validate", new_callable=AsyncMock)
+    async def test_post_is_converted_to_diasporapost(self, private_key):
         entity = Post()
-        assert isinstance(get_outbound_entity(entity, private_key), DiasporaPost)
+        assert isinstance(await get_outbound_entity(entity, private_key), DiasporaPost)
 
-    @patch.object(DiasporaComment, "validate", new=Mock())
-    def test_comment_is_converted_to_diasporacomment(self, private_key):
+    @patch.object(DiasporaComment, "sign", new_callable=AsyncMock)
+    @patch.object(DiasporaComment, "validate", new_callable=AsyncMock)
+    async def test_comment_is_converted_to_diasporacomment(self, mock_validate, private_key):
         entity = Comment()
-        assert isinstance(get_outbound_entity(entity, private_key), DiasporaComment)
+        assert isinstance(await get_outbound_entity(entity, private_key), DiasporaComment)
 
-    @patch.object(DiasporaLike, "validate", new=Mock())
-    def test_reaction_of_like_is_converted_to_diasporalike(self, private_key):
+    @patch.object(DiasporaLike, "sign", new_callable=AsyncMock)
+    @patch.object(DiasporaLike, "validate", new_callable=AsyncMock)
+    async def test_reaction_of_like_is_converted_to_diasporalike(self, mock_validate, private_key):
         entity = Reaction(reaction="like")
-        assert isinstance(get_outbound_entity(entity, private_key), DiasporaLike)
+        assert isinstance(await get_outbound_entity(entity, private_key), DiasporaLike)
 
-    @patch.object(DiasporaProfile, "validate", new=Mock())
-    def test_profile_is_converted_to_diasporaprofile(self, private_key):
+    @patch.object(DiasporaProfile, "validate", new_callable=AsyncMock)
+    async def test_profile_is_converted_to_diasporaprofile(self, private_key):
         entity = Profile(handle="foobar@example.com", guid="1234")
-        assert isinstance(get_outbound_entity(entity, private_key), DiasporaProfile)
+        assert isinstance(await get_outbound_entity(entity, private_key), DiasporaProfile)
 
-    def test_other_reaction_raises(self, private_key):
+    async def test_other_reaction_raises(self, private_key):
         entity = Reaction(reaction="foo")
         with pytest.raises(ValueError):
-            get_outbound_entity(entity, private_key)
+            await get_outbound_entity(entity, private_key)
 
-    def test_other_relation_raises(self, private_key):
+    async def test_other_relation_raises(self, private_key):
         entity = Relationship(relationship="foo")
         with pytest.raises(ValueError):
-            get_outbound_entity(entity, private_key)
+            await get_outbound_entity(entity, private_key)
 
-    @patch.object(DiasporaRetraction, "validate", new=Mock())
-    def test_retraction_is_converted_to_diasporaretraction(self, private_key):
+    @patch.object(DiasporaRetraction, "validate", new_callable=AsyncMock)
+    async def test_retraction_is_converted_to_diasporaretraction(self, private_key):
         entity = Retraction()
-        assert isinstance(get_outbound_entity(entity, private_key), DiasporaRetraction)
+        assert isinstance(await get_outbound_entity(entity, private_key), DiasporaRetraction)
 
-    @patch.object(DiasporaContact, "validate", new=Mock())
-    def test_follow_is_converted_to_diasporacontact(self, private_key):
+    @patch.object(DiasporaContact, "validate", new_callable=AsyncMock)
+    async def test_follow_is_converted_to_diasporacontact(self, private_key):
         entity = Follow()
-        assert isinstance(get_outbound_entity(entity, private_key), DiasporaContact)
+        assert isinstance(await get_outbound_entity(entity, private_key), DiasporaContact)
 
-    @patch.object(DiasporaReshare, "validate", new=Mock())
-    def test_share_is_converted_to_diasporareshare(self, private_key):
+    @patch.object(DiasporaReshare, "validate", new_callable=AsyncMock)
+    async def test_share_is_converted_to_diasporareshare(self, private_key):
         entity = Share()
-        assert isinstance(get_outbound_entity(entity, private_key), DiasporaReshare)
+        assert isinstance(await get_outbound_entity(entity, private_key), DiasporaReshare)
 
-    def test_signs_relayable_if_no_signature(self, private_key):
+    async def test_signs_relayable_if_no_signature(self, private_key):
         entity = DiasporaComment()
-        entity.validate = Mock()
-        outbound = get_outbound_entity(entity, private_key)
+        entity.validate = AsyncMock()
+        outbound = await get_outbound_entity(entity, private_key)
         assert outbound.signature != ""
 
-    def test_returns_entity_if_outbound_doc_on_entity(self, private_key, diasporacomment):
+    async def test_returns_entity_if_outbound_doc_on_entity(self, private_key, diasporacomment):
         entity = Comment()
         entity.outbound_doc = diasporacomment.to_xml()
-        assert get_outbound_entity(entity, private_key) == entity
+        assert await get_outbound_entity(entity, private_key) == entity
 
-    def test_entity_is_validated__fail(self, private_key):
+    async def test_entity_is_validated__fail(self, private_key):
         entity = Share(
             actor_id="foobar@localhost.local",
             handle="foobar@localhost.local",
@@ -382,9 +384,9 @@ class TestGetOutboundEntity:
             target_id="2" * 16,
         )
         with pytest.raises(ValueError):
-            get_outbound_entity(entity, private_key)
+            await get_outbound_entity(entity, private_key)
 
-    def test_entity_is_validated__success(self, private_key):
+    async def test_entity_is_validated__success(self, private_key):
         entity = Share(
             actor_id="foobar@localhost.local",
             handle="foobar@localhost.local",
@@ -395,7 +397,7 @@ class TestGetOutboundEntity:
             target_id="2" * 16,
             target_guid="2" * 16,
         )
-        get_outbound_entity(entity, private_key)
+        await get_outbound_entity(entity, private_key)
 
 
 def test_check_sender_and_entity_handle_match():

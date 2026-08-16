@@ -11,8 +11,8 @@ from federation.utils.network import fetch_document
 HIGHEST_SUPPORTED_NODEINFO_VERSION = 2.1
 
 
-def fetch_mastodon_document(host):
-    doc, status_code, error = fetch_document(host=host, path='/api/v1/instance')
+async def fetch_mastodon_document(host):
+    doc, status_code, error = await fetch_document(host=host, path='/api/v1/instance')
     if not doc:
         return
     try:
@@ -22,8 +22,8 @@ def fetch_mastodon_document(host):
     return parse_mastodon_document(doc, host)
 
 
-def fetch_matrix_document(host: str) -> Optional[Dict]:
-    doc, status_code, error = fetch_document(host=host, path='/_matrix/federation/v1/version')
+async def fetch_matrix_document(host: str) -> Optional[Dict]:
+    doc, status_code, error = await fetch_document(host=host, path='/_matrix/federation/v1/version')
     if not doc:
         return
     try:
@@ -46,8 +46,8 @@ def fetch_misskey_document(host: str, mastodon_document: Dict=None) -> Optional[
         return parse_misskey_document(doc, host, mastodon_document=mastodon_document)
 
 
-def fetch_nodeinfo_document(host):
-    doc, status_code, error = fetch_document(host=host, path='/.well-known/nodeinfo')
+async def fetch_nodeinfo_document(host):
+    doc, status_code, error = await fetch_document(host=host, path='/.well-known/nodeinfo')
     if not doc:
         return
     try:
@@ -72,7 +72,7 @@ def fetch_nodeinfo_document(host):
     if not url:
         return
 
-    doc, status_code, error = fetch_document(url=url)
+    doc, status_code, error = await fetch_document(url=url)
     if not doc:
         return
     try:
@@ -82,8 +82,8 @@ def fetch_nodeinfo_document(host):
     return parse_nodeinfo_document(doc, host)
 
 
-def fetch_nodeinfo2_document(host):
-    doc, status_code, error = fetch_document(host=host, path='/.well-known/x-nodeinfo2')
+async def fetch_nodeinfo2_document(host):
+    doc, status_code, error = await fetch_document(host=host, path='/.well-known/x-nodeinfo2')
     if not doc:
         return
     try:
@@ -93,8 +93,8 @@ def fetch_nodeinfo2_document(host):
     return parse_nodeinfo2_document(doc, host)
 
 
-def fetch_statisticsjson_document(host):
-    doc, status_code, error = fetch_document(host=host, path='/statistics.json')
+async def fetch_statisticsjson_document(host):
+    doc, status_code, error = await fetch_document(host=host, path='/statistics.json')
     if not doc:
         return
     try:

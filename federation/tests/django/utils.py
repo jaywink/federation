@@ -22,7 +22,7 @@ def get_object_function(object_id, signer=None):
     return dummy_profile()
 
 
-def get_private_key(identifier: str) -> RsaKey:
+async def get_private_key(identifier: str) -> RsaKey:
     return get_dummy_private_key()
 
 
@@ -30,7 +30,7 @@ def get_public_key(identifier: str) -> RsaKey:
     return get_dummy_public_key()
 
 
-def get_profile(fid=None, handle=None, guid=None, request=None):
+async def get_profile(fid=None, handle=None, guid=None, request=None):
     return dummy_profile()
 
 

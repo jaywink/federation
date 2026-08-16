@@ -33,7 +33,7 @@ def struct_to_xml(node, struct):
             etree.SubElement(node, k).text = v
 
 
-def get_full_xml_representation(entity, private_key):
+async def get_full_xml_representation(entity, private_key):
     """Get full XML representation of an entity.
 
     This contains the <XML><post>..</post></XML> wrapper.
@@ -43,7 +43,7 @@ def get_full_xml_representation(entity, private_key):
     Author `private_key` must be given so that certain entities can be signed.
     """
     from federation.entities.diaspora.mappers import get_outbound_entity
-    diaspora_entity = get_outbound_entity(entity, private_key)
+    diaspora_entity = await get_outbound_entity(entity, private_key)
     xml = diaspora_entity.to_xml()
     return "<XML><post>%s</post></XML>" % etree.tostring(xml).decode("utf-8")
 

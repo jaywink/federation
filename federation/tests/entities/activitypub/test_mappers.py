@@ -1,5 +1,5 @@
 from datetime import datetime
-from unittest.mock import patch, Mock, DEFAULT
+from unittest.mock import patch, AsyncMock, Mock, DEFAULT
 
 import json
 import pytest
@@ -23,13 +23,13 @@ from federation.types import UserType, ReceiverVariant
 
 
 class TestActivitypubEntityMappersReceive:
-    @patch.object(models.Follow, "post_receive", autospec=True)
-    def test_message_to_objects__calls_post_receive_hook(self, mock_post_receive):
-        message_to_objects(ACTIVITYPUB_FOLLOW, "https://example.com/actor")
-        assert mock_post_receive.called
+    @patch.object(models.Follow, "post_receive", new_callable=AsyncMock)
+    async def test_message_to_objects__calls_post_receive_hook(self, mock_post_receive):
+        await message_to_objects(ACTIVITYPUB_FOLLOW, "https://example.com/actor")
+        mock_post_receive.assert_awaited_once()
 
-    def test_message_to_objects__announce(self):
-        entities = message_to_objects(ACTIVITYPUB_SHARE, "https://mastodon.social/users/jaywink")
+    async def test_message_to_objects__announce(self):
+        entities = await message_to_objects(ACTIVITYPUB_SHARE, "https://mastodon.social/users/jaywink")
         assert len(entities) == 1
         entity = entities[0]
         assert isinstance(entity, models.Announce)
@@ -40,8 +40,8 @@ class TestActivitypubEntityMappersReceive:
         assert entity.entity_type == "Post"
         assert entity.raw_content == ""
 
-    def test_message_to_objects__follow(self):
-        entities = message_to_objects(ACTIVITYPUB_FOLLOW, "https://example.com/actor")
+    async def test_message_to_objects__follow(self):
+        entities = await message_to_objects(ACTIVITYPUB_FOLLOW, "https://example.com/actor")
         assert len(entities) == 1
         entity = entities[0]
         assert isinstance(entity, models.Follow)
@@ -49,8 +49,8 @@ class TestActivitypubEntityMappersReceive:
         assert entity.target_id == "https://example.org/actor"
         assert entity.following is True
 
-    def test_message_to_objects__unfollow(self):
-        entities = message_to_objects(ACTIVITYPUB_UNDO_FOLLOW, "https://example.com/actor")
+    async def test_message_to_objects__unfollow(self):
+        entities = await message_to_objects(ACTIVITYPUB_UNDO_FOLLOW, "https://example.com/actor")
         assert len(entities) == 1
         entity = entities[0]
         assert isinstance(entity, models.Follow)
@@ -67,8 +67,8 @@ class TestActivitypubEntityMappersReceive:
         post = entities[0]
         assert post._mentions == {'jaywink@jasonrobinson.me'}
 
-    def test_message_to_objects_simple_post(self):
-        entities = message_to_objects(ACTIVITYPUB_POST, "https://diaspodon.fr/users/jaywink")
+    async def test_message_to_objects_simple_post(self):
+        entities = await message_to_objects(ACTIVITYPUB_POST, "https://diaspodon.fr/users/jaywink")
         assert len(entities) == 1
         post = entities[0]
         assert isinstance(post, models.Note)
@@ -82,8 +82,8 @@ class TestActivitypubEntityMappersReceive:
         assert post._media_type == "text/html"
         assert getattr(post, "target_id", None) is None
 
-    def test_message_to_objects_simple_post__with_tags(self):
-        entities = message_to_objects(ACTIVITYPUB_POST_WITH_TAGS, "https://diaspodon.fr/users/jaywink")
+    async def test_message_to_objects_simple_post__with_tags(self):
+        entities = await message_to_objects(ACTIVITYPUB_POST_WITH_TAGS, "https://diaspodon.fr/users/jaywink")
         assert len(entities) == 1
         post = entities[0]
         assert isinstance(post, models.Note)
@@ -93,8 +93,8 @@ class TestActivitypubEntityMappersReceive:
 
     @patch("federation.entities.activitypub.models.get_profile_or_entity",
            return_value=Person(finger="jaywink@dev3.jasonrobinson.me",url="https://dev3.jasonrobinson.me/u/jaywink/"))
-    def test_message_to_objects_simple_post__with_mentions(self, mock_get):
-        entities = message_to_objects(ACTIVITYPUB_POST_WITH_MENTIONS, "https://mastodon.social/users/jaywink")
+    async def test_message_to_objects_simple_post__with_mentions(self, mock_get):
+        entities = await message_to_objects(ACTIVITYPUB_POST_WITH_MENTIONS, "https://mastodon.social/users/jaywink")
         assert len(entities) == 1
         post = entities[0]
         assert isinstance(post, models.Note)
@@ -105,8 +105,8 @@ class TestActivitypubEntityMappersReceive:
 
     @patch("federation.entities.activitypub.models.get_profile_or_entity",
            return_value=Person(finger="jaywink@dev.jasonrobinson.me",url="https://dev.jasonrobinson.me/u/jaywink/"))
-    def test_message_to_objects_simple_post__with_source__bbcode(self, mock_get):
-        entities = message_to_objects(ACTIVITYPUB_POST_WITH_SOURCE_BBCODE, "https://diaspodon.fr/users/jaywink")
+    async def test_message_to_objects_simple_post__with_source__bbcode(self, mock_get):
+        entities = await message_to_objects(ACTIVITYPUB_POST_WITH_SOURCE_BBCODE, "https://diaspodon.fr/users/jaywink")
         assert len(entities) == 1
         post = entities[0]
         assert isinstance(post, models.Note)
@@ -117,8 +117,8 @@ class TestActivitypubEntityMappersReceive:
 
     @patch("federation.entities.activitypub.models.get_profile_or_entity",
            return_value=Person(finger="jaywink@dev.jasonrobinson.me",url="https://dev.robinson.me/u/jaywink/"))
-    def test_message_to_objects_simple_post__with_source__markdown(self, mock_get):
-        entities = message_to_objects(ACTIVITYPUB_POST_WITH_SOURCE_MARKDOWN, "https://diaspodon.fr/users/jaywink")
+    async def test_message_to_objects_simple_post__with_source__markdown(self, mock_get):
+        entities = await message_to_objects(ACTIVITYPUB_POST_WITH_SOURCE_MARKDOWN, "https://diaspodon.fr/users/jaywink")
         assert len(entities) == 1
         post = entities[0]
         assert isinstance(post, models.Note)
@@ -132,8 +132,8 @@ class TestActivitypubEntityMappersReceive:
         assert post._media_type == "text/markdown"
         assert getattr(post, "target_id", None) is None
 
-    def test_message_to_objects_post_with_photos(self):
-        entities = message_to_objects(ACTIVITYPUB_POST_IMAGES, "https://mastodon.social/users/jaywink")
+    async def test_message_to_objects_post_with_photos(self):
+        entities = await message_to_objects(ACTIVITYPUB_POST_IMAGES, "https://mastodon.social/users/jaywink")
         assert len(entities) == 1
         post = entities[0]
         assert isinstance(post, models.Note)
@@ -152,8 +152,8 @@ class TestActivitypubEntityMappersReceive:
 
     @patch("federation.entities.activitypub.models.get_profile_or_entity",
            return_value=Person(finger="jaywink@dev.jasonrobinson.me", url="https://dev.jasonrobinson.me/u/jaywink/"))
-    def test_message_to_objects_comment(self, mock_get):
-        entities = message_to_objects(ACTIVITYPUB_COMMENT, "https://diaspodon.fr/users/jaywink")
+    async def test_message_to_objects_comment(self, mock_get):
+        entities = await message_to_objects(ACTIVITYPUB_COMMENT, "https://diaspodon.fr/users/jaywink")
         assert len(entities) == 1
         comment = entities[0]
         assert isinstance(comment, models.Note)
@@ -186,8 +186,8 @@ class TestActivitypubEntityMappersReceive:
         ]
         mock_validate.assert_called_once_with()
 
-    def test_message_to_objects_profile(self):
-        entities = message_to_objects(ACTIVITYPUB_PROFILE, "http://example.com/1234")
+    async def test_message_to_objects_profile(self):
+        entities = await message_to_objects(ACTIVITYPUB_PROFILE, "http://example.com/1234")
         assert len(entities) == 1
         profile = entities[0]
         assert profile.id == "https://diaspodon.fr/users/jaywink"
@@ -220,8 +220,8 @@ class TestActivitypubEntityMappersReceive:
         assert profile.nsfw is False
         assert profile.tag_list == []
 
-    def test_message_to_objects_profile__diaspora_guid_extracted(self):
-        entities = message_to_objects(
+    async def test_message_to_objects_profile__diaspora_guid_extracted(self):
+        entities = await message_to_objects(
             ACTIVITYPUB_PROFILE_WITH_DIASPORA_GUID, "https://friendica.feneas.org/profile/feneas",
         )
         assert len(entities) == 1
@@ -232,7 +232,7 @@ class TestActivitypubEntityMappersReceive:
     #@patch('federation.tests.django.utils.get_profile', return_value=None)
     @patch('federation.entities.activitypub.models.get_profile', return_value=None)
     @patch('federation.utils.activitypub.fetch_document')
-    def test_message_to_objects_receivers_are_saved(self, mock_fetch, mock_func):
+    async def test_message_to_objects_receivers_are_saved(self, mock_fetch, mock_func):
         def side_effect(*args, **kwargs):
             payloads = {'https://diaspodon.fr/users/jaywink': json.dumps(ACTIVITYPUB_PROFILE),
                     'https://fosstodon.org/users/astdenis': json.dumps(ACTIVITYPUB_REMOTE_PROFILE),
@@ -246,7 +246,7 @@ class TestActivitypubEntityMappersReceive:
         mock_fetch.side_effect = side_effect
 
         # noinspection PyTypeChecker
-        entities = message_to_objects(
+        entities = await message_to_objects(
             ACTIVITYPUB_POST,
             "https://diaspodon.fr/users/jaywink",
         )
@@ -262,8 +262,8 @@ class TestActivitypubEntityMappersReceive:
             )
         }
 
-    def test_message_to_objects_retraction(self):
-        entities = message_to_objects(ACTIVITYPUB_RETRACTION, "https://friendica.feneas.org/profile/jaywink")
+    async def test_message_to_objects_retraction(self):
+        entities = await message_to_objects(ACTIVITYPUB_RETRACTION, "https://friendica.feneas.org/profile/jaywink")
         assert len(entities) == 1
         entity = entities[0]
         assert isinstance(entity, Retraction)
@@ -271,8 +271,8 @@ class TestActivitypubEntityMappersReceive:
         assert entity.target_id == "https://friendica.feneas.org/objects/76158462-165d-3386-aa23-ba2090614385"
         assert entity.entity_type == "Object"
 
-    def test_message_to_objects_retraction__share(self):
-        entities = message_to_objects(ACTIVITYPUB_RETRACTION_SHARE, "https://mastodon.social/users/jaywink")
+    async def test_message_to_objects_retraction__share(self):
+        entities = await message_to_objects(ACTIVITYPUB_RETRACTION_SHARE, "https://mastodon.social/users/jaywink")
         assert len(entities) == 1
         entity = entities[0]
         assert isinstance(entity, Retraction)
@@ -290,13 +290,13 @@ class TestActivitypubEntityMappersReceive:
         assert entity.entity_type == "Comment"
 
     @patch("federation.entities.activitypub.mappers.logger.error")
-    def test_invalid_entity_logs_an_error(self, mock_logger):
-        entities = message_to_objects(ACTIVITYPUB_PROFILE_INVALID, "http://example.com/1234")
+    async def test_invalid_entity_logs_an_error(self, mock_logger):
+        entities = await message_to_objects(ACTIVITYPUB_PROFILE_INVALID, "http://example.com/1234")
         assert len(entities) == 0
         assert mock_logger.called
 
-    def test_adds_source_protocol_to_entity(self):
-        entities = message_to_objects(ACTIVITYPUB_PROFILE, "http://example.com/1234")
+    async def test_adds_source_protocol_to_entity(self):
+        entities = await message_to_objects(ACTIVITYPUB_PROFILE, "http://example.com/1234")
         assert entities[0]._source_protocol == "activitypub"
 
     @pytest.mark.skip
@@ -323,46 +323,46 @@ class TestActivitypubEntityMappersReceive:
 
 
 class TestGetOutboundEntity:
-    def test_already_fine_entities_are_returned_as_is(self, private_key):
+    async def test_already_fine_entities_are_returned_as_is(self, private_key):
         entity = models.Accept()
-        entity.validate = Mock()
-        assert get_outbound_entity(entity, private_key) == entity
+        entity.validate = AsyncMock()
+        assert await get_outbound_entity(entity, private_key) == entity
         entity = models.Follow()
-        entity.validate = Mock()
-        assert get_outbound_entity(entity, private_key) == entity
+        entity.validate = AsyncMock()
+        assert await get_outbound_entity(entity, private_key) == entity
         entity = models.Person()
-        entity.validate = Mock()
-        assert get_outbound_entity(entity, private_key) == entity
+        entity.validate = AsyncMock()
+        assert await get_outbound_entity(entity, private_key) == entity
 
-    @patch.object(models.Accept, "validate", new=Mock())
-    def test_accept_is_converted_to_activitypubaccept(self, private_key):
+    @patch.object(models.Accept, "validate", new_callable=AsyncMock)
+    async def test_accept_is_converted_to_activitypubaccept(self, private_key):
         entity = Accept()
-        assert isinstance(get_outbound_entity(entity, private_key), models.Accept)
+        assert isinstance(await get_outbound_entity(entity, private_key), models.Accept)
 
-    @patch.object(models.Follow, "validate", new=Mock())
-    def test_follow_is_converted_to_activitypubfollow(self, private_key):
+    @patch.object(models.Follow, "validate", new_callable=AsyncMock)
+    async def test_follow_is_converted_to_activitypubfollow(self, private_key):
         entity = Follow()
-        assert isinstance(get_outbound_entity(entity, private_key), models.Follow)
+        assert isinstance(await get_outbound_entity(entity, private_key), models.Follow)
 
-    @patch.object(models.Person, "validate", new=Mock())
-    def test_profile_is_converted_to_activitypubprofile(self, private_key):
+    @patch.object(models.Person, "validate", new_callable=AsyncMock)
+    async def test_profile_is_converted_to_activitypubprofile(self, private_key):
         entity = Profile()
-        assert isinstance(get_outbound_entity(entity, private_key), models.Person)
+        assert isinstance(await get_outbound_entity(entity, private_key), models.Person)
 
-    def test_entity_is_validated__fail(self, private_key):
+    async def test_entity_is_validated__fail(self, private_key):
         entity = Share(
             actor_id="https://localhost.local/foo",
             id="https://localhost.local/bar",
             created_at=datetime.now(),
         )
         with pytest.raises(ValueError):
-            get_outbound_entity(entity, private_key)
+            await get_outbound_entity(entity, private_key)
 
-    def test_entity_is_validated__success(self, private_key):
+    async def test_entity_is_validated__success(self, private_key):
         entity = Share(
             actor_id="https://localhost.local/foo",
             id="https://localhost.local/bar",
             created_at=datetime.now(),
             target_id="https://localhost.local/bar",
         )
-        get_outbound_entity(entity, private_key)
+        await get_outbound_entity(entity, private_key)

@@ -44,7 +44,7 @@ def create_ld_signature(obj, author):
     obj.update({'signature': sig})
 
 
-def verify_ld_signature(payload):
+async def verify_ld_signature(payload):
     """
     Verify inbound payload LD signature
     """
@@ -54,9 +54,9 @@ def verify_ld_signature(payload):
         return None
 
     # retrieve the author's public key
-    profile = get_profile(key_id=signature.get('creator'))
+    profile = await get_profile(key_id=signature.get('creator'))
     if not profile:
-        profile = retrieve_and_parse_document(signature.get('creator'))
+        profile = await retrieve_and_parse_document(signature.get('creator'))
     if not profile:
         logger.warning('ld_signature - Failed to retrieve profile for %s', signature.get("creator"))
         return None

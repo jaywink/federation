@@ -1,4 +1,4 @@
-from unittest.mock import patch, Mock
+from unittest.mock import patch, AsyncMock, Mock
 
 import pytest
 from lxml import etree
@@ -203,10 +203,10 @@ class TestDiasporaRelayableMixin:
                                    "sC28oRHqHpIzOfhkIHyt+hOjO/mpuZLd7qOPfIySnGW6hM1iKewoJVDuVMN5w5VB46ETRum8JpvTQO8i" \
                                    "DPB+ZqbqcEasfm2CQIxVLA=="
 
-    @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
-    def test_sign_with_parent(self, mock_validate):
-        entities = message_to_objects(DIASPORA_POST_COMMENT, "alice@alice.diaspora.example.org",
-                                      sender_key_fetcher=Mock())
+    @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures", new_callable=AsyncMock)
+    async def test_sign_with_parent(self, mock_validate):
+        entities = await message_to_objects(DIASPORA_POST_COMMENT, "alice@alice.diaspora.example.org",
+                                      sender_key_fetcher=AsyncMock())
         entity = entities[0]
         entity.sign_with_parent(get_dummy_private_key())
         assert entity.parent_signature == "UTIDiFZqjxfU6ssVlmjz2RwOD/WPmMTFv57qOm0BZvBhF8Ef49Ynse1c2XTtx3rs8DyRMn54" \
@@ -227,7 +227,7 @@ class TestDiasporaRelayableMixin:
                                                       b'/YwMNn0GGi+9qSWXYVFG75cPjcWeY4t5q8EHCQReSSxG4a3HGbc7MigLvHzu' \
                                                       b'hdOWOV8563dYo/5xS3zlQUt8I3AwXOzHr+57r1egMBHYyXTXsS8gFisj7mH4' \
                                                       b'TsLM+Yw==</parent_author_signature></comment>'
-
+                                                      
     @patch("federation.entities.diaspora.mappers.DiasporaComment._validate_signatures")
     def test_sign_with_parent__calls_to_xml(self, mock_validate):
         entity = DiasporaComment()
@@ -244,14 +244,14 @@ class TestDiasporaRelayableEntityValidate():
             entity._validate_signatures()
 
     @patch("federation.entities.diaspora.mixins.verify_relayable_signature")
-    def test_calls_verify_signature(self, mock_verify):
+    async def test_calls_verify_signature(self, mock_verify):
         entity = DiasporaComment()
         entity._sender_key = "key"
         entity._source_object = "<obj></obj>"
         entity.signature = "sig"
         mock_verify.return_value = False
         with pytest.raises(SignatureVerificationError):
-            entity._validate_signatures()
+            await entity._validate_signatures()
         mock_verify.reset_mock()
         mock_verify.return_value = True
-        entity._validate_signatures()
+        await entity._validate_signatures()
