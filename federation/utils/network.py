@@ -256,7 +256,8 @@ async def send_document(url, data, timeout=10, method="post", *args, **kwargs):
     kwargs.update({
         "data": data, "timeout": sentinel, "headers": headers
     })
-    async with aiohttp.ClientSession() as session:
+    middleware = (HTTPSignatureMiddleware(kwargs.get('auth')),) if kwargs.get('auth', None) else () 
+    async with aiohttp.ClientSession(middelwares=middleware) as session:
         request_func = getattr(session, method)
         try:
             response = await request_func(url, *args, **kwargs)
