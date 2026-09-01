@@ -227,7 +227,7 @@ def parse_http_date(date):
         raise ValueError("%r is not a valid date" % date) from exc
 
 
-async def send_document(url, data, timeout=10, method="post", *args, **kwargs):
+async def send_document(url, data, timeout=10, method="post", auth=None, *args, **kwargs):
     """Helper method to send a document via POST.
 
     Additional ``*args`` and ``**kwargs`` will be passed on to ``requests.post``.
