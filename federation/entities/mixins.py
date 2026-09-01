@@ -140,7 +140,7 @@ class BaseEntity:
                         child, self.__class__
                     )
                 )
-            await child.validate()
+            if getattr(child, 'validate', None): await child.validate()
 
     async def _validate_signatures(self):
         """Override in subclasses where necessary"""
