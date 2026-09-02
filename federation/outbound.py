@@ -396,7 +396,7 @@ async def handle_send(
             # TODO send_document and fetch_document need to handle rate limits
             tasks.append(asyncio.create_task(send_document(
                 url,
-                payload["payload"],
+                data=payload["payload"],
                 auth=payload.get("auth"),
                 headers=payload.get("headers"),
                 method=payload.get("method"),
