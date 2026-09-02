@@ -405,6 +405,5 @@ async def handle_send(
         try:
             await task
         except Exception as ex:
-            # TODO: find a way to generate a more useful message
-            logger.error("handle_send - failed to send payload to %s: %s", task, ex)
+            logger.error("handle_send - failed to send payload: %s", ex)
     logger.info("handle_send - elapsed time %s", time.time() - start)
