@@ -38,7 +38,7 @@ class HTTPSignatureAuth(requests.auth.AuthBase):
         r.headers['date'] = date
 
         if r.body is not None and "digest" in self.header_signer.headers:
-            digest = hashlib.sha256(await r.body.as_bytes()).digest()
+            digest = hashlib.sha256(await r.body.as_bytes() if getattr(r.body, 'as_bytes', None) else r.body).digest()
             r.headers["digest"] = "SHA-256=" + base64.b64encode(digest).decode()
 
         headers = self.header_signer.sign(
