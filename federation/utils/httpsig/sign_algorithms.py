@@ -4,7 +4,7 @@ import six
 from Crypto.PublicKey import RSA
 from Crypto.Signature import PKCS1_PSS
 from Crypto.Signature import PKCS1_v1_5
-from httpsig.utils import HttpSigException, HASHES
+from .utils import HttpSigException, HASHES
 from abc import ABCMeta, abstractmethod
 
 DEFAULT_HASH_ALGORITHM = "sha256"

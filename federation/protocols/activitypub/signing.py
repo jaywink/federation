@@ -9,10 +9,10 @@ from urllib.parse import urlsplit
 
 import pytz
 from Crypto.PublicKey.RSA import RsaKey
-from httpsig.sign_algorithms import PSS
 
 from federation.types import RequestType
 from federation.utils.httpsig.requests_auth import HTTPSignatureAuth
+from federation.utils.httpsig.sign_algorithms import PSS
 from federation.utils.httpsig.verify import HeaderVerifier
 from federation.utils.network import parse_http_date
 from federation.utils.text import encode_if_text
