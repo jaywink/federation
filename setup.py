@@ -43,9 +43,8 @@ setup(
         "iteration_utilities",
         "jsonschema>=2.0.0",
         "markdownify",
-        "pycryptodome>=3.4.10",
+        "pycryptodome>=3.4.10,<4",
         "python-dateutil>=2.4.0",
-        "python-httpsig-socialhome",
         "python-magic",
         "python-slugify>=5.0.0",
         "python-xrd>=0.1",
@@ -54,7 +53,8 @@ setup(
         "redis",
         "requests>=2.8.0",
         "requests-cache",
-        "setuptools<81"
+        "setuptools<81",
+        "six"
     ],
     include_package_data=True,
     classifiers=[
