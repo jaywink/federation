@@ -191,6 +191,7 @@ async def transform_attributes(attrs, cls):
             else:
                 transformed["actor_id"] = value
             transformed["handle"] = value
+            transformed["finger"] = value
         elif key == 'guid':
             if cls != DiasporaProfile:
                 transformed["id"] = value
