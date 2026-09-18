@@ -11,12 +11,22 @@ from federation.utils.text import decode_if_bytes, validate_handle
 
 logger = logging.getLogger('federation')
 
-try:
-    from federation.utils.django import get_federation_user
-    federation_user = get_federation_user()
-except Exception as exc:
-    federation_user = None
-    logger.warning("django is required for get requests signing: %s", exc)
+# Django doesn't like DB accesses during initialization
+# Also, set the compute heavy http signature hash only once
+async def set_header_signer():
+    global header_signer
+    try:
+        return header_signer
+    except NameError:
+        from federation.utils.django import get_federation_user
+        federation_user =  await get_federation_user()
+        header_signer=get_http_authentication(federation_user.rsa_private_key,
+                                     f'{federation_user.id}#main-key',
+                                     digest=False) if federation_user else None
+    except Exception as exc:
+        header_signer = None
+        logger.warning("django is required for get requests signing: %s", exc)
+    return set_header_signer
 
 type_path = re.compile(r'^application/(activity|ld)\+json')
 
@@ -66,13 +76,11 @@ async def retrieve_and_parse_document(fid: str, cache: bool=True) -> Optional[An
     """
     from federation.entities.activitypub.models import element_to_objects # Circulars
     extra_headers={'accept': 'application/activity+json, application/ld+json; profile="https://www.w3.org/ns/activitystreams"'}
-    auth=get_http_authentication(federation_user.rsa_private_key,
-                                 f'{federation_user.id}#main-key',
-                                 digest=False) if federation_user else None
+    await set_header_signer()
     document, status_code, ex = await fetch_document(fid,
                                                extra_headers=extra_headers,
                                                cache=cache,
-                                               auth=auth)
+                                               auth=header_signer)
     if document:
         try:
             document = json.loads(decode_if_bytes(document))
