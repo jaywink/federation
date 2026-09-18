@@ -112,7 +112,7 @@ async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_er
                     response.raise_for_status()
                     return await response.text(), response.status, None
             except (aiohttp.ConnectionTimeoutError, aiohttp.ClientConnectorError, aiohttp.ClientConnectorDNSError, aiohttp.ClientSSLError, aiohttp.ClientConnectionError, aiohttp.ClientResponseError) as ex:
-                logger.error("fetch_document: exception %s", ex)
+                logger.debug("fetch_document: exception %s", ex)
                 return None, getattr(response, 'status', None), ex
         # Build url with some little sanitizing
         host_string = host.replace("http://", "").replace("https://", "").strip("/")
@@ -126,7 +126,7 @@ async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_er
                 return await response.text(), response.status, None
         except (aiohttp.ConnectionTimeoutError, aiohttp.ClientConnectorDNSError, aiohttp.ClientSSLError, aiohttp.ClientConnectionError, aiohttp.ClientResponseError) as ex:
             if isinstance(ex, aiohttp.ClientSSLError) and raise_ssl_errors:
-                logger.error("fetch_document: exception %s", ex)
+                logger.debug("fetch_document: exception %s", ex)
                 return None, getattr(response, 'status', None), ex
             # Try http then
             url = url.replace("https://", "http://")
@@ -137,10 +137,10 @@ async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_er
                     response.raise_for_status()
                     return await response.text(), response.status, None
             except (aiohttp.ConnectionTimeoutError, aiohttp.ClientConnectorDNSError, aiohttp.ClientConnectionError, aiohttp.ClientResponseError) as ex:
-                logger.error("fetch_document: exception %s", ex)
+                logger.debug("fetch_document: exception %s", ex)
                 return None, getattr(response, 'status', None), ex
         except aiohttp.ClientError as ex:
-            logger.error("fetch_document: exception %s", ex)
+            logger.debug("fetch_document: exception %s", ex)
             return None, getattr(response, 'status', None), ex
 
 
