@@ -32,9 +32,19 @@ this version range may or may not work. If your code breaks, please open an issu
   `asyncio.as_completed`.
 
 * The CPU intensive http signature signer hash is now computed once per `handle_send` call, instead of once per
-  target remote instance.
+  target remote instance, as well as once in `fetch_content` for the federation user.
+
+* Use `HTTPSignatureMiddleware` in both ` fetch_document` and `send_document`.
+
+* Since `aiohttp` processes the request body asynchronously, import the `httpsig` package and make its
+  `signer` method async. The `httpsig` package was only used by federation.
+
+* Make all AP entities validate methods async.
+
+* Remove the BaseEntity pre_send and post_receive methods. Instead check their availabiliy with `hasattr`
+  before invocation. This was prompted Diaspora using sync `pre_send` versus AP using async.
   
-* Adapt many tests to an async context.
+* Adapt tests to an async context where required.
 
 ### Fixed
 
@@ -44,6 +54,17 @@ this version range may or may not work. If your code breaks, please open an issu
 
 * Ensure a public inbox is set. Some single user platforms only provide a private inbox. In this case,
   set public to private.
+
+* pyld: return an empty context on fetch error.
+
+* Check for validate attribute on child objects before calling it.
+
+* Do not get the federation user from the Django DB while initializing modules.
+
+* Add the `finger` property to inbound Diaspora payloads. This caused Diaspora's `merge_profiles` method
+  to fail.
+
+* Do not access Django's DB during initialiation in order to comply with their recommandation.
 
 ## [0.27.0] - 2026-03-28
 
