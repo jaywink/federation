@@ -1,0 +1,9 @@
+Imported from https://codeberg.org/socialhome/python-httpsig-socialhome which is now read-only.
+
+Fork of https://github.com/fulder/python-httpsig, with some improvements to
+conform to https://datatracker.ietf.org/doc/draft-ietf-httpbis-message-signatures/15/.
+
+Was merged with federation due to lack of will and time to maintain it properly, and because
+federation is its sole user.
+
+Will eventually be replaced by a RFC-9421 compliant library.
