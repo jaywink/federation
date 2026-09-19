@@ -2,7 +2,6 @@ import importlib
 import redis
 from aiohttp_client_cache import RedisBackend
 
-from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from federation.types import UserType
@@ -48,7 +47,7 @@ def get_function_from_config(item):
     func = getattr(module, func_name)
     return func
 
-def get_federation_user():
+async def get_federation_user():
     config = get_configuration()
     if not config.get('federation_id'): return None
 
@@ -57,7 +56,7 @@ def get_federation_user():
     except AttributeError:
         return None
 
-    key = async_to_sync(get_key)(config['federation_id'])
+    key = await get_key(config['federation_id'])
     if not key: return None
 
     return UserType(id=config['federation_id'], private_key=key)

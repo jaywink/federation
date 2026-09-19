@@ -396,7 +396,7 @@ async def handle_send(
             # TODO send_document and fetch_document need to handle rate limits
             tasks.append(asyncio.create_task(send_document(
                 url,
-                payload["payload"],
+                data=payload["payload"],
                 auth=payload.get("auth"),
                 headers=payload.get("headers"),
                 method=payload.get("method"),
@@ -405,6 +405,5 @@ async def handle_send(
         try:
             await task
         except Exception as ex:
-            # TODO: find a way to generate a more useful message
-            logger.error("handle_send - failed to send payload to %s: %s", task, ex)
+            logger.error("handle_send - failed to send payload: %s", ex)
     logger.info("handle_send - elapsed time %s", time.time() - start)

@@ -1,6 +1,9 @@
 import json
+import logging
 from datetime import timedelta
 from pyld import jsonld
+
+logger = logging.getLogger("federation")
 
 try:
     from federation.utils.django import get_redis
@@ -24,7 +27,19 @@ def get_loader(*args, **kwargs):
             return json.loads(cache[key])
         except KeyError:
             options['headers']['Accept'] = 'application/ld+json'
-            doc = requests_loader(url, options)
+            try:
+                doc = requests_loader(url, options)
+            except:
+                logger.warning("pyld - can't fetch or process %s, returning empty context", url)
+                return {
+                        "contextUrl": None,
+                        "documentUrl": url,
+                        "document": {
+                          "@context": {
+                            "@vocab": "_:"
+                            }
+                        }
+                       }  
             if isinstance(cache, dict):
                 cache[key] = json.dumps(doc)
             else:

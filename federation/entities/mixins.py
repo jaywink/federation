@@ -69,18 +69,6 @@ class BaseEntity:
             # Fill a default activity if not given and type of entity class has one
             self.activity = getattr(self, "_default_activity", None)
 
-    async def post_receive(self):
-        """
-        Run any actions after deserializing the payload into an entity.
-        """
-        pass
-
-    async def pre_send(self):
-        """
-        Run any actions before serializing the entity for sending.
-        """
-        pass
-
     async def validate(self, direction: str = "inbound") -> None:
         """Do validation.
 
@@ -140,7 +128,7 @@ class BaseEntity:
                         child, self.__class__
                     )
                 )
-            await child.validate()
+            if getattr(child, 'validate', None): await child.validate()
 
     async def _validate_signatures(self):
         """Override in subclasses where necessary"""

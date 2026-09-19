@@ -62,7 +62,7 @@ class HTTPSignatureMiddleware:
         url = req.url
         req.url = str(url)
         req.path_url = url.path
-        req = self.signer(req)
+        req = await self.signer(req)
         req.url = url
         return await handler(req)
 
@@ -112,7 +112,7 @@ async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_er
                     response.raise_for_status()
                     return await response.text(), response.status, None
             except (aiohttp.ConnectionTimeoutError, aiohttp.ClientConnectorError, aiohttp.ClientConnectorDNSError, aiohttp.ClientSSLError, aiohttp.ClientConnectionError, aiohttp.ClientResponseError) as ex:
-                logger.error("fetch_document: exception %s", ex)
+                logger.debug("fetch_document: exception %s", ex)
                 return None, getattr(response, 'status', None), ex
         # Build url with some little sanitizing
         host_string = host.replace("http://", "").replace("https://", "").strip("/")
@@ -126,7 +126,7 @@ async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_er
                 return await response.text(), response.status, None
         except (aiohttp.ConnectionTimeoutError, aiohttp.ClientConnectorDNSError, aiohttp.ClientSSLError, aiohttp.ClientConnectionError, aiohttp.ClientResponseError) as ex:
             if isinstance(ex, aiohttp.ClientSSLError) and raise_ssl_errors:
-                logger.error("fetch_document: exception %s", ex)
+                logger.debug("fetch_document: exception %s", ex)
                 return None, getattr(response, 'status', None), ex
             # Try http then
             url = url.replace("https://", "http://")
@@ -137,10 +137,10 @@ async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_er
                     response.raise_for_status()
                     return await response.text(), response.status, None
             except (aiohttp.ConnectionTimeoutError, aiohttp.ClientConnectorDNSError, aiohttp.ClientConnectionError, aiohttp.ClientResponseError) as ex:
-                logger.error("fetch_document: exception %s", ex)
+                logger.debug("fetch_document: exception %s", ex)
                 return None, getattr(response, 'status', None), ex
         except aiohttp.ClientError as ex:
-            logger.error("fetch_document: exception %s", ex)
+            logger.debug("fetch_document: exception %s", ex)
             return None, getattr(response, 'status', None), ex
 
 
@@ -227,7 +227,7 @@ def parse_http_date(date):
         raise ValueError("%r is not a valid date" % date) from exc
 
 
-async def send_document(url, data, timeout=10, method="post", *args, **kwargs):
+async def send_document(url, data=None, timeout=10, method="post", auth=None, **kwargs):
     """Helper method to send a document via POST.
 
     Additional ``*args`` and ``**kwargs`` will be passed on to ``requests.post``.
@@ -254,12 +254,13 @@ async def send_document(url, data, timeout=10, method="post", *args, **kwargs):
         # Update from kwargs
         headers.update(kwargs.get("headers"))
     kwargs.update({
-        "data": data, "timeout": sentinel, "headers": headers
+        "timeout": sentinel, "headers": headers
     })
-    async with aiohttp.ClientSession() as session:
+    middleware = (HTTPSignatureMiddleware(auth),) if auth else () 
+    async with aiohttp.ClientSession(middlewares=middleware) as session:
         request_func = getattr(session, method)
         try:
-            response = await request_func(url, *args, **kwargs)
+            response = await request_func(url, data=data, **kwargs)
             logger.debug("send_document: response status code %s", response.status)
             return response.status, None
         # TODO support rate limit 429 code

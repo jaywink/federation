@@ -970,8 +970,6 @@ class Note(Object, RawContentMixin):
         """
         Mark linkified tags and mentions with a data-{mention, tag} attribute.
         """
-        await super().post_receive()
-
         if self._media_type != "text/markdown":
             self._find_and_mark_hashtags()
             await self._find_and_mark_mentions()
@@ -1239,8 +1237,6 @@ class Follow(Activity, base.Follow):
         """
         Post receive hook - send back follow ack.
         """
-        await super().post_receive()
-
         if not self.following:
             return
 
@@ -1385,7 +1381,7 @@ class Like(Activity, base.Reaction):
     id = fields.Id()
     reaction = fields.String(diaspora.like)
 
-    def validate(self, direction='inbound'):
+    async def validate(self, direction='inbound'):
         pass
 
     class Meta:
@@ -1397,7 +1393,7 @@ class Dislike(Activity, base.Reaction):
     id = fields.Id()
     reaction = fields.String(diaspora.like)
 
-    def validate(self, direction='inbound'):
+    async def validate(self, direction='inbound'):
         pass
 
     class Meta:
@@ -1406,7 +1402,7 @@ class Dislike(Activity, base.Reaction):
 
 # inbound Accept is a noop...
 class Accept(Create, base.Accept):
-    def validate(self, direction='inbound'):
+    async def validate(self, direction='inbound'):
         pass
 
     class Meta:

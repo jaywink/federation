@@ -61,8 +61,8 @@ class TestHandleSend:
         # Ensure first call is a private diaspora payload
         args, kwargs = mock_send.call_args_list[0]
         assert args[0] == "https://127.0.0.1/receive/users/1234"
-        assert "aes_key" in args[1]
-        assert "encrypted_magic_envelope" in args[1]
+        assert "aes_key" in kwargs['data']
+        assert "encrypted_magic_envelope" in kwargs['data']
         assert kwargs['headers'] == {'Content-Type': 'application/json'}
 
         # Ensure second call is a private activitypub payload
@@ -81,7 +81,7 @@ class TestHandleSend:
         assert kwargs['headers'] == {
             'Content-Type': 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
         }
-        assert encode_if_text("https://www.w3.org/ns/activitystreams#Public") in args[1]
+        assert encode_if_text("https://www.w3.org/ns/activitystreams#Public") in kwargs['data']
 
         # Ensure diaspora public payloads and recipients, one per unique host
         args3, kwargs3 = mock_send.call_args_list[3]
@@ -91,8 +91,8 @@ class TestHandleSend:
             "https://example.net/receive/public",
             "https://example.com/receive/public",
         }
-        assert args3[1].startswith("<me:env xmlns:me=")
-        assert args4[1].startswith("<me:env xmlns:me=")
+        assert kwargs3['data'].startswith("<me:env xmlns:me=")
+        assert kwargs4['data'].startswith("<me:env xmlns:me=")
         assert kwargs3['headers'] == {'Content-Type': 'application/magic-envelope+xml'}
         assert kwargs4['headers'] == {'Content-Type': 'application/magic-envelope+xml'}
 
@@ -157,7 +157,7 @@ class TestHandleSend:
         assert kwargs['headers'] == {
             'Content-Type': 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
         }
-        assert encode_if_text("https://www.w3.org/ns/activitystreams#Public") in args[1]
+        assert encode_if_text("https://www.w3.org/ns/activitystreams#Public") in kwargs['data']
 
         # Should only be one call
         assert mock_send.call_count == 1
