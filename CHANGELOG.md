@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [0.28.0] - 2026-10-18
 
 **Breaking change**: remote fetchers as well as inbound and outbound requests functions must be called
 from within an async context. For sync django apps, this may mean using the `async_to_sync` utility. Also,
