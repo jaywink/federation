@@ -1,5 +1,12 @@
 # Changelog
 
+## [unreleased]
+
+### Fixed
+
+* Always create a new Redis cache connection instead of re-using the old one. Fixes potential
+  issues with the event loop being closed when the cache is accessed multiple times in a row.
+
 ## [0.28.0] - 2026-10-18
 
 **Breaking change**: remote fetchers as well as inbound and outbound requests functions must be called

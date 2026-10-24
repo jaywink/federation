@@ -23,7 +23,6 @@ logger = logging.getLogger("federation")
 
 USER_AGENT = "python/federation/%s" % __version__
 
-redis_cache = get_requests_cache_backend('fed_cache')
 EXPIRATION = datetime.timedelta(minutes=10)
 
 async def fetch_content_type(url: str) -> Optional[str]:
@@ -33,7 +32,7 @@ async def fetch_content_type(url: str) -> Optional[str]:
     analyse with the magic library.
     """
     content_type = ""
-    async with CachedSession(cache=redis_cache) as session:
+    async with CachedSession(cache=get_requests_cache_backend('fed_cache'), expire_after=EXPIRATION) as session:
         try:
             response = await session.head(url, headers={'user-agent': USER_AGENT}, timeout=10)
         except aiohttp.ClientResponseError as ex:
@@ -96,7 +95,7 @@ async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_er
 
     sentinel = aiohttp.ClientTimeout(sock_connect=timeout) if isinstance(timeout, int) else None
     middleware = (HTTPSignatureMiddleware(kwargs.get('auth')),) if kwargs.get('auth', None) else () 
-    if redis_cache: redis_cache.expire_after = EXPIRATION if cache else 0
+    redis_cache = get_requests_cache_backend('fed_cache', expire_after=EXPIRATION)
     
     async with CachedSession(middlewares=middleware,
                              cache=redis_cache,

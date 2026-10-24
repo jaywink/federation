@@ -70,14 +70,17 @@ def get_redis():
 
     return redis.Redis(**config['redis'])
 
-def get_requests_cache_backend(namespace):
+def get_requests_cache_backend(namespace, **kwargs):
     """
     Use RedisBackend if available, else None
+
+    `autoclose=True` ensures we always create a new Redis connection. Otherwise,
+    the event loop will be closed when we try to re-use this.
     """
     config = get_configuration()
     if not config.get('redis_uri'): return None
 
-    return RedisBackend(cache_name=namespace, address=config['redis_uri'])
+    return RedisBackend(cache_name=namespace, address=config['redis_uri'], autoclose=True, **kwargs)
 
 def disable_outbound_federation():
     config = get_configuration()
