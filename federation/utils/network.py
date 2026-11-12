@@ -13,7 +13,7 @@ from uuid import uuid4
 
 import aiofiles
 import aiohttp
-from aiohttp_client_cache import CachedSession, RedisBackend
+from aiohttp_client_cache import CachedSession
 from requests.structures import CaseInsensitiveDict
 
 from federation import __version__
@@ -66,6 +66,18 @@ class HTTPSignatureMiddleware:
         return await handler(req)
 
     
+def client_timeout(timeout) -> Optional[aiohttp.ClientTimeout]:
+    """Build an aiohttp timeout from a number of seconds.
+
+    ``timeout`` applies to connecting and to each socket read, with an overall cap of three times
+    ``timeout`` for the whole request. All three, ``sock_connect``, ``sock_read`` and ``total``
+    need to be set to avoid potentially hanging requests for a server that never replies.
+    """
+    if isinstance(timeout, bool) or not isinstance(timeout, (int, float)):
+        return None
+    return aiohttp.ClientTimeout(total=timeout * 3, sock_connect=timeout, sock_read=timeout)
+
+
 async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_errors=True, extra_headers=None, cache=True, **kwargs):
     """Helper method to asynchronously fetch remote document.
 
@@ -93,9 +105,19 @@ async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_er
     if extra_headers:
         headers.update(extra_headers)
 
-    sentinel = aiohttp.ClientTimeout(sock_connect=timeout) if isinstance(timeout, int) else None
+    sentinel = client_timeout(timeout)
     middleware = (HTTPSignatureMiddleware(kwargs.get('auth')),) if kwargs.get('auth', None) else () 
     redis_cache = get_requests_cache_backend('fed_cache', expire_after=EXPIRATION)
+    # `asyncio.ClientConnectionError` covers connector, DNS, SSL and connect/read timeout errors.
+    # We later check for a `isinstance(ex, aiohttp.ClientSSLError)`, which works, as
+    # `ClientSSLError` is a subclass of `ClientConnectionError`, and thus our except
+    # block catches it.
+    # `asyncio.TimeoutError` is raised when the total timeout expires.
+    exceptions = (
+        asyncio.TimeoutError,
+        aiohttp.ClientConnectionError,
+        aiohttp.ClientResponseError,
+    )
     
     async with CachedSession(middlewares=middleware,
                              cache=redis_cache,
@@ -110,7 +132,7 @@ async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_er
                     logger.debug("fetch_document: found document, code %s", response.status)
                     response.raise_for_status()
                     return await response.text(), response.status, None
-            except (aiohttp.ConnectionTimeoutError, aiohttp.ClientConnectorError, aiohttp.ClientConnectorDNSError, aiohttp.ClientSSLError, aiohttp.ClientConnectionError, aiohttp.ClientResponseError) as ex:
+            except exceptions as ex:
                 logger.debug("fetch_document: exception %s", ex)
                 return None, getattr(response, 'status', None), ex
         # Build url with some little sanitizing
@@ -123,7 +145,7 @@ async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_er
                 logger.debug("fetch_document: found document, code %s", response.status)
                 response.raise_for_status()
                 return await response.text(), response.status, None
-        except (aiohttp.ConnectionTimeoutError, aiohttp.ClientConnectorDNSError, aiohttp.ClientSSLError, aiohttp.ClientConnectionError, aiohttp.ClientResponseError) as ex:
+        except exceptions as ex:
             if isinstance(ex, aiohttp.ClientSSLError) and raise_ssl_errors:
                 logger.debug("fetch_document: exception %s", ex)
                 return None, getattr(response, 'status', None), ex
@@ -135,7 +157,7 @@ async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_er
                     logger.debug("fetch_document: found document, code %s", response.status)
                     response.raise_for_status()
                     return await response.text(), response.status, None
-            except (aiohttp.ConnectionTimeoutError, aiohttp.ClientConnectorDNSError, aiohttp.ClientConnectionError, aiohttp.ClientResponseError) as ex:
+            except exceptions as ex:
                 logger.debug("fetch_document: exception %s", ex)
                 return None, getattr(response, 'status', None), ex
         except aiohttp.ClientError as ex:
@@ -245,7 +267,7 @@ async def send_document(url, data=None, timeout=10, method="post", auth=None, **
     logger.debug("send_document: url=%s, data=%s, timeout=%s, method=%s", url, data, timeout, method)
     if not method:
         method = "post"
-    sentinel = aiohttp.ClientTimeout(sock_connect=timeout) if isinstance(timeout, int) else None
+    sentinel = client_timeout(timeout)
     headers = CaseInsensitiveDict({
         'User-Agent': USER_AGENT,
     })
@@ -263,7 +285,7 @@ async def send_document(url, data=None, timeout=10, method="post", auth=None, **
             logger.debug("send_document: response status code %s", response.status)
             return response.status, None
         # TODO support rate limit 429 code
-        except aiohttp.ClientResponseError as ex:
+        except (aiohttp.ClientResponseError, asyncio.TimeoutError) as ex:
             logger.debug("send_document: exception %s", ex)
             return None, ex
 
