@@ -1,14 +1,11 @@
-from datetime import timedelta
-from unittest.mock import DEFAULT, patch, AsyncMock, MagicMock, Mock, call
+import asyncio
+from unittest.mock import patch, AsyncMock, call
 
 import aiohttp
 import pytest
-import ssl
-from requests import HTTPError
-from requests.exceptions import SSLError, RequestException
 
 from federation.utils.network import (
-    fetch_document, USER_AGENT, send_document, fetch_host_ip
+    client_timeout, fetch_document, USER_AGENT, send_document, fetch_host_ip
 )
 
 
@@ -49,6 +46,12 @@ class TestFetchDocument:
             call("https://localhost/", **self.call_args),
             call("http://localhost/", **self.call_args),
         ]
+
+    @patch.object(aiohttp.ClientSession, "get", side_effect=asyncio.TimeoutError)
+    async def test_timeout_returns_exception(self, mock_get):
+        doc, code, exc = await fetch_document("https://localhost")
+        assert doc is None
+        assert isinstance(exc, asyncio.TimeoutError)
 
     @patch.object(aiohttp.ClientSession, "get")
     async def test_host_is_sanitized(self, mock_get):
@@ -118,9 +121,19 @@ async def mock_resp(*args, **kwargs):
     return await AsyncMock(status=200)
 
 
+class TestClientTimeout:
+    def test_sets_connect_read_and_total(self):
+        assert client_timeout(10) == aiohttp.ClientTimeout(total=30, sock_connect=10, sock_read=10)
+        assert client_timeout(2.5) == aiohttp.ClientTimeout(total=7.5, sock_connect=2.5, sock_read=2.5)
+
+    def test_non_numeric_returns_none(self):
+        assert client_timeout(None) is None
+        assert client_timeout(True) is None
+
+
 class TestSendDocument:
     call_args = {"headers": {'user-agent': USER_AGENT}, 'timeout': 10}
-    actual_args = {"headers": {'user-agent': USER_AGENT}, 'timeout': aiohttp.ClientTimeout(sock_connect=10)}
+    actual_args = {"headers": {'user-agent': USER_AGENT}, 'timeout': aiohttp.ClientTimeout(total=30, sock_connect=10, sock_read=10)}
     mock_response = AsyncMock()
     mock_response.status = 200
 
@@ -140,6 +153,12 @@ class TestSendDocument:
         assert code == None
         assert exc.__class__ == aiohttp.ClientResponseError
 
+    @patch.object(aiohttp.ClientSession, "post", side_effect=asyncio.TimeoutError)
+    async def test_post_timeout_returns_exception(self, mock_post):
+        code, exc = await send_document("http://localhost", {"foo": "bar"})
+        assert code is None
+        assert isinstance(exc, asyncio.TimeoutError)
+
     @patch.object(aiohttp.ClientSession, "post", new_callable=AsyncMock)
     async def test_post_called_with_only_one_headers_kwarg(self, mock_post):
         # A failure might raise:
@@ -155,10 +174,16 @@ class TestSendDocument:
         mock_post.return_value = self.mock_response
         await send_document("http://localhost", {"foo": "bar"}, **self.call_args)
         mock_post.assert_called_once_with(
-            "http://localhost", data={"foo": "bar"}, headers={'user-agent': USER_AGENT}, timeout=aiohttp.ClientTimeout(sock_connect=10)
+            "http://localhost",
+            data={"foo": "bar"},
+            headers={'user-agent': USER_AGENT},
+            timeout=aiohttp.ClientTimeout(total=30, sock_connect=10, sock_read=10),
         )
         mock_post.reset_mock()
         await send_document("http://localhost", {"foo": "bar"}, headers={'User-Agent': USER_AGENT})
         mock_post.assert_called_once_with(
-            "http://localhost", data={"foo": "bar"}, headers={'User-Agent': USER_AGENT}, timeout=aiohttp.ClientTimeout(sock_connect=10)
+            "http://localhost",
+            data={"foo": "bar"},
+            headers={'User-Agent': USER_AGENT},
+            timeout=aiohttp.ClientTimeout(total=30, sock_connect=10, sock_read=10),
         )
