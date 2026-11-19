@@ -4,6 +4,9 @@
 
 ### Fixed
 
+* Always create a new Redis cache connection instead of re-using the old one. Fixes potential
+  issues with the event loop being closed when the cache is accessed multiple times in a row.
+
 * Properly set timeouts for all outbound requests, to avoid servers that never reply hanging
   an asyncio thread forever.
 
