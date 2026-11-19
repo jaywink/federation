@@ -108,7 +108,7 @@ async def fetch_document(url=None, host=None, path="/", timeout=10, raise_ssl_er
 
     sentinel = client_timeout(timeout)
     middleware = (HTTPSignatureMiddleware(kwargs.get('auth')),) if kwargs.get('auth', None) else () 
-    redis_cache = get_requests_cache_backend('fed_cache', expire_after=EXPIRATION)
+    if redis_cache: redis_cache.expire_after = EXPIRATION if cache else 0
     # `asyncio.ClientConnectionError` covers connector, DNS, SSL and connect/read timeout errors.
     # We later check for a `isinstance(ex, aiohttp.ClientSSLError)`, which works, as
     # `ClientSSLError` is a subclass of `ClientConnectionError`, and thus our except
